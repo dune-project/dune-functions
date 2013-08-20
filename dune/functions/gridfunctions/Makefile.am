@@ -1,5 +1,5 @@
 gridfunctionsincludedir = $(includedir)/dune/functions/gridfunctions
-gridfunctionsinclude_HEADERS =
+gridfunctionsinclude_HEADERS = discretegridviewfunction.hh
 
 SUBDIRS =
 
