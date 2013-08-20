@@ -145,42 +145,6 @@ FunctionHandle<typename FImp::Derivative> derivative(const FImp& f)
 }
 
 
-
-
-
-
-template<class DT, class RT>
-class InvalidFunction :
-    Dune::VirtualFunction<DT, RT>
-{
-        typedef typename Dune::VirtualFunction<DT, RT> Base;
-    public:
-        typedef typename Base::Range Range;
-        typedef typename Base::Domain Domain;
-        typedef typename Base::DerivativeRange DerivativeRange;
-        typedef InvalidFunction<DT, DerivativeRange> Derivative;
-
-        virtual void evaluate(const Domain& x, Range& y) const
-        {
-            throw 1;
-        }
-
-    protected:
-        virtual Derivative* derivative() const
-        {
-            throw 1;
-        }
-
-};
-
-
-
-/**
- * derivative(f).evaluate(x,y)
- * auto df = derivative(f);
- * auto dfp = derivative(f).shared_ptr();
- */
-
 } // end of namespace Dune::Functions
 } // end of namespace Dune
 
