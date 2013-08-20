@@ -1,6 +1,6 @@
 AC_PREREQ(2.50)
 DUNE_AC_INIT
-AM_INIT_AUTOMAKE([foreign 1.5])
+AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([dune/functions/functions.hh])
 AC_CONFIG_HEADERS([config.h])
 
