@@ -28,6 +28,8 @@ class LocalFunction
 
   virtual void bind(const LocalContext&) = 0;
 
+  virtual void unbind() = 0;
+
   virtual Derivative* derivative() = 0;
 
   virtual const LocalContext& localContext() = 0;
@@ -110,18 +112,35 @@ class DiscreteGridViewFunction
 {
 
   class ElementFunction
-    : public
+    : public typename Base::ElementFunction
   {
 
-    Eleemn
+    typedef typename Base::ElementFunction Base;
 
-    virtual void evaluate(const Element& e, const LocalDomain& coord, Range& r)
+    typedef typename Base::Domain Domain;
+
+    ElementFunction(shared_ptr<const DiscreteGridViewFunction> dgvf)
+      : dgvf_(dgvf)
+      , element_(nullptr)
+    {}
+
+    virtual void bind(const Element& element) DUNE_FINAL
     {
+      element_ = &element;
       lfs.bind(e);
       lfs_cache.update();
       x_view.bind(lfs_cache);
       x_view.read(xl);
       x_view.unbind();
+    }
+
+    virtual void unbind() DUNE_FINAL
+    {
+      element_ = nullptr;
+    }
+
+    virtual void evaluate(const Domain& coord, Range& r) DUNE_FINAL
+    {
       lfs.finiteElement().basis().evaluateFunction(coord,yb);
       r = 0;
       for (unsigned int i=0; i<yb.size(); i++)
@@ -130,11 +149,20 @@ class DiscreteGridViewFunction
         }
     }
 
+    virtual Element& element() const DUNE_FINAL
+    {
+#ifndef NDEBUG
+      if (!element_)
+        DUNE_THROW(InvalidStateException,"bla");
+#endif
+      return *element_;
+    }
+
   };
 
   virtual typename Base::ElementFunctionBasePointer elementFunction() const
   {
-    return make_shared<ElementFunction>(...);
+    return make_shared<ElementFunction>(this->make_shared_from_this());
   }
 
 };
