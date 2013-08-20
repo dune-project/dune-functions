@@ -72,6 +72,13 @@ class DifferentiableFunction :
          * shares the ownership of the derivative with the function itself.  That
          * way, the life time of a derivative can be extended beyond the life time of the
          * function it was derived from.
+         *
+         * If you are afraid of handling the C pointer yourself you can get the derivative object
+         * in a different way.  Call the free function
+         * template<class FImp> FunctionHandle<typename FImp::Derivative> derivative(const FImp& f)
+         * with f being the function you want to derive.  The return value FunctionHandle
+         * acts like a light-weight safe-pointer, and again allows you to obtain a std::shared_ptr
+         * to the derivative.
          */
         virtual Derivative* derivative() const = 0;
 
@@ -124,7 +131,13 @@ class FunctionHandle :
         const FImp* f_;
 };
 
-
+/** \brief Get the derivative of a DifferentiableFunction
+ *
+ * \tparam FImp A DifferentiableFunction, i.e., a function that has a derivative() method
+ *
+ * Using this methods avoids ever having to handle the C-style pointer that is returned
+ * by DifferentiableFunction::derivative.
+ */
 template<class FImp>
 FunctionHandle<typename FImp::Derivative> derivative(const FImp& f)
 {
