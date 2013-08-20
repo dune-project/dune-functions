@@ -23,6 +23,7 @@ stamp-h1
 dune-functions-*.tar.gz
 dune-functions-?.?
 ltmain.sh
+am
 .libs/
 .deps/
 *.la
