@@ -46,9 +46,11 @@ class DifferentiableFunction :
         typedef DifferentiableFunction<DomainType, DerivativeRangeType> DerivativeType;
 
     private:
-        friend FunctionHandle<DerivativeType> derivative(const DifferentiableFunction<DT, RT>&);
+        template<typename T>
+        friend FunctionHandle<typename T::DerivativeType> Dune::Functions::derivative(const T&);
 
     protected:
+    public:
 
         virtual DerivativeType* derivative() const = 0;
 
@@ -87,9 +89,11 @@ class FunctionHandle :
         }
 
     private:
-        friend FunctionHandle<DerivativeType> derivative(const FunctionHandle<DerivativeType>&);
+        template<typename T>
+        friend FunctionHandle<typename T::DerivativeType> Dune::Functions::derivative(const T&);
 
     protected:
+    public:
 
         virtual DerivativeType* derivative() const final
         {
