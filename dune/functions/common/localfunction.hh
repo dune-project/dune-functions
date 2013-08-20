@@ -1,7 +1,7 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_FUNCTIONS_COMMON_GRIDVIEWFUNCTION_HH
-#define DUNE_FUNCTIONS_COMMON_GRIDVIEWFUNCTION_HH
+#ifndef DUNE_FUNCTIONS_COMMON_LOCALFUNCTION_HH
+#define DUNE_FUNCTIONS_COMMON_LOCALFUNCTION_HH
 
 #include <memory>
 #include <dune/functions/common/differentiablefunction.hh>
@@ -55,4 +55,4 @@ shared_ptr<typename Function::ElementFunction> elementFunction(const Function& f
 } // end of namespace Dune::Functions
 } // end of namespace Dune
 
-#endif // DUNE_FUNCTIONS_COMMON_GRIDVIEWFUNCTION_HH
+#endif // DUNE_FUNCTIONS_COMMON_LOCALFUNCTION_HH
