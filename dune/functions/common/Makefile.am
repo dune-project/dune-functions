@@ -1,5 +1,5 @@
 commonincludedir = $(includedir)/dune/functions/common
-commoninclude_HEADERS =
+commoninclude_HEADERS = final.hh
 
 SUBDIRS = test
 

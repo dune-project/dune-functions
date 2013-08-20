@@ -6,7 +6,10 @@ dnl -*- autoconf -*-
 # Additional checks needed to build dune-functions
 # This macro should be invoked by every module which depends on dune-functions, as
 # well as by dune-functions itself
-AC_DEFUN([DUNE_FUNCTIONS_CHECKS])
+AC_DEFUN([DUNE_FUNCTIONS_CHECKS],
+[
+  AC_REQUIRE([DUNE_CHECKFINAL])
+])
 
 # Additional checks needed to find dune-functions
 # This macro should be invoked by every module which depends on dune-functions, but
