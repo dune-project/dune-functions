@@ -35,7 +35,15 @@ struct DerivativeTraits<double, double>
 };
 
 
-
+/** \brief Abstract base class for functions that allow to compute a derivative
+ *
+ * \tparam DT Type used for the independent variable (may be a vector type for functions of several variables)
+ * \tparam RT Type used for function values
+ *
+ * We view differentiation as a map between functions.  In other words, the derivative of a function
+ * is again a function.  The derivative function implements the same DifferentiableFunction base class,
+ * only the type for function values will have changed.
+ */
 template<class DT, class RT>
 class DifferentiableFunction :
     public Dune::VirtualFunction<DT, RT>,
@@ -48,13 +56,23 @@ class DifferentiableFunction :
 
         typedef DifferentiableFunction<Domain, DerivativeRange> Derivative;
 
-    private:
-  //template<typename T>
-  //    friend FunctionHandle<typename T::Derivative> ::Dune::Functions::derivative(const T&);
-
-    protected:
-    public:
-
+        /** \brief Get the derivative function
+         *
+         * ### Life time of the return value
+         *
+         * This method returns a simple C pointer to the derivative object.
+         * When using this pointer be aware of the following life time guarantees:
+         * A priori, each function holds ownership of its derivative function object.
+         * Therefore, when the function goes out of scope (or gets destroyed in some other way),
+         * then its derivative (and recursively the higher-order derivatives as well) gets
+         * destroyed as well.  However, DifferentiableFunction provides infrastructure for
+         * being reference counted (that is why it derives from std::enable_shared_from_this).
+         * In particular, on the return type of the function you can call the method
+         * shared_from_this() to obtain a std::shared_ptr<Derivative>.  This std::shared_ptr then
+         * shares the ownership of the derivative with the function itself.  That
+         * way, the life time of a derivative can be extended beyond the life time of the
+         * function it was derived from.
+         */
         virtual Derivative* derivative() const = 0;
 
 };
