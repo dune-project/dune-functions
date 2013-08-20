@@ -1,5 +1,7 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
+#ifndef DUNE_FUNCTIONS_COMMON_DIFFERENTIABLEFUNCTION_HH
+#define DUNE_FUNCTIONS_COMMON_DIFFERENTIABLEFUNCTION_HH
 #include <memory>
 #include <dune/common/function.hh>
 
@@ -147,5 +149,7 @@ class InvalidFunction :
  * auto dfp = derivative(f).shared_ptr();
  */
 
-} // end of namespace dune::functions
-} // end of namespace dune
+} // end of namespace Dune::Functions
+} // end of namespace Dune
+
+#endif // DUNE_FUNCTIONS_COMMON_DIFFERENTIABLEFUNCTION_HH
