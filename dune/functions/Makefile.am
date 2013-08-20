@@ -1,7 +1,7 @@
 functionsincludedir = $(includedir)/dune/functions
 functionsinclude_HEADERS = functions.hh
 
-SUBDIRS = test
+SUBDIRS = common test
 
 EXTRA_DIST = CMakeLists.txt
 

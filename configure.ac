@@ -19,6 +19,8 @@ AC_CONFIG_FILES([
   doc/doxygen/Doxyfile
   dune/Makefile
   dune/functions/Makefile
+  dune/functions/common/Makefile
+  dune/functions/common/test/Makefile
   dune/functions/test/Makefile
   m4/Makefile
   dune-functions.pc
