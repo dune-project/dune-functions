@@ -1,0 +1,10 @@
+################################
+# Dune module information file #
+################################
+
+#Name of the module
+Module: dune-functions
+Version: 2.3-dev
+Maintainer: dune-devel@dune-project.org
+#depending on 
+Depends: dune-localfunctions dune-grid
