@@ -21,14 +21,25 @@ public:
   : a_(a), b_(b), c_(c)
   {}
 
+  /** \brief Evaluate the function at a given point */
   void evaluate(const double& x, double& f) const
   {
     f = a_*x*x + b_*x + c_;
   }
 
+  /** \brief Get the function implementing the first derivative */
+  QuadraticPolynomial* derivative() const
+  {
+    if (not derivative_)
+      derivative_ = Dune::make_shared<QuadraticPolynomial>(0, 2*a_, b_);
+    return derivative_.get();
+  }
+
 private:
   // coefficients
   double a_, b_, c_;
+
+  shared_ptr<QuadraticPolynomial> derivative_;
 
 }
 
