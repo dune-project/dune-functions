@@ -50,10 +50,16 @@ class DifferentiableFunction :
     public std::enable_shared_from_this<DifferentiableFunction<DT, RT> >
 {
     public:
+        /** \brief Type used for the independent variable (may be a vector type for functions of several variables) */
         typedef DT Domain;
+
+        /** \brief Type used for function values
         typedef RT Range;
+
+        /** \brief Type of the values of the derivative function */
         typedef typename DerivativeTraits<DT, RT>::DerivativeRange DerivativeRange;
 
+        /** \brief Type of the derivative function */
         typedef DifferentiableFunction<Domain, DerivativeRange> Derivative;
 
         /** \brief Get the derivative function
