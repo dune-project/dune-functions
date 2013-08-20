@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_COMMON_DIFFERENTIABLEFUNCTION_HH
 #include <memory>
 #include <dune/common/function.hh>
+#include <dune/functions/common/final.hh>
 
 namespace Dune {
 
