@@ -1,6 +1,11 @@
-
+// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+// vi: set et ts=4 sw=2 sts=2:
 #include <memory>
 #include <dune/common/function.hh>
+
+namespace Dune {
+
+namespace Functions {
 
 
 
@@ -36,12 +41,12 @@ class DifferentiableFunction :
     public:
         typedef DT DomainType;
         typedef RT RangeType;
-        typedef typename DerivativeTraits<DT, RT>::Type DerivativeRangeType;
+        typedef typename DerivativeTraits<DT, RT>::DerivativeRangeType DerivativeRangeType;
 
         typedef DifferentiableFunction<DomainType, DerivativeRangeType> DerivativeType;
 
     private:
-        friend FunctionHandle<DerivativeType> derivative(const DifferentiableFunction&);
+        friend FunctionHandle<DerivativeType> derivative(const DifferentiableFunction<DT, RT>&);
 
     protected:
 
@@ -137,3 +142,6 @@ class InvalidFunction :
  * auto df = derivative(f);
  * auto dfp = derivative(f).shared_ptr();
  */
+
+} // end of namespace dune::functions
+} // end of namespace dune
