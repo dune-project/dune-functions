@@ -1,10 +1,5 @@
-################################
-# Dune module information file #
-################################
-
-#Name of the module
 Module: dune-functions
 Version: 2.3-dev
 Maintainer: dune-devel@dune-project.org
-#depending on 
-Depends: dune-localfunctions dune-grid
+Depends: dune-localfunctions (>= 2.3) dune-grid (>= 2.3)
+Whitespace-Hook: Yes
