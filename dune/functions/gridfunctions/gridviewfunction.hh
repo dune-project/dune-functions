@@ -5,6 +5,8 @@
 
 #include <memory>
 #include <dune/functions/common/differentiablefunction.hh>
+#include <dune/functions/common/localfunction.hh>
+
 
 namespace Dune {
 
@@ -28,6 +30,8 @@ class GridViewFunction
     RT
     > Base;
 
+public:
+
   typedef GV GridView;
   typedef typename Base::Domain Domain;
   typedef typename Base::Range Range;
@@ -38,11 +42,11 @@ class GridViewFunction
   typedef typename GV::template Codim<0>::Geometry::LocalCoordinate LocalDomain;
   typedef typename GV::template Codim<0>::Entity Element;
 
-  typedef LocalFunction<GridViewFunction,Element> ElementFunction;
+  typedef ::Dune::Functions::LocalFunction<GridViewFunction,Element> LocalFunction;
 
 protected:
 
-  typedef shared_ptr<ElementFunction> ElementFunctionBasePointer;
+  typedef shared_ptr<LocalFunction> LocalFunctionBasePointer;
 
 public:
 
@@ -61,7 +65,7 @@ public:
    * Rationale: if you want to evaluate the function at many points in the same element
    * this approach is more efficient.
    */
-  virtual ElementFunctionBasePointer elementFunction() const = 0;
+  virtual LocalFunctionBasePointer localFunction() const = 0;
 
   /** \brief Access to the derivative function
    *

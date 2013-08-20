@@ -3,6 +3,8 @@
 #ifndef DUNE_FUNCTIONS_COMMON_DIFFERENTIABLEFUNCTION_HH
 #define DUNE_FUNCTIONS_COMMON_DIFFERENTIABLEFUNCTION_HH
 #include <memory>
+#include <dune/common/fvector.hh>
+#include <dune/common/fmatrix.hh>
 #include <dune/common/function.hh>
 #include <dune/functions/common/final.hh>
 
@@ -34,6 +36,12 @@ struct DerivativeTraits<double, double>
     typedef double DerivativeRange;
 };
 
+template<typename F, int n, int m>
+struct DerivativeTraits<FieldVector<F,n>,FieldVector<F,m> >
+{
+  typedef FieldMatrix<F,n,m> DerivativeRange;
+};
+
 
 /** \brief Abstract base class for functions that allow to compute a derivative
  *
@@ -53,7 +61,7 @@ class DifferentiableFunction :
         /** \brief Type used for the independent variable (may be a vector type for functions of several variables) */
         typedef DT Domain;
 
-        /** \brief Type used for function values
+        /** \brief Type used for function values */
         typedef RT Range;
 
         /** \brief Type of the values of the derivative function */
