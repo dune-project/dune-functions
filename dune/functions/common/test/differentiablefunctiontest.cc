@@ -66,11 +66,17 @@ try
   derivative.evaluate(5, df);
   std::cout << "Derivative at x=5: " << df << std::endl;
 
-  // Test whether I can evaluate the first derivative
+  // Test whether I can evaluate the second derivative
   auto secondDerivative = Dune::Functions::derivative(derivative);
   double ddf;
   secondDerivative.evaluate(5, ddf);
   std::cout << "Second derivative at x=5: " << ddf << std::endl;
+
+  // Test whether I can evaluate the third derivative
+  auto thirdDerivative = Dune::Functions::derivative(secondDerivative);
+  double dddf;
+  thirdDerivative.evaluate(5, dddf);
+  std::cout << "Second derivative at x=5: " << dddf << std::endl;
 
   return 0;
 }
