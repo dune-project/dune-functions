@@ -1,21 +1,61 @@
+// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+// vi: set et ts=4 sw=2 sts=2:
 #include <config.h>
 
 #include <iostream>
 
 #include <dune/common/exceptions.hh>
-#include <dune/common/parallel/mpihelper.hh>
+
+#include <dune/functions/common/differentiablefunction.hh>
+
+
+class QuadraticPolynomial
+: public Dune::Functions::DifferentiableFunction<double,double>
+{
+public:
+
+  /** \brief Constructor
+   * \param a,b,c Coefficients with respect to the monomial basis
+   */
+  QuadraticPolynomial(double a, double b, double c)
+  : a_(a), b_(b), c_(c)
+  {}
+
+  void evaluate(const double& x, double& f) const
+  {
+    f = a_*x*x + b_*x + c_;
+  }
+
+private:
+  // coefficients
+  double a_, b_, c_;
+
+}
+
+
 
 int main ( int argc, char **argv )
 try
 {
-  Dune::MPIHelper &helper = Dune::MPIHelper::instance( argc, argv );
-  std::cout << "Hello World! This is dune-functions." << std::endl;
+  QuadraticPolynomial testFunction(1,1,1);
 
-  if( Dune::MPIHelper::isFake )
-    std::cout<< "This is a sequential program." << std::endl;
-  else
-    std::cout << "I am rank " << helper.rank() << " of " << helper.size()
-              << " processes!" << std::endl;
+  // Test whether I can evaluate the function somewhere
+  double f;
+  testFunction.evaluate(5, f);
+  std::cout << "Function value at x=5: " << f << std::endl;
+
+  // Test whether I can evaluate the first derivative
+  auto derivative = Dune::Functions::derivative(testFunction);
+  double df;
+  derivative.evaluate(5, df)
+  std::cout << "Derivative at x=5: " << df << std::endl;
+
+  // Test whether I can evaluate the first derivative
+  auto secondDerivative = Dune::Functions::derivative(derivative);
+  double ddf;
+  secondDerivative.evaluate(5, ddf)
+  std::cout << "Second derivative at x=5: " << ddf << std::endl;
+
   return 0;
 }
 catch( Dune::Exception &e )
