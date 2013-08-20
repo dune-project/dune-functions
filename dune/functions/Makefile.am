@@ -1,5 +1,4 @@
 functionsincludedir = $(includedir)/dune/functions
-functionsinclude_HEADERS = functions.hh
 
 SUBDIRS = common test
 
