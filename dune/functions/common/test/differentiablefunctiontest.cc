@@ -3,7 +3,9 @@
 #include <config.h>
 
 #include <iostream>
+#include <memory>
 
+#include <dune/common/shared_ptr.hh>
 #include <dune/common/exceptions.hh>
 
 #include <dune/functions/common/differentiablefunction.hh>
@@ -39,9 +41,9 @@ private:
   // coefficients
   double a_, b_, c_;
 
-  shared_ptr<QuadraticPolynomial> derivative_;
+  mutable Dune::shared_ptr<QuadraticPolynomial> derivative_;
 
-}
+};
 
 
 
@@ -58,13 +60,13 @@ try
   // Test whether I can evaluate the first derivative
   auto derivative = Dune::Functions::derivative(testFunction);
   double df;
-  derivative.evaluate(5, df)
+  derivative.evaluate(5, df);
   std::cout << "Derivative at x=5: " << df << std::endl;
 
   // Test whether I can evaluate the first derivative
   auto secondDerivative = Dune::Functions::derivative(derivative);
   double ddf;
-  secondDerivative.evaluate(5, ddf)
+  secondDerivative.evaluate(5, ddf);
   std::cout << "Second derivative at x=5: " << ddf << std::endl;
 
   return 0;
