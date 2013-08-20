@@ -24,13 +24,13 @@ class InvalidRange
 template<class DT, class RT>
 struct DerivativeTraits
 {
-    typedef InvalidRange DerivativeRangeType;
+    typedef InvalidRange DerivativeRange;
 };
 
 template<>
 struct DerivativeTraits<double, double>
 {
-    typedef double DerivativeRangeType;
+    typedef double DerivativeRange;
 };
 
 
@@ -41,38 +41,38 @@ class DifferentiableFunction :
     public std::enable_shared_from_this<DifferentiableFunction<DT, RT> >
 {
     public:
-        typedef DT DomainType;
-        typedef RT RangeType;
-        typedef typename DerivativeTraits<DT, RT>::DerivativeRangeType DerivativeRangeType;
+        typedef DT Domain;
+        typedef RT Range;
+        typedef typename DerivativeTraits<DT, RT>::DerivativeRange DerivativeRange;
 
-        typedef DifferentiableFunction<DomainType, DerivativeRangeType> DerivativeType;
+        typedef DifferentiableFunction<Domain, DerivativeRange> Derivative;
 
     private:
-        template<typename T>
-        friend FunctionHandle<typename T::DerivativeType> Dune::Functions::derivative(const T&);
+  //template<typename T>
+  //    friend FunctionHandle<typename T::Derivative> ::Dune::Functions::derivative(const T&);
 
     protected:
     public:
 
-        virtual DerivativeType* derivative() const = 0;
+        virtual Derivative* derivative() const = 0;
 
 };
 
 
 template<class FImp>
 class FunctionHandle :
-    public DifferentiableFunction<typename FImp::DomainType, typename FImp::RangeType>
+    public DifferentiableFunction<typename FImp::Domain, typename FImp::Range>
 {
-        typedef DifferentiableFunction<typename FImp::DomainType, typename FImp::RangeType> Base;
+        typedef DifferentiableFunction<typename FImp::Domain, typename FImp::Range> Base;
     public:
-        typedef typename Base::RangeType RangeType;
-        typedef typename Base::DomainType DomainType;
-        typedef typename Base::DerivativeRangeType DerivativeRangeType;
+        typedef typename Base::Range Range;
+        typedef typename Base::Domain Domain;
+        typedef typename Base::DerivativeRange DerivativeRange;
 
-        typedef typename FImp::DerivativeType DerivativeType;
+        typedef typename FImp::Derivative Derivative;
 
         // to be dicussed
-        typedef FImp HandledFunctionType;
+        typedef FImp HandledFunction;
         typedef typename std::shared_ptr<const FImp> SharedPtr;
 
         explicit FunctionHandle(const FImp* f) :
@@ -80,7 +80,7 @@ class FunctionHandle :
         {}
 
 
-        virtual void evaluate(const DomainType& x, RangeType& y) const final
+        virtual void evaluate(const Domain& x, Range& y) const final
         {
             f_->evaluate(x, y);
         }
@@ -91,13 +91,13 @@ class FunctionHandle :
         }
 
     private:
-        template<typename T>
-        friend FunctionHandle<typename T::DerivativeType> Dune::Functions::derivative(const T&);
+  // template<typename T>
+  //    friend FunctionHandle<typename T::Derivative> ::Dune::Functions::derivative(const T&);
 
     protected:
     public:
 
-        virtual DerivativeType* derivative() const final
+        virtual Derivative* derivative() const final
         {
             return f_->derivative();
         }
@@ -107,9 +107,9 @@ class FunctionHandle :
 
 
 template<class FImp>
-FunctionHandle<typename FImp::DerivativeType> derivative(const FImp& f)
+FunctionHandle<typename FImp::Derivative> derivative(const FImp& f)
 {
-    return FunctionHandle<typename FImp::DerivativeType>(f.derivative());
+    return FunctionHandle<typename FImp::Derivative>(f.derivative());
 }
 
 
@@ -123,18 +123,18 @@ class InvalidFunction :
 {
         typedef typename Dune::VirtualFunction<DT, RT> Base;
     public:
-        typedef typename Base::RangeType RangeType;
-        typedef typename Base::DomainType DomainType;
-        typedef typename Base::DerivativeRangeType DerivativeRangeType;
-        typedef InvalidFunction<DT, DerivativeRangeType> DerivativeType;
+        typedef typename Base::Range Range;
+        typedef typename Base::Domain Domain;
+        typedef typename Base::DerivativeRange DerivativeRange;
+        typedef InvalidFunction<DT, DerivativeRange> Derivative;
 
-        virtual void evaluate(const DomainType& x, RangeType& y) const
+        virtual void evaluate(const Domain& x, Range& y) const
         {
             throw 1;
         }
 
     protected:
-        virtual DerivativeType* derivative() const
+        virtual Derivative* derivative() const
         {
             throw 1;
         }

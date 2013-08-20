@@ -22,20 +22,20 @@ class GridViewFunction
     RT
     > Base;
 
-  typedef GV GridViewType;
-  typedef typename Base::DomainType DomainType;
-  typedef typename Base::RangeType RangeType;
-  typedef typename Base::DerivativeRangeType DerivativeRangeType;
+  typedef GV GridView;
+  typedef typename Base::Domain Domain;
+  typedef typename Base::Range Range;
+  typedef typename Base::DerivativeRange DerivativeRange;
 
-  typedef GridViewFunction<GV,DerivativeRangeType> DerivativeType;
+  typedef GridViewFunction<GV,DerivativeRange> Derivative;
 
 
-  typedef typename GV::template Codim<0>::Geometry::LocalCoordinate LocalDomainType;
-  typedef typename GV::template Codim<0>::Entity ElementType;
+  typedef typename GV::template Codim<0>::Geometry::LocalCoordinate LocalDomain;
+  typedef typename GV::template Codim<0>::Entity Element;
 
-  virtual void evaluate(const ElementType& e, const LocalDomainType& coord, RangeType& r) const = 0;
+  virtual void evaluate(const Element& e, const LocalDomain& coord, Range& r) const = 0;
 
-  virtual DerivativeType* derivative() const = 0;
+  virtual Derivative* derivative() const = 0;
 
 };
 

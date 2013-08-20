@@ -17,7 +17,7 @@ class QuadraticPolynomial
 public:
 
   // Important: Explicitly export exact derivative type
-  typedef QuadraticPolynomial DerivativeType;
+  typedef QuadraticPolynomial Derivative;
 
   /** \brief Constructor
    * \param a,b,c Coefficients with respect to the monomial basis
