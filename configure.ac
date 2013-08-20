@@ -1,7 +1,6 @@
 AC_PREREQ(2.50)
 DUNE_AC_INIT
-AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([dune/functions/functions.hh])
+AC_CONFIG_SRCDIR([dune/functions/common/differentiablefunction.hh])
 AC_CONFIG_HEADERS([config.h])
 
 DUNE_CHECK_ALL

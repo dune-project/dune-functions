@@ -13,5 +13,5 @@ AC_DEFUN([DUNE_FUNCTIONS_CHECKS])
 # not by dune-functions itself
 AC_DEFUN([DUNE_FUNCTIONS_CHECK_MODULE],
 [
-  DUNE_CHECK_MODULES([dune-functions],[functions/functions.hh])
+  DUNE_CHECK_MODULES([dune-functions],[functions/common/differentiablefunction.hh])
 ])
