@@ -80,7 +80,7 @@ class FunctionHandle :
         {}
 
 
-        virtual void evaluate(const Domain& x, Range& y) const final
+        virtual void evaluate(const Domain& x, Range& y) const DUNE_FINAL
         {
             f_->evaluate(x, y);
         }
@@ -97,7 +97,7 @@ class FunctionHandle :
     protected:
     public:
 
-        virtual Derivative* derivative() const final
+        virtual Derivative* derivative() const DUNE_FINAL
         {
             return f_->derivative();
         }
