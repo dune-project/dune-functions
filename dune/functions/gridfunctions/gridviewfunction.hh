@@ -10,6 +10,14 @@ namespace Dune {
 
 namespace Functions {
 
+/** \brief Abstract base class for functions defined on a GridView
+ *
+ * Being defined on a grid view means in particular that you can evaluate the function
+ * in local coordinates of a given element of the grid view.
+ *
+ * \tparam GV The GridView that the function is defined on
+ * \tparam RT The type used for function values
+ */
 template<typename GV, typename RT>
 class GridViewFunction
   : public DifferentiableFunction<typename GV::template Codim<0>::Geometry::GlobalCoordinate,RT>
@@ -38,20 +46,35 @@ protected:
 
 public:
 
+  /** \brief Construction from a given grid view */
+  GridViewFunction(const GridView& gv)
+    : gv_(gv)
+  {}
+
+  /** \brief Access to the function on a single element, in coordinates of that element
+   *
+   * To evaluate the function on a single element you have to get a local function for
+   * this element.  You can do this by calling this function and then binding the
+   * local function to a given element.  Then the local function can be evaluated
+   * at given points.
+   *
+   * Rationale: if you want to evaluate the function at many points in the same element
+   * this approach is more efficient.
+   */
   virtual ElementFunctionBasePointer elementFunction() const = 0;
 
-  // virtual void evaluate(const Element& e, const LocalDomain& coord, Range& r) const
-
+  /** \brief Access to the derivative function
+   *
+   * We pretend that the function is differentiable everywhere, even though this will
+   * usually only be true in the interiors of the elements.
+   */
   virtual Derivative* derivative() const = 0;
 
+  /** \brief Const access to the grid view that the function is defined on */
   const GridView& gridView()
   {
     return gv_;
   }
-
-  GridViewFunction(const GridView& gv)
-    : gv_(gv)
-  {}
 
 private:
 
