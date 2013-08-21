@@ -11,74 +11,157 @@
 #include <dune/functions/common/differentiablefunction.hh>
 
 
-class QuadraticPolynomial
-: public Dune::Functions::DifferentiableFunction<double,double>
+// Check if interface compiles and is implementable by a simple dummy
+struct DifferentiableFunctionImplementableTest
 {
-public:
 
-  // Important: Explicitly export exact derivative type
-  typedef QuadraticPolynomial Derivative;
-
-  /** \brief Constructor
-   * \param a,b,c Coefficients with respect to the monomial basis
-   */
-  QuadraticPolynomial(double a, double b, double c)
-  : a_(a), b_(b), c_(c)
-  {}
-
-  /** \brief Evaluate the function at a given point */
-  void evaluate(const double& x, double& f) const
+  class QuadraticPolynomial
+  : public Dune::Functions::DifferentiableFunction<double,double>
   {
-    f = a_*x*x + b_*x + c_;
-  }
+  public:
 
-  /** \brief Get the function implementing the first derivative */
-  QuadraticPolynomial* derivative() const
+    // Important: Explicitly export exact derivative type
+    typedef QuadraticPolynomial Derivative;
+
+    /** \brief Constructor
+     * \param a,b,c Coefficients with respect to the monomial basis
+     */
+    QuadraticPolynomial(double a, double b, double c)
+    : a_(a), b_(b), c_(c)
+    {}
+
+    /** \brief Evaluate the function at a given point */
+    void evaluate(const double& x, double& f) const
+    {
+      f = a_*x*x + b_*x + c_;
+    }
+
+    /** \brief Get the function implementing the first derivative */
+    QuadraticPolynomial* derivative() const
+    {
+      if (not derivative_)
+        derivative_ = Dune::make_shared<QuadraticPolynomial>(0, 2*a_, b_);
+      return derivative_.get();
+    }
+
+  private:
+    // coefficients
+    double a_, b_, c_;
+
+    mutable Dune::shared_ptr<QuadraticPolynomial> derivative_;
+
+  };
+
+  static bool check()
   {
-    if (not derivative_)
-      derivative_ = Dune::make_shared<QuadraticPolynomial>(0, 2*a_, b_);
-    return derivative_.get();
+    QuadraticPolynomial testFunction(1,1,1);
+
+    // Test whether I can evaluate the function somewhere
+    double f;
+    testFunction.evaluate(5, f);
+    std::cout << "Function value at x=5: " << f << std::endl;
+
+    // Test whether I can evaluate the first derivative
+    auto derivative = Dune::Functions::derivative(testFunction);
+    double df;
+    derivative.evaluate(5, df);
+    std::cout << "Derivative at x=5: " << df << std::endl;
+
+    // Test whether I can evaluate the second derivative
+    auto secondDerivative = Dune::Functions::derivative(derivative);
+    double ddf;
+    secondDerivative.evaluate(5, ddf);
+    std::cout << "Second derivative at x=5: " << ddf << std::endl;
+
+    // Test whether I can evaluate the third derivative
+    auto thirdDerivative = Dune::Functions::derivative(secondDerivative);
+    double dddf;
+    thirdDerivative.evaluate(5, dddf);
+    std::cout << "Second derivative at x=5: " << dddf << std::endl;
+
+    return true;
   }
+};
 
-private:
-  // coefficients
-  double a_, b_, c_;
 
-  mutable Dune::shared_ptr<QuadraticPolynomial> derivative_;
+
+// Check if recursive DerivativeRange definition terminates
+// after at most maxRecursionLevel=k derivatives, i.e. if
+// the type of the k-th and (k+1)-nd derivative is the same.
+template<class D, class R, int maxRecursionLevel>
+struct DerivativeRangeTerminationTest
+{
+
+  template<class DR, int recursionLevel>
+  struct TerminationTest
+  {
+    static int level()
+    {
+      std::cout << "Type of " << recursionLevel << "-th derivative is " << Dune::className<DR>() << std::endl;
+      typedef typename Dune::Functions::DerivativeTraits<D, DR>::DerivativeRange DDR;
+      int upperBound = TerminationTest<DDR, recursionLevel+1>::level();
+      if (Dune::is_same<DR, DDR>::value)
+        return recursionLevel;
+      else
+        return upperBound;
+    }
+  };
+
+  template<class DR>
+  struct TerminationTest<DR, maxRecursionLevel>
+  {
+    static int level()
+    {
+      std::cout << "Type of " << maxRecursionLevel << "-th derivative is " << Dune::className<DR>() << std::endl;
+      typedef typename Dune::Functions::DerivativeTraits<D, DR>::DerivativeRange DDR;
+      if (Dune::is_same<DR, DDR>::value)
+        return maxRecursionLevel;
+      else
+        return maxRecursionLevel+1;
+    }
+  };
+
+  static bool check()
+  {
+    std::cout << "Checking recursion for Domain=" << Dune::className<D>() << " and Range=" << Dune::className<R>() << std::endl;
+    int terminationLevel = TerminationTest<R, 0>::level();
+    if (terminationLevel <= maxRecursionLevel)
+    {
+      std::cout << "Recursion terminated after " << terminationLevel << "-th derivative" << std::endl;
+      return true;
+    }
+    else
+    {
+      std::cout << "Recursion did not terminated after given maxRecursionLevel " << maxRecursionLevel;
+      return false;
+    }
+  }
 
 };
+
+
 
 
 
 int main ( int argc, char **argv )
 try
 {
-  QuadraticPolynomial testFunction(1,1,1);
+  bool passed = true;
 
-  // Test whether I can evaluate the function somewhere
-  double f;
-  testFunction.evaluate(5, f);
-  std::cout << "Function value at x=5: " << f << std::endl;
+  passed = passed and DifferentiableFunctionImplementableTest::check();
 
-  // Test whether I can evaluate the first derivative
-  auto derivative = Dune::Functions::derivative(testFunction);
-  double df;
-  derivative.evaluate(5, df);
-  std::cout << "Derivative at x=5: " << df << std::endl;
+  passed = passed and DerivativeRangeTerminationTest<double, double, 5>::check();
 
-  // Test whether I can evaluate the second derivative
-  auto secondDerivative = Dune::Functions::derivative(derivative);
-  double ddf;
-  secondDerivative.evaluate(5, ddf);
-  std::cout << "Second derivative at x=5: " << ddf << std::endl;
+  passed = passed and DerivativeRangeTerminationTest<Dune::FieldVector<double, 3> , Dune::FieldVector<double, 1>, 5 >::check();
 
-  // Test whether I can evaluate the third derivative
-  auto thirdDerivative = Dune::Functions::derivative(secondDerivative);
-  double dddf;
-  thirdDerivative.evaluate(5, dddf);
-  std::cout << "Second derivative at x=5: " << dddf << std::endl;
+  passed = passed and DerivativeRangeTerminationTest<Dune::FieldVector<double, 1> , Dune::FieldVector<double, 1>, 5 >::check();
 
-  return 0;
+
+  if (passed)
+    std::cout << "All tests passed" << std::endl;
+
+
+  return passed ? 0: 1;
 }
 catch( Dune::Exception &e )
 {
