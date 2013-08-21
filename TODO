@@ -11,6 +11,15 @@ or one more letter if needed.
 
 
 
+# DifferentiableFunction interface
+* CaG: Should the derivative type for a Function<FV<T,n>, FM<T,m,1> >
+  mapping a vector FV<T,n> to a single columns matrix FM<T,m,1>
+  be the FM<T,n,m> ? If yes we would have second derivatives
+  for functions mapping FV<T,n> to FV<T,1>.
+
+
+
+
 # EntitySet interface
 * CaG: It seems that the EntitySet concept and GridViewEntitySet are
   candidates for dune-grid.
