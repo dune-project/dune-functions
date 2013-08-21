@@ -96,6 +96,55 @@ class DifferentiableFunction :
          */
         virtual Derivative* derivative() const = 0;
 
+
+        /** \brief Get a shared_ptr to this object to obtain shared ownership.
+         *
+         * \warning The semantics of this method are slightly different from the default version
+         *          in the C++ standard. Notably, the standard version of shared_from_this() throws
+         *          an exception of type std::bad_weak_ptr if no shared_ptr has been attached to the
+         *          object. In contrast, this implementation will switch to non-managed mode if you
+         *          call shared_from_this() without an attached shared_ptr. This change makes it
+         *          possible to call shared_from_this() on stack-allocated objects.
+         */
+        shared_ptr<DifferentiableFunction> shared_from_this()
+        {
+          try
+            {
+              return std::enable_shared_from_this<DifferentiableFunction<DT, RT> >::shared_from_this();
+            }
+          catch (std::bad_weak_ptr&)
+            {
+              _local_ptr = stackobject_to_shared_ptr(*this);
+              return _local_ptr;
+            }
+        }
+
+        /** \brief Get a shared_ptr to this object to obtain shared ownership.
+         *
+         * \warning The semantics of this method are slightly different from the default version
+         *          in the C++ standard. Notably, the standard version of shared_from_this() throws
+         *          an exception of type std::bad_weak_ptr if no shared_ptr has been attached to the
+         *          object. In contrast, this implementation will switch to non-managed mode if you
+         *          call shared_from_this() without an attached shared_ptr. This change makes it
+         *          possible to call shared_from_this() on stack-allocated objects.
+         */
+        shared_ptr<const DifferentiableFunction> shared_from_this() const
+        {
+          try
+            {
+              return std::enable_shared_from_this<DifferentiableFunction<DT, RT> >::shared_from_this();
+            }
+          catch (std::bad_weak_ptr&)
+            {
+              _local_ptr = stackobject_to_shared_ptr(*const_cast<DifferentiableFunction*>(this));
+              return _local_ptr;
+            }
+        }
+
+
+private:
+
+  mutable shared_ptr<DifferentiableFunction> _local_ptr;
 };
 
 
