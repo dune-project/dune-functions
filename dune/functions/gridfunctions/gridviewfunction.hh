@@ -6,6 +6,8 @@
 #include <memory>
 #include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/common/localfunction.hh>
+#include <dune/functions/gridfunctions/gridfunction.hh>
+#include <dune/functions/gridfunctions/gridviewentityset.hh>
 
 
 namespace Dune {
@@ -22,13 +24,10 @@ namespace Functions {
  */
 template<typename GV, typename RT>
 class GridViewFunction
-  : public DifferentiableFunction<typename GV::template Codim<0>::Geometry::GlobalCoordinate,RT>
+  : public GridFunction<GridViewEntitySet<GV, 0>, RT>
 {
 
-  typedef DifferentiableFunction<
-    typename GV::template Codim<0>::Geometry::GlobalCoordinate,
-    RT
-    > Base;
+  typedef GridFunction<GridViewEntitySet<GV, 0>, RT> Base;
 
 public:
 
@@ -36,13 +35,13 @@ public:
   typedef typename Base::Domain Domain;
   typedef typename Base::Range Range;
   typedef typename Base::DerivativeRange DerivativeRange;
+  typedef typename Base::LocalDomain LocalDomain;
+  typedef typename Base::Element Element;
+  typedef typename Base::EntitySet EntitySet;
 
   typedef GridViewFunction<GV,DerivativeRange> Derivative;
 
-  typedef typename GV::template Codim<0>::Geometry::LocalCoordinate LocalDomain;
-  typedef typename GV::template Codim<0>::Entity Element;
-
-  typedef ::Dune::Functions::LocalFunction<GridViewFunction,Element> LocalFunction;
+  typedef typename ::Dune::Functions::LocalFunction<Base,Element> LocalFunction;
 
 protected:
 
@@ -52,7 +51,7 @@ public:
 
   /** \brief Construction from a given grid view */
   GridViewFunction(const GridView& gv)
-    : gv_(gv)
+    : Base(EntitySet(gv))
   {}
 
   /** \brief Access to the function on a single element, in coordinates of that element
@@ -75,14 +74,12 @@ public:
   virtual Derivative* derivative() const = 0;
 
   /** \brief Const access to the grid view that the function is defined on */
-  const GridView& gridView()
+  const GridView& gridView() const
   {
-    return gv_;
+    return this->entitySet().gridView();
   }
 
 private:
-
-  GridView gv_;
 
 };
 
@@ -90,4 +87,4 @@ private:
 } // end of namespace Dune::Functions
 } // end of namespace Dune
 
-#endif // DUNE_FUNCTIONS_COMMON_GRIDVIEWFUNCTION_HH
+#endif // DUNE_FUNCTIONS_GRIDFUNCTIONS_GRIDVIEWFUNCTION_HH
