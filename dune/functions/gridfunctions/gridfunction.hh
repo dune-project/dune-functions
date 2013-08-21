@@ -61,27 +61,27 @@ class IterableEntitySet :
  * in local coordinates of a given element contained in this subset. The given type EntitySet
  * is required to allow cheap copies and to implement the interface of EntitySet.
  *
- * \tparam GV Implementation of an EntitySet.
+ * \tparam ES Implementation of an EntitySet.
  * \tparam RT The type used for function values
  */
-template<typename GV, typename RT>
+template<typename ES, typename RT>
 class GridFunction
-  : public DifferentiableFunction<typename GV::GlobalCoordinate,RT>
+  : public DifferentiableFunction<typename ES::GlobalCoordinate,RT>
 {
 
-  typedef DifferentiableFunction<typename GV::GlobalCoordinate, RT> Base;
+  typedef DifferentiableFunction<typename ES::GlobalCoordinate, RT> Base;
 
 public:
 
-  typedef GV EntitySet;
+  typedef ES EntitySet;
   typedef typename Base::Domain Domain;
   typedef typename Base::Range Range;
   typedef typename Base::DerivativeRange DerivativeRange;
 
-  typedef GridFunction<GV,DerivativeRange> Derivative;
+  typedef GridFunction<ES,DerivativeRange> Derivative;
 
-  typedef typename GV::LocalCoordinate LocalDomain;
-  typedef typename GV::Element Element;
+  typedef typename ES::LocalCoordinate LocalDomain;
+  typedef typename ES::Element Element;
 
   typedef ::Dune::Functions::LocalFunction<GridFunction,Element> LocalFunction;
 
