@@ -52,7 +52,7 @@ template<typename Function>
 shared_ptr<typename Function::LocalFunction> localFunction(const Function& f, const typename Function::Element& e)
 {
   auto p = std::static_pointer_cast<typename Function::LocalFunction>(f.localFunction());
-  p.bind(e);
+  p->bind(e);
   return std::move(p);
 }
 
