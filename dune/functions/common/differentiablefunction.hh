@@ -42,6 +42,13 @@ struct DerivativeTraits<FieldVector<F,n>,FieldVector<F,m> >
   typedef FieldMatrix<F,n,m> DerivativeRange;
 };
 
+template<typename F, int n, int m>
+struct DerivativeTraits<FieldVector<F,n>,FieldMatrix<F,m,1> >
+{
+  typedef FieldMatrix<F,n,m> DerivativeRange;
+};
+
+
 
 /** \brief Abstract base class for functions that allow to compute a derivative
  *
