@@ -171,6 +171,13 @@ class FunctionHandle :
         typedef FImp HandledFunction;
         typedef typename std::shared_ptr<const FImp> SharedPtr;
 
+        /**
+         * \brief Construct FunctionHandle from pointer to function.
+         *
+         * The FunctionHandle does not take ownership of this
+         * pointer. So its life time has to be controlled
+         * outside.
+         */
         explicit FunctionHandle(const FImp* f) :
             f_(f)
         {}
