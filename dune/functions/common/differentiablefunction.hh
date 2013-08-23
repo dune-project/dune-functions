@@ -183,7 +183,7 @@ class FunctionHandle :
 
         std::shared_ptr<const FImp> shared_ptr() const
         {
-            return f_->shared_from_this();
+            return std::static_pointer_cast<const FImp>(f_->shared_from_this());
         }
 
     private:
