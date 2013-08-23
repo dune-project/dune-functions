@@ -4,11 +4,13 @@
 
 #include <iostream>
 #include <memory>
+//#include <functional>
 
 #include <dune/common/shared_ptr.hh>
 #include <dune/common/exceptions.hh>
 
 #include <dune/functions/common/differentiablefunction.hh>
+#include <dune/functions/common/callable.hh>
 
 
 // Check if interface compiles and is implementable by a simple dummy
@@ -101,6 +103,29 @@ struct DifferentiableFunctionImplementableTest
     auto persistentThirdDerivative = thirdDerivative.shared_ptr();
     persistentThirdDerivative->evaluate(5, dddf);
     std::cout << "Third derivative at x=5: " << dddf << std::endl;
+
+
+
+    std::cout << std::endl << "Check calling function and derivatives through Callable wrapper" << std::endl;
+
+    auto callableF = Dune::Functions::callable(testFunction);
+    std::cout << "Function value at x=5: " << callableF(5) << std::endl;
+
+    auto callableDF = Dune::Functions::callable(Dune::Functions::derivative(testFunction));
+    std::cout << "Derivative at x=5: " << callableDF(5) << std::endl;
+
+    auto callableDDF = Dune::Functions::callable(Dune::Functions::derivative(Dune::Functions::derivative(testFunction)));
+    std::cout << "Second derivative at x=5: " << callableDDF(5) << std::endl;
+
+
+
+//    std::cout << std::endl << "Check calling function and derivatives through std::function" << std::endl;
+
+//    std::function<double(double)> stdF = Dune::Functions::callable(testFunction);
+//    std::cout << "Function value at x=5: " << stdF(5) << std::endl;
+
+//    std::function<double(double)> stdDF = Dune::Functions::callable(Dune::Functions::derivative(testFunction));
+//    std::cout << "Derivative at x=5: " << stdDF(5) << std::endl;
 
     return true;
   }
