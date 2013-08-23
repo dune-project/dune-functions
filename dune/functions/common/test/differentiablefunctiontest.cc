@@ -67,16 +67,26 @@ struct DifferentiableFunctionImplementableTest
     derivative.evaluate(5, df);
     std::cout << "Derivative at x=5: " << df << std::endl;
 
-    // Test whether I can evaluate the second derivative
+    // Test whether I can evaluate the second derivative through FunctionHandle
     auto secondDerivative = Dune::Functions::derivative(derivative);
     double ddf;
     secondDerivative.evaluate(5, ddf);
     std::cout << "Second derivative at x=5: " << ddf << std::endl;
 
-    // Test whether I can evaluate the third derivative
+    // Test whether I can evaluate the third derivative through FunctionHandle
     auto thirdDerivative = Dune::Functions::derivative(secondDerivative);
     double dddf;
     thirdDerivative.evaluate(5, dddf);
+    std::cout << "Second derivative at x=5: " << dddf << std::endl;
+
+    // Test whether I can evaluate the second derivative through shared_ptr
+    auto persistentSecondDerivative = secondDerivative.shared_ptr();
+    persistentSecondDerivative->evaluate(5, ddf);
+    std::cout << "Second derivative at x=5: " << ddf << std::endl;
+
+    // Test whether I can evaluate the third derivative through shared_ptr
+    auto persistentThirdDerivative = thirdDerivative.shared_ptr();
+    persistentThirdDerivative->evaluate(5, dddf);
     std::cout << "Second derivative at x=5: " << dddf << std::endl;
 
     return true;
