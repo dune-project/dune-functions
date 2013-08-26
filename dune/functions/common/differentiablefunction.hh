@@ -6,6 +6,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/fmatrix.hh>
 #include <dune/common/function.hh>
+#include <dune/common/shared_ptr.hh>
 #include <dune/functions/common/final.hh>
 
 namespace Dune {
@@ -171,6 +172,13 @@ class FunctionHandle :
         typedef FImp HandledFunction;
         typedef typename std::shared_ptr<const FImp> SharedPtr;
 
+        /**
+         * \brief Construct FunctionHandle from pointer to function.
+         *
+         * The FunctionHandle does not take ownership of this
+         * pointer. So its life time has to be controlled
+         * outside.
+         */
         explicit FunctionHandle(const FImp* f) :
             f_(f)
         {}

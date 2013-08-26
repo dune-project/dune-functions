@@ -91,7 +91,7 @@ protected:
 
 public:
 
-  /** \brief Construction from a given EnitySet */
+  /** \brief Construction from a given EntitySet */
   GridFunction(const EntitySet& es)
     : es_(es)
   {}
