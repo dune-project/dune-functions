@@ -6,6 +6,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/fmatrix.hh>
 #include <dune/common/function.hh>
+#include <dune/common/shared_ptr.hh>
 #include <dune/functions/common/final.hh>
 
 namespace Dune {
