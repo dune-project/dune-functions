@@ -15,12 +15,12 @@ namespace Functions {
    * \tparam LC Type of local context, e.g. grid cell
    * \tparam R  Range type
    */
-template<typename DF, typename LC, typename R = typename DF::Range>
+template<typename DF, typename LC>
 class LocalFunction
-  : public DifferentiableFunction<typename LC::Geometry::LocalCoordinate,R>
+  : public DifferentiableFunction<typename LC::Geometry::LocalCoordinate, typename DF::Range>
 {
 
-  typedef DifferentiableFunction<typename LC::Geometry::LocalCoordinate,R> Base;
+  typedef DifferentiableFunction<typename LC::Geometry::LocalCoordinate, typename DF::Range> Base;
 
 public:
 
@@ -29,7 +29,7 @@ public:
 
   typedef typename LC::Geometry::LocalCoordinate Domain;
 
-  typedef LocalFunction<DF,LC,typename Base::DerivativeRange> Derivative;
+  typedef LocalFunction<typename DF::Derivative,LC> Derivative;
 
   virtual void bind(const LocalContext&) = 0;
 
