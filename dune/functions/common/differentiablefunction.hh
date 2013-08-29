@@ -37,6 +37,12 @@ struct DerivativeTraits<double, double>
     typedef double DerivativeRange;
 };
 
+template<typename F, int n>
+struct DerivativeTraits<FieldVector<F,n>,F>
+{
+  typedef FieldVector<F,n> DerivativeRange;
+};
+
 template<typename F, int n, int m>
 struct DerivativeTraits<FieldVector<F,n>,FieldVector<F,m> >
 {

@@ -12,6 +12,7 @@
 #include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/common/callable.hh>
 
+#include "derivativecheck.hh"
 
 // Check if interface compiles and is implementable by a simple dummy
 struct DifferentiableFunctionImplementableTest
@@ -56,6 +57,8 @@ struct DifferentiableFunctionImplementableTest
 
   static bool check()
   {
+    bool passed = true;
+
     QuadraticPolynomial testFunction(1,1,1);
 
     // Test whether I can evaluate the function somewhere
@@ -127,7 +130,9 @@ struct DifferentiableFunctionImplementableTest
 //    std::function<double(double)> stdDF = Dune::Functions::callable(Dune::Functions::derivative(testFunction));
 //    std::cout << "Derivative at x=5: " << stdDF(5) << std::endl;
 
-    return true;
+    passed = passed and DerivativeCheck<QuadraticPolynomial>::checkAllImplementatedTrulyDerived(testFunction, 10);
+
+    return passed;
   }
 };
 
