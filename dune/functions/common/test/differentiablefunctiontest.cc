@@ -41,7 +41,7 @@ struct DifferentiableFunctionImplementableTest
     QuadraticPolynomial* derivative() const
     {
       if (not derivative_)
-        derivative_ = Dune::make_shared<QuadraticPolynomial>(0, 2*a_, b_);
+        derivative_ = std::make_shared<QuadraticPolynomial>(0, 2*a_, b_);
       return derivative_.get();
     }
 
@@ -49,7 +49,7 @@ struct DifferentiableFunctionImplementableTest
     // coefficients
     double a_, b_, c_;
 
-    mutable Dune::shared_ptr<QuadraticPolynomial> derivative_;
+    mutable std::shared_ptr<QuadraticPolynomial> derivative_;
 
   };
 
