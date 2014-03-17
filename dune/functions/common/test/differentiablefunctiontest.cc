@@ -19,6 +19,7 @@ struct DifferentiableFunctionImplementableTest
   class QuadraticPolynomial
   : public Dune::Functions::DifferentiableFunction<double,double>
   {
+    typedef Dune::Functions::DifferentiableFunction<double,double> Base;
   public:
 
     // Important: Explicitly export exact derivative type
@@ -38,11 +39,12 @@ struct DifferentiableFunctionImplementableTest
     }
 
     /** \brief Get the function implementing the first derivative */
-    QuadraticPolynomial* derivative() const
+    std::shared_ptr<typename Base::Derivative> derivative() const
     {
       if (not derivative_)
         derivative_ = std::make_shared<QuadraticPolynomial>(0, 2*a_, b_);
-      return derivative_.get();
+//      return derivative_.get();
+      return std::static_pointer_cast<typename Base::Derivative>(derivative_);
     }
 
   private:
@@ -57,57 +59,67 @@ struct DifferentiableFunctionImplementableTest
   {
     bool passed = true;
 
-    QuadraticPolynomial testFunction(1,1,1);
-
-    // Test whether I can evaluate the function somewhere
-    double f;
-    testFunction.evaluate(5, f);
-    std::cout << "Function value at x=5: " << f << std::endl;
-
-
-
-    std::cout << std::endl << "Check calling derivatives through FunctionHandle" << std::endl;
-
-    // Test whether I can evaluate the first derivative
-    auto derivative = Dune::Functions::derivative(testFunction);
+    std::shared_ptr<QuadraticPolynomial::Derivative> persistentDerivative;
+    std::shared_ptr<QuadraticPolynomial::Derivative::Derivative> persistentSecondDerivative;
+    std::shared_ptr<QuadraticPolynomial::Derivative::Derivative> persistentThirdDerivative;
     double df;
-    derivative.evaluate(5, df);
-    std::cout << "Derivative at x=5: " << df << std::endl;
-
-    // Test whether I can evaluate the second derivative through FunctionHandle
-    auto secondDerivative = Dune::Functions::derivative(derivative);
     double ddf;
-    secondDerivative.evaluate(5, ddf);
-    std::cout << "Second derivative at x=5: " << ddf << std::endl;
-
-    // Test whether I can evaluate the third derivative through FunctionHandle
-    auto thirdDerivative = Dune::Functions::derivative(secondDerivative);
     double dddf;
-    thirdDerivative.evaluate(5, dddf);
-    std::cout << "Third derivative at x=5: " << dddf << std::endl;
+    {
+      QuadraticPolynomial testFunction(1,1,1);
 
+      passed = passed and DerivativeCheck<QuadraticPolynomial>::checkAllImplementedTrulyDerived(testFunction, 10);
+
+      // Test whether I can evaluate the function somewhere
+      double f;
+      testFunction.evaluate(5, f);
+      std::cout << "Function value at x=5: " << f << std::endl;
+
+
+
+      std::cout << std::endl << "Check calling derivatives through FunctionHandle" << std::endl;
+
+      // Test whether I can evaluate the first derivative
+      auto derivative = Dune::Functions::derivative(testFunction);
+      derivative->evaluate(5, df);
+      std::cout << "Derivative at x=5: " << df << std::endl;
+
+      // Test whether I can evaluate the second derivative through FunctionHandle
+      auto secondDerivative = Dune::Functions::derivative(*derivative);
+      secondDerivative->evaluate(5, ddf);
+      std::cout << "Second derivative at x=5: " << ddf << std::endl;
+
+      // Test whether I can evaluate the third derivative through FunctionHandle
+      auto thirdDerivative = Dune::Functions::derivative(secondDerivative);
+      thirdDerivative->evaluate(5, dddf);
+      std::cout << "Third derivative at x=5: " << dddf << std::endl;
+
+      persistentDerivative = derivative;
+      persistentSecondDerivative = secondDerivative;
+      persistentThirdDerivative = thirdDerivative;
+
+      auto castedDerivativePtr = std::dynamic_pointer_cast<QuadraticPolynomial::Derivative>(testFunction.derivative());
+      castedDerivativePtr->evaluate(5, df);
+      std::cout << "Derivative at x=5: " << df << std::endl;
+    }
 
 
     std::cout << std::endl << "Check calling persistent derivatives through shared_ptr" << std::endl;
 
     // Test whether I can evaluate the first derivative through shared_ptr
-    auto persistentDerivative = derivative.shared_ptr();
     persistentDerivative->evaluate(5, df);
     std::cout << "Derivative at x=5: " << df << std::endl;
 
     // Test whether I can evaluate the second derivative through shared_ptr
-    auto persistentSecondDerivative = secondDerivative.shared_ptr();
     persistentSecondDerivative->evaluate(5, ddf);
     std::cout << "Second derivative at x=5: " << ddf << std::endl;
 
     // Test whether I can evaluate the third derivative through shared_ptr
-    auto persistentThirdDerivative = thirdDerivative.shared_ptr();
     persistentThirdDerivative->evaluate(5, dddf);
     std::cout << "Third derivative at x=5: " << dddf << std::endl;
 
 
 
-    passed = passed and DerivativeCheck<QuadraticPolynomial>::checkAllImplementatedTrulyDerived(testFunction, 10);
 
     return passed;
   }

@@ -36,7 +36,7 @@ struct DerivativeCheck
     typedef typename Dune::Functions::DerivativeTraits<typename F::Domain, typename F::Range>::DerivativeRange DR;
     typedef typename Dune::Functions::DifferentiableFunction<typename F::Domain, DR> DerivativeInterface;
 
-    // To benefit from 'final' all implementation in dune-functions should export the derived type.
+    // To benefit from 'final' any implementation F in dune-functions should export the derived derivative type as F::Derivative.
     // For usercode it's ok to use the interface if you willing to pay the price
     return not(Dune::is_same<DerivativeInterface, typename F::Derivative>::value);
   }
@@ -54,7 +54,7 @@ struct DerivativeCheck
     return true;
   }
 
-  static bool checkAllImplementatedTrulyDerived(const F& f, int maxOrder, int order=1)
+  static bool checkAllImplementedTrulyDerived(const F& f, int maxOrder, int order=1)
   {
     if (order>maxOrder)
     {
@@ -67,8 +67,8 @@ struct DerivativeCheck
 
     if (implemented and derived)
     {
-      auto df = Dune::Functions::derivative(f).shared_ptr();
-      return checkType(f) and DerivativeCheck<typename F::Derivative>::checkAllImplementatedTrulyDerived(*df, maxOrder, order+1);
+      auto df = Dune::Functions::derivative(f);
+      return checkType(f) and DerivativeCheck<typename F::Derivative>::checkAllImplementedTrulyDerived(*df, maxOrder, order+1);
     }
     if (implemented and not(derived))
     {
