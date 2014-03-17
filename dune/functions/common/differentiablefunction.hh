@@ -108,9 +108,9 @@ class DifferentiableFunction :
          * acts like a light-weight safe-pointer, and again allows you to obtain a std::shared_ptr
          * to the derivative.
          */
-        virtual Derivative* derivative() const = 0;
+        virtual std::shared_ptr<Derivative> derivative() const = 0;
 
-
+#if 0
         /** \brief Get a shared_ptr to this object to obtain shared ownership.
          *
          * \warning The semantics of this method are slightly different from the default version
@@ -154,14 +154,14 @@ class DifferentiableFunction :
               return _local_ptr;
             }
         }
-
+#endif
 
 private:
 
   mutable shared_ptr<DifferentiableFunction> _local_ptr;
 };
 
-
+#if 0
 template<class FImp>
 class FunctionHandle :
     public DifferentiableFunction<typename FImp::Domain, typename FImp::Range>
@@ -227,7 +227,26 @@ FunctionHandle<typename FImp::Derivative> derivative(const FImp& f)
 {
     return FunctionHandle<typename FImp::Derivative>(f.derivative());
 }
+#endif
 
+/** \brief Get the derivative of a DifferentiableFunction
+ *
+ * \tparam FImp A DifferentiableFunction, i.e., a function that has a derivative() method
+ *
+ * Using this methods avoids ever having to handle the C-style pointer that is returned
+ * by DifferentiableFunction::derivative.
+ */
+template<class FImp>
+std::shared_ptr<typename FImp::Derivative> derivative(const FImp& f)
+{
+  return std::static_pointer_cast<typename FImp::Derivative>(f.derivative());
+}
+
+template<class FImp>
+std::shared_ptr<typename FImp::Derivative> derivative(const std::shared_ptr<FImp>& f)
+{
+  return std::static_pointer_cast<typename FImp::Derivative>(f->derivative());
+}
 
 } // end of namespace Dune::Functions
 } // end of namespace Dune
