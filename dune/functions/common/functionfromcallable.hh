@@ -4,6 +4,13 @@
 #define DUNE_FUNCTIONS_COMMON_FUNCTION_FROM_CALLABLE_HH
 
 
+#include <memory>
+#include <functional>
+
+#include <dune/common/exceptions.hh>
+#include <dune/functions/common/differentiablefunction.hh>
+
+
 namespace Dune {
 namespace Functions {
 
@@ -20,9 +27,9 @@ struct FunctionFromCallableDerivativeTraits
   typedef FunctionFromCallable<D, DR> Derivative;
 
   template<class... DF>
-  static Dune::shared_ptr<Derivative> makeIfImplemented(const DF&... df)
+  static std::shared_ptr<Derivative> makeIfImplemented(const DF&... df)
   {
-    return Dune::make_shared<Derivative>(df...);
+    return std::make_shared<Derivative>(df...);
   }
 };
 
@@ -34,7 +41,7 @@ struct FunctionFromCallableDerivativeTraits<D, InvalidRange>
   typedef DifferentiableFunction<D, InvalidRange> Derivative;
 
   template<class... DF>
-  static Dune::shared_ptr<Derivative> makeIfImplemented(const DF&... df)
+  static std::shared_ptr<Derivative> makeIfImplemented(const DF&... df)
   {
     DUNE_THROW(Dune::NotImplemented, "DerivativeRange is not implemented for this type.");
   }
@@ -133,7 +140,7 @@ class FunctionFromCallable :
 
   private:
     std::function<R(D)> f_;
-    Dune::shared_ptr<typename Base::Derivative> derivative_;
+    std::shared_ptr<typename Base::Derivative> derivative_;
 };
 
 
