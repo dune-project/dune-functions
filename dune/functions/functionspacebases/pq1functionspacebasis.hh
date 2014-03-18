@@ -30,8 +30,12 @@ class PQ1FunctionSpaceBasis
 public:
   typedef GV GridView;
   typedef std::size_t size_type;
-  typedef typename Dune::ReservedVector<size_type, 42> MultiIndex;
   typedef PQ1FunctionSpaceBasisLocalView<GV> LocalView;
+
+  static const int dim = GV::Grid::dimension;
+
+//  typedef Dune::ReservedVector<size_type, 1> MultiIndex;
+  typedef std::array<size_type, 1> MultiIndex;
 
   PQ1FunctionSpaceBasis(const GridView& gv) :
     gridView_(gv)
@@ -56,13 +60,20 @@ public:
    */
   size_type maxLocalSize() const
   {
-    return 1<<GridView::dimension;
+    return 1<<dim;
   }
 
-#if 0
+  //! Return number possible values for next position in empty multi index
+  size_type subIndexCount() const
+  {
+    return gridView_.size(dim);
+  }
+
   //! Return number possible values for next position in multi index
-  size_type subIndexCount(const MultiIndex& index) const;
-#endif
+  size_type subIndexCount(const MultiIndex& index) const
+  {
+    return gridView_.size(dim);
+  }
 
   /**
    * \brief Return local view for basis
@@ -217,13 +228,10 @@ public:
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
   const MultiIndex globalIndex(size_type i) const
   {
-    MultiIndex globalIndex;
-    globalIndex.push_back(
-      globalBasis_->indexSet().subIndex(
-        element_,
+    return { globalBasis_->gridView().indexSet().subIndex(
+        *element_,
         finiteElement_->localCoefficients().localKey(i).subEntity(),
-        dim));
-    return globalIndex;
+        dim) };
   }
 
   //! to be discussed

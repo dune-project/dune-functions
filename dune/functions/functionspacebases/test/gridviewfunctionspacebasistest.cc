@@ -20,6 +20,7 @@ int main (int argc, char* argv[]) try
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> l(1);
+//  FieldVector<double,dim> l = {{21.0, 4.0}};
   std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
@@ -33,8 +34,9 @@ int main (int argc, char* argv[]) try
   // If we use that as the coefficients of a finite element function,
   // we know its integral and can check whether quadrature returns
   // the correct result
-  std::vector<double> x(0);  // TODO: I don't know the correct size...
+  std::vector<double> x(feBasis.subIndexCount());
 
+  // TODO: Implement interpolation properly using the global basis.
   for (auto it = gridView.begin<dim>(); it != gridView.end<dim>(); ++it)
     x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
 
@@ -67,14 +69,16 @@ int main (int argc, char* argv[]) try
 
         // Actually compute the vector entries
         for (size_t i=0; i<localFiniteElement.localBasis().size(); i++)
-            integral += localX[i] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
+        {
+            // Use our vary fancy non-blocking ordering.
+            size_t globalIndex = tree.globalIndex(i)[0];
+            integral += x[globalIndex] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
+        }
 
     }
-
-
-
-
   }
+
+  std::cout << "Computed integral is " << integral << std::endl;
 
   return 0;
 
