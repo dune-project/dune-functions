@@ -28,13 +28,13 @@ class InvalidRange
 template<class DT, class RT>
 struct DerivativeTraits
 {
-    typedef InvalidRange DerivativeRange;
+  typedef InvalidRange DerivativeRange;
 };
 
 template<>
 struct DerivativeTraits<double, double>
 {
-    typedef double DerivativeRange;
+  typedef double DerivativeRange;
 };
 
 template<typename F, int n>
