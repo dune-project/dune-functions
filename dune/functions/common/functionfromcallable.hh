@@ -124,16 +124,16 @@ class FunctionFromCallable :
      * If a proper number of derivatives where provided
      * this will return the derivative as FunctionFromCallable<Domain, DerivativeRange>
      */
-    virtual Derivative* derivative() const DUNE_FINAL
+    virtual std::shared_ptr<typename Base::Derivative> derivative() const DUNE_FINAL
     {
       if (not derivative_)
         DUNE_THROW(Dune::NotImplemented, "This derivative was not provided.");
-      return derivative_.get();
+      return derivative_;
     }
 
   private:
     std::function<R(D)> f_;
-    Dune::shared_ptr<Derivative> derivative_;
+    Dune::shared_ptr<typename Base::Derivative> derivative_;
 };
 
 
