@@ -45,7 +45,7 @@ struct DifferentiableFunctionImplementableTest
     {
       if (not derivative_)
         derivative_ = std::make_shared<QuadraticPolynomial>(0, 2*a_, b_);
-      return std::static_pointer_cast<typename Base::Derivative>(derivative_);
+      return derivative_;
     }
 
   private:
