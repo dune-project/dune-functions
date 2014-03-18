@@ -27,11 +27,12 @@ int main (int argc, char* argv[]) try
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
+  typedef PQ1FunctionSpaceBasis<GridView> Basis;
 
   const GridView& gridView = grid.leafGridView();
-  PQ1FunctionSpaceBasis<GridView> feBasis(gridView);
+  Basis feBasis(gridView);
 
-  typedef PQ1FunctionSpaceBasis<GridView>::MultiIndex MultiIndex;
+  typedef Basis::MultiIndex MultiIndex;
 
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
@@ -53,9 +54,11 @@ int main (int argc, char* argv[]) try
     auto localView = feBasis.localView();
     localView.bind(*it);
 
-    auto& tree = localView.tree();
+    typedef Basis::LocalView::Tree Tree;
+    auto& treeImp = localView.tree();
+    const Tree::Interface& tree = treeImp;
 
-    tree.generateMultiIndices(globalIndices.begin());
+    treeImp.generateMultiIndices(globalIndices.begin());
 
     auto& localFiniteElement = tree.finiteElement();
 
