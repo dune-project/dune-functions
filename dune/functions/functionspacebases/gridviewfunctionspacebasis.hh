@@ -13,6 +13,7 @@ struct FunctionSpaceBasisTraits;
 template<typename GV, ...>
 class GridViewFunctionSpaceBasis
 {
+  typedef typename Dune::ReservedVector<size_type, 42> MultiIndex;
 
   /**
    * \brief
@@ -30,7 +31,7 @@ class GridViewFunctionSpaceBasis
   size_type maxLocalSize() const;
 
   //! Return number possible values for next position in multi index
-  size_type subIndexCount(const DOFIndex& index) const;
+  size_type subIndexCount(const MultiIndex& index) const;
 
   /**
    * \brief Return local view for basis
@@ -46,6 +47,7 @@ class GridViewFunctionSpaceBasis
 template<typename GridViewFunctionSpaceBasis>
 class GridViewLocalBasisView
 {
+  typedef typename GridViewFunctionSpaceBasis::MultiIndex MultiIndex;
 
   //! Bind to element
   void bind(const Element& e);
@@ -53,6 +55,11 @@ class GridViewLocalBasisView
   //! Unbind from element - only hint
   void unbind();
 
+  /**
+   * \brief Return the local ansatz tree associated to the bound entity
+   *
+   * \returns some_type // This is tree
+   */
   some_type& tree() const;
 };
 
@@ -60,6 +67,7 @@ class GridViewLocalBasisView
 template<typename GridViewFunctionSpaceBasis>
 class GridViewLocalBasisViewTreeNode
 {
+  typedef typename GridViewFunctionSpaceBasis::MultiIndex MultiIndex;
 
   typedef typename GridViewFunctionSpaceBasis::Element Element;
 
@@ -81,8 +89,8 @@ class GridViewLocalBasisViewTreeNode
   //! maximum size of complete tree for any element of the global basis
   size_type maxLocalSize() const;
 
-  //! Maps from subtree index set [0..size-1] to a globally unique DOF index in global basis (pair of multi-indices)
-  const DOFIndex& globalIndex(size_type i) const;
+  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
+  const MultiIndex& globalIndex(size_type i) const;
 
   //! to be discussed
   const GridViewFunctionSpaceBasis& globalBasis() const;
@@ -111,11 +119,11 @@ class LeafGridViewLocalBasisViewTreeNode
 
   FiniteElement finiteElement() const;
 
-  //! Generate DOF indices for current subtree into range starting at it
-  //! \param it iterator over a container of DOFIndex
+  //! Generate multi indices for current subtree into range starting at it
+  //! \param it iterator over a container of MultiIndex
   //! \return iterator past the last written element (STL-style)
-  template<typename DOFIndexIterator>
-  DOFIndexIterator generateDOFIndices(DOFIndexIterator it) const;
+  template<typename MultiIndexIndexIterator>
+  MultiIndexIndexIterator generateMultiIndexIndices(MultiIndexIndexIterator it) const;
 
 };
 
