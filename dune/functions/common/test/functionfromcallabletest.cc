@@ -53,7 +53,7 @@ struct FunctionFromCallableTest
           cosinus,
           [] (double x) -> double {return -std::sin(x);});
 
-      passed = passed and DerivativeCheck<Dune::Functions::FunctionFromCallable<double, double> >::checkAllImplementatedTrulyDerived(f, 10);
+      passed = passed and DerivativeCheck<Dune::Functions::FunctionFromCallable<double, double> >::checkAllImplementedTrulyDerived(f, 10);
 
       double x=3.14159;
       double y;
@@ -62,11 +62,11 @@ struct FunctionFromCallableTest
       std::cout << "Value of f at x=" << x <<" is " << y << std::endl;
 
       auto df = Dune::Functions::derivative(f);
-      df.evaluate(x,y);
+      df->evaluate(x,y);
       std::cout << "Value of f' at x=" << x <<" is " << y << std::endl;
 
       auto ddf = Dune::Functions::derivative(df);
-      ddf.evaluate(x,y);
+      ddf->evaluate(x,y);
       std::cout << "Value of f'' at x=" << x <<" is " << y << std::endl;
     }
 
@@ -92,7 +92,7 @@ struct FunctionFromCallableTest
             return M;
           });
 
-      passed = passed and DerivativeCheck<Dune::Functions::FunctionFromCallable<Domain, Range> >::checkAllImplementatedTrulyDerived(f, 10);
+      passed = passed and DerivativeCheck<Dune::Functions::FunctionFromCallable<Domain, Range> >::checkAllImplementedTrulyDerived(f, 10);
 
       Domain x(1.0);
 
@@ -102,12 +102,12 @@ struct FunctionFromCallableTest
 
       auto df = Dune::Functions::derivative(f);
       DRange dy;
-      df.evaluate(x,dy);
+      df->evaluate(x,dy);
       std::cout << "Value of f' at x=(" << x <<") is " << dy << std::endl;
 
       auto ddf = Dune::Functions::derivative(df);
       DDRange ddy;
-      ddf.evaluate(x,ddy);
+      ddf->evaluate(x,ddy);
       std::cout << "Value of f'' at x=" << x <<" is " << ddy << std::endl;
     }
     return passed;
