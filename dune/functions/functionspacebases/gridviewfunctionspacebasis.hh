@@ -13,6 +13,7 @@ struct FunctionSpaceBasisTraits;
 template<typename GV, ...>
 class GridViewFunctionSpaceBasis
 {
+  typedef std::size_t size_type;
   typedef typename Dune::ReservedVector<size_type, 42> MultiIndex;
 
   /**
@@ -47,6 +48,7 @@ class GridViewFunctionSpaceBasis
 template<typename GridViewFunctionSpaceBasis>
 class GridViewLocalBasisView
 {
+  typedef typename GridViewFunctionSpaceBasis::size_type size_type;
   typedef typename GridViewFunctionSpaceBasis::MultiIndex MultiIndex;
 
   //! Bind to element
@@ -67,6 +69,7 @@ class GridViewLocalBasisView
 template<typename GridViewFunctionSpaceBasis>
 class GridViewLocalBasisViewTreeNode
 {
+  typedef typename GridViewFunctionSpaceBasis::size_type size_type;
   typedef typename GridViewFunctionSpaceBasis::MultiIndex MultiIndex;
 
   typedef typename GridViewFunctionSpaceBasis::Element Element;
