@@ -78,7 +78,8 @@ public:
   typedef typename Base::Range Range;
   typedef typename Base::DerivativeRange DerivativeRange;
 
-  typedef GridFunction<ES,DerivativeRange> Derivative;
+  typedef typename Base::Derivative Derivative;
+  typedef std::shared_ptr<typename Base::Derivative> DerivativeBasePointer;
 
   typedef typename ES::LocalCoordinate LocalDomain;
   typedef typename ES::Element Element;
@@ -113,7 +114,7 @@ public:
    * We pretend that the function is differentiable everywhere, even though this will
    * usually only be true in the interiors of the elements.
    */
-  virtual Derivative* derivative() const = 0;
+  virtual DerivativeBasePointer derivative() const = 0;
 
   /** \brief Const access to the grid view that the function is defined on */
   const EntitySet& entitySet() const

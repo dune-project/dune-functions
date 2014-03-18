@@ -30,12 +30,13 @@ public:
   typedef typename LC::Geometry::LocalCoordinate Domain;
 
   typedef LocalFunction<typename DF::Derivative,LC> Derivative;
+  typedef std::shared_ptr<typename Base::Derivative> DerivativeBasePointer;
 
   virtual void bind(const LocalContext&) = 0;
 
   virtual void unbind() = 0;
 
-  virtual Derivative* derivative() const = 0;
+  virtual DerivativeBasePointer derivative() const = 0;
 
   virtual const LocalContext& localContext() const = 0;
 

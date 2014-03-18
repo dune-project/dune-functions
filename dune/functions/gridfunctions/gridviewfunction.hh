@@ -40,6 +40,7 @@ public:
   typedef typename Base::EntitySet EntitySet;
 
   typedef GridViewFunction<GV,DerivativeRange> Derivative;
+  typedef typename Base::DerivativeBasePointer DerivativeBasePointer;
 
   typedef typename ::Dune::Functions::LocalFunction<Base,Element> LocalFunction;
 
@@ -71,7 +72,7 @@ public:
    * We pretend that the function is differentiable everywhere, even though this will
    * usually only be true in the interiors of the elements.
    */
-  virtual Derivative* derivative() const = 0;
+  virtual typename Base::DerivativeBasePointer derivative() const = 0;
 
   /** \brief Const access to the grid view that the function is defined on */
   const GridView& gridView() const
