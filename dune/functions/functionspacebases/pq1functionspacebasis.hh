@@ -10,6 +10,7 @@
 
 #include <dune/typetree/leafnode.hh>
 
+#include <dune/common/final.hh>
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 
 

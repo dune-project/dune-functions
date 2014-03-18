@@ -7,7 +7,7 @@
 #include <dune/common/fmatrix.hh>
 #include <dune/common/function.hh>
 #include <dune/common/shared_ptr.hh>
-#include <dune/functions/common/final.hh>
+#include <dune/common/final.hh>
 
 namespace Dune {
 
