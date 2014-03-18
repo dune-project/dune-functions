@@ -19,7 +19,7 @@ template<class D, class R>
 class FunctionFromCallable;
 
 // Helper class that exports the type for FunctionFromCallable<D,R>::Derivative
-// and constructs the corresponding object is possible.
+// and constructs the corresponding object if possible.
 // Notice that the second template argument is the DerivativeRange and NOT the Range
 template<class D, class DR>
 struct FunctionFromCallableDerivativeTraits
