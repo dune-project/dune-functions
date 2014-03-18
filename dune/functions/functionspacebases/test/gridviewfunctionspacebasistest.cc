@@ -24,6 +24,10 @@ int main (int argc, char* argv[]) try
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
   PQ1FunctionSpaceBasis<GridView> feBasis(grid.leafGridView());
+  auto lv = feBasis.localView();
+
+  auto it = feBasis.gridView().begin<0>();
+  lv.bind(*it);
 
 
 } catch ( Dune::Exception &e )
