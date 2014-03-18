@@ -201,8 +201,13 @@ public:
   }
 
   //! maximum size of complete tree for any element of the global basis
-  size_type maxLocalSize() const;
+  size_type maxLocalSize() const
+  {
+    // We have maxLocalSize==maxSubTreeSize because the tree consist of a single leaf node.
+    return maxSubTreeSize();
+  }
 
+#if 0
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
   const MultiIndex& globalIndex(size_type i) const;
 #endif
