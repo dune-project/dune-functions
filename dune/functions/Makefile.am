@@ -1,6 +1,6 @@
 functionsincludedir = $(includedir)/dune/functions
 
-SUBDIRS = common gridfunctions test
+SUBDIRS = common functionspacebases gridfunctions test
 
 EXTRA_DIST = CMakeLists.txt
 

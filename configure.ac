@@ -20,6 +20,7 @@ AC_CONFIG_FILES([
   dune/functions/Makefile
   dune/functions/common/Makefile
   dune/functions/common/test/Makefile
+  dune/functions/functionspacebases/Makefile
   dune/functions/gridfunctions/Makefile
   dune/functions/test/Makefile
   m4/Makefile
