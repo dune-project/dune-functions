@@ -1,5 +1,5 @@
 Module: dune-functions
 Version: 2.3-dev
 Maintainer: dune-devel@dune-project.org
-Depends: dune-localfunctions (>= 2.3) dune-grid (>= 2.3)
+Depends: dune-localfunctions (>= 2.3) dune-grid (>= 2.3) dune-typetree
 Whitespace-Hook: Yes
