@@ -41,6 +41,7 @@ int main (int argc, char* argv[]) try
   std::vector<Dune::FieldVector<double,1> > x(feBasis.subIndexCount());
 
   Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> f(Dune::stackobject_to_shared_ptr(feBasis),Dune::stackobject_to_shared_ptr(x));
+  auto localFunction = Dune::Functions::localFunction(f);
 
   // TODO: Implement interpolation properly using the global basis.
   for (auto it = gridView.begin<dim>(); it != gridView.end<dim>(); ++it)
@@ -54,6 +55,8 @@ int main (int argc, char* argv[]) try
     // A quadrature rule
     const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1);
 
+    localFunction.bind(*it);
+
     // Loop over all quadrature points
     for ( size_t pt=0; pt < quad.size(); pt++ ) {
 
@@ -64,9 +67,11 @@ int main (int argc, char* argv[]) try
       const double integrationElement = it->geometry().integrationElement(quadPos);
 
       typename decltype(x)::value_type v;
-      f.evaluate(quadPos,v);
+      localFunction.evaluate(quadPos,v);
       integral += v * quad[pt].weight() * integrationElement;
     }
+
+    localFunction.unbind();
   }
 
   assert(std::abs(integral-0.5)< 1e-10);
