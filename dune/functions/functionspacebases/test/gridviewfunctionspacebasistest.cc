@@ -13,6 +13,7 @@
 #include <dune/functions/functionspacebases/pq1functionspacebasis.hh>
 
 using namespace Dune;
+using namespace Dune::Functions;
 
 int main (int argc, char* argv[]) try
 {
@@ -30,11 +31,15 @@ int main (int argc, char* argv[]) try
   const GridView& gridView = grid.leafGridView();
   PQ1FunctionSpaceBasis<GridView> feBasis(gridView);
 
+  typedef PQ1FunctionSpaceBasis<GridView>::MultiIndex MultiIndex;
+
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
   // we know its integral and can check whether quadrature returns
   // the correct result
   std::vector<double> x(feBasis.subIndexCount());
+
+
 
   // TODO: Implement interpolation properly using the global basis.
   for (auto it = gridView.begin<dim>(); it != gridView.end<dim>(); ++it)
@@ -42,12 +47,15 @@ int main (int argc, char* argv[]) try
 
   // Loop over elements and integrate over the function
   double integral = 0;
+  std::vector<MultiIndex> globalIndices(feBasis.maxLocalSize());
   for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
   {
     auto localView = feBasis.localView();
     localView.bind(*it);
 
     auto& tree = localView.tree();
+
+    tree.generateMultiIndices(globalIndices.begin());
 
     auto& localFiniteElement = tree.finiteElement();
 
@@ -57,27 +65,26 @@ int main (int argc, char* argv[]) try
     // Loop over all quadrature points
     for ( size_t pt=0; pt < quad.size(); pt++ ) {
 
-        // Position of the current quadrature point in the reference element
-        const FieldVector<double,dim>& quadPos = quad[pt].position();
+      // Position of the current quadrature point in the reference element
+      const FieldVector<double,dim>& quadPos = quad[pt].position();
 
-        // The multiplicative factor in the integral transformation formula
-        const double integrationElement = it->geometry().integrationElement(quadPos);
+      // The multiplicative factor in the integral transformation formula
+      const double integrationElement = it->geometry().integrationElement(quadPos);
 
-        // Evaluate all shape function values at this point
-        std::vector<FieldVector<double,1> > shapeFunctionValues;
-        localFiniteElement.localBasis().evaluateFunction(quadPos, shapeFunctionValues);
+      // Evaluate all shape function values at this point
+      std::vector<FieldVector<double,1> > shapeFunctionValues;
+      localFiniteElement.localBasis().evaluateFunction(quadPos, shapeFunctionValues);
 
-        // Actually compute the vector entries
-        for (size_t i=0; i<localFiniteElement.localBasis().size(); i++)
-        {
-            // Use our vary fancy non-blocking ordering.
-            size_t globalIndex = tree.globalIndex(i)[0];
-            integral += x[globalIndex] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
-        }
-
+      // Actually compute the vector entries
+      for (size_t i=0; i<localFiniteElement.localBasis().size(); i++)
+      {
+        assert(globalIndices[i]==tree.globalIndex(i));
+        integral += x[globalIndices[i][0]] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
+      }
     }
   }
 
+  assert(std::abs(integral-0.5)< 1e-10);
   std::cout << "Computed integral is " << integral << std::endl;
 
   return 0;

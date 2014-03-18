@@ -9,6 +9,9 @@
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
 
 
+namespace Dune {
+namespace Functions {
+
 
 template<typename GV>
 class PQ1FunctionSpaceBasisLocalView;
@@ -196,7 +199,7 @@ public:
   size_type subTreeSize() const
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
-    return finiteElement->localBasis().size();
+    return finiteElement_->localBasis().size();
   }
 
   //! maximum size of subtree rooted in this node for any element of the global basis
@@ -234,6 +237,24 @@ public:
         dim) };
   }
 
+  //! Generate multi indices for current subtree into range starting at it
+  //! \param it iterator over a container of MultiIndex
+  //! \return iterator past the last written element (STL-style)
+  template<typename MultiIndexIterator>
+  MultiIndexIterator generateMultiIndices(MultiIndexIterator it) const
+  {
+    size_type size = subTreeSize();
+    for(size_type i=0; i<size; ++i)
+    {
+      (*it) = {globalBasis_->gridView().indexSet().subIndex(
+        *element_,
+        finiteElement_->localCoefficients().localKey(i).subEntity(),
+        dim)};
+      ++it;
+    }
+    return it;
+  }
+
   //! to be discussed
   const GlobalBasis& globalBasis() const
   {
@@ -256,40 +277,8 @@ protected:
   const Element* element_;
 };
 
+} // end namespace Functions
+} // end namespace Dune
 
-#if 0
-
-
-
-template<typename GridViewFunctionSpaceBasis, typename... Children>
-class CompositeGridViewLocalBasisViewTreeNode
-  : public GridViewLocalBasisViewTreeNode<GridViewFunctionSpaceBasis>
-  , public TypeTree::CompositeNode<Children...>
-{};
-
-template<typename GridViewFunctionSpaceBasis, typename Child, size_type n>
-class PowerGridViewLocalBasisViewTreeNode
-  : public GridViewLocalBasisViewTreeNode<GridViewFunctionSpaceBasis>
-  , public TypeTree::PowerNode<Child,n>
-{};
-
-
-template<typename GridViewFunctionSpaceBasis>
-class LeafGridViewLocalBasisViewTreeNode
-  : public GridViewLocalBasisViewTreeNode<GridViewFunctionSpaceBasis>
-  , public TypeTree::LeafNode
-{
-
-  FiniteElement finiteElement() const;
-
-  //! Generate multi indices for current subtree into range starting at it
-  //! \param it iterator over a container of MultiIndex
-  //! \return iterator past the last written element (STL-style)
-  template<typename MultiIndexIndexIterator>
-  MultiIndexIndexIterator generateMultiIndexIndices(MultiIndexIndexIterator it) const;
-
-};
-
-#endif
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1FUNCTIONSPACEBASIS_HH
