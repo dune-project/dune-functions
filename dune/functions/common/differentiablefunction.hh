@@ -70,31 +70,31 @@ template<class DT, class RT>
 class DifferentiableFunction :
     public Dune::VirtualFunction<DT, RT>
 {
-    public:
-        /** \brief Type used for the independent variable (may be a vector type for functions of several variables) */
-        typedef DT Domain;
+  public:
+    /** \brief Type used for the independent variable (may be a vector type for functions of several variables) */
+    typedef DT Domain;
 
-        /** \brief Type used for function values */
-        typedef RT Range;
+    /** \brief Type used for function values */
+    typedef RT Range;
 
-        /** \brief Type of the values of the derivative function */
-        typedef typename DerivativeTraits<DT, RT>::DerivativeRange DerivativeRange;
+    /** \brief Type of the values of the derivative function */
+    typedef typename DerivativeTraits<DT, RT>::DerivativeRange DerivativeRange;
 
-        /** \brief Type of the derivative function */
-        typedef DifferentiableFunction<Domain, DerivativeRange> Derivative;
+    /** \brief Type of the derivative function */
+    typedef DifferentiableFunction<Domain, DerivativeRange> Derivative;
 
-        /** \brief Get the derivative function
-         *
-         * ### Life time of the return value
-         *
-         * This method returns a std::shared_ptr<Derivative>. Since covariant return
-         * values do not work with shared_ptrs the type 'Derivative' will also be the
-         * interface class for actual implementations. In order to avoid virtual method
-         * calls if the implementation type is known one should always use the free
-         * method derivative(f) instead of f.derivative(). This will cast the shared_ptr
-         * to the appropriate implementation class.
-         */
-        virtual std::shared_ptr<Derivative> derivative() const = 0;
+    /** \brief Get the derivative function
+     *
+     * ### Life time of the return value
+     *
+     * This method returns a std::shared_ptr<Derivative>. Since covariant return
+     * values do not work with shared_ptrs the type 'Derivative' will also be the
+     * interface class for actual implementations. In order to avoid virtual method
+     * calls if the implementation type is known one should always use the free
+     * method derivative(f) instead of f.derivative(). This will cast the shared_ptr
+     * to the appropriate implementation class.
+     */
+    virtual std::shared_ptr<Derivative> derivative() const = 0;
 };
 
 
