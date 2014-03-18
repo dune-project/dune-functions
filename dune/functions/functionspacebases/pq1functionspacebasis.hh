@@ -5,6 +5,8 @@
 
 #include <dune/common/reservedvector.hh>
 
+template<typename GV>
+class PQ1FunctionSpaceBasisLocalView;
 
 //template<typename T>
 //struct FunctionSpaceBasisTraits;
@@ -21,6 +23,7 @@ public:
   typedef GV GridView;
   typedef std::size_t size_type;
   typedef typename Dune::ReservedVector<size_type, 42> MultiIndex;
+  typedef PQ1FunctionSpaceBasisLocalView<GV> LocalView;
 
   PQ1FunctionSpaceBasis(const GridView& gv) :
     gridView_(gv)
@@ -33,7 +36,8 @@ public:
   {
     return gridView_;
   }
-#if 0
+
+
   /**
    * \brief maximum local size for any element on the GridView
    *
@@ -42,10 +46,15 @@ public:
    *
    * max{GridViewLocalBasisView(e).tree().size() | e in GridView}
    */
-  size_type maxLocalSize() const;
+  size_type maxLocalSize() const
+  {
+    return 1<<GridView::dimension;
+  }
 
+#if 0
   //! Return number possible values for next position in multi index
   size_type subIndexCount(const MultiIndex& index) const;
+#endif
 
   /**
    * \brief Return local view for basis
@@ -54,12 +63,33 @@ public:
    * of the global basis in order to calm the compiler
    * when instanciating the TMP constructing the local view.
    */
-  GridViewLocalBasisView localView() const;
-#endif
+  LocalView localView() const
+  {
+    return LocalView(this);
+  }
 
 protected:
   const GridView gridView_;
 };
+
+
+template<typename GV>
+class PQ1FunctionSpaceBasisLocalView
+{
+public:
+  typedef PQ1FunctionSpaceBasis<GV> GlobalBasis;
+  typedef typename GlobalBasis::GridView GridView;
+  typedef typename GlobalBasis::size_type size_type;
+  typedef typename GlobalBasis::MultiIndex MultiIndex;
+
+  PQ1FunctionSpaceBasisLocalView(const GlobalBasis* globalBasis) :
+    globalBasis_(globalBasis)
+  {}
+
+protected:
+  const GlobalBasis* globalBasis_;
+};
+
 
 
 #if 0
