@@ -1,8 +1,9 @@
 functionspacebasesincludedir = $(includedir)/dune/functions/functionspacebases
 functionspacebasesinclude_HEADERS = functionspacebasis.hh \
-                                    gridviewfunctionspacebasis.hh
+                                    gridviewfunctionspacebasis.hh \
+                                    pq1functionspacebasis.hh
 
-SUBDIRS =
+SUBDIRS = test
 
 EXTRA_DIST = CMakeLists.txt
 
