@@ -8,6 +8,10 @@
 
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
 
+#include <dune/typetree/leafnode.hh>
+
+#include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
+
 
 namespace Dune {
 namespace Functions {
@@ -18,13 +22,6 @@ class PQ1FunctionSpaceBasisLocalView;
 
 template<typename GV>
 class PQ1FunctionSpaceBasisLeafNode;
-
-//template<typename T>
-//struct FunctionSpaceBasisTraits;
-//{
-//  typedef calc<T>::LocalBasisView;
-//};
-
 
 template<typename GV>
 class PQ1FunctionSpaceBasis
@@ -154,25 +151,33 @@ protected:
 
 
 template<typename GV>
-class PQ1FunctionSpaceBasisLeafNode
+class PQ1FunctionSpaceBasisLeafNode :
+  public GridFunctionSpaceBasisLeafNodeInterface<
+    typename GV::template Codim<0>::Entity,
+    typename Dune::PQkLocalFiniteElementCache<typename GV::Grid::ctype, double, GV::Grid::dimension, 1>::FiniteElementType,
+    typename PQ1FunctionSpaceBasis<GV>::size_type,
+    typename PQ1FunctionSpaceBasis<GV>::MultiIndex>
 {
-public:
   typedef PQ1FunctionSpaceBasis<GV> GlobalBasis;
-  typedef typename GlobalBasis::LocalView LocalView;
-  typedef typename GlobalBasis::GridView GridView;
-  typedef typename GlobalBasis::size_type size_type;
-  typedef typename GlobalBasis::MultiIndex MultiIndex;
-  typedef typename GridView::template Codim<0>::Entity Element;
-
   static const int dim = GV::Grid::dimension;
 
-protected:
+  typedef typename GV::template Codim<0>::Entity E;
+  typedef typename Dune::PQkLocalFiniteElementCache<typename GV::Grid::ctype, double, dim, 1>::FiniteElementType FE;
+  typedef typename GlobalBasis::size_type ST;
+  typedef typename GlobalBasis::MultiIndex MI;
+
+  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST,MI> Base;
+
+  typedef typename GlobalBasis::LocalView LocalView;
+  friend LocalView;
+
   typedef typename Dune::PQkLocalFiniteElementCache<typename GV::Grid::ctype, double, dim, 1> FiniteElementCache;
 
 public:
-  typedef typename FiniteElementCache::FiniteElementType FiniteElement;
-
-  friend LocalView;
+  typedef typename Base::size_type size_type;
+  typedef typename Base::MultiIndex MultiIndex;
+  typedef typename Base::Element Element;
+  typedef typename Base::FiniteElement FiniteElement;
 
   PQ1FunctionSpaceBasisLeafNode(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis),
@@ -180,56 +185,52 @@ public:
     element_(0)
   {}
 
-//  PQ1FunctionSpaceBasisLeafNode(const LocalView& localView) :
-//    localView_(&localView)
-//  {}
-
   //! Return current element, throw if unbound
-  const Element& element() const
+  const Element& element() const DUNE_FINAL
   {
     return *element_;
   }
 
-  const FiniteElement& finiteElement() const
+  const FiniteElement& finiteElement() const DUNE_FINAL
   {
     return *finiteElement_;
   }
 
   //! size of subtree rooted in this node (element-local)
-  size_type subTreeSize() const
+  size_type subTreeSize() const DUNE_FINAL
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
     return finiteElement_->localBasis().size();
   }
 
   //! maximum size of subtree rooted in this node for any element of the global basis
-  size_type maxSubTreeSize() const
+  size_type maxSubTreeSize() const DUNE_FINAL
   {
     return 1<<dim;
   }
 
   //! size of complete tree (element-local)
-  size_type localSize() const
+  size_type localSize() const DUNE_FINAL
   {
     // We have localSize==subTreeSize because the tree consist of a single leaf node.
     return subTreeSize();
   }
 
   //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
-  size_type localIndex(size_type i) const
+  size_type localIndex(size_type i) const DUNE_FINAL
   {
     return i;
   }
 
   //! maximum size of complete tree for any element of the global basis
-  size_type maxLocalSize() const
+  size_type maxLocalSize() const DUNE_FINAL
   {
     // We have maxLocalSize==maxSubTreeSize because the tree consist of a single leaf node.
     return maxSubTreeSize();
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
-  const MultiIndex globalIndex(size_type i) const
+  const MultiIndex globalIndex(size_type i) const DUNE_FINAL
   {
     return { globalBasis_->gridView().indexSet().subIndex(
         *element_,
@@ -254,13 +255,6 @@ public:
     }
     return it;
   }
-
-  //! to be discussed
-  const GlobalBasis& globalBasis() const
-  {
-    return *globalBasis_;
-  }
-
 
 protected:
 
