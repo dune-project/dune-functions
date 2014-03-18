@@ -55,7 +55,7 @@ int main (int argc, char* argv[]) try
     // A quadrature rule
     const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1);
 
-    localFunction.bind(*it);
+    localFunction->bind(*it);
 
     // Loop over all quadrature points
     for ( size_t pt=0; pt < quad.size(); pt++ ) {
@@ -67,11 +67,11 @@ int main (int argc, char* argv[]) try
       const double integrationElement = it->geometry().integrationElement(quadPos);
 
       typename decltype(x)::value_type v;
-      localFunction.evaluate(quadPos,v);
+      localFunction->evaluate(quadPos,v);
       integral += v * quad[pt].weight() * integrationElement;
     }
 
-    localFunction.unbind();
+    localFunction->unbind();
   }
 
   assert(std::abs(integral-0.5)< 1e-10);
