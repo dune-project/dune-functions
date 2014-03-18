@@ -94,7 +94,8 @@ public:
   typedef PQ1FunctionSpaceBasisLeafNode<GV> Tree;
 
   PQ1FunctionSpaceBasisLocalView(const GlobalBasis* globalBasis) :
-    globalBasis_(globalBasis)
+    globalBasis_(globalBasis),
+    tree_(globalBasis)
   {}
 
   //! Bind to element
@@ -123,7 +124,7 @@ public:
    */
   const Tree& tree() const
   {
-    tree_;
+    return tree_;
   }
 
   const GlobalBasis& globalBasis() const
@@ -149,12 +150,18 @@ public:
   typedef typename GlobalBasis::MultiIndex MultiIndex;
   typedef typename GridView::template Codim<0>::Entity Element;
 
-  typedef typename Dune::PQkLocalFiniteElementCache<typename GV::Grid::ctype, double, GV::dimension, 1> FiniteElementCache;
+  static const int dim = GV::Grid::dimension;
+
+protected:
+  typedef typename Dune::PQkLocalFiniteElementCache<typename GV::Grid::ctype, double, dim, 1> FiniteElementCache;
+
+public:
   typedef typename FiniteElementCache::FiniteElementType FiniteElement;
 
   friend LocalView;
 
-  PQ1FunctionSpaceBasisLeafNode() :
+  PQ1FunctionSpaceBasisLeafNode(const GlobalBasis* globalBasis) :
+    globalBasis_(globalBasis),
     finiteElement_(0),
     element_(0)
   {}
@@ -184,7 +191,7 @@ public:
   //! maximum size of subtree rooted in this node for any element of the global basis
   size_type maxSubTreeSize() const
   {
-    return 1<<GridView::dimension;
+    return 1<<dim;
   }
 
   //! size of complete tree (element-local)
@@ -207,16 +214,24 @@ public:
     return maxSubTreeSize();
   }
 
-#if 0
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
-  const MultiIndex& globalIndex(size_type i) const;
-#endif
+  const MultiIndex globalIndex(size_type i) const
+  {
+    MultiIndex globalIndex;
+    globalIndex.push_back(
+      globalBasis_->indexSet().subIndex(
+        element_,
+        finiteElement_->localCoefficients().localKey(i).subEntity(),
+        dim));
+    return globalIndex;
+  }
 
   //! to be discussed
-//  const GlobalBasis& globalBasis() const
-//  {
-//    return localView_->globalBasis();
-//  }
+  const GlobalBasis& globalBasis() const
+  {
+    return *globalBasis_;
+  }
+
 
 protected:
 
@@ -227,7 +242,7 @@ protected:
     finiteElement_ = &(cache_.get(element_->type()));
   }
 
-//  const LocalView* localView_;
+  const GlobalBasis* globalBasis_;
   FiniteElementCache cache_;
   const FiniteElement* finiteElement_;
   const Element* element_;
