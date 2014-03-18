@@ -166,7 +166,6 @@ class PQ1FunctionSpaceBasisLeafNode :
   typedef typename GlobalBasis::size_type ST;
   typedef typename GlobalBasis::MultiIndex MI;
 
-  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST,MI> Base;
 
   typedef typename GlobalBasis::LocalView LocalView;
   friend LocalView;
@@ -174,10 +173,11 @@ class PQ1FunctionSpaceBasisLeafNode :
   typedef typename Dune::PQkLocalFiniteElementCache<typename GV::Grid::ctype, double, dim, 1> FiniteElementCache;
 
 public:
-  typedef typename Base::size_type size_type;
-  typedef typename Base::MultiIndex MultiIndex;
-  typedef typename Base::Element Element;
-  typedef typename Base::FiniteElement FiniteElement;
+  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST,MI> Interface;
+  typedef typename Interface::size_type size_type;
+  typedef typename Interface::MultiIndex MultiIndex;
+  typedef typename Interface::Element Element;
+  typedef typename Interface::FiniteElement FiniteElement;
 
   PQ1FunctionSpaceBasisLeafNode(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis),
@@ -186,51 +186,51 @@ public:
   {}
 
   //! Return current element, throw if unbound
-  const Element& element() const DUNE_FINAL
+  const Element& element() const DUNE_FINAL // all nodes
   {
     return *element_;
   }
 
-  const FiniteElement& finiteElement() const DUNE_FINAL
+  const FiniteElement& finiteElement() const DUNE_FINAL // leaf nodes
   {
     return *finiteElement_;
   }
 
   //! size of subtree rooted in this node (element-local)
-  size_type subTreeSize() const DUNE_FINAL
+  size_type subTreeSize() const DUNE_FINAL // all nodes or leaf nodes only ?
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
     return finiteElement_->localBasis().size();
   }
 
   //! maximum size of subtree rooted in this node for any element of the global basis
-  size_type maxSubTreeSize() const DUNE_FINAL
+  size_type maxSubTreeSize() const DUNE_FINAL // all nodes or leaf nodes only ?
   {
     return 1<<dim;
   }
 
   //! size of complete tree (element-local)
-  size_type localSize() const DUNE_FINAL
+  size_type localSize() const DUNE_FINAL // all nodes
   {
     // We have localSize==subTreeSize because the tree consist of a single leaf node.
     return subTreeSize();
   }
 
   //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
-  size_type localIndex(size_type i) const DUNE_FINAL
+  size_type localIndex(size_type i) const DUNE_FINAL // all nodes
   {
     return i;
   }
 
   //! maximum size of complete tree for any element of the global basis
-  size_type maxLocalSize() const DUNE_FINAL
+  size_type maxLocalSize() const DUNE_FINAL // all nodes
   {
     // We have maxLocalSize==maxSubTreeSize because the tree consist of a single leaf node.
     return maxSubTreeSize();
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
-  const MultiIndex globalIndex(size_type i) const DUNE_FINAL
+  const MultiIndex globalIndex(size_type i) const DUNE_FINAL // move to LocalView?
   {
     return { globalBasis_->gridView().indexSet().subIndex(
         *element_,
@@ -242,7 +242,7 @@ public:
   //! \param it iterator over a container of MultiIndex
   //! \return iterator past the last written element (STL-style)
   template<typename MultiIndexIterator>
-  MultiIndexIterator generateMultiIndices(MultiIndexIterator it) const
+  MultiIndexIterator generateMultiIndices(MultiIndexIterator it) const // move to LocalView?
   {
     size_type size = subTreeSize();
     for(size_type i=0; i<size; ++i)
