@@ -43,7 +43,6 @@ struct DifferentiableFunctionImplementableTest
     {
       if (not derivative_)
         derivative_ = std::make_shared<QuadraticPolynomial>(0, 2*a_, b_);
-//      return derivative_.get();
       return std::static_pointer_cast<typename Base::Derivative>(derivative_);
     }
 
@@ -117,9 +116,6 @@ struct DifferentiableFunctionImplementableTest
     // Test whether I can evaluate the third derivative through shared_ptr
     persistentThirdDerivative->evaluate(5, dddf);
     std::cout << "Third derivative at x=5: " << dddf << std::endl;
-
-
-
 
     return passed;
   }

@@ -68,8 +68,7 @@ struct DerivativeTraits<FieldVector<F,n>,FieldMatrix<F,m,1> >
  */
 template<class DT, class RT>
 class DifferentiableFunction :
-    public Dune::VirtualFunction<DT, RT>,
-    public std::enable_shared_from_this<DifferentiableFunction<DT, RT> >
+    public Dune::VirtualFunction<DT, RT>
 {
     public:
         /** \brief Type used for the independent variable (may be a vector type for functions of several variables) */
@@ -88,146 +87,16 @@ class DifferentiableFunction :
          *
          * ### Life time of the return value
          *
-         * This method returns a simple C pointer to the derivative object.
-         * When using this pointer be aware of the following life time guarantees:
-         * A priori, each function holds ownership of its derivative function object.
-         * Therefore, when the function goes out of scope (or gets destroyed in some other way),
-         * then its derivative (and recursively the higher-order derivatives as well) gets
-         * destroyed as well.  However, DifferentiableFunction provides infrastructure for
-         * being reference counted (that is why it derives from std::enable_shared_from_this).
-         * In particular, on the return type of the function you can call the method
-         * shared_from_this() to obtain a std::shared_ptr<Derivative>.  This std::shared_ptr then
-         * shares the ownership of the derivative with the function itself.  That
-         * way, the life time of a derivative can be extended beyond the life time of the
-         * function it was derived from.
-         *
-         * If you are afraid of handling the C pointer yourself you can get the derivative object
-         * in a different way.  Call the free function
-         * template<class FImp> FunctionHandle<typename FImp::Derivative> derivative(const FImp& f)
-         * with f being the function you want to derive.  The return value FunctionHandle
-         * acts like a light-weight safe-pointer, and again allows you to obtain a std::shared_ptr
-         * to the derivative.
+         * This method returns a std::shared_ptr<Derivative>. Since covariant return
+         * values do not work with shared_ptrs the type 'Derivative' will also be the
+         * interface class for actual implementations. In order to avoid virtual method
+         * calls if the implementation type is known one should always use the free
+         * method derivative(f) instead of f.derivative(). This will cast the shared_ptr
+         * to the appropriate implementation class.
          */
         virtual std::shared_ptr<Derivative> derivative() const = 0;
-
-#if 0
-        /** \brief Get a shared_ptr to this object to obtain shared ownership.
-         *
-         * \warning The semantics of this method are slightly different from the default version
-         *          in the C++ standard. Notably, the standard version of shared_from_this() throws
-         *          an exception of type std::bad_weak_ptr if no shared_ptr has been attached to the
-         *          object. In contrast, this implementation will switch to non-managed mode if you
-         *          call shared_from_this() without an attached shared_ptr. This change makes it
-         *          possible to call shared_from_this() on stack-allocated objects.
-         */
-        shared_ptr<DifferentiableFunction> shared_from_this()
-        {
-          try
-            {
-              return std::enable_shared_from_this<DifferentiableFunction<DT, RT> >::shared_from_this();
-            }
-          catch (std::bad_weak_ptr&)
-            {
-              _local_ptr = stackobject_to_shared_ptr(*this);
-              return _local_ptr;
-            }
-        }
-
-        /** \brief Get a shared_ptr to this object to obtain shared ownership.
-         *
-         * \warning The semantics of this method are slightly different from the default version
-         *          in the C++ standard. Notably, the standard version of shared_from_this() throws
-         *          an exception of type std::bad_weak_ptr if no shared_ptr has been attached to the
-         *          object. In contrast, this implementation will switch to non-managed mode if you
-         *          call shared_from_this() without an attached shared_ptr. This change makes it
-         *          possible to call shared_from_this() on stack-allocated objects.
-         */
-        shared_ptr<const DifferentiableFunction> shared_from_this() const
-        {
-          try
-            {
-              return std::enable_shared_from_this<DifferentiableFunction<DT, RT> >::shared_from_this();
-            }
-          catch (std::bad_weak_ptr&)
-            {
-              _local_ptr = stackobject_to_shared_ptr(*const_cast<DifferentiableFunction*>(this));
-              return _local_ptr;
-            }
-        }
-#endif
-
-private:
-
-  mutable shared_ptr<DifferentiableFunction> _local_ptr;
 };
 
-#if 0
-template<class FImp>
-class FunctionHandle :
-    public DifferentiableFunction<typename FImp::Domain, typename FImp::Range>
-{
-        typedef DifferentiableFunction<typename FImp::Domain, typename FImp::Range> Base;
-    public:
-        typedef typename Base::Range Range;
-        typedef typename Base::Domain Domain;
-        typedef typename Base::DerivativeRange DerivativeRange;
-
-        typedef typename FImp::Derivative Derivative;
-
-        // to be dicussed
-        typedef FImp HandledFunction;
-        typedef typename std::shared_ptr<const FImp> SharedPtr;
-
-        /**
-         * \brief Construct FunctionHandle from pointer to function.
-         *
-         * The FunctionHandle does not take ownership of this
-         * pointer. So its life time has to be controlled
-         * outside.
-         */
-        explicit FunctionHandle(const FImp* f) :
-            f_(f)
-        {}
-
-
-        virtual void evaluate(const Domain& x, Range& y) const DUNE_FINAL
-        {
-            f_->evaluate(x, y);
-        }
-
-        std::shared_ptr<const FImp> shared_ptr() const
-        {
-            return std::static_pointer_cast<const FImp>(f_->shared_from_this());
-        }
-
-    private:
-  // template<typename T>
-  //    friend FunctionHandle<typename T::Derivative> ::Dune::Functions::derivative(const T&);
-
-    protected:
-    public:
-
-        virtual Derivative* derivative() const DUNE_FINAL
-        {
-            return f_->derivative();
-        }
-
-        const FImp* f_;
-};
-
-/** \brief Get the derivative of a DifferentiableFunction
- *
- * \tparam FImp A DifferentiableFunction, i.e., a function that has a derivative() method
- *
- * Using this methods avoids ever having to handle the C-style pointer that is returned
- * by DifferentiableFunction::derivative.
- */
-template<class FImp>
-FunctionHandle<typename FImp::Derivative> derivative(const FImp& f)
-{
-    return FunctionHandle<typename FImp::Derivative>(f.derivative());
-}
-#endif
 
 /** \brief Get the derivative of a DifferentiableFunction
  *
