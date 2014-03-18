@@ -5,7 +5,7 @@ gridfunctionsinclude_HEADERS = \
    gridviewentityset.hh \
    gridviewfunction.hh
 
-SUBDIRS =
+SUBDIRS = test
 
 EXTRA_DIST = CMakeLists.txt
 
