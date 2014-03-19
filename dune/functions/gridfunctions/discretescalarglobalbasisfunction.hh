@@ -108,6 +108,7 @@ public:
     DUNE_THROW(NotImplemented,"derivative not implemented yet");
   }
 
+  / TODO: Implement this using hierarchic search
   virtual void evaluate(const typename Base::Domain& domain, typename Base::Range& r) const DUNE_FINAL
   {
     DUNE_THROW(NotImplemented,"not implemented");
