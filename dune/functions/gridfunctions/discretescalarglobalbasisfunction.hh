@@ -39,8 +39,8 @@ public:
     typedef typename EBase::Range Range;
 
     LocalFunction(const DiscreteScalarGlobalBasisFunction& globalFunction)
-      : _globalFunction(globalFunction)
-      , _localBasisView(globalFunction.basis().localView())
+      : globalFunction_(globalFunction)
+      , localBasisView_(globalFunction.basis().localView())
     {}
 
     virtual typename EBase::DerivativeBasePointer derivative() const DUNE_FINAL
@@ -50,42 +50,42 @@ public:
 
     virtual void bind(const Element& element) DUNE_FINAL
     {
-      _localBasisView.bind(element);
+      localBasisView_.bind(element);
     }
 
     virtual void unbind() DUNE_FINAL
     {
-      _localBasisView.unbind();
+      localBasisView_.unbind();
     }
 
     virtual void evaluate(const Domain& coord, Range& r) const DUNE_FINAL
     {
       std::vector<Range> shapeFunctionValues;
-      auto& basis = _localBasisView.tree().finiteElement().localBasis();
+      auto& basis = localBasisView_.tree().finiteElement().localBasis();
       basis.evaluateFunction(coord,shapeFunctionValues);
       std::vector<typename LocalBasisView::MultiIndex> globalIndices(basis.size());
-      _localBasisView.tree().generateMultiIndices(globalIndices.begin());
+      localBasisView_.tree().generateMultiIndices(globalIndices.begin());
       r = 0;
       for (size_type i = 0; i < basis.size(); ++i)
-        r += _globalFunction.dofs()[globalIndices[i][0]] * shapeFunctionValues[i];
+        r += globalFunction_.dofs()[globalIndices[i][0]] * shapeFunctionValues[i];
     }
 
     virtual const Element& localContext() const DUNE_FINAL
     {
-      return _localBasisView.element();
+      return localBasisView_.element();
     }
 
   private:
 
-    const DiscreteScalarGlobalBasisFunction& _globalFunction;
-    LocalBasisView _localBasisView;
+    const DiscreteScalarGlobalBasisFunction& globalFunction_;
+    LocalBasisView localBasisView_;
 
   };
 
   DiscreteScalarGlobalBasisFunction(std::shared_ptr<Basis> basis, std::shared_ptr<V> dofs)
     : Base(basis->gridView())
-    , _basis(basis)
-    , _dofs(dofs)
+    , basis_(basis)
+    , dofs_(dofs)
   {}
 
   virtual typename Base::LocalFunctionBasePointer localFunction() const DUNE_FINAL
@@ -95,12 +95,12 @@ public:
 
   const Basis& basis() const
   {
-    return *_basis;
+    return *basis_;
   }
 
   const V& dofs() const
   {
-    return *_dofs;
+    return *dofs_;
   }
 
   virtual typename Base::DerivativeBasePointer derivative() const DUNE_FINAL
@@ -108,7 +108,7 @@ public:
     DUNE_THROW(NotImplemented,"derivative not implemented yet");
   }
 
-  / TODO: Implement this using hierarchic search
+  // TODO: Implement this using hierarchic search
   virtual void evaluate(const typename Base::Domain& domain, typename Base::Range& r) const DUNE_FINAL
   {
     DUNE_THROW(NotImplemented,"not implemented");
@@ -118,8 +118,8 @@ public:
 
 private:
 
-  std::shared_ptr<Basis> _basis;
-  std::shared_ptr<V> _dofs;
+  std::shared_ptr<Basis> basis_;
+  std::shared_ptr<V> dofs_;
 
 };
 
