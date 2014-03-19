@@ -41,16 +41,37 @@ public:
     LocalFunction(const DiscreteScalarGlobalBasisFunction& globalFunction)
       : globalFunction_(globalFunction)
       , localBasisView_(globalFunction.basis().localView())
-    {}
+    {
+      indexCache_.reserve(globalFunction_.basis().maxLocalSize());
+      dofCache_.reserve(globalFunction_.basis().maxLocalSize());
+    }
 
     virtual typename EBase::DerivativeBasePointer derivative() const DUNE_FINAL
     {
       DUNE_THROW(NotImplemented,"derivative not implemented");
     }
 
+    /**
+     * \brief Bind LocalFunction to grid element.
+     *
+     * You must call this method before evaluate()
+     * and after changes to the coefficient vector.
+     */
     virtual void bind(const Element& element) DUNE_FINAL
     {
       localBasisView_.bind(element);
+
+      auto& tree = localBasisView_.tree();
+
+      // Stricly speaking we do not need to cache the indices if we
+      // already cache the dofs.
+      indexCache_.resize(tree.localSize());
+      tree.generateMultiIndices(indexCache_.begin());
+
+      // Cache the dofs associated to bound element
+      dofCache_.resize(tree.localSize());
+      for (size_type i = 0; i < tree.localSize(); ++i)
+        dofCache_[i] = globalFunction_.dofs()[indexCache_[i][0]];
     }
 
     virtual void unbind() DUNE_FINAL
@@ -58,16 +79,23 @@ public:
       localBasisView_.unbind();
     }
 
+    /**
+     * \brief Evaluate LocalFunction at bound element.
+     *
+     * The result of this method is undefined if you did
+     * not call bind() beforehand or changed the coefficient
+     * vector after the last call to bind(). In the latter case
+     * you have to call bind() again in order to make evaluate()
+     * usable.
+     */
     virtual void evaluate(const Domain& coord, Range& r) const DUNE_FINAL
     {
       std::vector<Range> shapeFunctionValues;
       auto& basis = localBasisView_.tree().finiteElement().localBasis();
       basis.evaluateFunction(coord,shapeFunctionValues);
-      std::vector<typename LocalBasisView::MultiIndex> globalIndices(basis.size());
-      localBasisView_.tree().generateMultiIndices(globalIndices.begin());
       r = 0;
       for (size_type i = 0; i < basis.size(); ++i)
-        r += globalFunction_.dofs()[globalIndices[i][0]] * shapeFunctionValues[i];
+        r += dofCache_[i] * shapeFunctionValues[i];
     }
 
     virtual const Element& localContext() const DUNE_FINAL
@@ -79,6 +107,8 @@ public:
 
     const DiscreteScalarGlobalBasisFunction& globalFunction_;
     LocalBasisView localBasisView_;
+    std::vector<typename LocalBasisView::MultiIndex> indexCache_;
+    std::vector<typename V::value_type> dofCache_;
 
   };
 
