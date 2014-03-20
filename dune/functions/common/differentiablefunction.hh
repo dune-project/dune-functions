@@ -17,8 +17,6 @@ namespace Functions {
 
 template<class DT, class RT> class DifferentiableFunction;
 
-template<class FImp> class FunctionHandle;
-
 
 
 class InvalidRange
