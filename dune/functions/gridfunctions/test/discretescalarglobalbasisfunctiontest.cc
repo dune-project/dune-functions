@@ -10,7 +10,7 @@
 
 #include <dune/grid/yaspgrid.hh>
 
-#include <dune/functions/functionspacebases/pq1functionspacebasis.hh>
+#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 
 using namespace Dune;

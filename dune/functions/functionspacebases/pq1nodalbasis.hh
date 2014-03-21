@@ -1,7 +1,7 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1FUNCTIONSPACEBASIS_HH
-#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1FUNCTIONSPACEBASIS_HH
+#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1NODALBASIS_HH
+#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1NODALBASIS_HH
 
 #include <dune/common/reservedvector.hh>
 #include <dune/common/exceptions.hh>
@@ -276,4 +276,4 @@ protected:
 } // end namespace Dune
 
 
-#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1FUNCTIONSPACEBASIS_HH
+#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1NODALBASIS_HH
