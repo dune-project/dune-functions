@@ -19,26 +19,26 @@ namespace Functions {
 
 
 template<typename GV>
-class PQ1FunctionSpaceBasisLocalView;
+class PQ1NodalBasisLocalView;
 
 template<typename GV>
-class PQ1FunctionSpaceBasisLeafNode;
+class PQ1NodalBasisLeafNode;
 
 template<typename GV>
-class PQ1FunctionSpaceBasis
+class PQ1NodalBasis
 {
 
 public:
   typedef GV GridView;
   typedef std::size_t size_type;
-  typedef PQ1FunctionSpaceBasisLocalView<GV> LocalView;
+  typedef PQ1NodalBasisLocalView<GV> LocalView;
 
   static const int dim = GV::Grid::dimension;
 
 //  typedef Dune::ReservedVector<size_type, 1> MultiIndex;
   typedef std::array<size_type, 1> MultiIndex;
 
-  PQ1FunctionSpaceBasis(const GridView& gv) :
+  PQ1NodalBasis(const GridView& gv) :
     gridView_(gv)
   {}
 
@@ -94,18 +94,18 @@ protected:
 
 
 template<typename GV>
-class PQ1FunctionSpaceBasisLocalView
+class PQ1NodalBasisLocalView
 {
 public:
 
-  typedef PQ1FunctionSpaceBasis<GV> GlobalBasis;
+  typedef PQ1NodalBasis<GV> GlobalBasis;
   typedef typename GlobalBasis::GridView GridView;
   typedef typename GlobalBasis::size_type size_type;
   typedef typename GlobalBasis::MultiIndex MultiIndex;
   typedef typename GridView::template Codim<0>::Entity Element;
-  typedef PQ1FunctionSpaceBasisLeafNode<GV> Tree;
+  typedef PQ1NodalBasisLeafNode<GV> Tree;
 
-  PQ1FunctionSpaceBasisLocalView(const GlobalBasis* globalBasis) :
+  PQ1NodalBasisLocalView(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis),
     tree_(globalBasis)
   {}
@@ -152,14 +152,14 @@ protected:
 
 
 template<typename GV>
-class PQ1FunctionSpaceBasisLeafNode :
+class PQ1NodalBasisLeafNode :
   public GridFunctionSpaceBasisLeafNodeInterface<
     typename GV::template Codim<0>::Entity,
     typename Dune::PQkLocalFiniteElementCache<typename GV::Grid::ctype, double, GV::Grid::dimension, 1>::FiniteElementType,
-    typename PQ1FunctionSpaceBasis<GV>::size_type,
-    typename PQ1FunctionSpaceBasis<GV>::MultiIndex>
+    typename PQ1NodalBasis<GV>::size_type,
+    typename PQ1NodalBasis<GV>::MultiIndex>
 {
-  typedef PQ1FunctionSpaceBasis<GV> GlobalBasis;
+  typedef PQ1NodalBasis<GV> GlobalBasis;
   static const int dim = GV::Grid::dimension;
 
   typedef typename GV::template Codim<0>::Entity E;
@@ -180,7 +180,7 @@ public:
   typedef typename Interface::Element Element;
   typedef typename Interface::FiniteElement FiniteElement;
 
-  PQ1FunctionSpaceBasisLeafNode(const GlobalBasis* globalBasis) :
+  PQ1NodalBasisLeafNode(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis),
     finiteElement_(0),
     element_(0)

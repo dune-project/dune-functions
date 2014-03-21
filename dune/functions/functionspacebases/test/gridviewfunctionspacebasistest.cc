@@ -27,7 +27,7 @@ int main (int argc, char* argv[]) try
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
-  typedef PQ1FunctionSpaceBasis<GridView> Basis;
+  typedef PQ1NodalBasis<GridView> Basis;
 
   const GridView& gridView = grid.leafGridView();
   Basis feBasis(gridView);

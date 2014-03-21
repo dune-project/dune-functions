@@ -30,9 +30,9 @@ int main (int argc, char* argv[]) try
   typedef GridType::LeafGridView GridView;
 
   const GridView& gridView = grid.leafGridView();
-  PQ1FunctionSpaceBasis<GridView> feBasis(gridView);
+  PQ1NodalBasis<GridView> feBasis(gridView);
 
-  typedef PQ1FunctionSpaceBasis<GridView>::MultiIndex MultiIndex;
+  typedef PQ1NodalBasis<GridView>::MultiIndex MultiIndex;
 
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
