@@ -44,13 +44,13 @@ struct DerivativeTraits<FieldVector<F,n>,F>
 template<typename F, int n, int m>
 struct DerivativeTraits<FieldVector<F,n>,FieldVector<F,m> >
 {
-  typedef FieldMatrix<F,n,m> DerivativeRange;
+  typedef FieldMatrix<F,m,n> DerivativeRange;
 };
 
 template<typename F, int n, int m>
-struct DerivativeTraits<FieldVector<F,n>,FieldMatrix<F,m,1> >
+struct DerivativeTraits<FieldVector<F,n>,FieldMatrix<F,1,m> >
 {
-  typedef FieldMatrix<F,n,m> DerivativeRange;
+  typedef FieldMatrix<F,m,n> DerivativeRange;
 };
 
 
