@@ -1,7 +1,7 @@
 Function Space Bases
 
 - for now only depending on GridView (maybe also for Grids or other entity sets - tbd)
-- Global interface minimalistic (only provide enoug information for computing container sizes)
+- Global interface minimalistic (only provide enough information for computing container sizes)
 - main interface through a LocalView obtained from the global basis
 - Prototype implementation for PQ1 and flat global index in dune-functions
 
@@ -14,9 +14,9 @@ LocalView
 LocalView Tree
 
 - Tree represents an element-local tensor product space
-- Leaves correspond to a local finite elements from dune-localfunctions
+- Leafs correspond to a local finite elements from dune-localfunctions
 - Tree is implemented using dune-typetree
-- leafs can map leaf-local consecutive indices for shape functions to
+- Leafs can map leaf-local consecutive indices for shape functions to
   - a unique index with respect to the entire local basis tree, which is consecutive and 0-based
   - a globally unique (for the entire function space) multi-index. The exact semantics and
     properties of this multi-index are not defined yet. There may be multiple classes of multi-indices
@@ -41,7 +41,7 @@ Open Questions
 
 - Container backends
 - Index transformations (for systems / blocking / etc.)
-- Avoid interface restrictions wr.t. features like automatic backend construction (PDELab) or additional
+- Avoid interface restrictions w.r.t. features like automatic backend construction (PDELab) or additional
   information like local sparsity structures (Carsten)
 - Semantics and properties of canonical multi-index classes
 - Constraints
