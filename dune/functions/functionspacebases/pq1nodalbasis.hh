@@ -29,6 +29,9 @@ class PQ1NodalBasisLeafNode;
  */
 template<typename GV>
 class PQ1NodalBasis
+: public GridViewFunctionSpaceBasis<GV,
+                                    PQ1NodalBasisLocalView<GV>,
+                                    std::array<std::size_t, 1> >
 {
 
 public:
@@ -48,11 +51,10 @@ public:
 
   /** \brief Obtain the grid view that the basis is defined on
    */
-  const GridView& gridView() const
+  const GridView& gridView() const DUNE_FINAL
   {
     return gridView_;
   }
-
 
   /**
    * \brief maximum local size for any element on the GridView
@@ -62,7 +64,7 @@ public:
    *
    * max{GridViewLocalBasisView(e).tree().size() | e in GridView}
    */
-  size_type maxLocalSize() const
+  size_type maxLocalSize() const DUNE_FINAL
   {
     return 1<<dim;
   }
@@ -74,7 +76,7 @@ public:
   }
 
   //! Return number possible values for next position in multi index
-  size_type subIndexCount(const MultiIndex& index) const
+  size_type subIndexCount(const MultiIndex& index) const DUNE_FINAL
   {
     return gridView_.size(dim);
   }
