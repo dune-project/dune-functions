@@ -1,3 +1,6 @@
+*.log
+*.trs
+
 differentiablefunctiontest
 functionfromcallabletest
 
