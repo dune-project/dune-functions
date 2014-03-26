@@ -23,6 +23,10 @@ class PQ1NodalBasisLocalView;
 template<typename GV>
 class PQ1NodalBasisLeafNode;
 
+/** \brief Nodal basis of a scalar first-order Lagrangean finite element space
+ *
+ * \tparam GV The GridView that the space is defined on.
+ */
 template<typename GV>
 class PQ1NodalBasis
 {
@@ -34,14 +38,15 @@ public:
 
   static const int dim = GV::Grid::dimension;
 
+  /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type, 1> MultiIndex;
 
+  /** \brief Constructor for a given grid view object */
   PQ1NodalBasis(const GridView& gv) :
     gridView_(gv)
   {}
 
-  /**
-   * \brief
+  /** \brief Obtain the grid view that the basis is defined on
    */
   const GridView& gridView() const
   {
