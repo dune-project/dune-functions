@@ -96,7 +96,7 @@ class GridViewFunctionSpaceBasis
    * of the global basis in order to calm the compiler
    * when instantiating the TMP constructing the local view.
    */
-  LocalView localView() const;
+  virtual LocalView localView() const = 0;
 
 };
 
