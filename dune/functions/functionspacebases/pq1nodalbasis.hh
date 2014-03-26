@@ -3,7 +3,7 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1NODALBASIS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1NODALBASIS_HH
 
-#include <dune/common/reservedvector.hh>
+#include <array>
 #include <dune/common/exceptions.hh>
 
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
@@ -35,7 +35,6 @@ public:
 
   static const int dim = GV::Grid::dimension;
 
-//  typedef Dune::ReservedVector<size_type, 1> MultiIndex;
   typedef std::array<size_type, 1> MultiIndex;
 
   PQ1NodalBasis(const GridView& gv) :
