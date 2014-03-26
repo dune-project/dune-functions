@@ -61,18 +61,20 @@ struct FunctionSpaceBasisTraits;
 {
   typedef calc<T>::LocalBasisView;
 };
+#endif
 
 
-template<typename GV, ...>
+template<typename GV, typename LV, typename MI>
 class GridViewFunctionSpaceBasis
 {
+  typedef GV GridView;
   typedef std::size_t size_type;
-  typedef typename Dune::ReservedVector<size_type, 42> MultiIndex;
+  typedef LV LocalView;
+  typedef MI MultiIndex;
 
-  /**
-   * \brief
+  /** \brief Obtain the grid view that the basis is defined on
    */
-  const GridView& gridView() const;
+  virtual const GridView& gridView() const = 0;
 
   /**
    * \brief maximum local size for any element on the GridView
@@ -82,10 +84,10 @@ class GridViewFunctionSpaceBasis
    *
    * max{GridViewLocalBasisView(e).tree().size() | e in GridView}
    */
-  size_type maxLocalSize() const;
+  virtual size_type maxLocalSize() const = 0;
 
   //! Return number possible values for next position in multi index
-  size_type subIndexCount(const MultiIndex& index) const;
+  virtual size_type subIndexCount(const MultiIndex& index) const = 0;
 
   /**
    * \brief Return local view for basis
@@ -94,9 +96,11 @@ class GridViewFunctionSpaceBasis
    * of the global basis in order to calm the compiler
    * when instantiating the TMP constructing the local view.
    */
-  GridViewLocalBasisView localView() const;
+  LocalView localView() const;
+
 };
 
+#if 0
 //! TypeTree node
 template<typename GridViewFunctionSpaceBasis>
 class GridViewLocalBasisView
