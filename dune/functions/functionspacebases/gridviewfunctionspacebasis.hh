@@ -92,7 +92,7 @@ class GridViewFunctionSpaceBasis
    *
    * Perhaps we must move the construction outside
    * of the global basis in order to calm the compiler
-   * when instanciating the TMP constructing the local view.
+   * when instantiating the TMP constructing the local view.
    */
   GridViewLocalBasisView localView() const;
 };
