@@ -17,7 +17,6 @@ LIBS="$DUNE_LIBS"
 
 AC_CONFIG_FILES([
   Makefile
-  src/Makefile
   cmake/Makefile
   cmake/modules/Makefile
   doc/Makefile

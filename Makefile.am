@@ -3,7 +3,7 @@ EXTRA_DIST = dune.module \
   CMakeLists.txt \
   config.h.cmake
 
-SUBDIRS = src m4 dune doc cmake
+SUBDIRS = m4 dune doc cmake
 
 if BUILD_DOCS
 # TODO: set up documentation tree automatically
