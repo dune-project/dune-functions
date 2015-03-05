@@ -33,13 +33,12 @@ class PQ1NodalBasis
                                     PQ1NodalBasisLocalView<GV>,
                                     std::array<std::size_t, 1> >
 {
+  static const int dim = GV::dimension;
 
 public:
   typedef GV GridView;
   typedef std::size_t size_type;
   typedef PQ1NodalBasisLocalView<GV> LocalView;
-
-  static const int dim = GV::Grid::dimension;
 
   /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type, 1> MultiIndex;
@@ -69,7 +68,7 @@ public:
     return 1<<dim;
   }
 
-  //! Return number possible values for next position in empty multi index
+  //! Return number of possible values for next position in empty multi index
   size_type subIndexCount() const
   {
     return gridView_.size(dim);
@@ -160,23 +159,22 @@ template<typename GV>
 class PQ1NodalBasisLeafNode :
   public GridFunctionSpaceBasisLeafNodeInterface<
     typename GV::template Codim<0>::Entity,
-    typename Dune::PQkLocalFiniteElementCache<typename GV::Grid::ctype, double, GV::Grid::dimension, 1>::FiniteElementType,
+    typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, GV::dimension, 1>::FiniteElementType,
     typename PQ1NodalBasis<GV>::size_type,
     typename PQ1NodalBasis<GV>::MultiIndex>
 {
   typedef PQ1NodalBasis<GV> GlobalBasis;
-  static const int dim = GV::Grid::dimension;
+  static const int dim = GV::dimension;
 
   typedef typename GV::template Codim<0>::Entity E;
-  typedef typename Dune::PQkLocalFiniteElementCache<typename GV::Grid::ctype, double, dim, 1>::FiniteElementType FE;
+  typedef typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, dim, 1> FiniteElementCache;
+  typedef typename FiniteElementCache::FiniteElementType FE;
   typedef typename GlobalBasis::size_type ST;
   typedef typename GlobalBasis::MultiIndex MI;
 
 
   typedef typename GlobalBasis::LocalView LocalView;
   friend LocalView;
-
-  typedef typename Dune::PQkLocalFiniteElementCache<typename GV::Grid::ctype, double, dim, 1> FiniteElementCache;
 
 public:
   typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST,MI> Interface;
