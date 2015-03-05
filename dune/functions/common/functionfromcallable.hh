@@ -7,6 +7,7 @@
 #include <memory>
 #include <functional>
 
+#include <dune/common/std/final.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/functions/common/differentiablefunction.hh>
 

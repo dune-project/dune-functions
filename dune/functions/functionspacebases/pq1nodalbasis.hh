@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1NODALBASIS_HH
 
 #include <array>
+#include <dune/common/std/final.hh>
 #include <dune/common/exceptions.hh>
 
 #include <dune/localfunctions/lagrange/pqkfactory.hh>

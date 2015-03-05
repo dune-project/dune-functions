@@ -1,4 +1,5 @@
 #install headers
-install(FILES functions.hh DESTINATION include/dune/functions)
 
-add_subdirectory(test)
+add_subdirectory(common)
+add_subdirectory(functionspacebases)
+add_subdirectory(gridfunctions)
