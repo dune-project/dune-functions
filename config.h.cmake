@@ -1,12 +1,12 @@
-/* begin functions
+/* begin dune-functions
    put the definitions for config.h specific to
    your project here. Everything above will be
-   overwritten 
+   overwritten
 */
 
 /* begin private */
 /* Name of package */
-#define PACKAGE "@DUNE_MOD_NAME"
+#define PACKAGE "@DUNE_MOD_NAME@"
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "@DUNE_MAINTAINER@"
@@ -29,17 +29,17 @@
 /* end private */
 
 /* Define to the version of dune-functions */
-#define Udune_functions_VERSION "@Udune_functions_VERSION@"
+#define DUNE_FUNCTIONS_VERSION "@DUNE_FUNCTIONS_VERSION@"
 
 /* Define to the major version of dune-functions */
-#define Udune_functions_VERSION_MAJOR @Udune_functions_VERSION_MAJOR@
+#define DUNE_FUNCTIONS_VERSION_MAJOR @DUNE_FUNCTIONS_VERSION_MAJOR@
 
 /* Define to the minor version of dune-functions */
-#define Udune_functions_VERSION_MINOR @Udune_functions_VERSION_MINOR@
+#define DUNE_FUNCTIONS_VERSION_MINOR @DUNE_FUNCTIONS_VERSION_MINOR@
 
 /* Define to the revision of dune-functions */
-#define Udune_functions_VERSION_REVISION @Udune_functions_VERSION_REVISION@
+#define DUNE_FUNCTIONS_VERSION_REVISION @DUNE_FUNCTIONS_VERSION_REVISION@
 
-/* end functions
+/* end dune-functions
    Everything below here will be overwritten
 */

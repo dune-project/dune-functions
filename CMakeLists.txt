@@ -8,9 +8,9 @@ if(NOT (dune-common_DIR OR dune-common_ROOT OR
 endif()
 
 #find dune-common and set the module path
-find_package(dune-common)
-list(APPEND CMAKE_MODULE_PATH ${dune-common_MODULE_PATH}
-  "${PROJECT_SOURCE_DIR}/cmake/modules")
+find_package(dune-common REQUIRED)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules"
+  ${dune-common_MODULE_PATH})
 
 #include the dune macros
 include(DuneMacros)
@@ -22,6 +22,7 @@ add_subdirectory("src")
 add_subdirectory("m4")
 add_subdirectory("dune")
 add_subdirectory("doc")
+add_subdirectory("cmake/modules")
 
 # finalize the dune project, e.g. generating config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
