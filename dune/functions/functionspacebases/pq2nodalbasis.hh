@@ -235,8 +235,8 @@ public:
 
   PQ2NodalBasisLeafNode(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis),
-    finiteElement_(0),
-    element_(0)
+    finiteElement_(nullptr),
+    element_(nullptr)
   {}
 
   //! Return current element, throw if unbound
