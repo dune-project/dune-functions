@@ -88,12 +88,12 @@ public:
     return ((void*) (p_) == (void*)(&buffer_));
   }
 
-  const Base& ref () const
+  const Base& get() const
   {
     return *p_;
   }
 
-  Base& ref ()
+  Base& get()
   {
     return *p_;
   }
