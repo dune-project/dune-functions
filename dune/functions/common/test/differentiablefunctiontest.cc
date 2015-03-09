@@ -14,51 +14,92 @@
 
 //#include "derivativecheck.hh"
 
+
+template<class K, int sinFactor, int cosFactor>
+class TrigonometricFunction
+{
+public:
+  K operator () (const K& x) const
+  {
+    return sinFactor * std::sin(x) + cosFactor * std::cos(x);
+  }
+};
+
+
+template<class K, int sinFactor, int cosFactor>
+TrigonometricFunction<K, -cosFactor, sinFactor> derivative(const TrigonometricFunction<K, sinFactor, cosFactor>& f)
+{
+  return TrigonometricFunction<K, -cosFactor, sinFactor>();
+}
+
+
+
+template<class K>
+class Polynomial
+{
+public:
+
+    Polynomial()
+    {}
+
+    Polynomial(const Polynomial& other) :
+        coefficients_(other.coefficients_)
+    {}
+
+    Polynomial(Polynomial&& other) :
+        coefficients_(std::move(other.coefficients_))
+    {}
+
+    Polynomial(std::initializer_list<double> coefficients) :
+        coefficients_(coefficients)
+    {}
+
+    Polynomial(std::vector<K>&& coefficients) :
+        coefficients_(std::move(coefficients))
+    {}
+
+    Polynomial(const std::vector<K>& coefficients) :
+        coefficients_(coefficients)
+    {}
+
+    K operator() (const K& x) const
+    {
+        auto y = K(0);
+        for (size_t i=0; i<coefficients_.size(); ++i)
+            y += coefficients_[i] * std::pow(x, i);
+        return y;
+    }
+
+    friend Polynomial derivative(const Polynomial& p)
+    {
+        auto derivative = Polynomial();
+        derivative.coefficients_.resize(p.coefficients_.size()-1);
+        for (size_t i=1; i<p.coefficients_.size(); ++i)
+            derivative.coefficients_[i-1] = p.coefficients_[i]*i;
+        return derivative;
+    }
+
+    const std::vector<K>& coefficients() const
+    {
+        return coefficients_;
+    }
+
+private:
+    std::vector<K> coefficients_;
+};
+
+
+
 // Check if interface compiles and is implementable by a simple dummy
 struct DifferentiableFunctionImplementableTest
 {
 
-  class QuadraticPolynomial
-  {
-  public:
-
-    /**
-     * \brief Constructor
-     * \param a,b,c Coefficients with respect to the monomial basis
-     */
-    QuadraticPolynomial(double a, double b, double c)
-    : a_(a), b_(b), c_(c)
-    {}
-
-    /** \brief Evaluate the function at a given point */
-    double operator()(const double& x) const
-    {
-      return a_*x*x + b_*x + c_;
-    }
-
-    /** \brief Get the function implementing the first derivative */
-    friend QuadraticPolynomial derivative(const QuadraticPolynomial& p)
-    {
-      return QuadraticPolynomial(0, 2*p.a_, p.b_);
-    }
-
-//    /** \brief Get the function implementing the first derivative */
-//    QuadraticPolynomial derivative() const
-//    {
-//      return QuadraticPolynomial(0, 2*a_, b_);
-//    }
-
-  private:
-    // coefficients
-    double a_, b_, c_;
-  };
-
-  static bool check()
+  template<class F>
+  static bool checkWithFunction(F&& f)
   {
     bool passed = true;
 
     {
-      QuadraticPolynomial f(1,1,1);
 
 //      passed = passed and DerivativeCheck<QuadraticPolynomial>::checkAllImplementedTrulyDerived(testFunction, 10);
 
@@ -128,6 +169,18 @@ struct DifferentiableFunctionImplementableTest
 
     return passed;
   }
+
+  static bool check()
+  {
+    bool passed = true;
+
+    passed = passed and checkWithFunction(Polynomial<double>({1, 2, 3}));
+    passed = passed and checkWithFunction(TrigonometricFunction<double, 1, 0>());
+
+    return passed;
+  }
+
+
 };
 
 
