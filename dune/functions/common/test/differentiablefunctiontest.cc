@@ -29,6 +29,7 @@ struct DifferentiableFunctionImplementableTest
     bool passed = true;
 
     {
+      std::cout << "--------------" << std::endl;
 
 //      passed = passed and DerivativeCheck<QuadraticPolynomial>::checkAllImplementedTrulyDerived(testFunction, 10);
 
@@ -78,6 +79,20 @@ struct DifferentiableFunctionImplementableTest
       // Test whether I can evaluate the third derivative through FunctionHandle
       auto dddfiii = derivative(ddfiii);
       std::cout << "Third derivative at x=5: " << dddfiii(5) << std::endl;
+
+      // Wrap as non-differentiable function
+      Dune::Functions::DifferentiableFunction<double(const double&)> g = [=] (const double& x) {return f(x);};
+      std::cout << "Function value at x=5: " << g(5) << std::endl;
+
+      try {
+        auto dg = derivative(g);
+        passed = false;
+      }
+      catch (Dune::NotImplemented e)
+      {
+        std::cout << "Obtaining derivative from nondifferentiable function failed expectedly" << std::endl;
+      }
+
     }
 
 #if 0
@@ -199,8 +214,10 @@ try
 catch( Dune::Exception &e )
 {
   std::cerr << "Dune reported error: " << e << std::endl;
+  return 1;
 }
 catch(...)
 {
   std::cerr << "Unknown exception thrown!" << std::endl;
+  return 1;
 }
