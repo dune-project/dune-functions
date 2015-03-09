@@ -47,40 +47,31 @@ public:
 
   SmallObject(SmallObject&& other)
   {
-    if (other.bufferUsed())
-      p_ = other.p_->move(buffer_);
-    else
-    {
-      // We don't need to check for &other_!=this, because you can't
-      // have an rvalue to *this and call it's constructor at the same time.
-      // (Despite using a nasty combination of placement new
-      // and std::move().)
-
-      // Take ownership of allocated object
-      p_ = other.p_;
-
-      // Leave pointer in a clear state to avoid double freeing it.
-      other.p_ = 0;
-    }
+    moveToWrappedObject(std::move(other));
   }
 
   SmallObject(const SmallObject& other)
   {
-    if (&other!=this)
-    {
-      if (other.bufferUsed())
-        p_ = other.p_->clone(buffer_);
-      else
-        p_ = other.p_->clone();
-    }
+    copyToWrappedObject(other);
   }
 
   ~SmallObject()
   {
-    if (bufferUsed())
-      p_->~Base();
-    else
-      delete p_;
+    destroyWrappedObject();
+  }
+
+  SmallObject& operator=(const SmallObject& other)
+  {
+    destroyWrappedObject();
+    copyToWrappedObject(other);
+    return *this;
+  }
+
+  SmallObject& operator=(SmallObject&& other)
+  {
+    destroyWrappedObject();
+    moveToWrappedObject(std::move(other));
+    return *this;
   }
 
   bool bufferUsed() const
@@ -99,6 +90,44 @@ public:
   }
 
 private:
+
+  void destroyWrappedObject()
+  {
+    if (bufferUsed())
+      p_->~Base();
+    else
+      delete p_;
+  }
+
+  void moveToWrappedObject(SmallObject&& other)
+  {
+    if (other.bufferUsed())
+      p_ = other.p_->move(buffer_);
+    else
+    {
+      // We don't need to check for &other_!=this, because you can't
+      // have an rvalue to *this and call it's assignment/constructor
+      // at the same time. (Despite trying to shot yourself in the foot
+      // with std::move explicitly.)
+
+      // Take ownership of allocated object
+      p_ = other.p_;
+
+      // Leave pointer in a clear state to avoid double freeing it.
+      other.p_ = 0;
+    }
+  }
+
+  void copyToWrappedObject(const SmallObject& other)
+  {
+    if (&other!=this)
+    {
+      if (other.bufferUsed())
+        p_ = other.p_->clone(buffer_);
+      else
+        p_ = other.p_->clone();
+    }
+  }
 
   Base* p_;
   char buffer_[bufferSize];
