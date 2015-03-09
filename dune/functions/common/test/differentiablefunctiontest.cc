@@ -10,84 +10,13 @@
 #include <dune/common/exceptions.hh>
 
 #include <dune/functions/common/new_differentiablefunction.hh>
+
+#include <dune/functions/analyticfunctions/polynomial.hh>
+#include <dune/functions/analyticfunctions/trigonometricfunction.hh>
+
 //#include <dune/functions/common/callable.hh>
 
 //#include "derivativecheck.hh"
-
-
-template<class K, int sinFactor, int cosFactor>
-class TrigonometricFunction
-{
-public:
-  K operator () (const K& x) const
-  {
-    return sinFactor * std::sin(x) + cosFactor * std::cos(x);
-  }
-};
-
-
-template<class K, int sinFactor, int cosFactor>
-TrigonometricFunction<K, -cosFactor, sinFactor> derivative(const TrigonometricFunction<K, sinFactor, cosFactor>& f)
-{
-  return TrigonometricFunction<K, -cosFactor, sinFactor>();
-}
-
-
-
-template<class K>
-class Polynomial
-{
-public:
-
-    Polynomial()
-    {}
-
-    Polynomial(const Polynomial& other) :
-        coefficients_(other.coefficients_)
-    {}
-
-    Polynomial(Polynomial&& other) :
-        coefficients_(std::move(other.coefficients_))
-    {}
-
-    Polynomial(std::initializer_list<double> coefficients) :
-        coefficients_(coefficients)
-    {}
-
-    Polynomial(std::vector<K>&& coefficients) :
-        coefficients_(std::move(coefficients))
-    {}
-
-    Polynomial(const std::vector<K>& coefficients) :
-        coefficients_(coefficients)
-    {}
-
-    K operator() (const K& x) const
-    {
-        auto y = K(0);
-        for (size_t i=0; i<coefficients_.size(); ++i)
-            y += coefficients_[i] * std::pow(x, i);
-        return y;
-    }
-
-    friend Polynomial derivative(const Polynomial& p)
-    {
-        auto derivative = Polynomial();
-        derivative.coefficients_.resize(p.coefficients_.size()-1);
-        for (size_t i=1; i<p.coefficients_.size(); ++i)
-            derivative.coefficients_[i-1] = p.coefficients_[i]*i;
-        return derivative;
-    }
-
-    const std::vector<K>& coefficients() const
-    {
-        return coefficients_;
-    }
-
-private:
-    std::vector<K> coefficients_;
-};
-
 
 
 // Check if interface compiles and is implementable by a simple dummy
@@ -174,8 +103,8 @@ struct DifferentiableFunctionImplementableTest
   {
     bool passed = true;
 
-    passed = passed and checkWithFunction(Polynomial<double>({1, 2, 3}));
-    passed = passed and checkWithFunction(TrigonometricFunction<double, 1, 0>());
+    passed = passed and checkWithFunction(Dune::Functions::Polynomial<double>({1, 2, 3}));
+    passed = passed and checkWithFunction(Dune::Functions::TrigonometricFunction<double, 1, 0>());
 
     return passed;
   }
