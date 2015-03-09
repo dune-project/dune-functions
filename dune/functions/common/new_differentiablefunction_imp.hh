@@ -3,7 +3,7 @@
 #ifndef DUNE_FUNCTIONS_COMMON_DIFFERENTIABLE_FUNCTION_IMP_HH
 #define DUNE_FUNCTIONS_COMMON_DIFFERENTIABLE_FUNCTION_IMP_HH
 
-#include <string>
+#include <dune/common/exceptions.hh>
 
 #include "concept.hh"
 
@@ -105,7 +105,7 @@ public:
 
   virtual DerivativeInterface wrappedDerivative() const
   {
-    throw std::string("Derivative not implemented");
+    DUNE_THROW(Dune::NotImplemented, "Derivative not implemented");
   }
 
   virtual NonDifferentiableFunctionWrapper* clone() const
