@@ -15,29 +15,29 @@ namespace Dune {
 namespace Functions {
 namespace Concept {
 
-  /**
-   * A concept describing types that have a derivative() method found by ADL
-   */
-  struct HasFreeDerivative
-  {
-    template<class F>
-    auto require(F&& f) -> decltype(
-      derivative(f)
-    );
-  };
+/**
+ * A concept describing types that have a derivative() method found by ADL
+ */
+struct HasFreeDerivative
+{
+  template<class F>
+  auto require(F&& f) -> decltype(
+    derivative(f)
+  );
+};
 
-  /**
-   * A concept describing types that have a member function foo.derivative()
-   *
-   * \todo can we remove this?
-   */
-  struct HasMemberDerivative
-  {
-    template<class F>
-    auto require(F&& f) -> decltype(
-      f.derivative()
-    );
-  };
+/**
+ * A concept describing types that have a member function foo.derivative()
+ *
+ * \todo can we remove this?
+ */
+struct HasMemberDerivative
+{
+  template<class F>
+  auto require(F&& f) -> decltype(
+    f.derivative()
+  );
+};
 
 } // namespace Concept
 
@@ -94,7 +94,7 @@ public:
       Dune::Functions::Concept::models< Dune::Functions::Concept::HasFreeDerivative, F>()
       and not(std::is_same<DifferentiableFunction, typename std::decay<F>::type>::value), int>::type = 0>
   DifferentiableFunction(F&& f) :
-    f_(Imp::DifferentiableFunctionWrapper<Signature, DerivativeInterface, F>(std::forward<F>(f)))
+    f_(Imp::DifferentiableFunctionWrapper<Signature, DerivativeInterface, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
   /**
@@ -111,29 +111,17 @@ public:
   template<class F,
     typename std::enable_if< not(Dune::Functions::Concept::models< Dune::Functions::Concept::HasFreeDerivative, F>()), int>::type = 0>
   DifferentiableFunction(F&& f) :
-    f_(Imp::NonDifferentiableFunctionWrapper<Signature, DerivativeInterface, F>(std::forward<F>(f)))
+    f_(Imp::NonDifferentiableFunctionWrapper<Signature, DerivativeInterface, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
-//    DifferentiableFunction(const DifferentiableFunction& other) :
-//        f_(other.f_)
-//    {}
 
-//    DifferentiableFunction(DifferentiableFunction&& other) :
-//        f_(std::move(other.f_))
-//    {}
+  DifferentiableFunction(const DifferentiableFunction& other) = default;
 
-//    DifferentiableFunction operator=(const DifferentiableFunction& other)
-//    {
-//        f_ = other.f_;
-//        return *this;
-//    }
+  DifferentiableFunction(DifferentiableFunction&& other) = default;
 
-//    DifferentiableFunction operator=(DifferentiableFunction&& other)
-//    {
-//        f_ = std::move(other.f_);
-//        return *this;
-//    }
+  DifferentiableFunction& operator=(const DifferentiableFunction& other) = default;
 
+  DifferentiableFunction& operator=(DifferentiableFunction&& other) = default;
 
   /**
    * \brief Evaluation of wrapped function
@@ -146,33 +134,16 @@ public:
   /**
    * \brief Get derivative of wrapped function
    *
-   * Do not use this method, but the free derivative() function.
-   *
-   * \todo Can we replace this by an inline friend?
+   * This is free function will be found by ADL.
    */
-  DerivativeInterface wrappedDerivative() const
+  friend DerivativeInterface derivative(const DifferentiableFunction& t)
   {
-    return f_.get().wrappedDerivative();
+    return t.f_.get().wrappedDerivative();
   }
 
 private:
   SmallObject<Imp::DifferentiableFunctionWrapperBase<Signature, DerivativeInterface>, bufferSize > f_;
 };
-
-
-
-template<class Signature, template<class> class DerivativeTraits, size_t bufferSize>
-auto derivative(const DifferentiableFunction<Signature, DerivativeTraits, bufferSize>& f) -> decltype(f.wrappedDerivative())
-{
-  return f.wrappedDerivative();
-}
-
-//template<class F,
-//  typename std::enable_if< Dune::Functions::Concept::models<Dune::Functions::Concept::HasMemberDerivative, F>(), int>::type=0>
-//auto derivative(const F& f) -> decltype(f.derivative())
-//{
-//  return f.derivative();
-//}
 
 
 
