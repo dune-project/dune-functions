@@ -10,6 +10,7 @@ add_dependencies(${_test_target} ${TESTPROGS})
 
 add_executable("differentiablefunctiontest"
                differentiablefunctiontest.cc)
+target_link_libraries("differentiablefunctiontest" "dunecommon")
 
 add_executable("functionfromcallabletest"
                functionfromcallabletest.cc)
