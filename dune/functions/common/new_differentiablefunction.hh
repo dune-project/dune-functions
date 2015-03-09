@@ -115,6 +115,8 @@ public:
   {}
 
 
+  DifferentiableFunction() = default;
+
   DifferentiableFunction(const DifferentiableFunction& other) = default;
 
   DifferentiableFunction(DifferentiableFunction&& other) = default;
