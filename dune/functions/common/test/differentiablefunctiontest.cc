@@ -9,25 +9,21 @@
 #include <dune/common/shared_ptr.hh>
 #include <dune/common/exceptions.hh>
 
-#include <dune/functions/common/differentiablefunction.hh>
-#include <dune/functions/common/callable.hh>
+#include <dune/functions/common/new_differentiablefunction.hh>
+//#include <dune/functions/common/callable.hh>
 
-#include "derivativecheck.hh"
+//#include "derivativecheck.hh"
 
 // Check if interface compiles and is implementable by a simple dummy
 struct DifferentiableFunctionImplementableTest
 {
 
   class QuadraticPolynomial
-  : public Dune::Functions::DifferentiableFunction<double,double>
   {
-    typedef Dune::Functions::DifferentiableFunction<double,double> Base;
   public:
 
-    // Important: Explicitly export exact derivative type
-    typedef QuadraticPolynomial Derivative;
-
-    /** \brief Constructor
+    /**
+     * \brief Constructor
      * \param a,b,c Coefficients with respect to the monomial basis
      */
     QuadraticPolynomial(double a, double b, double c)
@@ -35,99 +31,86 @@ struct DifferentiableFunctionImplementableTest
     {}
 
     /** \brief Evaluate the function at a given point */
-    void evaluate(const double& x, double& f) const
+    double operator()(const double& x) const
     {
-      f = a_*x*x + b_*x + c_;
+      return a_*x*x + b_*x + c_;
     }
 
     /** \brief Get the function implementing the first derivative */
-    std::shared_ptr<typename Base::Derivative> derivative() const
+    friend QuadraticPolynomial derivative(const QuadraticPolynomial& p)
     {
-      if (not derivative_)
-        derivative_ = std::make_shared<QuadraticPolynomial>(0, 2*a_, b_);
-      return derivative_;
+      return QuadraticPolynomial(0, 2*p.a_, p.b_);
     }
+
+//    /** \brief Get the function implementing the first derivative */
+//    QuadraticPolynomial derivative() const
+//    {
+//      return QuadraticPolynomial(0, 2*a_, b_);
+//    }
 
   private:
     // coefficients
     double a_, b_, c_;
-
-    mutable std::shared_ptr<QuadraticPolynomial> derivative_;
-
   };
 
   static bool check()
   {
     bool passed = true;
 
-    std::shared_ptr<QuadraticPolynomial::Derivative> persistentDerivative;
-    std::shared_ptr<QuadraticPolynomial::Derivative::Derivative> persistentSecondDerivative;
-    std::shared_ptr<QuadraticPolynomial::Derivative::Derivative> persistentThirdDerivative;
-    double df;
-    double ddf;
-    double dddf;
     {
-      QuadraticPolynomial testFunction(1,1,1);
+      QuadraticPolynomial f(1,1,1);
 
-      passed = passed and DerivativeCheck<QuadraticPolynomial>::checkAllImplementedTrulyDerived(testFunction, 10);
+//      passed = passed and DerivativeCheck<QuadraticPolynomial>::checkAllImplementedTrulyDerived(testFunction, 10);
 
       // Test whether I can evaluate the function somewhere
-      double f;
-      testFunction.evaluate(5, f);
-      std::cout << "Function value at x=5: " << f << std::endl;
+      std::cout << "Function value at x=5: " << f(5) << std::endl;
 
 
 
-      std::cout << std::endl << "Check calling derivatives through FunctionHandle" << std::endl;
+      std::cout << std::endl << "Check calling derivatives through function object" << std::endl;
 
       // Test whether I can evaluate the first derivative
-      auto derivative = Dune::Functions::derivative(testFunction);
-      derivative->evaluate(5, df);
-      std::cout << "Derivative at x=5: " << df << std::endl;
+      auto df = derivative(f);
+      std::cout << "Derivative at x=5: " << df(5) << std::endl;
 
       // Test whether I can evaluate the second derivative through FunctionHandle
-      auto secondDerivative = Dune::Functions::derivative(*derivative);
-      secondDerivative->evaluate(5, ddf);
-      std::cout << "Second derivative at x=5: " << ddf << std::endl;
+      auto ddf = derivative(df);
+      std::cout << "Second derivative at x=5: " << ddf(5) << std::endl;
 
       // Test whether I can evaluate the third derivative through FunctionHandle
-      auto thirdDerivative = Dune::Functions::derivative(secondDerivative);
-      thirdDerivative->evaluate(5, dddf);
-      std::cout << "Third derivative at x=5: " << dddf << std::endl;
-
-      persistentDerivative = derivative;
-      persistentSecondDerivative = secondDerivative;
-      persistentThirdDerivative = thirdDerivative;
-
-      auto castedDerivativePtr = std::dynamic_pointer_cast<QuadraticPolynomial::Derivative>(testFunction.derivative());
-      castedDerivativePtr->evaluate(5, df);
-      std::cout << "Derivative at x=5: " << df << std::endl;
+      auto dddf = derivative(ddf);
+      std::cout << "Third derivative at x=5: " << dddf(5) << std::endl;
 
 
 
-      std::cout << std::endl << "Check calling function and derivatives through Callable wrapper" << std::endl;
+      std::cout << std::endl << "Check calling derivatives through DifferentiableFunction object" << std::endl;
+      Dune::Functions::DifferentiableFunction<double(const double&)> fi = f;
 
-      auto callableF = Dune::Functions::callable(testFunction);
-      std::cout << "Function value at x=5: " << callableF(5) << std::endl;
+      // Try to reassign wrapper
+      fi = f;
 
-      auto callableDF = Dune::Functions::callable(Dune::Functions::derivative(testFunction));
-      std::cout << "Derivative at x=5: " << callableDF(5) << std::endl;
+      // Try assigning a default constructed wrapper
+      Dune::Functions::DifferentiableFunction<double(const double&)> fii;
+      fii = fi;
 
-      auto callableDDF = Dune::Functions::callable(Dune::Functions::derivative(Dune::Functions::derivative(testFunction)));
-      std::cout << "Second derivative at x=5: " << callableDDF(5) << std::endl;
+      // Try to copy wrapper
+      auto fiii = fii;
 
+      std::cout << "Function value at x=5: " << fiii(5) << std::endl;
+      // Test whether I can evaluate the first derivative
+      auto dfiii = derivative(fiii);
+      std::cout << "Derivative at x=5: " << dfiii(5) << std::endl;
 
+      // Test whether I can evaluate the second derivative through FunctionHandle
+      auto ddfiii = derivative(dfiii);
+      std::cout << "Second derivative at x=5: " << ddfiii(5) << std::endl;
 
-      std::cout << std::endl << "Check calling function and derivatives through std::function" << std::endl;
-
-      std::function<double(double)> stdF = Dune::Functions::callable(testFunction);
-      std::cout << "Function value at x=5: " << stdF(5) << std::endl;
-
-      std::function<double(double)> stdDF = Dune::Functions::callable(Dune::Functions::derivative(testFunction));
-      std::cout << "Derivative at x=5: " << stdDF(5) << std::endl;
+      // Test whether I can evaluate the third derivative through FunctionHandle
+      auto dddfiii = derivative(ddfiii);
+      std::cout << "Third derivative at x=5: " << dddfiii(5) << std::endl;
     }
 
-
+#if 0
     std::cout << std::endl << "Check calling persistent derivatives through shared_ptr" << std::endl;
 
     // Test whether I can evaluate the first derivative through shared_ptr
@@ -141,6 +124,7 @@ struct DifferentiableFunctionImplementableTest
     // Test whether I can evaluate the third derivative through shared_ptr
     persistentThirdDerivative->evaluate(5, dddf);
     std::cout << "Third derivative at x=5: " << dddf << std::endl;
+#endif
 
     return passed;
   }
@@ -148,6 +132,7 @@ struct DifferentiableFunctionImplementableTest
 
 
 
+#if 0
 // Check if recursive DerivativeRange definition terminates
 // after at most maxRecursionLevel=k derivatives, i.e. if
 // the type of the k-th and (k+1)-nd derivative is the same.
@@ -201,6 +186,7 @@ struct DerivativeRangeTerminationTest
   }
 
 };
+#endif
 
 
 
@@ -213,11 +199,13 @@ try
 
   passed = passed and DifferentiableFunctionImplementableTest::check();
 
+#if 0
   passed = passed and DerivativeRangeTerminationTest<double, double, 5>::check();
 
   passed = passed and DerivativeRangeTerminationTest<Dune::FieldVector<double, 3> , Dune::FieldVector<double, 1>, 5 >::check();
 
   passed = passed and DerivativeRangeTerminationTest<Dune::FieldVector<double, 1> , Dune::FieldVector<double, 1>, 5 >::check();
+#endif
 
 
   if (passed)
