@@ -312,18 +312,8 @@ public:
   MultiIndexIterator generateMultiIndices(MultiIndexIterator it) const // move to LocalView?
   {
     size_type size = subTreeSize();
-    for(size_type i=0; i<size; ++i)
-    {
-#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
-      (*it) = {globalBasis_->mapper_.subIndex(
-#else
-      (*it) = {globalBasis_->mapper_.map(
-#endif
-        *element_,
-        finiteElement_->localCoefficients().localKey(i).subEntity(),
-        finiteElement_->localCoefficients().localKey(i).codim())};
-      ++it;
-    }
+    for(size_type i=0; i<size; ++i, ++it)
+      (*it) = globalIndex(i);
     return it;
   }
 
