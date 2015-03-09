@@ -10,7 +10,7 @@ add_dependencies(${_test_target} ${TESTPROGS})
 
 add_executable("discretescalarglobalbasisfunctiontest"
                discretescalarglobalbasisfunctiontest.cc)
-target_link_libraries("discretescalarglobalbasisfunctiontest" "dunecommon" "dunegeometry")
+target_link_libraries("discretescalarglobalbasisfunctiontest" ${DUNE_LIBS})
 
 # Add the tests to be executed
 foreach(_TEST ${TESTPROGS})
