@@ -17,6 +17,8 @@ namespace Concept {
 
 /**
  * A concept describing types that have a derivative() method found by ADL
+ *
+ * \todo Can we remove this?
  */
 struct HasFreeDerivative
 {
@@ -29,7 +31,7 @@ struct HasFreeDerivative
 /**
  * A concept describing types that have a member function foo.derivative()
  *
- * \todo can we remove this?
+ * \todo Can we remove this?
  */
 struct HasMemberDerivative
 {
@@ -80,40 +82,22 @@ public:
   using DerivativeInterface = DifferentiableFunction<DerivativeSignature, DerivativeTraits, bufferSize>;
 
   /**
-   * \brief Construct from function providing a free derivative() function
+   * \brief Construct from function
    *
    * \tparam F Function type
    *
    * \param f Function of type F
    *
-   * This constructor is used if there is a free derivative() method
-   * to be found by ADL.
+   * Calling derivative(DifferentiableFunction) will result in an exception
+   * if the passed function does provide a free derivative() function
+   * found via ADL.
    */
   template<class F,
     typename std::enable_if<
-      Dune::Functions::Concept::models< Dune::Functions::Concept::HasFreeDerivative, F>()
-      and not(std::is_same<DifferentiableFunction, typename std::decay<F>::type>::value), int>::type = 0>
+      not(std::is_same<DifferentiableFunction, typename std::decay<F>::type>::value), int>::type = 0>
   DifferentiableFunction(F&& f) :
     f_(Imp::DifferentiableFunctionWrapper<Signature, DerivativeInterface, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
-
-  /**
-   * \brief Construct from function not providing a free derivative() function
-   *
-   * \tparam F Function type
-   *
-   * \param f Function of type F
-   *
-   * This constructor is used if there is no free derivative() method
-   * to be found by ADL. In this case calling derivative for the wrapper
-   * throws an exception.
-   */
-  template<class F,
-    typename std::enable_if< not(Dune::Functions::Concept::models< Dune::Functions::Concept::HasFreeDerivative, F>()), int>::type = 0>
-  DifferentiableFunction(F&& f) :
-    f_(Imp::NonDifferentiableFunctionWrapper<Signature, DerivativeInterface, typename std::decay<F>::type>(std::forward<F>(f)))
-  {}
-
 
   DifferentiableFunction() = default;
 

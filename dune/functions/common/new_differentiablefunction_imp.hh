@@ -11,6 +11,38 @@ namespace Dune {
 namespace Functions {
 namespace Imp {
 
+/**
+ * A concept describing types that have a derivative() method found by ADL
+ */
+struct HasFreeDerivative
+{
+  template<class F>
+  auto require(F&& f) -> decltype(
+    derivative(f)
+  );
+};
+
+
+
+template<class Dummy, class F,
+  typename std::enable_if<
+    Dune::Functions::Concept::models< HasFreeDerivative, F>() , int>::type = 0>
+auto derivativeIfImplemented(const F& f) -> decltype(derivative(f))
+{
+  return derivative(f);
+}
+
+
+
+template<class Dummy, class F,
+  typename std::enable_if<
+    not(Dune::Functions::Concept::models< HasFreeDerivative, F>()) , int>::type = 0>
+Dummy derivativeIfImplemented(const F& f)
+{
+  DUNE_THROW(Dune::NotImplemented, "Derivative not implemented");
+}
+
+
 
 template<class Signature, class DerivativeInterface>
 class DifferentiableFunctionWrapperBase
@@ -34,6 +66,7 @@ public:
   virtual DifferentiableFunctionWrapperBase* clone(void* buffer) const = 0;
 
   virtual DifferentiableFunctionWrapperBase* move(void* buffer) = 0;
+
 };
 
 
@@ -44,7 +77,7 @@ class DifferentiableFunctionWrapper
 
 template<class Range, class Domain, class DerivativeInterface, class FImp>
 class DifferentiableFunctionWrapper< Range(Domain), DerivativeInterface, FImp> :
-    public DifferentiableFunctionWrapperBase<Range(Domain), DerivativeInterface>
+  public DifferentiableFunctionWrapperBase<Range(Domain), DerivativeInterface>
 {
 public:
 
@@ -60,7 +93,7 @@ public:
 
   virtual DerivativeInterface wrappedDerivative() const
   {
-    return DerivativeInterface(derivative(f_));
+    return derivativeIfImplemented<DerivativeInterface, FImp>(f_);
   }
 
   virtual DifferentiableFunctionWrapper* clone() const
@@ -76,51 +109,6 @@ public:
   virtual DifferentiableFunctionWrapper* move(void* buffer)
   {
     return new (buffer) DifferentiableFunctionWrapper(std::move(f_));
-  }
-
-private:
-  FImp f_;
-};
-
-
-template<class Signature, class DerivativeInterface, class FImp>
-class NonDifferentiableFunctionWrapper
-{};
-
-template<class Range, class Domain, class DerivativeInterface, class FImp>
-class NonDifferentiableFunctionWrapper< Range(Domain), DerivativeInterface, FImp> :
-  public DifferentiableFunctionWrapperBase<Range(Domain), DerivativeInterface>
-{
-public:
-
-  template<class F>
-  NonDifferentiableFunctionWrapper(F&& f) :
-    f_(std::forward<F>(f))
-  {}
-
-  virtual Range operator() (const Domain& x) const
-  {
-    return f_(x);
-  }
-
-  virtual DerivativeInterface wrappedDerivative() const
-  {
-    DUNE_THROW(Dune::NotImplemented, "Derivative not implemented");
-  }
-
-  virtual NonDifferentiableFunctionWrapper* clone() const
-  {
-    return new NonDifferentiableFunctionWrapper(f_);
-  }
-
-  virtual NonDifferentiableFunctionWrapper* clone(void* buffer) const
-  {
-    return new (buffer) NonDifferentiableFunctionWrapper(f_);
-  }
-
-  virtual NonDifferentiableFunctionWrapper* move(void* buffer)
-  {
-    return new (buffer) NonDifferentiableFunctionWrapper(std::move(f_));
   }
 
 private:
