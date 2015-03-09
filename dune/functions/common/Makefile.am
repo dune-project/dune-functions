@@ -3,7 +3,8 @@ commoninclude_HEADERS = \
                         callable.hh \
                         differentiablefunction.hh \
                         functionfromcallable.hh \
-                        localfunction.hh
+                        localfunction.hh \
+						smallobject.hh
 
 SUBDIRS = test
 
