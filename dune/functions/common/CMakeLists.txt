@@ -2,6 +2,7 @@ add_subdirectory("test"  EXCLUDE_FROM_ALL)
 
 install(FILES
         callable.hh
+        concept.hh
         differentiablefunction.hh
         functionfromcallable.hh
         localfunction.hh

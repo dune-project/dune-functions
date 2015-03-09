@@ -1,6 +1,7 @@
 commonincludedir = $(includedir)/dune/functions/common
 commoninclude_HEADERS = \
                         callable.hh \
+						concept.hh \
                         differentiablefunction.hh \
                         functionfromcallable.hh \
                         localfunction.hh \
