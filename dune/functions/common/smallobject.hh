@@ -36,6 +36,10 @@ class SmallObject
 {
 public:
 
+  SmallObject() :
+    p_(nullptr)
+  {}
+
   template<class Derived>
   SmallObject(Derived&& derived)
   {
@@ -74,6 +78,11 @@ public:
     return *this;
   }
 
+  explicit operator bool() const
+  {
+    return p_;
+  }
+
   bool bufferUsed() const
   {
     return ((void*) (p_) == (void*)(&buffer_));
@@ -93,10 +102,13 @@ private:
 
   void destroyWrappedObject()
   {
-    if (bufferUsed())
-      p_->~Base();
-    else
-      delete p_;
+    if (operator bool())
+    {
+      if (bufferUsed())
+        p_->~Base();
+      else
+        delete p_;
+    }
   }
 
   void moveToWrappedObject(SmallObject&& other)
