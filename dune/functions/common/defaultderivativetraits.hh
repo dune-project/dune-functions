@@ -6,6 +6,9 @@
 #include <type_traits>
 #include <utility>
 
+#include <dune/common/fvector.hh>
+#include <dune/common/fmatrix.hh>
+
 namespace Dune {
 namespace Functions {
 
@@ -46,7 +49,7 @@ struct DefaultDerivativeTraits<FieldMatrix<K,1,m>(FieldVector<K,n>)>
 };
 
 
-}}} // namespace Dune::Functions
+}} // namespace Dune::Functions
 
 
 #endif // DUNE_FUNCTIONS_COMMON_DEFAULT_DERIVATIVE_TRAITS_HH
