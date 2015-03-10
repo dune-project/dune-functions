@@ -5,6 +5,8 @@
 
 #include <type_traits>
 
+#include <dune/functions/common/type_traits.hh>
+
 #include "defaultderivativetraits.hh"
 #include "new_differentiablefunction_imp.hh"
 #include "smallobject.hh"
@@ -92,22 +94,12 @@ public:
    * if the passed function does provide a free derivative() function
    * found via ADL.
    */
-  template<class F,
-    typename std::enable_if<
-      not(std::is_same<DifferentiableFunction, typename std::decay<F>::type>::value), int>::type = 0>
+  template<class F, disableCopyMove<DifferentiableFunction, F> = 0 >
   DifferentiableFunction(F&& f) :
     f_(Imp::DifferentiableFunctionWrapper<Signature, DerivativeInterface, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
   DifferentiableFunction() = default;
-
-  DifferentiableFunction(const DifferentiableFunction& other) = default;
-
-  DifferentiableFunction(DifferentiableFunction&& other) = default;
-
-  DifferentiableFunction& operator=(const DifferentiableFunction& other) = default;
-
-  DifferentiableFunction& operator=(DifferentiableFunction&& other) = default;
 
   /**
    * \brief Evaluation of wrapped function
@@ -124,7 +116,7 @@ public:
    */
   friend DerivativeInterface derivative(const DifferentiableFunction& t)
   {
-    return t.f_.get().wrappedDerivative();
+    return t.f_.get().derivative();
   }
 
 private:

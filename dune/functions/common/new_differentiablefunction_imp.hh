@@ -5,6 +5,9 @@
 
 #include <dune/common/exceptions.hh>
 
+#include <dune/functions/common/type_traits.hh>
+#include <dune/functions/common/interfaces.hh>
+
 #include "concept.hh"
 
 namespace Dune {
@@ -48,25 +51,15 @@ template<class Signature, class DerivativeInterface>
 class DifferentiableFunctionWrapperBase
 {};
 
-template<class Range, class Domain, class DI>
-class DifferentiableFunctionWrapperBase<Range(Domain), DI>
+template<class Range, class Domain, class DerivativeInterface>
+class DifferentiableFunctionWrapperBase<Range(Domain), DerivativeInterface> :
+  public PolymorphicType<DifferentiableFunctionWrapperBase<Range(Domain), DerivativeInterface> >
 {
 public:
-  using DerivativeInterface=DI;
-
-  virtual ~DifferentiableFunctionWrapperBase()
-  {}
 
   virtual Range operator() (const Domain& x) const = 0;
 
-  virtual DerivativeInterface wrappedDerivative() const = 0;
-
-  virtual DifferentiableFunctionWrapperBase* clone() const = 0;
-
-  virtual DifferentiableFunctionWrapperBase* clone(void* buffer) const = 0;
-
-  virtual DifferentiableFunctionWrapperBase* move(void* buffer) = 0;
-
+  virtual DerivativeInterface derivative() const = 0;
 };
 
 
@@ -81,7 +74,7 @@ class DifferentiableFunctionWrapper< Range(Domain), DerivativeInterface, FImp> :
 {
 public:
 
-  template<class F>
+  template<class F, disableCopyMove<DifferentiableFunctionWrapper, F> = 0>
   DifferentiableFunctionWrapper(F&& f) :
     f_(std::forward<F>(f))
   {}
@@ -91,24 +84,24 @@ public:
     return f_(x);
   }
 
-  virtual DerivativeInterface wrappedDerivative() const
+  virtual DerivativeInterface derivative() const
   {
     return derivativeIfImplemented<DerivativeInterface, FImp>(f_);
   }
 
   virtual DifferentiableFunctionWrapper* clone() const
   {
-    return new DifferentiableFunctionWrapper(f_);
+    return new DifferentiableFunctionWrapper(*this);
   }
 
   virtual DifferentiableFunctionWrapper* clone(void* buffer) const
   {
-    return new (buffer) DifferentiableFunctionWrapper(f_);
+    return new (buffer) DifferentiableFunctionWrapper(*this);
   }
 
   virtual DifferentiableFunctionWrapper* move(void* buffer)
   {
-    return new (buffer) DifferentiableFunctionWrapper(std::move(f_));
+    return new (buffer) DifferentiableFunctionWrapper(std::move(*this));
   }
 
 private:
