@@ -30,6 +30,8 @@ public:
 template<typename GV, typename LV, typename IS, typename MI>
 class GridViewFunctionSpaceBasis
 {
+public:
+
   typedef GV GridView;
   typedef std::size_t size_type;
   typedef LV LocalView;
