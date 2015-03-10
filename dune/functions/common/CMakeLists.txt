@@ -7,6 +7,7 @@ install(FILES
         differentiablefunction.hh
         functionfromcallable.hh
         localfunction.hh
+        interfaces.hh
         new_differentiablefunction.hh
         new_differentiablefunction_imp.hh
         smallobject.hh
