@@ -47,7 +47,7 @@ int main (int argc, char* argv[]) try
   // Objects required in the local context
   auto localView = feBasis.localView();
   auto localIndexSet = indexSet.localIndexSet();
-  std::vector<size_t> coefficients(localView.maxSize());
+  std::vector<double> coefficients(localView.maxSize());
 
   // Loop over elements and integrate over the function
   double integral = 0;
