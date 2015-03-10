@@ -10,7 +10,7 @@
 
 #include <dune/grid/yaspgrid.hh>
 
-#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
+#include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 
 using namespace Dune;
 using namespace Dune::Functions;
@@ -21,13 +21,12 @@ int main (int argc, char* argv[]) try
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> l(1);
-//  FieldVector<double,dim> l = {{21.0, 4.0}};
   std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
-  typedef PQ1NodalBasis<GridView> Basis;
+  typedef PQ2NodalBasis<GridView> Basis;
 
   const GridView& gridView = grid.leafGridView();
   Basis feBasis(gridView);
@@ -78,7 +77,7 @@ int main (int argc, char* argv[]) try
 
     // we have a flat tree...
     assert(localView.size() == tree.size());
-    assert(localView.size() == tree.finiteElement().basis().size());
+    assert(localView.size() == tree.finiteElement().localBasis().size());
 
     // A quadrature rule
     const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1);
@@ -99,7 +98,7 @@ int main (int argc, char* argv[]) try
       // Actually compute the vector entries
       for (size_t i=0; i<localFiniteElement.localBasis().size(); i++)
       {
-        local_integral[i] += coefficients[i] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
+        integral += coefficients[i] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
       }
     }
 
@@ -108,8 +107,8 @@ int main (int argc, char* argv[]) try
     localView.unbind();
   }
 
-  assert(std::abs(integral-0.5)< 1e-10);
   std::cout << "Computed integral is " << integral << std::endl;
+  assert(std::abs(integral-0.5)< 1e-10);
 
   return 0;
 
