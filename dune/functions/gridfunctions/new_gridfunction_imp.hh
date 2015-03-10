@@ -28,7 +28,7 @@ public:
 
   virtual DerivativeInterface derivative() const = 0;
 
-  virtual LocalFunctionInterface localFunction() const = 0;
+  virtual LocalFunctionInterface wrappedLocalFunction() const = 0;
 };
 
 
@@ -58,7 +58,7 @@ public:
     return derivativeIfImplemented<DerivativeInterface, FImp>(f_);
   }
 
-  virtual LocalFunctionInterface localFunction() const
+  virtual LocalFunctionInterface wrappedLocalFunction() const
   {
     return localFunction(f_);
   }

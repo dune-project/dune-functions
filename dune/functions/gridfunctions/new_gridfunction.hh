@@ -7,6 +7,7 @@
 
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/new_differentiablefunction_imp.hh>
+#include <dune/functions/common/new_localfunction.hh>
 #include <dune/functions/common/smallobject.hh>
 #include <dune/functions/gridfunctions/new_gridfunction_imp.hh>
 
@@ -63,7 +64,7 @@ public:
   /**
    * \brief Wrapper type of returned local functions
    */
-  using LocalFunctionInterface = LocalFunction<DerivativeSignature, Element, DerivativeTraits, bufferSize>;
+  using LocalFunctionInterface = LocalFunction<Signature, Element, DerivativeTraits, bufferSize>;
 
 
   /**
@@ -105,7 +106,7 @@ public:
 
   friend LocalFunctionInterface localFunction(const GridFunction& t)
   {
-    return t.f_.get().localFunction();
+    return t.f_.get().wrappedLocalFunction();
   }
 
 private:
