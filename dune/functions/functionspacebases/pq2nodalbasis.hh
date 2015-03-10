@@ -70,7 +70,7 @@ public:
 
   /** \brief Size of subtree rooted in this node (element-local)
    */
-  size_type size() const DUNE_FINAL
+  size_type size() const
   {
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
     return localView_->tree().finiteElement_->size();
@@ -80,7 +80,7 @@ public:
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
-  const MultiIndex index(size_type i) const DUNE_FINAL
+  const MultiIndex index(size_type i) const
   {
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
     return { indexSet_->mapper_.subIndex(
@@ -150,6 +150,7 @@ template<typename GV>
 class PQ2NodalBasis
 : public GridViewFunctionSpaceBasis<GV,
                                     PQ2NodalBasisLocalView<GV>,
+                                    PQ2IndexSet<GV>,
                                     std::array<std::size_t, 1> >
 {
   static const int dim = GV::dimension;
@@ -180,21 +181,6 @@ public:
   const GridView& gridView() const DUNE_FINAL
   {
     return gridView_;
-  }
-
-  /**
-   * \brief Maximum local size for any element on the GridView
-   *
-   * This is the maximal size needed for local matrices
-   * and local vectors, i.e., the result is
-   *
-   * max{GridViewLocalBasisView(e).tree().size() | e in GridView}
-   *
-   * The method returns 3^dim, which is the number of degrees of freedom you get for cubes.
-   */
-  size_type maxLocalSize() const DUNE_FINAL
-  {
-    return StaticPower<3,dim>::power;
   }
 
   PQ2IndexSet<GV> indexSet() const
@@ -300,7 +286,7 @@ public:
 
   /** \brief Number of degrees of freedom on this element
    */
-  size_type size() const DUNE_FINAL
+  size_type size() const
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
@@ -318,7 +304,7 @@ public:
    *
    * The method returns 3^dim, which is the number of degrees of freedom you get for cubes.
    */
-  size_type maxSize() const DUNE_FINAL
+  size_type maxSize() const
   {
     return StaticPower<3,dim>::power;
   }
@@ -342,8 +328,7 @@ class PQ2NodalBasisLeafNode :
   public GridFunctionSpaceBasisLeafNodeInterface<
     typename GV::template Codim<0>::Entity,
     typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, GV::dimension, 2>::FiniteElementType,
-    typename PQ2NodalBasis<GV>::size_type,
-    typename PQ2NodalBasis<GV>::MultiIndex>
+    typename PQ2NodalBasis<GV>::size_type>
 {
   typedef PQ2NodalBasis<GV> GlobalBasis;
   static const int dim = GV::dimension;
@@ -360,9 +345,8 @@ class PQ2NodalBasisLeafNode :
   friend class PQ2LocalIndexSet<GV>;
 
 public:
-  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST,MI> Interface;
+  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST> Interface;
   typedef typename Interface::size_type size_type;
-  typedef typename Interface::MultiIndex MultiIndex;
   typedef typename Interface::Element Element;
   typedef typename Interface::FiniteElement FiniteElement;
 
@@ -387,9 +371,8 @@ public:
     return *finiteElement_;
   }
 
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type subTreeSize() const DUNE_FINAL // all nodes or leaf nodes only ?
+  //! maximum size of subtree rooted in this node for any element of the global basis
+  size_type size() const
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
@@ -397,32 +380,6 @@ public:
 #else
     return finiteElement_->localBasis().size();
 #endif
-  }
-
-  //! maximum size of subtree rooted in this node for any element of the global basis
-  size_type maxSubTreeSize() const DUNE_FINAL // all nodes or leaf nodes only ?
-  {
-    return StaticPower<3,dim>::power;
-  }
-
-  //! size of complete tree (element-local)
-  size_type localSize() const DUNE_FINAL // all nodes
-  {
-    // We have localSize==subTreeSize because the tree consist of a single leaf node.
-    return subTreeSize();
-  }
-
-  //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
-  size_type localIndex(size_type i) const DUNE_FINAL // all nodes
-  {
-    return i;
-  }
-
-  //! maximum size of complete tree for any element of the global basis
-  size_type maxLocalSize() const DUNE_FINAL // all nodes
-  {
-    // We have maxLocalSize==maxSubTreeSize because the tree consist of a single leaf node.
-    return maxSubTreeSize();
   }
 
 protected:
