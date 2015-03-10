@@ -10,6 +10,8 @@ install(FILES
         interfaces.hh
         new_differentiablefunction.hh
         new_differentiablefunction_imp.hh
+        new_localfunction.hh
+        new_localfunction_imp.hh
         smallobject.hh
         type_traits.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/common)
