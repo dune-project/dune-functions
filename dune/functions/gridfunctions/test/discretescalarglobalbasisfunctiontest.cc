@@ -10,7 +10,8 @@
 
 #include <dune/grid/yaspgrid.hh>
 
-#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
+// #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
+#include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 #include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 
 using namespace Dune;
@@ -22,40 +23,42 @@ int main (int argc, char* argv[]) try
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> l(1);
-//  FieldVector<double,dim> l = {{21.0, 4.0}};
   std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
+//  typedef PQ1NodalBasis<GridView> Basis;
+  typedef PQ2NodalBasis<GridView> Basis;
 
   const GridView& gridView = grid.leafGridView();
-  PQ1NodalBasis<GridView> feBasis(gridView);
+  Basis feBasis(gridView);
+  auto indexSet = feBasis.indexSet();
 
-  typedef PQ1NodalBasis<GridView>::MultiIndex MultiIndex;
+  typedef Basis::MultiIndex MultiIndex;
 
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
   // we know its integral and can check whether quadrature returns
   // the correct result
-  std::vector<Dune::FieldVector<double,1> > x(feBasis.subIndexCount());
-
-  Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> f(Dune::stackobject_to_shared_ptr(feBasis),Dune::stackobject_to_shared_ptr(x));
-  auto localFunction = Dune::Functions::localFunction(f);
+  std::vector<double> x(indexSet.size());
 
   // TODO: Implement interpolation properly using the global basis.
   for (auto it = gridView.begin<dim>(); it != gridView.end<dim>(); ++it)
     x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
 
+  // generate a discrete function to evaluate the integral
+  Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> f(feBasis,x);
+  auto localFunction = Dune::Functions::localFunction(f);
+
   // Loop over elements and integrate over the function
   double integral = 0;
-  std::vector<MultiIndex> globalIndices(feBasis.maxLocalSize());
   for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
   {
+    localFunction->bind(*it);
+
     // A quadrature rule
     const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1);
-
-    localFunction->bind(*it);
 
     // Loop over all quadrature points
     for ( size_t pt=0; pt < quad.size(); pt++ ) {
@@ -66,7 +69,7 @@ int main (int argc, char* argv[]) try
       // The multiplicative factor in the integral transformation formula
       const double integrationElement = it->geometry().integrationElement(quadPos);
 
-      typename decltype(x)::value_type v;
+      Dune::FieldVector<typename decltype(x)::value_type, 1> v;
       localFunction->evaluate(quadPos,v);
       integral += v * quad[pt].weight() * integrationElement;
     }
@@ -74,8 +77,8 @@ int main (int argc, char* argv[]) try
     localFunction->unbind();
   }
 
-  assert(std::abs(integral-0.5)< 1e-10);
   std::cout << "Computed integral is " << integral << std::endl;
+  assert(std::abs(integral-0.5)< 1e-10);
 
   return 0;
 

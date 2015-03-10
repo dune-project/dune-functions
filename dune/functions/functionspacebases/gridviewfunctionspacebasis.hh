@@ -9,13 +9,12 @@ namespace Dune {
 namespace Functions {
 
 
-template<typename E, typename FE, typename ST, typename MI>
+template<typename E, typename FE, typename ST>
 class GridFunctionSpaceBasisLeafNodeInterface :
   public TypeTree::LeafNode
 {
 public:
   typedef ST size_type;
-  typedef MI MultiIndex;
   typedef E Element;
   typedef FE FiniteElement;
 
@@ -25,69 +24,33 @@ public:
   virtual const FiniteElement& finiteElement() const = 0;
 
   //! size of subtree rooted in this node (element-local)
-  virtual size_type subTreeSize() const = 0;
-
-  //! maximum size of subtree rooted in this node for any element of the global basis
-  virtual size_type maxSubTreeSize() const = 0;
-
-  //! size of complete tree (element-local)
-  virtual size_type localSize() const = 0;
-
-  //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
-  virtual size_type localIndex(size_type i) const = 0;
-
-  //! maximum size of complete tree for any element of the global basis
-  virtual size_type maxLocalSize() const = 0;
-
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
-  virtual const MultiIndex globalIndex(size_type i) const = 0;
-
-  //! Generate multi indices for current subtree into range starting at it
-  //! \param it iterator over a container of MultiIndex
-  //! \return iterator past the last written element (STL-style)
-//  template<typename MultiIndexIterator>
-//  MultiIndexIterator generateMultiIndices(MultiIndexIterator it) const
+  virtual size_type size() const = 0;
 };
 
-} // end namespace Functions
-} // end namespace Dune
-
-
-
-
-#if 0
-template<typename T>
-struct FunctionSpaceBasisTraits;
-{
-  typedef calc<T>::LocalBasisView;
-};
-#endif
-
-
-template<typename GV, typename LV, typename MI>
+template<typename GV, typename LV, typename IS, typename MI>
 class GridViewFunctionSpaceBasis
 {
+public:
+
   typedef GV GridView;
   typedef std::size_t size_type;
   typedef LV LocalView;
+  typedef IS IndexSet;
   typedef MI MultiIndex;
 
   /** \brief Obtain the grid view that the basis is defined on
    */
   virtual const GridView& gridView() const = 0;
 
-  /**
-   * \brief maximum local size for any element on the GridView
-   *
-   * This is the maximal size needed for local matrices
-   * and local vectors, i.e., the result is
-   *
-   * max{GridViewLocalBasisView(e).tree().size() | e in GridView}
-   */
-  virtual size_type maxLocalSize() const = 0;
-
-  //! Return number possible values for next position in multi index
-  virtual size_type subIndexCount(const MultiIndex& index) const = 0;
+  // /**
+  //  * \brief maximum local size for any element on the GridView
+  //  *
+  //  * This is the maximal size needed for local matrices
+  //  * and local vectors, i.e., the result is
+  //  *
+  //  * max{GridViewLocalBasisView(e).tree().size() | e in GridView}
+  //  */
+  // virtual size_type maxLocalSize() const = 0;
 
   /**
    * \brief Return local view for basis
@@ -97,6 +60,11 @@ class GridViewFunctionSpaceBasis
    * when instantiating the TMP constructing the local view.
    */
   virtual LocalView localView() const = 0;
+
+  /**
+   * \brief Return index set for global indices
+   */
+  virtual IndexSet indexSet() const = 0;
 
 };
 
@@ -188,5 +156,8 @@ class LeafGridViewLocalBasisViewTreeNode
 };
 
 #endif
+
+} // end namespace Functions
+} // end namespace Dune
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_GRIDVIEWFUNCTIONSPACEBASIS_HH

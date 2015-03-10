@@ -10,7 +10,8 @@
 
 #include <dune/grid/yaspgrid.hh>
 
-#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
+// #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
+#include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 
 using namespace Dune;
 using namespace Dune::Functions;
@@ -21,16 +22,17 @@ int main (int argc, char* argv[]) try
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> l(1);
-//  FieldVector<double,dim> l = {{21.0, 4.0}};
   std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
-  typedef PQ1NodalBasis<GridView> Basis;
+//  typedef PQ1NodalBasis<GridView> Basis;
+  typedef PQ2NodalBasis<GridView> Basis;
 
   const GridView& gridView = grid.leafGridView();
   Basis feBasis(gridView);
+  auto indexSet = feBasis.indexSet();
 
   typedef Basis::MultiIndex MultiIndex;
 
@@ -38,29 +40,52 @@ int main (int argc, char* argv[]) try
   // If we use that as the coefficients of a finite element function,
   // we know its integral and can check whether quadrature returns
   // the correct result
-  std::vector<double> x(feBasis.subIndexCount());
-
-
+  std::vector<double> x(indexSet.size());
 
   // TODO: Implement interpolation properly using the global basis.
   for (auto it = gridView.begin<dim>(); it != gridView.end<dim>(); ++it)
     x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
 
+  // Objects required in the local context
+  auto localView = feBasis.localView();
+  auto localIndexSet = indexSet.localIndexSet();
+  auto localIndexSet2 = feBasis.indexSet().localIndexSet();
+  std::vector<double> coefficients(localView.maxSize());
+
   // Loop over elements and integrate over the function
   double integral = 0;
-  std::vector<MultiIndex> globalIndices(feBasis.maxLocalSize());
   for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
   {
-    auto localView = feBasis.localView();
     localView.bind(*it);
+    localIndexSet.bind(localView);
+    localIndexSet2.bind(localView);
 
+    // paranoia checks
+    assert(localView.size() == localIndexSet.size());
+    assert(&(localView.globalBasis()) == &(feBasis));
+    assert(&(localIndexSet.localView()) == &(localView));
+
+    assert(localIndexSet.size() == localIndexSet2.size());
+    for (size_t i=0; i<localIndexSet.size(); i++)
+      assert(localIndexSet.index(i) == localIndexSet2.index(i));
+
+    // copy data from global vector
+    coefficients.resize(localIndexSet.size());
+    for (size_t i=0; i<localIndexSet.size(); i++)
+    {
+      coefficients[i] = x[localIndexSet.index(i)[0]];
+    }
+
+    // get access to the finite element
     typedef Basis::LocalView::Tree Tree;
     auto& treeImp = localView.tree();
     const Tree::Interface& tree = treeImp;
 
-    treeImp.generateMultiIndices(globalIndices.begin());
-
     auto& localFiniteElement = tree.finiteElement();
+
+    // we have a flat tree...
+    assert(localView.size() == tree.size());
+    assert(localView.size() == tree.finiteElement().localBasis().size());
 
     // A quadrature rule
     const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1);
@@ -81,14 +106,17 @@ int main (int argc, char* argv[]) try
       // Actually compute the vector entries
       for (size_t i=0; i<localFiniteElement.localBasis().size(); i++)
       {
-        assert(globalIndices[i]==tree.globalIndex(i));
-        integral += x[globalIndices[i][0]] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
+        integral += coefficients[i] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
       }
     }
+
+    // unbind
+    localIndexSet.unbind();
+    localView.unbind();
   }
 
-  assert(std::abs(integral-0.5)< 1e-10);
   std::cout << "Computed integral is " << integral << std::endl;
+  assert(std::abs(integral-0.5)< 1e-10);
 
   return 0;
 

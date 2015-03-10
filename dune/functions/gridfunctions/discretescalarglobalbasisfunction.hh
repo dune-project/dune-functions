@@ -3,6 +3,7 @@
 #ifndef DUNE_FUNCTIONS_GRIDFUNCTIONS_DISCRETESCALARGLOBALBASISFUNCTIONS_HH
 #define DUNE_FUNCTIONS_GRIDFUNCTIONS_DISCRETESCALARGLOBALBASISFUNCTIONS_HH
 
+#include <dune/common/shared_ptr.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 namespace Dune {
@@ -30,6 +31,7 @@ public:
 
     typedef typename Base::LocalFunction EBase;
     typedef typename Basis::LocalView LocalBasisView;
+    typedef typename Basis::IndexSet::LocalIndexSet LocalIndexSet;
     typedef typename LocalBasisView::Tree::size_type size_type;
 
   public:
@@ -41,9 +43,9 @@ public:
     LocalFunction(const DiscreteScalarGlobalBasisFunction& globalFunction)
       : globalFunction_(globalFunction)
       , localBasisView_(globalFunction.basis().localView())
+      , localIndexSet_(globalFunction.indexSet_.localIndexSet())
     {
-      indexCache_.reserve(globalFunction_.basis().maxLocalSize());
-      dofCache_.reserve(globalFunction_.basis().maxLocalSize());
+      localDoFs_.reserve(localBasisView_.maxSize());
     }
 
     virtual typename EBase::DerivativeBasePointer derivative() const DUNE_FINAL
@@ -60,22 +62,19 @@ public:
     virtual void bind(const Element& element) DUNE_FINAL
     {
       localBasisView_.bind(element);
+      localIndexSet_.bind(localBasisView_);
 
       auto& tree = localBasisView_.tree();
 
-      // Stricly speaking we do not need to cache the indices if we
-      // already cache the dofs.
-      indexCache_.resize(tree.localSize());
-      tree.generateMultiIndices(indexCache_.begin());
-
-      // Cache the dofs associated to bound element
-      dofCache_.resize(tree.localSize());
-      for (size_type i = 0; i < tree.localSize(); ++i)
-        dofCache_[i] = globalFunction_.dofs()[indexCache_[i][0]];
+      // Read dofs associated to bound element
+      localDoFs_.resize(localIndexSet_.size());
+      for (size_type i = 0; i < localIndexSet_.size(); ++i)
+        localDoFs_[i] = globalFunction_.dofs()[localIndexSet_.index(i)[0]];
     }
 
     virtual void unbind() DUNE_FINAL
     {
+      localIndexSet_.unbind();
       localBasisView_.unbind();
     }
 
@@ -95,7 +94,7 @@ public:
       basis.evaluateFunction(coord,shapeFunctionValues);
       r = 0;
       for (size_type i = 0; i < basis.size(); ++i)
-        r += dofCache_[i] * shapeFunctionValues[i];
+        r += localDoFs_[i] * shapeFunctionValues[i];
     }
 
     virtual const Element& localContext() const DUNE_FINAL
@@ -107,15 +106,23 @@ public:
 
     const DiscreteScalarGlobalBasisFunction& globalFunction_;
     LocalBasisView localBasisView_;
-    std::vector<typename LocalBasisView::MultiIndex> indexCache_;
-    std::vector<typename V::value_type> dofCache_;
+    LocalIndexSet localIndexSet_;
+    std::vector<typename V::value_type> localDoFs_;
 
   };
+
+  DiscreteScalarGlobalBasisFunction(const Basis & basis, const V & dofs)
+    : Base(basis.gridView())
+    , basis_(stackobject_to_shared_ptr(basis))
+    , dofs_(stackobject_to_shared_ptr(dofs))
+    , indexSet_(basis.indexSet())
+  {}
 
   DiscreteScalarGlobalBasisFunction(std::shared_ptr<Basis> basis, std::shared_ptr<V> dofs)
     : Base(basis->gridView())
     , basis_(basis)
     , dofs_(dofs)
+    , indexSet_(basis.indexSet())
   {}
 
   virtual typename Base::LocalFunctionBasePointer localFunction() const DUNE_FINAL
@@ -144,12 +151,11 @@ public:
     DUNE_THROW(NotImplemented,"not implemented");
   }
 
-
-
 private:
 
-  std::shared_ptr<Basis> basis_;
-  std::shared_ptr<V> dofs_;
+  std::shared_ptr<const Basis> basis_;
+  std::shared_ptr<const V> dofs_;
+  typename Basis::IndexSet indexSet_;
 
 };
 

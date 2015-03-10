@@ -6,6 +6,15 @@
 #include <array>
 #include <dune/common/exceptions.hh>
 #include <dune/common/version.hh>
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+#include <dune/common/std/final.hh>
+#else
+ #ifndef DUNE_FINAL
+  #define DUNE_FINAL
+ #endif
+#endif
+
+#include <dune/grid/common/mcmgmapper.hh>
 
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
 
@@ -17,12 +26,121 @@
 namespace Dune {
 namespace Functions {
 
-
 template<typename GV>
 class PQ2NodalBasisLocalView;
 
 template<typename GV>
 class PQ2NodalBasisLeafNode;
+
+template<typename GV>
+class PQ2IndexSet;
+
+template<typename GV>
+class PQ2LocalIndexSet
+{
+public:
+  typedef std::size_t size_type;
+
+  /** \brief Type of the local view on the restriction of the basis to a single element */
+  typedef PQ2NodalBasisLocalView<GV> LocalView;
+
+  /** \brief Type used for global numbering of the basis vectors */
+  typedef std::array<size_type, 1> MultiIndex;
+
+  PQ2LocalIndexSet(const PQ2IndexSet<GV> & indexSet)
+  : indexSet_(indexSet)
+  {}
+
+  /** \brief Bind the view to a grid element
+   *
+   * Having to bind the view to an element before being able to actually access any of its data members
+   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
+   */
+  void bind(const PQ2NodalBasisLocalView<GV>& localView)
+  {
+    localView_ = &localView;
+  }
+
+  /** \brief Unbind the view
+   */
+  void unbind()
+  {
+    localView_ = nullptr;
+  }
+
+  /** \brief Size of subtree rooted in this node (element-local)
+   */
+  size_type size() const
+  {
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+    return localView_->tree().finiteElement_->size();
+#else
+    return localView_->tree().finiteElement_->localBasis().size();
+#endif
+  }
+
+  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
+  const MultiIndex index(size_type i) const
+  {
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+    return { indexSet_.mapper_.subIndex(
+#else
+    return { (size_t)indexSet_.mapper_.map(
+#endif
+        *(localView_->element_),
+        localView_->tree().finiteElement_->localCoefficients().localKey(i).subEntity(),
+        localView_->tree().finiteElement_->localCoefficients().localKey(i).codim()) };
+  }
+
+  /** \brief Return the local view that we are attached to
+   */
+  const LocalView& localView() const
+  {
+    return *localView_;
+  }
+
+  const PQ2NodalBasisLocalView<GV>* localView_;
+
+  const PQ2IndexSet<GV> indexSet_;
+};
+
+template<typename GV>
+class PQ2IndexSet
+{
+  // Needs the mapper
+  friend class PQ2LocalIndexSet<GV>;
+
+  template<int dim>
+  struct PQ2MapperLayout
+  {
+    bool contains (Dune::GeometryType gt) const
+    {
+      // All hypercubes carry a degree of freedom (this includes vertices and edges)
+      return gt.isCube();
+    }
+  };
+
+public:
+
+  typedef PQ2LocalIndexSet<GV> LocalIndexSet;
+
+  PQ2IndexSet(const GV& gridView)
+  : mapper_(gridView)
+  {}
+
+  std::size_t size() const
+  {
+    return mapper_.size();
+  }
+
+  LocalIndexSet localIndexSet() const
+  {
+    return LocalIndexSet(*this);
+  }
+
+private:
+  const MultipleCodimMultipleGeomTypeMapper<GV, PQ2MapperLayout> mapper_;
+};
 
 
 
@@ -34,22 +152,13 @@ template<typename GV>
 class PQ2NodalBasis
 : public GridViewFunctionSpaceBasis<GV,
                                     PQ2NodalBasisLocalView<GV>,
+                                    PQ2IndexSet<GV>,
                                     std::array<std::size_t, 1> >
 {
   static const int dim = GV::dimension;
 
-  template<int dim>
-  struct P2MapperLayout
-  {
-    bool contains (Dune::GeometryType gt) const
-    {
-      // All hypercubes carry a degree of freedom (this includes vertices and edges)
-      return gt.isCube();
-    }
-  };
-
   // Needs the mapper
-  friend class PQ2NodalBasisLeafNode<GV>;
+  //friend class PQ2NodalBasisLeafNode<GV>;
 
 public:
 
@@ -66,7 +175,7 @@ public:
   /** \brief Constructor for a given grid view object */
   PQ2NodalBasis(const GridView& gv) :
     gridView_(gv),
-    mapper_(gv)
+    indexSet_(gv)
   {}
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -76,31 +185,9 @@ public:
     return gridView_;
   }
 
-  /**
-   * \brief Maximum local size for any element on the GridView
-   *
-   * This is the maximal size needed for local matrices
-   * and local vectors, i.e., the result is
-   *
-   * max{GridViewLocalBasisView(e).tree().size() | e in GridView}
-   *
-   * The method returns 3^dim, which is the number of degrees of freedom you get for cubes.
-   */
-  size_type maxLocalSize() const DUNE_FINAL
+  PQ2IndexSet<GV> indexSet() const
   {
-    return StaticPower<3,dim>::power;
-  }
-
-  //! Return the number of possible values for next position in empty multi index
-  size_type subIndexCount() const
-  {
-    return mapper_.size();
-  }
-
-  //! Return number possible values for next position in multi index
-  size_type subIndexCount(const MultiIndex& index) const DUNE_FINAL
-  {
-    return mapper_.size();
+    return indexSet_;
   }
 
   /** \brief Return local view for basis
@@ -113,7 +200,8 @@ public:
 
 protected:
   const GridView gridView_;
-  const MultipleCodimMultipleGeomTypeMapper<GridView, P2MapperLayout> mapper_;
+
+  PQ2IndexSet<GV> indexSet_;
 };
 
 
@@ -121,6 +209,12 @@ protected:
 template<typename GV>
 class PQ2NodalBasisLocalView
 {
+  // Grid dimension
+  enum {dim = GV::dimension};
+
+  // Needs the grid element
+  friend class PQ2LocalIndexSet<GV>;
+
 public:
   /** \brief The global FE basis that this is a view on */
   typedef PQ2NodalBasis<GV> GlobalBasis;
@@ -192,6 +286,31 @@ public:
     return tree_;
   }
 
+  /** \brief Number of degrees of freedom on this element
+   */
+  size_type size() const
+  {
+    // We have subTreeSize==lfe.size() because we're in a leaf node.
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+    return tree_.finiteElement_->size();
+#else
+    return tree_.finiteElement_->localBasis().size();
+#endif
+  }
+
+  /**
+   * \brief Maximum local size for any element on the GridView
+   *
+   * This is the maximal size needed for local matrices
+   * and local vectors, i.e., the result is
+   *
+   * The method returns 3^dim, which is the number of degrees of freedom you get for cubes.
+   */
+  size_type maxSize() const
+  {
+    return StaticPower<3,dim>::power;
+  }
+
   /** \brief Return the global basis that we are a view on
    */
   const GlobalBasis& globalBasis() const
@@ -211,8 +330,7 @@ class PQ2NodalBasisLeafNode :
   public GridFunctionSpaceBasisLeafNodeInterface<
     typename GV::template Codim<0>::Entity,
     typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, GV::dimension, 2>::FiniteElementType,
-    typename PQ2NodalBasis<GV>::size_type,
-    typename PQ2NodalBasis<GV>::MultiIndex>
+    typename PQ2NodalBasis<GV>::size_type>
 {
   typedef PQ2NodalBasis<GV> GlobalBasis;
   static const int dim = GV::dimension;
@@ -224,19 +342,20 @@ class PQ2NodalBasisLeafNode :
   typedef typename GlobalBasis::MultiIndex MI;
 
   typedef typename GlobalBasis::LocalView LocalView;
+
   friend LocalView;
+  friend class PQ2LocalIndexSet<GV>;
 
 public:
-  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST,MI> Interface;
+  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST> Interface;
   typedef typename Interface::size_type size_type;
-  typedef typename Interface::MultiIndex MultiIndex;
   typedef typename Interface::Element Element;
   typedef typename Interface::FiniteElement FiniteElement;
 
   PQ2NodalBasisLeafNode(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis),
-    finiteElement_(0),
-    element_(0)
+    finiteElement_(nullptr),
+    element_(nullptr)
   {}
 
   //! Return current element, throw if unbound
@@ -254,9 +373,8 @@ public:
     return *finiteElement_;
   }
 
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type subTreeSize() const DUNE_FINAL // all nodes or leaf nodes only ?
+  //! maximum size of subtree rooted in this node for any element of the global basis
+  size_type size() const
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
@@ -264,67 +382,6 @@ public:
 #else
     return finiteElement_->localBasis().size();
 #endif
-  }
-
-  //! maximum size of subtree rooted in this node for any element of the global basis
-  size_type maxSubTreeSize() const DUNE_FINAL // all nodes or leaf nodes only ?
-  {
-    return StaticPower<3,dim>::power;
-  }
-
-  //! size of complete tree (element-local)
-  size_type localSize() const DUNE_FINAL // all nodes
-  {
-    // We have localSize==subTreeSize because the tree consist of a single leaf node.
-    return subTreeSize();
-  }
-
-  //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
-  size_type localIndex(size_type i) const DUNE_FINAL // all nodes
-  {
-    return i;
-  }
-
-  //! maximum size of complete tree for any element of the global basis
-  size_type maxLocalSize() const DUNE_FINAL // all nodes
-  {
-    // We have maxLocalSize==maxSubTreeSize because the tree consist of a single leaf node.
-    return maxSubTreeSize();
-  }
-
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
-  const MultiIndex globalIndex(size_type i) const DUNE_FINAL // move to LocalView?
-  {
-#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
-    return { globalBasis_->mapper_.subIndex(
-#else
-    return { (size_t)globalBasis_->mapper_.map(
-#endif
-        *element_,
-        finiteElement_->localCoefficients().localKey(i).subEntity(),
-        finiteElement_->localCoefficients().localKey(i).codim()) };
-  }
-
-  //! Generate multi indices for current subtree into range starting at it
-  //! \param it iterator over a container of MultiIndex
-  //! \return iterator past the last written element (STL-style)
-  template<typename MultiIndexIterator>
-  MultiIndexIterator generateMultiIndices(MultiIndexIterator it) const // move to LocalView?
-  {
-    size_type size = subTreeSize();
-    for(size_type i=0; i<size; ++i)
-    {
-#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
-      (*it) = {globalBasis_->mapper_.subIndex(
-#else
-      (*it) = {globalBasis_->mapper_.map(
-#endif
-        *element_,
-        finiteElement_->localCoefficients().localKey(i).subEntity(),
-        finiteElement_->localCoefficients().localKey(i).codim())};
-      ++it;
-    }
-    return it;
   }
 
 protected:
