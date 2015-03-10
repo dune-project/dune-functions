@@ -7,7 +7,14 @@
 #include <memory>
 #include <functional>
 
+#include <dune/common/version.hh>
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
 #include <dune/common/std/final.hh>
+#else
+ #ifndef DUNE_FINAL
+  #define DUNE_FINAL
+ #endif
+#endif
 #include <dune/common/exceptions.hh>
 #include <dune/functions/common/differentiablefunction.hh>
 

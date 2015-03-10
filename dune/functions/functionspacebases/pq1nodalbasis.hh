@@ -9,7 +9,9 @@
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
 #include <dune/common/std/final.hh>
 #else
-#define DUNE_FINAL
+ #ifndef DUNE_FINAL
+  #define DUNE_FINAL
+ #endif
 #endif
 #include <dune/common/exceptions.hh>
 
