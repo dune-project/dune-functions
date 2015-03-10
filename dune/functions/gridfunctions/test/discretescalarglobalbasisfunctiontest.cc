@@ -12,7 +12,12 @@
 
 // #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
-#include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
+#include <dune/functions/gridfunctions/new_discretescalarglobalbasisfunction.hh>
+
+
+#include <dune/functions/gridfunctions/new_gridfunction.hh>
+#include <dune/functions/gridfunctions/gridviewentityset.hh>
+
 
 using namespace Dune;
 using namespace Dune::Functions;
@@ -48,14 +53,30 @@ int main (int argc, char* argv[]) try
     x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
 
   // generate a discrete function to evaluate the integral
-  Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> f(feBasis,x);
-  auto localFunction = Dune::Functions::localFunction(f);
+  Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> fOriginal(feBasis,x);
+
+  using EntitySet = typename decltype(fOriginal)::EntitySet;
+  using GridView = decltype(fOriginal)::GridView;
+  using Range = decltype(fOriginal)::Range;
+  using Domain = decltype(fOriginal)::Domain;
+
+
+//  auto& f = fOriginal;
+//  GridFunction<Range(Domain), EntitySet ff = fOriginal;
+  GridFunction<Range(Domain), EntitySet> f = fOriginal;
+
+
+
+
+//  auto localFunction = Dune::Functions::localFunction(f);
+  auto fLocal = localFunction(f);
 
   // Loop over elements and integrate over the function
   double integral = 0;
   for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
   {
-    localFunction->bind(*it);
+//    fLocal->bind(*it);
+    fLocal.bind(*it);
 
     // A quadrature rule
     const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1);
@@ -70,11 +91,13 @@ int main (int argc, char* argv[]) try
       const double integrationElement = it->geometry().integrationElement(quadPos);
 
       Dune::FieldVector<typename decltype(x)::value_type, 1> v;
-      localFunction->evaluate(quadPos,v);
+      v = fLocal(quadPos);
+//      fLocal->evaluate(quadPos,v);
       integral += v * quad[pt].weight() * integrationElement;
     }
 
-    localFunction->unbind();
+//    fLocal->unbind();
+    fLocal.unbind();
   }
 
   std::cout << "Computed integral is " << integral << std::endl;
