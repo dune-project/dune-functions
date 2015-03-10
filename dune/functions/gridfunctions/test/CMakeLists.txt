@@ -1,5 +1,5 @@
 # tests that should build and run successfully
-set(TESTS discretescalarglobalbasisfunctiontest)
+set(TESTS discretescalarglobalbasisfunctiontest, gridfunctiontest)
 
 set(TESTPROGS ${TESTS})
 
@@ -11,6 +11,10 @@ add_dependencies(${_test_target} ${TESTPROGS})
 add_executable("discretescalarglobalbasisfunctiontest"
                discretescalarglobalbasisfunctiontest.cc)
 target_link_libraries("discretescalarglobalbasisfunctiontest" ${DUNE_LIBS})
+
+add_executable("gridfunctiontest"
+               gridfunctiontest.cc)
+target_link_libraries("gridfunctiontest" ${DUNE_LIBS})
 
 # Add the tests to be executed
 foreach(_TEST ${TESTPROGS})
