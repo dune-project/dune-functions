@@ -1,7 +1,6 @@
 add_subdirectory("test"  EXCLUDE_FROM_ALL)
 
 install(FILES
-        functionspacebasis.hh
         gridviewfunctionspacebasis.hh
         pq1nodalbasis.hh
         pq2nodalbasis.hh
