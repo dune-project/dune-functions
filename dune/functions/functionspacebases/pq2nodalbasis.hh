@@ -47,7 +47,7 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type, 1> MultiIndex;
 
-  PQ2LocalIndexSet(const PQ2IndexSet<GV>* indexSet)
+  PQ2LocalIndexSet(const PQ2IndexSet<GV> & indexSet)
   : indexSet_(indexSet)
   {}
 
@@ -83,9 +83,9 @@ public:
   const MultiIndex index(size_type i) const
   {
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
-    return { indexSet_->mapper_.subIndex(
+    return { indexSet_.mapper_.subIndex(
 #else
-    return { (size_t)indexSet_->mapper_.map(
+    return { (size_t)indexSet_.mapper_.map(
 #endif
         *(localView_->element_),
         localView_->tree().finiteElement_->localCoefficients().localKey(i).subEntity(),
@@ -101,7 +101,7 @@ public:
 
   const PQ2NodalBasisLocalView<GV>* localView_;
 
-  const PQ2IndexSet<GV>* indexSet_;
+  const PQ2IndexSet<GV> indexSet_;
 };
 
 template<typename GV>
@@ -135,7 +135,7 @@ public:
 
   LocalIndexSet localIndexSet() const
   {
-    return LocalIndexSet(this);
+    return LocalIndexSet(*this);
   }
 
 private:
