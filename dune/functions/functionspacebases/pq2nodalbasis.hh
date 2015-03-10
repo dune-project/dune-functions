@@ -157,9 +157,6 @@ class PQ2NodalBasis
 {
   static const int dim = GV::dimension;
 
-  // Needs the mapper
-  //friend class PQ2NodalBasisLeafNode<GV>;
-
 public:
 
   /** \brief The grid view that the FE space is defined on */
