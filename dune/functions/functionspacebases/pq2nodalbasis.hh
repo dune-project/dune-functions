@@ -122,6 +122,8 @@ class PQ2IndexSet
 
 public:
 
+  typedef PQ2LocalIndexSet<GV> LocalIndexSet;
+
   PQ2IndexSet(const GV& gridView)
   : mapper_(gridView)
   {}
@@ -131,9 +133,9 @@ public:
     return mapper_.size();
   }
 
-  PQ2LocalIndexSet<GV> localIndexSet() const
+  LocalIndexSet localIndexSet() const
   {
-    return PQ2LocalIndexSet<GV>(this);
+    return LocalIndexSet(this);
   }
 
 private:
