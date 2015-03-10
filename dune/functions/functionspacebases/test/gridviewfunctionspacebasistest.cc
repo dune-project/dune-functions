@@ -31,6 +31,7 @@ int main (int argc, char* argv[]) try
 
   const GridView& gridView = grid.leafGridView();
   Basis feBasis(gridView);
+  auto indexSet = feBasis.indexSet();
 
   typedef Basis::MultiIndex MultiIndex;
 
@@ -38,29 +39,46 @@ int main (int argc, char* argv[]) try
   // If we use that as the coefficients of a finite element function,
   // we know its integral and can check whether quadrature returns
   // the correct result
-  std::vector<double> x(feBasis.subIndexCount());
-
-
+  std::vector<double> x(indexSet.size());
 
   // TODO: Implement interpolation properly using the global basis.
   for (auto it = gridView.begin<dim>(); it != gridView.end<dim>(); ++it)
     x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
 
+  // Objects required in the local context
+  auto localView = feBasis.localView();
+  auto localIndexSet = indexSet.localIndexSet();
+  std::vector<size_t> coefficients(localView.maxSize());
+
   // Loop over elements and integrate over the function
   double integral = 0;
-  std::vector<MultiIndex> globalIndices(feBasis.maxLocalSize());
   for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
   {
-    auto localView = feBasis.localView();
     localView.bind(*it);
+    localIndexSet.bind(localView);
 
+    // paranoia checks
+    assert(localView.size() == localIndexSet.size());
+    assert(&(localView.globalBasis()) == &(feBasis));
+    assert(&(localIndexSet.localView()) == &(localView));
+
+    // copy data from global vector
+    coefficients.resize(localIndexSet.size());
+    for (size_t i=0; i<localIndexSet.size(); i++)
+    {
+      coefficients[i] = x[localIndexSet.index(i)[0]];
+    }
+
+    // get access to the finite element
     typedef Basis::LocalView::Tree Tree;
     auto& treeImp = localView.tree();
     const Tree::Interface& tree = treeImp;
 
-    treeImp.generateMultiIndices(globalIndices.begin());
-
     auto& localFiniteElement = tree.finiteElement();
+
+    // we have a flat tree...
+    assert(localView.size() == tree.size());
+    assert(localView.size() == tree.finiteElement().basis().size());
 
     // A quadrature rule
     const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1);
@@ -81,10 +99,13 @@ int main (int argc, char* argv[]) try
       // Actually compute the vector entries
       for (size_t i=0; i<localFiniteElement.localBasis().size(); i++)
       {
-        assert(globalIndices[i]==tree.globalIndex(i));
-        integral += x[globalIndices[i][0]] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
+        local_integral[i] += coefficients[i] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
       }
     }
+
+    // unbind
+    localIndexSet.unbind();
+    localView.unbind();
   }
 
   assert(std::abs(integral-0.5)< 1e-10);
