@@ -4,6 +4,7 @@ install(FILES
         gridfunction.hh
         gridviewentityset.hh
         gridviewfunction.hh
+        new_discretescalarglobalbasisfunction.hh
         new_gridfunction.hh
         new_gridfunction_imp.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/gridfunctions)
