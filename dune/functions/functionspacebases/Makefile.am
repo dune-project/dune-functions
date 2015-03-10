@@ -1,6 +1,5 @@
 functionspacebasesincludedir = $(includedir)/dune/functions/functionspacebases
-functionspacebasesinclude_HEADERS = functionspacebasis.hh \
-                                    gridviewfunctionspacebasis.hh \
+functionspacebasesinclude_HEADERS = gridviewfunctionspacebasis.hh \
                                     pq1nodalbasis.hh \
                                     pq2nodalbasis.hh
 
