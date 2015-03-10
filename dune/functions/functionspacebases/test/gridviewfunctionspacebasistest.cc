@@ -10,6 +10,7 @@
 
 #include <dune/grid/yaspgrid.hh>
 
+// #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 
 using namespace Dune;
@@ -26,6 +27,7 @@ int main (int argc, char* argv[]) try
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
+//  typedef PQ1NodalBasis<GridView> Basis;
   typedef PQ2NodalBasis<GridView> Basis;
 
   const GridView& gridView = grid.leafGridView();
@@ -47,6 +49,7 @@ int main (int argc, char* argv[]) try
   // Objects required in the local context
   auto localView = feBasis.localView();
   auto localIndexSet = indexSet.localIndexSet();
+  auto localIndexSet2 = feBasis.indexSet().localIndexSet();
   std::vector<double> coefficients(localView.maxSize());
 
   // Loop over elements and integrate over the function
@@ -55,11 +58,16 @@ int main (int argc, char* argv[]) try
   {
     localView.bind(*it);
     localIndexSet.bind(localView);
+    localIndexSet2.bind(localView);
 
     // paranoia checks
     assert(localView.size() == localIndexSet.size());
     assert(&(localView.globalBasis()) == &(feBasis));
     assert(&(localIndexSet.localView()) == &(localView));
+
+    assert(localIndexSet.size() == localIndexSet2.size());
+    for (size_t i=0; i<localIndexSet.size(); i++)
+      assert(localIndexSet.index(i) == localIndexSet2.index(i));
 
     // copy data from global vector
     coefficients.resize(localIndexSet.size());
