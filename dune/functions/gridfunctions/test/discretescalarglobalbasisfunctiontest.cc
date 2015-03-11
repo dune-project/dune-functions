@@ -10,7 +10,7 @@
 
 #include <dune/grid/yaspgrid.hh>
 
-// #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
+#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 #include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 
@@ -34,8 +34,8 @@ int main (int argc, char* argv[]) try
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
-//  typedef PQ1NodalBasis<GridView> Basis;
-  typedef PQ2NodalBasis<GridView> Basis;
+  typedef PQ1NodalBasis<GridView> Basis;
+//  typedef PQ2NodalBasis<GridView> Basis;
 
   const GridView& gridView = grid.leafGridView();
   Basis feBasis(gridView);
