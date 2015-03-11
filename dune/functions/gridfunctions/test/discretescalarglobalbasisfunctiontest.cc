@@ -40,8 +40,6 @@ int main (int argc, char* argv[]) try
   Basis feBasis(gridView);
   auto indexSet = feBasis.indexSet();
 
-  typedef Basis::MultiIndex MultiIndex;
-
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
   // we know its integral and can check whether quadrature returns
@@ -55,7 +53,7 @@ int main (int argc, char* argv[]) try
   // generate a discrete function to evaluate the integral
   Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> fOriginal(feBasis,x);
 
-  using EntitySet = typename decltype(fOriginal)::EntitySet;
+  using EntitySet = decltype(fOriginal)::EntitySet;
   using GridView = decltype(fOriginal)::GridView;
   using Range = decltype(fOriginal)::Range;
   using Domain = decltype(fOriginal)::Domain;
