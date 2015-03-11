@@ -16,6 +16,7 @@
 
 
 #include <dune/functions/gridfunctions/new_gridfunction.hh>
+#include <dune/functions/gridfunctions/gridviewfunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 
 
@@ -60,8 +61,8 @@ int main (int argc, char* argv[]) try
 
 
 //  auto& f = fOriginal;
-//  GridFunction<Range(Domain), EntitySet ff = fOriginal;
-  GridFunction<Range(Domain), EntitySet> f = fOriginal;
+//  GridFunction<Range(Domain), EntitySet> f = fOriginal;
+  GridViewFunction<Range(Domain), GridView> f = fOriginal;
 
 
 
