@@ -12,6 +12,7 @@
 
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
+#include <dune/functions/functionspacebases/pq3nodalbasis.hh>
 
 using namespace Dune;
 using namespace Dune::Functions;
@@ -120,12 +121,19 @@ int main (int argc, char* argv[]) try
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
-  typedef PQ1NodalBasis<GridView> Basis;
-
   const GridView& gridView = grid.leafGridView();
-  Basis feBasis(gridView);
 
-  testScalarBasis(feBasis);
+  // Test PQ1NodalBasis
+  PQ1NodalBasis<GridView> pq1Basis(gridView);
+  testScalarBasis(pq1Basis);
+
+  // Test PQ2NodalBasis
+  PQ2NodalBasis<GridView> pq2Basis(gridView);
+  testScalarBasis(pq2Basis);
+
+  // Test PQ3NodalBasis
+  PQ3NodalBasis<GridView> pq3Basis(gridView);
+  testScalarBasis(pq3Basis);
 
   return 0;
 
