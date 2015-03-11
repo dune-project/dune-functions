@@ -44,6 +44,7 @@ public:
       , localIndexSet_(globalFunction.indexSet_.localIndexSet())
     {
       localDoFs_.reserve(localBasisView_.maxSize());
+      shapeFunctionValues_.reserve(localBasisView_.maxSize());
     }
 
     /**
@@ -63,6 +64,9 @@ public:
       localDoFs_.resize(localIndexSet_.size());
       for (size_type i = 0; i < localIndexSet_.size(); ++i)
         localDoFs_[i] = globalFunction_->dofs()[localIndexSet_.index(i)[0]];
+
+      // Prepare result vector for shape function
+      shapeFunctionValues_.resize(localIndexSet_.size());
     }
 
     void unbind()
@@ -77,23 +81,16 @@ public:
      * The result of this method is undefined if you did
      * not call bind() beforehand or changed the coefficient
      * vector after the last call to bind(). In the latter case
-     * you have to call bind() again in order to make evaluate()
+     * you have to call bind() again in order to make operator()
      * usable.
      */
-    void evaluate(const Domain& coord, Range& r) const
-    {
-      std::vector<Range> shapeFunctionValues;
-      auto& basis = localBasisView_.tree().finiteElement().localBasis();
-      basis.evaluateFunction(coord,shapeFunctionValues);
-      r = 0;
-      for (size_type i = 0; i < basis.size(); ++i)
-        r += localDoFs_[i] * shapeFunctionValues[i];
-    }
-
     Range operator()(const Domain& x) const
     {
-      Range y;
-      evaluate(x,y);
+      auto y = Range(0);
+      auto& basis = localBasisView_.tree().finiteElement().localBasis();
+      basis.evaluateFunction(x, shapeFunctionValues_);
+      for (size_type i = 0; i < basis.size(); ++i)
+        y += localDoFs_[i] * shapeFunctionValues_[i];
       return y;
     }
 
@@ -108,6 +105,7 @@ public:
     LocalBasisView localBasisView_;
     LocalIndexSet localIndexSet_;
     std::vector<typename V::value_type> localDoFs_;
+    mutable std::vector<Range> shapeFunctionValues_;
   };
 
   DiscreteScalarGlobalBasisFunction(const Basis & basis, const V & dofs)
@@ -148,7 +146,6 @@ private:
   std::shared_ptr<const Basis> basis_;
   std::shared_ptr<const V> dofs_;
   typename Basis::IndexSet indexSet_;
-
 };
 
 } // namespace Functions
