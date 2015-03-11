@@ -6,12 +6,11 @@
 #include <type_traits>
 
 #include <dune/functions/common/type_traits.hh>
-
-#include "defaultderivativetraits.hh"
-#include "differentiablefunction_imp.hh"
-#include "smallobject.hh"
-
-#include "concept.hh"
+#include <dune/functions/common/defaultderivativetraits.hh>
+#include <dune/functions/common/differentiablefunction_imp.hh>
+#include <dune/functions/common/smallobject.hh>
+#include <dune/functions/common/concept.hh>
+#include <dune/functions/common/signature.hh>
 
 namespace Dune {
 namespace Functions {
@@ -65,7 +64,6 @@ class DifferentiableFunction
 template<class Range, class Domain, template<class> class DerivativeTraits, size_t bufferSize>
 class DifferentiableFunction< Range(Domain), DerivativeTraits, bufferSize>
 {
-  using RawDomain = typename std::decay<Domain>::type;
 public:
 
   /**
@@ -74,9 +72,14 @@ public:
   using Signature = Range(Domain);
 
   /**
+   * \brief Raw signature of wrapped functions without possible const and reference qualifiers
+   */
+  using RawSignature = typename SignatureTraits<Signature>::RawSignature;
+
+  /**
    * \brief Signature of derivative of wrapped functions
    */
-  using DerivativeSignature = typename DerivativeTraits<Range(RawDomain)>::Range(Domain);
+  using DerivativeSignature = typename DerivativeTraits<RawSignature>::Range(Domain);
 
   /**
    * \brief Wrapper type of returned derivatives
