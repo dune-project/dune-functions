@@ -109,13 +109,15 @@ public:
   };
 
   DiscreteScalarGlobalBasisFunction(const Basis & basis, const V & dofs)
-    : basis_(stackobject_to_shared_ptr(basis))
+    : entitySet_(basis.gridView())
+    , basis_(stackobject_to_shared_ptr(basis))
     , dofs_(stackobject_to_shared_ptr(dofs))
     , indexSet_(basis.indexSet())
   {}
 
   DiscreteScalarGlobalBasisFunction(std::shared_ptr<Basis> basis, std::shared_ptr<V> dofs)
-    : basis_(basis)
+    : entitySet_(basis.gridView())
+    , basis_(basis)
     , dofs_(dofs)
     , indexSet_(basis.indexSet())
   {}
@@ -141,8 +143,17 @@ public:
     return LocalFunction(t);
   }
 
+  /**
+   * \brief Get associated EntitySet
+   */
+  const EntitySet& entitySet() const
+  {
+    return entitySet_;
+  }
+
 private:
 
+  EntitySet entitySet_;
   std::shared_ptr<const Basis> basis_;
   std::shared_ptr<const V> dofs_;
   typename Basis::IndexSet indexSet_;
