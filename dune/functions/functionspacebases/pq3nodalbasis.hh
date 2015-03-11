@@ -6,6 +6,13 @@
 #include <array>
 #include <dune/common/exceptions.hh>
 #include <dune/common/version.hh>
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+#include <dune/common/std/final.hh>
+#else
+ #ifndef DUNE_FINAL
+  #define DUNE_FINAL
+ #endif
+#endif
 
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
 
@@ -17,38 +24,21 @@
 namespace Dune {
 namespace Functions {
 
-
 template<typename GV>
 class PQ3NodalBasisLocalView;
 
 template<typename GV>
 class PQ3NodalBasisLeafNode;
 
-
-
-/** \brief Nodal basis of a scalar third-order Lagrangean finite element space
- *
- * \note This only works for certain grids.  The following restrictions hold
- * - Grids must be 1d, 2d, or 3d
- * - 3d grids must be simplex grids
- *
- * \tparam GV The GridView that the space is defined on.
- */
 template<typename GV>
-class PQ3NodalBasis
-: public GridViewFunctionSpaceBasis<GV,
-                                    PQ3NodalBasisLocalView<GV>,
-                                    std::array<std::size_t, 1> >
-{
-  static const int dim = GV::dimension;
+class PQ3IndexSet;
 
-  // Needs the mapper
-  friend class PQ3NodalBasisLeafNode<GV>;
+template<typename GV>
+class PQ3LocalIndexSet
+{
+  enum {dim = GV::dimension};
 
 public:
-
-  /** \brief The grid view that the FE space is defined on */
-  typedef GV GridView;
   typedef std::size_t size_type;
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
@@ -57,37 +47,150 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type, 1> MultiIndex;
 
-  /** \brief Constructor for a given grid view object */
-  PQ3NodalBasis(const GridView& gv) :
-    gridView_(gv)
-  {
-    updateOffsets();
-  }
+  PQ3LocalIndexSet(const PQ3IndexSet<GV> & indexSet)
+  : basisIndexSet_(indexSet)
+  {}
 
-  /** \brief Obtain the grid view that the basis is defined on
+  /** \brief Bind the view to a grid element
+   *
+   * Having to bind the view to an element before being able to actually access any of its data members
+   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
    */
-  const GridView& gridView() const DUNE_FINAL
+  void bind(const PQ3NodalBasisLocalView<GV>& localView)
   {
-    return gridView_;
+    localView_ = &localView;
   }
 
-  /**
-   * \brief Maximum local size for any element on the GridView
-   *
-   * This is the maximal size needed for local matrices
-   * and local vectors, i.e., the result is
-   *
-   * max{GridViewLocalBasisView(e).tree().size() | e in GridView}
-   *
-   * The method returns 4^dim, which is the number of degrees of freedom you get for cubes.
+  /** \brief Unbind the view
    */
-  size_type maxLocalSize() const DUNE_FINAL
+  void unbind()
   {
-    return StaticPower<4,dim>::power;
+    localView_ = nullptr;
   }
 
-  //! Return the number of possible values for next position in empty multi index
-  size_type subIndexCount() const
+  /** \brief Size of subtree rooted in this node (element-local)
+   */
+  size_type size() const
+  {
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+    return localView_->tree().finiteElement_->size();
+#else
+    return localView_->tree().finiteElement_->localBasis().size();
+#endif
+  }
+
+  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
+  const MultiIndex index(size_type i) const
+  {
+    Dune::LocalKey localKey = localView_->tree().finiteElement_->localCoefficients().localKey(i);
+    const auto& gridIndexSet = basisIndexSet_.gridView_.indexSet();
+    const auto& element = localView_->element();
+
+    // The dimension of the entity that the current dof is related to
+    size_t dofDim = dim - localKey.codim();
+
+    if (dofDim==0) {  // vertex dof
+      return { gridIndexSet.subIndex(element,localKey.subEntity(),dim) };
+    }
+
+    if (dofDim==1)
+    {  // edge dof
+      if (dim==1)   // element dof -- any local numbering is fine
+        return { basisIndexSet_.edgeOffset_ + 2*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+      else
+      {
+        const Dune::ReferenceElement<double,dim>& refElement
+            = Dune::ReferenceElements<double,dim>::general(element.type());
+
+        // we have to reverse the numbering if the local triangle edge is
+        // not aligned with the global edge
+        size_t v0 = gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
+        size_t v1 = gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
+        bool flip = (v0 > v1);
+        return { (flip)
+          ? basisIndexSet_.edgeOffset_ + 2*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) + 1-localKey.index()
+          : basisIndexSet_.edgeOffset_ + 2*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) + localKey.index() } ;
+      }
+    }
+
+    if (dofDim==2)
+    {
+      if (dim==2)   // element dof -- any local numbering is fine
+      {
+        if (element.type().isTriangle())
+          return { basisIndexSet_.triangleOffset_ + 1*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+        else if (element.type().isQuadrilateral())
+          return { basisIndexSet_.quadrilateralOffset_ + 4*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+        else
+          DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
+      } else
+      {
+        const Dune::ReferenceElement<double,dim>& refElement
+            = Dune::ReferenceElements<double,dim>::general(element.type());
+
+        assert(refElement.type(localKey.subEntity(), localKey.codim()).isTriangle());
+        return { basisIndexSet_.triangleOffset_ + gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) };
+      }
+    }
+    DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the PQ3NodalBasis");
+  }
+
+  /** \brief Return the local view that we are attached to
+   */
+  const LocalView& localView() const
+  {
+    return *localView_;
+  }
+
+  const PQ3NodalBasisLocalView<GV>* localView_;
+
+  const PQ3IndexSet<GV> basisIndexSet_;
+};
+
+template<typename GV>
+class PQ3IndexSet
+{
+  static const int dim = GV::dimension;
+
+  // Needs the mapper
+  friend class PQ3LocalIndexSet<GV>;
+
+public:
+
+  typedef PQ3LocalIndexSet<GV> LocalIndexSet;
+
+  PQ3IndexSet(const GV& gridView)
+  : gridView_(gridView)
+  {
+    vertexOffset_        = 0;
+    edgeOffset_          = vertexOffset_        + gridView_.size(dim);
+    triangleOffset_      = edgeOffset_          + 2*gridView_.size(dim-1);
+
+    GeometryType triangle;
+    triangle.makeTriangle();
+    quadrilateralOffset_ = triangleOffset_      + 1*gridView_.size(triangle);
+
+    Dune::GeometryType quadrilateral;
+    quadrilateral.makeQuadrilateral();
+    if (dim==3) {
+      tetrahedronOffset_   = quadrilateralOffset_ + 4*gridView_.size(quadrilateral);
+
+      GeometryType tetrahedron;
+      tetrahedron.makeSimplex(3);
+      pyramidOffset_       = tetrahedronOffset_   +   0*gridView_.size(tetrahedron);
+
+      GeometryType pyramid;
+      pyramid.makePyramid();
+      prismOffset_         = tetrahedronOffset_   +   1*gridView_.size(pyramid);
+
+      GeometryType prism;
+      prism.makePrism();
+      hexahedronOffset_    = tetrahedronOffset_   +   2*gridView_.size(prism);
+    }
+
+  }
+
+  std::size_t size() const
   {
     switch (dim)
     {
@@ -119,18 +222,75 @@ public:
              + gridView_.size(pyramid) + 2*gridView_.size(prism) + 8*gridView_.size(hexahedron);
       }
 
-      default:
-        DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
     }
 
-    return 0;
+    DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
   }
 
-  //! Return number possible values for next position in multi index
-  size_type subIndexCount(const MultiIndex& index) const DUNE_FINAL
+  LocalIndexSet localIndexSet() const
   {
-    // We are a scalar FE space, the 'index' argument will be disregarded
-    return subIndexCount();
+    return LocalIndexSet(*this);
+  }
+
+private:
+
+  size_t vertexOffset_;
+  size_t edgeOffset_;
+  size_t triangleOffset_;
+  size_t quadrilateralOffset_;
+  size_t tetrahedronOffset_;
+  size_t pyramidOffset_;
+  size_t prismOffset_;
+  size_t hexahedronOffset_;
+
+  const GV gridView_;
+};
+
+/** \brief Nodal basis of a scalar third-order Lagrangean finite element space
+ *
+ * \note This only works for certain grids.  The following restrictions hold
+ * - Grids must be 1d, 2d, or 3d
+ * - 3d grids must be simplex grids
+ *
+ * \tparam GV The GridView that the space is defined on.
+ */
+template<typename GV>
+class PQ3NodalBasis
+: public GridViewFunctionSpaceBasis<GV,
+                                    PQ3NodalBasisLocalView<GV>,
+                                    PQ3IndexSet<GV>,
+                                    std::array<std::size_t, 1> >
+{
+  static const int dim = GV::dimension;
+
+public:
+
+  /** \brief The grid view that the FE space is defined on */
+  typedef GV GridView;
+  typedef std::size_t size_type;
+
+  /** \brief Type of the local view on the restriction of the basis to a single element */
+  typedef PQ3NodalBasisLocalView<GV> LocalView;
+
+  /** \brief Type used for global numbering of the basis vectors */
+  typedef std::array<size_type, 1> MultiIndex;
+
+  /** \brief Constructor for a given grid view object */
+  PQ3NodalBasis(const GridView& gv) :
+    gridView_(gv),
+    indexSet_(gv)
+  {}
+
+  /** \brief Obtain the grid view that the basis is defined on
+   */
+  const GridView& gridView() const DUNE_FINAL
+  {
+    return gridView_;
+  }
+
+  PQ3IndexSet<GV> indexSet() const
+  {
+    return indexSet_;
   }
 
   /** \brief Return local view for basis
@@ -142,47 +302,9 @@ public:
   }
 
 protected:
-
-  void updateOffsets()
-  {
-    vertexOffset_        = 0;
-    edgeOffset_          = vertexOffset_        + gridView_.size(dim);
-    triangleOffset_      = edgeOffset_          + 2*gridView_.size(dim-1);
-
-    GeometryType triangle;
-    triangle.makeTriangle();
-    quadrilateralOffset_ = triangleOffset_      + 1*gridView_.size(triangle);
-
-    Dune::GeometryType quadrilateral;
-    quadrilateral.makeQuadrilateral();
-    if (dim==3) {
-      tetrahedronOffset_   = quadrilateralOffset_ + 4*gridView_.size(quadrilateral);
-
-      GeometryType tetrahedron;
-      tetrahedron.makeSimplex(3);
-      pyramidOffset_       = tetrahedronOffset_   +   0*gridView_.size(tetrahedron);
-
-      GeometryType pyramid;
-      pyramid.makePyramid();
-      prismOffset_         = tetrahedronOffset_   +   1*gridView_.size(pyramid);
-
-      GeometryType prism;
-      prism.makePrism();
-      hexahedronOffset_    = tetrahedronOffset_   +   2*gridView_.size(prism);
-    }
-  }
-
-
   const GridView gridView_;
 
-  size_t vertexOffset_;
-  size_t edgeOffset_;
-  size_t triangleOffset_;
-  size_t quadrilateralOffset_;
-  size_t tetrahedronOffset_;
-  size_t pyramidOffset_;
-  size_t prismOffset_;
-  size_t hexahedronOffset_;
+  PQ3IndexSet<GV> indexSet_;
 };
 
 
@@ -261,6 +383,31 @@ public:
     return tree_;
   }
 
+  /** \brief Number of degrees of freedom on this element
+   */
+  size_type size() const
+  {
+    // We have subTreeSize==lfe.size() because we're in a leaf node.
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+    return tree_.finiteElement_->size();
+#else
+    return tree_.finiteElement_->localBasis().size();
+#endif
+  }
+
+  /**
+   * \brief Maximum local size for any element on the GridView
+   *
+   * This is the maximal size needed for local matrices
+   * and local vectors, i.e., the result is
+   *
+   * The method returns 4^dim, which is the number of degrees of freedom you get for cubes.
+   */
+  size_type maxSize() const
+  {
+    return StaticPower<4,GV::dimension>::power;
+  }
+
   /** \brief Return the global basis that we are a view on
    */
   const GlobalBasis& globalBasis() const
@@ -280,8 +427,7 @@ class PQ3NodalBasisLeafNode :
   public GridFunctionSpaceBasisLeafNodeInterface<
     typename GV::template Codim<0>::Entity,
     typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, GV::dimension, 3>::FiniteElementType,
-    typename PQ3NodalBasis<GV>::size_type,
-    typename PQ3NodalBasis<GV>::MultiIndex>
+    typename PQ3NodalBasis<GV>::size_type>
 {
   typedef PQ3NodalBasis<GV> GlobalBasis;
   static const int dim = GV::dimension;
@@ -293,12 +439,13 @@ class PQ3NodalBasisLeafNode :
   typedef typename GlobalBasis::MultiIndex MI;
 
   typedef typename GlobalBasis::LocalView LocalView;
+
   friend LocalView;
+  friend class PQ3LocalIndexSet<GV>;
 
 public:
-  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST,MI> Interface;
+  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST> Interface;
   typedef typename Interface::size_type size_type;
-  typedef typename Interface::MultiIndex MultiIndex;
   typedef typename Interface::Element Element;
   typedef typename Interface::FiniteElement FiniteElement;
 
@@ -325,7 +472,7 @@ public:
 
   /** \brief Size of subtree rooted in this node (element-local)
    */
-  size_type subTreeSize() const DUNE_FINAL // all nodes or leaf nodes only ?
+  size_type size() const DUNE_FINAL
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
@@ -333,99 +480,6 @@ public:
 #else
     return finiteElement_->localBasis().size();
 #endif
-  }
-
-  //! maximum size of subtree rooted in this node for any element of the global basis
-  size_type maxSubTreeSize() const DUNE_FINAL // all nodes or leaf nodes only ?
-  {
-    return StaticPower<4,dim>::power;
-  }
-
-  //! size of complete tree (element-local)
-  size_type localSize() const DUNE_FINAL // all nodes
-  {
-    // We have localSize==subTreeSize because the tree consist of a single leaf node.
-    return subTreeSize();
-  }
-
-  //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
-  size_type localIndex(size_type i) const DUNE_FINAL // all nodes
-  {
-    return i;
-  }
-
-  //! maximum size of complete tree for any element of the global basis
-  size_type maxLocalSize() const DUNE_FINAL // all nodes
-  {
-    // We have maxLocalSize==maxSubTreeSize because the tree consist of a single leaf node.
-    return maxSubTreeSize();
-  }
-
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
-  const MultiIndex globalIndex(size_type i) const DUNE_FINAL // move to LocalView?
-  {
-    Dune::LocalKey localKey = cache_.get(element_->type()).localCoefficients().localKey(i);
-    const typename GV::IndexSet& indexSet = globalBasis_->gridView().indexSet();
-
-    // The dimension of the entity that the current dof is related to
-    size_t dofDim = dim - localKey.codim();
-
-    if (dofDim==0) {  // vertex dof
-      return { indexSet.subIndex(*element_,localKey.subEntity(),dim) };
-    }
-
-    if (dofDim==1)
-    {  // edge dof
-      if (dim==1)   // element dof -- any local numbering is fine
-        return { globalBasis_->edgeOffset_ + 2*indexSet.subIndex(*element_,0,0) + localKey.index() };
-      else
-      {
-        const Dune::ReferenceElement<double,dim>& refElement
-            = Dune::ReferenceElements<double,dim>::general(element_->type());
-
-        // we have to reverse the numbering if the local triangle edge is
-        // not aligned with the global edge
-        size_t v0 = indexSet.subIndex(*element_,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
-        size_t v1 = indexSet.subIndex(*element_,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
-        bool flip = (v0 > v1);
-        return { (flip)
-          ? globalBasis_->edgeOffset_ + 2*indexSet.subIndex(*element_,localKey.subEntity(),localKey.codim()) + 1-localKey.index()
-          : globalBasis_->edgeOffset_ + 2*indexSet.subIndex(*element_,localKey.subEntity(),localKey.codim()) + localKey.index() } ;
-      }
-    }
-
-    if (dofDim==2)
-    {
-      if (dim==2)   // element dof -- any local numbering is fine
-      {
-        if (element_->type().isTriangle())
-          return { globalBasis_->triangleOffset_ + 1*indexSet.subIndex(*element_,0,0) + localKey.index() };
-        else if (element_->type().isQuadrilateral())
-          return { globalBasis_->quadrilateralOffset_ + 4*indexSet.subIndex(*element_,0,0) + localKey.index() };
-        else
-          DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
-      } else
-      {
-        const Dune::ReferenceElement<double,dim>& refElement
-            = Dune::ReferenceElements<double,dim>::general(element_->type());
-
-        assert(refElement.type(localKey.subEntity(), localKey.codim()).isTriangle());
-        return { globalBasis_->triangleOffset_ + indexSet.subIndex(*element_,localKey.subEntity(),localKey.codim()) };
-      }
-    }
-    DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the PQ3NodalBasis");
-  }
-
-  //! Generate multi indices for current subtree into range starting at it
-  //! \param it iterator over a container of MultiIndex
-  //! \return iterator past the last written element (STL-style)
-  template<typename MultiIndexIterator>
-  MultiIndexIterator generateMultiIndices(MultiIndexIterator it) const // move to LocalView?
-  {
-    size_type size = subTreeSize();
-    for(size_type i=0; i<size; ++i, ++it)
-      (*it) = globalIndex(i);
-    return it;
   }
 
 protected:
