@@ -30,4 +30,4 @@ struct SignatureTraits<R(D)>
 } // namespace Functions
 } // namespace Dune
 
-#endif DUNE_FUNCTIONS_COMMON_SIGNATURE_HH
+#endif // DUNE_FUNCTIONS_COMMON_SIGNATURE_HH
