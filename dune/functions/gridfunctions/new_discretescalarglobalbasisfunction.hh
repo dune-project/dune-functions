@@ -8,7 +8,6 @@
 #include <dune/common/shared_ptr.hh>
 
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
-//#include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 namespace Dune {
 namespace Functions {
@@ -40,17 +39,12 @@ public:
     using Element = GlobalFunction::Element;
 
     LocalFunction(const DiscreteScalarGlobalBasisFunction& globalFunction)
-      : globalFunction_(globalFunction)
+      : globalFunction_(&globalFunction)
       , localBasisView_(globalFunction.basis().localView())
       , localIndexSet_(globalFunction.indexSet_.localIndexSet())
     {
       localDoFs_.reserve(localBasisView_.maxSize());
     }
-
-//    typename EBase::DerivativeBasePointer derivative() const
-//    {
-//      DUNE_THROW(NotImplemented,"derivative not implemented");
-//    }
 
     /**
      * \brief Bind LocalFunction to grid element.
@@ -68,7 +62,7 @@ public:
       // Read dofs associated to bound element
       localDoFs_.resize(localIndexSet_.size());
       for (size_type i = 0; i < localIndexSet_.size(); ++i)
-        localDoFs_[i] = globalFunction_.dofs()[localIndexSet_.index(i)[0]];
+        localDoFs_[i] = globalFunction_->dofs()[localIndexSet_.index(i)[0]];
     }
 
     void unbind()
@@ -110,7 +104,7 @@ public:
 
   private:
 
-    const DiscreteScalarGlobalBasisFunction& globalFunction_;
+    const DiscreteScalarGlobalBasisFunction* globalFunction_;
     LocalBasisView localBasisView_;
     LocalIndexSet localIndexSet_;
     std::vector<typename V::value_type> localDoFs_;
