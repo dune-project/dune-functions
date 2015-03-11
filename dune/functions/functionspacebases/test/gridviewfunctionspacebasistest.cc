@@ -16,25 +16,13 @@
 using namespace Dune;
 using namespace Dune::Functions;
 
-int main (int argc, char* argv[]) try
+template <typename Basis>
+void testScalarBasis(const Basis& feBasis)
 {
-  // Generate grid for testing
-  const int dim = 2;
-  typedef YaspGrid<dim> GridType;
-  FieldVector<double,dim> l(1);
-  std::array<int,dim> elements = {{10, 10}};
-  GridType grid(l,elements);
-
-  // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
-  typedef GridType::LeafGridView GridView;
-  typedef PQ1NodalBasis<GridView> Basis;
-//  typedef PQ2NodalBasis<GridView> Basis;
-
-  const GridView& gridView = grid.leafGridView();
-  Basis feBasis(gridView);
   auto indexSet = feBasis.indexSet();
 
-  typedef Basis::MultiIndex MultiIndex;
+  typedef typename Basis::MultiIndex MultiIndex;
+
 
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
@@ -43,7 +31,9 @@ int main (int argc, char* argv[]) try
   std::vector<double> x(indexSet.size());
 
   // TODO: Implement interpolation properly using the global basis.
-  for (auto it = gridView.begin<dim>(); it != gridView.end<dim>(); ++it)
+  auto gridView = feBasis.gridView();
+  static const int dim = Basis::GridView::dimension;
+  for (auto it = gridView.template begin<dim>(); it != gridView.template end<dim>(); ++it)
     x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
 
   // Objects required in the local context
@@ -54,7 +44,7 @@ int main (int argc, char* argv[]) try
 
   // Loop over elements and integrate over the function
   double integral = 0;
-  for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
+  for (auto it = gridView.template begin<0>(); it != gridView.template end<0>(); ++it)
   {
     localView.bind(*it);
     localIndexSet.bind(localView);
@@ -77,9 +67,9 @@ int main (int argc, char* argv[]) try
     }
 
     // get access to the finite element
-    typedef Basis::LocalView::Tree Tree;
+    typedef typename Basis::LocalView::Tree Tree;
     auto& treeImp = localView.tree();
-    const Tree::Interface& tree = treeImp;
+    const typename Tree::Interface& tree = treeImp;
 
     auto& localFiniteElement = tree.finiteElement();
 
@@ -117,6 +107,25 @@ int main (int argc, char* argv[]) try
 
   std::cout << "Computed integral is " << integral << std::endl;
   assert(std::abs(integral-0.5)< 1e-10);
+}
+
+int main (int argc, char* argv[]) try
+{
+  // Generate grid for testing
+  const int dim = 2;
+  typedef YaspGrid<dim> GridType;
+  FieldVector<double,dim> l(1);
+  std::array<int,dim> elements = {10, 10};
+  GridType grid(l,elements);
+
+  // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
+  typedef GridType::LeafGridView GridView;
+  typedef PQ1NodalBasis<GridView> Basis;
+
+  const GridView& gridView = grid.leafGridView();
+  Basis feBasis(gridView);
+
+  testScalarBasis(feBasis);
 
   return 0;
 
