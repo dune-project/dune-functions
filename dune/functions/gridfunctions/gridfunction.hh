@@ -1,135 +1,139 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_FUNCTIONS_GRIDFUNCTIONS_GRIDFUNCTION_HH
-#define DUNE_FUNCTIONS_GRIDFUNCTIONS_GRIDFUNCTION_HH
+#ifndef DUNE_FUNCTIONS_GRIDFUNCTIONS_GRID_FUNCTION_HH
+#define DUNE_FUNCTIONS_GRIDFUNCTIONS_GRID_FUNCTION_HH
 
-#include <memory>
-#include <dune/functions/common/differentiablefunction.hh>
+#include <type_traits>
+
+#include <dune/functions/common/defaultderivativetraits.hh>
+#include <dune/functions/common/differentiablefunction_imp.hh>
 #include <dune/functions/common/localfunction.hh>
+#include <dune/functions/common/smallobject.hh>
+#include <dune/functions/gridfunctions/gridfunction_imp.hh>
+
 
 
 namespace Dune {
-
 namespace Functions {
 
+
+
 /**
- * These classes describe the interface of EntitySets
- * that can be used as parameter for GridFunction.
- *
-class EntitySet
-{
-  public:
-    //! Type of Elements contained in this EntitySet
-    typedef ... Element;
-
-    //! Type of local coordinates with respect to the Element
-    typedef Element::Geometry::LocalCoordinate LocalCoordinate;
-    typedef Element::Geometry::GlobalCoordinate GlobalCoordinate;
-
-    typedef Element value_type;
-
-    //! Returns true if e is contained in the EntitySet
-    bool contains(const Element& e) const;
-};
-
-class IterableEntitySet :
-  public EntitySet
-{
-  public:
-
-    //! A forward iterator
-    typedef ... const_iterator;
-
-    //! Same as const_iterator
-    typedef const_iterator iterator;
-
-    //! Number of Elements visited by an iterator
-    size_t size() const;
-
-    //! Create a begin iterator
-    const_iterator begin() const;
-
-    //! Create a end iterator
-    const_iterator end() const;
-};
-*/
-
-
-/** \brief Abstract base class for functions defined on a subset of grid entities.
- *
- * Being defined on a subset of entities means in particular that you can evaluate the function
- * in local coordinates of a given element contained in this subset. The given type EntitySet
- * is required to allow cheap copies and to implement the interface of EntitySet.
- *
- * \tparam ES Implementation of an EntitySet.
- * \tparam RT The type used for function values
+ * Default implementation is empty
+ * The actual implementation is only given if Signature is an type
+ * describing a function signature as Range(Domain).
  */
-template<typename ES, typename RT>
+template<class Signature, class EntitySet, template<class> class DerivativeTraits=DefaultDerivativeTraits, size_t bufferSize=64>
 class GridFunction
-  : public DifferentiableFunction<typename ES::GlobalCoordinate,RT>
+{};
+
+
+
+/**
+ * \brief Class storing differentiable functions using type erasure
+ *
+ */
+template<class Range, class Domain, class ES, template<class> class DerivativeTraits, size_t bufferSize>
+class GridFunction<Range(Domain), ES, DerivativeTraits, bufferSize>
 {
-
-  typedef DifferentiableFunction<typename ES::GlobalCoordinate, RT> Base;
-
+  using RawDomain = typename std::decay<Domain>::type;
 public:
 
-  typedef ES EntitySet;
-  typedef typename Base::Domain Domain;
-  typedef typename Base::Range Range;
-  typedef typename Base::DerivativeRange DerivativeRange;
+  /**
+   * \brief Signature of wrapped functions
+   */
+  using Signature = Range(Domain);
 
-  typedef typename Base::Derivative Derivative;
-  typedef std::shared_ptr<typename Base::Derivative> DerivativeBasePointer;
+  /**
+   * \brief Signature of derivative of wrapped functions
+   */
+  using DerivativeSignature = typename DerivativeTraits<Range(RawDomain)>::Range(Domain);
 
-  typedef typename ES::LocalCoordinate LocalDomain;
-  typedef typename ES::Element Element;
+  /**
+   * \brief Wrapper type of returned derivatives
+   */
+  using DerivativeInterface = GridFunction<DerivativeSignature, ES, DerivativeTraits, bufferSize>;
 
-  typedef ::Dune::Functions::LocalFunction<GridFunction,Element> LocalFunction;
+  using EntitySet = ES;
 
-protected:
+  // \todo Should this be called local context?
+  using Element = typename EntitySet::Element;
 
-  typedef shared_ptr<LocalFunction> LocalFunctionBasePointer;
+  using LocalDomain = typename EntitySet::LocalCoordinate;
 
-public:
+  /**
+   * \brief Wrapper type of returned local functions
+   */
+  using LocalFunctionInterface = LocalFunction<Signature, Element, DerivativeTraits, bufferSize>;
 
-  /** \brief Construction from a given EntitySet */
-  GridFunction(const EntitySet& es)
-    : es_(es)
+
+  /**
+   * \brief Construct from function
+   *
+   * \tparam F Function type
+   *
+   * \param f Function of type F
+   *
+   * Calling derivative(DifferentiableFunction) will result in an exception
+   * if the passed function does provide a free derivative() function
+   * found via ADL.
+   */
+  template<class F, disableCopyMove<GridFunction, F> = 0 >
+  GridFunction(F&& f) :
+    f_(Imp::GridFunctionWrapper<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
-  /** \brief Access to the function on a single element, in coordinates of that element
-   *
-   * To evaluate the function on a single element you have to get a local function for
-   * this element.  You can do this by calling this function and then binding the
-   * local function to a given element.  Then the local function can be evaluated
-   * at given points.
-   *
-   * Rationale: if you want to evaluate the function at many points in the same element
-   * this approach is more efficient.
-   */
-  virtual LocalFunctionBasePointer localFunction() const = 0;
+  GridFunction() = default;
 
-  /** \brief Access to the derivative function
-   *
-   * We pretend that the function is differentiable everywhere, even though this will
-   * usually only be true in the interiors of the elements.
+  /**
+   * \brief Evaluation of wrapped function
    */
-  virtual DerivativeBasePointer derivative() const = 0;
-
-  /** \brief Const access to the grid view that the function is defined on */
-  const EntitySet& entitySet() const
+  Range operator() (const Domain& x) const
   {
-    return es_;
+    return f_.get().operator()(x);
   }
 
+  /**
+   * \copydoc DifferentiableFunction::derivative
+   */
+  friend DerivativeInterface derivative(const GridFunction& t)
+  {
+    return t.f_.get().derivative();
+  }
+
+  /**
+   * \brief Get local function of wrapped function
+   *
+   * This is free function will be found by ADL.
+   *
+   * Notice that the returned LocalFunction can
+   * only be used after it has been bound to a
+   * proper local context.
+   */
+  friend LocalFunctionInterface localFunction(const GridFunction& t)
+  {
+    return t.f_.get().wrappedLocalFunction();
+  }
+
+  /**
+   * \brief Get associated EntitySet
+   *
+   * This is free function will be found by ADL.
+   */
+  const EntitySet& entitySet() const
+  {
+    return f_.get().wrappedEntitySet();
+  }
+
+
 private:
-
-  EntitySet es_;
-
+  SmallObject<Imp::GridFunctionWrapperBase<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet>, bufferSize > f_;
 };
 
 
-} // end of namespace Dune::Functions
-} // end of namespace Dune
 
-#endif // DUNE_FUNCTIONS_GRIDFUNCTIONS_GRIDFUNCTION_HH
+}} // namespace Dune::Functions
+
+
+
+#endif // DUNE_FUNCTIONS_GRIDFUNCTIONS_GRID_FUNCTION_HH

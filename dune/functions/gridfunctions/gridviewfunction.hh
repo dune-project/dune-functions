@@ -4,7 +4,7 @@
 #define DUNE_FUNCTIONS_GRIDFUNCTIONS_GRIDVIEWFUNCTION_HH
 
 #include <memory>
-#include <dune/functions/gridfunctions/new_gridfunction.hh>
+#include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 
 

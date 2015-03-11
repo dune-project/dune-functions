@@ -12,7 +12,7 @@
 
 #include <dune/functions/common/localfunction.hh>
 
-#include <dune/functions/gridfunctions/new_gridfunction.hh>
+#include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 
 #include <dune/functions/analyticfunctions/polynomial.hh>

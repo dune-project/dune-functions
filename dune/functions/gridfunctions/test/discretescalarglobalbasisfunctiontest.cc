@@ -12,10 +12,10 @@
 
 // #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
-#include <dune/functions/gridfunctions/new_discretescalarglobalbasisfunction.hh>
+#include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 
 
-#include <dune/functions/gridfunctions/new_gridfunction.hh>
+#include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 
