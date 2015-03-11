@@ -29,6 +29,8 @@ public:
   virtual DerivativeInterface derivative() const = 0;
 
   virtual LocalFunctionInterface wrappedLocalFunction() const = 0;
+
+  virtual const EntitySet& wrappedEntitySet() const = 0;
 };
 
 
@@ -63,6 +65,14 @@ public:
     return localFunction(f_);
   }
 
+  virtual const EntitySet& wrappedEntitySet() const
+  {
+    return f_.entitySet();
+  }
+
+  /**
+   * \copydoc SmallObject::clone()
+   */
   virtual GridFunctionWrapper* clone() const
   {
     return new GridFunctionWrapper(*this);

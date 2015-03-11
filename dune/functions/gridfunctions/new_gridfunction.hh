@@ -94,20 +94,37 @@ public:
   }
 
   /**
-   * \brief Get derivative of wrapped function
-   *
-   * This is free function will be found by ADL.
+   * \copydoc DifferentiableFunction::derivative
    */
   friend DerivativeInterface derivative(const GridFunction& t)
   {
     return t.f_.get().derivative();
   }
 
-
+  /**
+   * \brief Get local function of wrapped function
+   *
+   * This is free function will be found by ADL.
+   *
+   * Notice that the returned LocalFunction can
+   * only be used after it has been bound to a
+   * proper local context.
+   */
   friend LocalFunctionInterface localFunction(const GridFunction& t)
   {
     return t.f_.get().wrappedLocalFunction();
   }
+
+  /**
+   * \brief Get associated EntitySet
+   *
+   * This is free function will be found by ADL.
+   */
+  const EntitySet& entitySet() const
+  {
+    return f_.get().wrappedEntitySet();
+  }
+
 
 private:
   SmallObject<Imp::GridFunctionWrapperBase<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet>, bufferSize > f_;
