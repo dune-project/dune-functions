@@ -1,64 +1,117 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_FUNCTIONS_COMMON_LOCALFUNCTION_HH
-#define DUNE_FUNCTIONS_COMMON_LOCALFUNCTION_HH
+#ifndef DUNE_FUNCTIONS_COMMON_LOCAL_FUNCTION_HH
+#define DUNE_FUNCTIONS_COMMON_LOCAL_FUNCTION_HH
 
-#include <memory>
-#include <dune/functions/common/differentiablefunction.hh>
+#include <type_traits>
+
+#include <dune/functions/common/defaultderivativetraits.hh>
+#include <dune/functions/common/differentiablefunction_imp.hh>
+#include <dune/functions/common/localfunction_imp.hh>
+#include <dune/functions/common/smallobject.hh>
+
+
 
 namespace Dune {
-
 namespace Functions {
 
-  /**
-   * \tparam DF Type derived from DifferentiableFunction
-   * \tparam LC Type of local context, e.g. grid cell
-   * \tparam R  Range type
-   */
-template<typename DF, typename LC>
+
+
+/**
+ * Default implementation is empty
+ * The actual implementation is only given if Signature is an type
+ * describing a function signature as Range(Domain).
+ */
+template<class Signature, class LocalContext, template<class> class DerivativeTraits=DefaultDerivativeTraits, size_t bufferSize=64>
 class LocalFunction
-  : public DifferentiableFunction<typename LC::Geometry::LocalCoordinate, typename DF::Range>
+{};
+
+
+
+/**
+ * \brief Class storing differentiable functions using type erasure
+ *
+ */
+template<class Range, class Domain, class LocalContext, template<class> class DerivativeTraits, size_t bufferSize>
+class LocalFunction< Range(Domain), LocalContext, DerivativeTraits, bufferSize>
 {
-
-  typedef DifferentiableFunction<typename LC::Geometry::LocalCoordinate, typename DF::Range> Base;
-
+  using RawDomain = typename std::decay<Domain>::type;
 public:
 
-  typedef DF GlobalFunction;
-  typedef LC LocalContext;
+  /**
+   * \brief Signature of wrapped functions
+   */
+  using Signature = Range(Domain);
 
-  typedef typename LC::Geometry::LocalCoordinate Domain;
+  /**
+   * \brief Signature of derivative of wrapped functions
+   */
+  using DerivativeSignature = typename DerivativeTraits<Range(RawDomain)>::Range(Domain);
 
-  typedef LocalFunction<typename DF::Derivative,LC> Derivative;
-  typedef std::shared_ptr<typename Base::Derivative> DerivativeBasePointer;
+  /**
+   * \brief Wrapper type of returned derivatives
+   */
+  using DerivativeInterface = LocalFunction<DerivativeSignature, LocalContext, DerivativeTraits, bufferSize>;
 
-  virtual void bind(const LocalContext&) = 0;
+  /**
+   * \brief Construct from function
+   *
+   * \tparam F Function type
+   *
+   * \param f Function of type F
+   *
+   * Calling derivative(DifferentiableFunction) will result in an exception
+   * if the passed function does provide a free derivative() function
+   * found via ADL.
+   */
+  template<class F, disableCopyMove<LocalFunction, F> = 0 >
+  LocalFunction(F&& f) :
+    f_(Imp::LocalFunctionWrapper<Signature, DerivativeInterface, LocalContext, typename std::decay<F>::type>(std::forward<F>(f)))
+  {}
 
-  virtual void unbind() = 0;
+  LocalFunction() = default;
 
-  virtual DerivativeBasePointer derivative() const = 0;
+  /**
+   * \brief Evaluation of wrapped function
+   */
+  Range operator() (const Domain& x) const
+  {
+    return f_.get().operator()(x);
+  }
 
-  virtual const LocalContext& localContext() const = 0;
+  /**
+   * \brief Get derivative of wrapped function
+   *
+   * This is free function will be found by ADL.
+   */
+  friend DerivativeInterface derivative(const LocalFunction& t)
+  {
+    return t.f_.get().derivative();
+  }
 
+  void bind(const LocalContext& context)
+  {
+    return f_.get().bind(context);
+  }
+
+  void unbind()
+  {
+    return f_.get().unbind();
+  }
+
+  const LocalContext& localContext() const
+  {
+    return f_.get().localContext();
+  }
+
+private:
+  SmallObject<Imp::LocalFunctionWrapperBase<Signature, DerivativeInterface, LocalContext>, bufferSize > f_;
 };
 
 
-template<typename Function>
-shared_ptr<typename Function::LocalFunction> localFunction(const Function& f)
-{
-  return std::static_pointer_cast<typename Function::LocalFunction>(f.localFunction());
-}
 
-template<typename Function>
-shared_ptr<typename Function::LocalFunction> localFunction(const Function& f, const typename Function::Element& e)
-{
-  auto p = std::static_pointer_cast<typename Function::LocalFunction>(f.localFunction());
-  p->bind(e);
-  return std::move(p);
-}
+}} // namespace Dune::Functions
 
 
-} // end of namespace Dune::Functions
-} // end of namespace Dune
 
-#endif // DUNE_FUNCTIONS_COMMON_LOCALFUNCTION_HH
+#endif // DUNE_FUNCTIONS_COMMON_LOCAL_FUNCTION_HH

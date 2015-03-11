@@ -9,7 +9,7 @@
 #include <dune/common/shared_ptr.hh>
 #include <dune/common/exceptions.hh>
 
-#include <dune/functions/common/new_differentiablefunction.hh>
+#include <dune/functions/common/differentiablefunction.hh>
 
 #include <dune/functions/analyticfunctions/polynomial.hh>
 #include <dune/functions/analyticfunctions/trigonometricfunction.hh>

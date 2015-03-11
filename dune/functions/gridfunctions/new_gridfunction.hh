@@ -6,8 +6,8 @@
 #include <type_traits>
 
 #include <dune/functions/common/defaultderivativetraits.hh>
-#include <dune/functions/common/new_differentiablefunction_imp.hh>
-#include <dune/functions/common/new_localfunction.hh>
+#include <dune/functions/common/differentiablefunction_imp.hh>
+#include <dune/functions/common/localfunction.hh>
 #include <dune/functions/common/smallobject.hh>
 #include <dune/functions/gridfunctions/new_gridfunction_imp.hh>
 

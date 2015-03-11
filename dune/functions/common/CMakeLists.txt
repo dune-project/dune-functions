@@ -5,13 +5,11 @@ install(FILES
         concept.hh
         defaultderivativetraits.hh
         differentiablefunction.hh
+        differentiablefunction_imp.hh
         functionfromcallable.hh
-        localfunction.hh
         interfaces.hh
-        new_differentiablefunction.hh
-        new_differentiablefunction_imp.hh
-        new_localfunction.hh
-        new_localfunction_imp.hh
+        localfunction.hh
+        localfunction_imp.hh
         smallobject.hh
         type_traits.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/common)

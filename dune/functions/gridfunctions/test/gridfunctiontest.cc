@@ -10,7 +10,7 @@
 
 #include <dune/grid/yaspgrid.hh>
 
-#include <dune/functions/common/new_localfunction.hh>
+#include <dune/functions/common/localfunction.hh>
 
 #include <dune/functions/gridfunctions/new_gridfunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
