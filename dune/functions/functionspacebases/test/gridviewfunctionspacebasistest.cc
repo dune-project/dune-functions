@@ -10,6 +10,8 @@
 
 #include <dune/grid/yaspgrid.hh>
 
+#include <dune/localfunctions/test/test-localfe.hh>
+
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq3nodalbasis.hh>
@@ -20,6 +22,28 @@ using namespace Dune::Functions;
 template <typename Basis>
 void testScalarBasis(const Basis& feBasis)
 {
+  //////////////////////////////////////////////////////////////////////////////////////
+  //  Run the dune-localfunctions test for the LocalFiniteElement of each grid element
+  //////////////////////////////////////////////////////////////////////////////////////
+
+  typedef typename Basis::GridView GridView;
+  GridView gridView = feBasis.gridView();
+
+  typename Basis::LocalView localView(&feBasis);
+
+
+  // Test the LocalFiniteElement
+  for (auto it = gridView.template begin<0>(); it!=gridView.template end<0>(); ++it)
+  {
+    // Bind the local FE basis view to the current element
+    localView.bind(*it);
+
+    // The general LocalFiniteElement unit test from dune/localfunctions/test/test-localfe.hh
+    const auto& lFE = localView.tree().finiteElement();
+    testFE(lFE);
+  }
+
+
   auto indexSet = feBasis.indexSet();
 
   typedef typename Basis::MultiIndex MultiIndex;
@@ -32,13 +56,11 @@ void testScalarBasis(const Basis& feBasis)
   std::vector<double> x(indexSet.size());
 
   // TODO: Implement interpolation properly using the global basis.
-  auto gridView = feBasis.gridView();
   static const int dim = Basis::GridView::dimension;
   for (auto it = gridView.template begin<dim>(); it != gridView.template end<dim>(); ++it)
     x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
 
   // Objects required in the local context
-  auto localView = feBasis.localView();
   auto localIndexSet = indexSet.localIndexSet();
   auto localIndexSet2 = feBasis.indexSet().localIndexSet();
   std::vector<double> coefficients(localView.maxSize());
