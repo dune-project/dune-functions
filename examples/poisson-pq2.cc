@@ -825,7 +825,7 @@ int main (int argc, char *argv[]) try
   //////////////////////////////////////////////////////////////////////////////////////////////
   SubsamplingVTKWriter<GridView> vtkWriter(gridView,2);
   vtkWriter.addVertexData(xFunction);
-  vtkWriter.write("functions-poisson");
+  vtkWriter.write("poisson-pq2");
 
  }
 // Error handling

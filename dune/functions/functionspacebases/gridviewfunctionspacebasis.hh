@@ -46,16 +46,6 @@ public:
    */
   virtual const GridView& gridView() const = 0;
 
-  // /**
-  //  * \brief maximum local size for any element on the GridView
-  //  *
-  //  * This is the maximal size needed for local matrices
-  //  * and local vectors, i.e., the result is
-  //  *
-  //  * max{GridViewLocalBasisView(e).tree().size() | e in GridView}
-  //  */
-  // virtual size_type maxLocalSize() const = 0;
-
   /**
    * \brief Return local view for basis
    *
