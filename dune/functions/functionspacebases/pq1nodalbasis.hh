@@ -81,10 +81,10 @@ public:
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
   const MultiIndex index(size_type i) const
   {
-    return { localView_->globalBasis_->gridView().indexSet().subIndex(
+    return {{ localView_->globalBasis_->gridView().indexSet().subIndex(
         *(localView_->element_),
         localView_->tree().finiteElement_->localCoefficients().localKey(i).subEntity(),
-        dim) };
+        dim) }};
   }
 
   /** \brief Return the local view that we are attached to

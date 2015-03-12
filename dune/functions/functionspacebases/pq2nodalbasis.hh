@@ -82,14 +82,17 @@ public:
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
   const MultiIndex index(size_type i) const
   {
+    return {{
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
-    return { indexSet_.mapper_.subIndex(
+        indexSet_.mapper_.subIndex
 #else
-    return { (size_t)indexSet_.mapper_.map(
+        (size_t)indexSet_.mapper_.map
 #endif
-        *(localView_->element_),
-        localView_->tree().finiteElement_->localCoefficients().localKey(i).subEntity(),
-        localView_->tree().finiteElement_->localCoefficients().localKey(i).codim()) };
+        (
+          *(localView_->element_),
+          localView_->tree().finiteElement_->localCoefficients().localKey(i).subEntity(),
+          localView_->tree().finiteElement_->localCoefficients().localKey(i).codim())
+      }};
   }
 
   /** \brief Return the local view that we are attached to
