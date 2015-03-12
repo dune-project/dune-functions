@@ -1,5 +1,5 @@
 # tests that should build and run successfully
-set(TESTS gridviewfunctionspacebasistest)
+set(TESTS gridviewfunctionspacebasistest taylorhoodbasistest)
 
 set(TESTPROGS ${TESTS})
 
@@ -10,7 +10,10 @@ add_dependencies(${_test_target} ${TESTPROGS})
 
 add_executable("gridviewfunctionspacebasistest"
                gridviewfunctionspacebasistest.cc)
+add_executable("taylorhoodbasistest"
+               taylorhoodbasistest.cc)
 target_link_libraries("gridviewfunctionspacebasistest" "dunecommon" "dunegeometry")
+target_link_libraries("taylorhoodbasistest" "dunecommon" "dunegeometry")
 
 # Add the tests to be executed
 foreach(_TEST ${TESTPROGS})
