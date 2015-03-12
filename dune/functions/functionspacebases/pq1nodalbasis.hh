@@ -262,6 +262,16 @@ public:
     return tree_;
   }
 
+  /**
+   * \brief Return the local ansatz tree associated to the bound entity
+   *
+   * \returns Tree // This is tree
+   */
+  Tree& tree()
+  {
+    return tree_;
+  }
+
   /** \brief Number of degrees of freedom on this element
    */
   size_type size() const
