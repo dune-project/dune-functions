@@ -155,8 +155,12 @@ int main (int argc, char* argv[]) try
   testScalarBasis(pq2Basis);
 
   // Test PQKNodalBasis for k==3
-  PQKNodalBasis<GridView> pq3Basis(gridView);
+  PQKNodalBasis<GridView, 3> pq3Basis(gridView);
   testScalarBasis(pq3Basis);
+
+  // Test PQKNodalBasis for k==4
+  PQKNodalBasis<GridView, 4> pq4Basis(gridView);
+  testScalarBasis(pq4Basis);
 
   return 0;
 
