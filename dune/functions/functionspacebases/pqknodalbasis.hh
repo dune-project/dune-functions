@@ -90,13 +90,13 @@ public:
     size_t dofDim = dim - localKey.codim();
 
     if (dofDim==0) {  // vertex dof
-      return { gridIndexSet.subIndex(element,localKey.subEntity(),dim) };
+      return {{ gridIndexSet.subIndex(element,localKey.subEntity(),dim) }};
     }
 
     if (dofDim==1)
     {  // edge dof
       if (dim==1)   // element dof -- any local numbering is fine
-        return { basisIndexSet_.edgeOffset_ + (k-1)*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+        return {{ basisIndexSet_.edgeOffset_ + (k-1)*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
       else
       {
         const Dune::ReferenceElement<double,dim>& refElement
@@ -107,9 +107,9 @@ public:
         size_t v0 = gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
         size_t v1 = gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
         bool flip = (v0 > v1);
-        return { (flip)
+        return {{ (flip)
           ? basisIndexSet_.edgeOffset_ + (k-1)*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) + (k-2)-localKey.index()
-          : basisIndexSet_.edgeOffset_ + (k-1)*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) + localKey.index() } ;
+              : basisIndexSet_.edgeOffset_ + (k-1)*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) + localKey.index() }} ;
       }
     }
 
@@ -120,12 +120,12 @@ public:
         if (element.type().isTriangle())
         {
           const int interiorLagrangeNodesPerTriangle = (k-1)*(k-2)/2;
-          return { basisIndexSet_.triangleOffset_ + interiorLagrangeNodesPerTriangle*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+          return {{ basisIndexSet_.triangleOffset_ + interiorLagrangeNodesPerTriangle*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
         }
         else if (element.type().isQuadrilateral())
         {
           const int interiorLagrangeNodesPerQuadrilateral = (k-1)*(k-1);
-          return { basisIndexSet_.quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+          return {{ basisIndexSet_.quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
         }
         else
           DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
@@ -138,7 +138,7 @@ public:
             or k>3)
           DUNE_THROW(Dune::NotImplemented, "PQKNodalBasis for 3D grids is only implemented if k<=3 and if the grid is a simplex grid");
 
-        return { basisIndexSet_.triangleOffset_ + gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) };
+        return {{ basisIndexSet_.triangleOffset_ + gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) }};
       }
     }
     DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the PQKNodalBasis");

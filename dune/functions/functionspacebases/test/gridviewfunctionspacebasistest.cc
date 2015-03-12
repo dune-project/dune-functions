@@ -139,7 +139,7 @@ int main (int argc, char* argv[]) try
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> l(1);
-  std::array<int,dim> elements = {10, 10};
+  std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
