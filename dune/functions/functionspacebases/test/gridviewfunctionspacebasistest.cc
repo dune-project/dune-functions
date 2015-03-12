@@ -14,7 +14,7 @@
 
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
-#include <dune/functions/functionspacebases/pq3nodalbasis.hh>
+#include <dune/functions/functionspacebases/pqknodalbasis.hh>
 
 using namespace Dune;
 using namespace Dune::Functions;
@@ -154,8 +154,8 @@ int main (int argc, char* argv[]) try
   PQ2NodalBasis<GridView> pq2Basis(gridView);
   testScalarBasis(pq2Basis);
 
-  // Test PQ3NodalBasis
-  PQ3NodalBasis<GridView> pq3Basis(gridView);
+  // Test PQKNodalBasis for k==3
+  PQKNodalBasis<GridView> pq3Basis(gridView);
   testScalarBasis(pq3Basis);
 
   return 0;

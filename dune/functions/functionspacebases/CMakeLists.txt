@@ -5,5 +5,5 @@ install(FILES
         gridviewfunctionspacebasis.hh
         pq1nodalbasis.hh
         pq2nodalbasis.hh
-        pq3nodalbasis.hh
+        pqknodalbasis.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/functionspacebases)
