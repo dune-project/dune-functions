@@ -25,6 +25,10 @@ public:
 
   //! size of subtree rooted in this node (element-local)
   virtual size_type size() const = 0;
+
+  //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
+  virtual size_type localIndex(size_type i) const = 0;
+
 };
 
 template<typename GV, typename LV, typename IS, typename MI>
