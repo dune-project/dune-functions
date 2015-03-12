@@ -374,7 +374,7 @@ public:
   }
 
   //! maximum size of subtree rooted in this node for any element of the global basis
-  size_type size() const
+  size_type size() const DUNE_FINAL
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
