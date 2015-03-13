@@ -7,6 +7,7 @@
 #include <dune/grid/yaspgrid.hh>
 
 #include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
+#include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 #include <dune/functions/gridfunctions/test/gridfunctiontest.hh>
 
@@ -51,6 +52,12 @@ int main (int argc, char* argv[]) try
     passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, makeAnalyticGridViewFunction(f, gridView), exactIntegral);
   }
 
+  std::cout << "Testing makeGridViewFunction with range type double" << std::endl;
+  {
+    auto f = [](const Domain& x) {return x[0];};
+
+    passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, makeGridViewFunction(f, gridView), exactIntegral);
+  }
 
 
 
