@@ -39,16 +39,10 @@ public:
   using GlobalRawDerivative = decltype(Imp::derivativeIfImplemented<DerivativeDummy, F>(std::declval<F>()));
   using LocalDerivative = LocalAnalyticGridViewFunction<DerivativeSignature, GridView, GlobalRawDerivative, DerivativeTraits>;
 
-  LocalAnalyticGridViewFunction(const F& f)
-    : f_(f)
+  template<class FT, disableCopyMove<LocalAnalyticGridViewFunction, FT> = 0>
+  LocalAnalyticGridViewFunction(FT&& f) :
+    f_(std::forward<FT>(f))
   {}
-
-  LocalAnalyticGridViewFunction(F&& f)
-    : f_(std::move(f))
-  {}
-
-  LocalAnalyticGridViewFunction(const LocalAnalyticGridViewFunction&) = default;
-  LocalAnalyticGridViewFunction(LocalAnalyticGridViewFunction&&) = default;
 
   void bind(const Element& element)
   {
@@ -116,10 +110,10 @@ public:
   using LocalDomain = typename EntitySet::LocalCoordinate;
   using LocalFunction = LocalAnalyticGridViewFunction<Range(LocalDomain), GridView, F, DerivativeTraits>;
 
-  template<class FT, class GVT>
-  AnalyticGridViewFunction(FT&& f, GVT&& gridView) :
+  template<class FT>
+  AnalyticGridViewFunction(FT&& f, const GridView& gridView) :
     f_(std::forward<FT>(f)),
-    entitySet_(std::forward<GVT>(gridView))
+    entitySet_(gridView)
   {}
 
   Range operator()(const Domain& x) const
