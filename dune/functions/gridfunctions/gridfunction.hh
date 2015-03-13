@@ -10,7 +10,6 @@
 #include <dune/functions/common/localfunction.hh>
 #include <dune/functions/common/polymorphicsmallobject.hh>
 #include <dune/functions/gridfunctions/gridfunction_imp.hh>
-#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 
 
 
