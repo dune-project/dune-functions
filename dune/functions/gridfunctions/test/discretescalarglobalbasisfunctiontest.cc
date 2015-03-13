@@ -12,9 +12,6 @@
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 #include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 
-
-#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
-
 #include <dune/functions/gridfunctions/test/gridfunctiontest.hh>
 
 using namespace Dune;
@@ -57,22 +54,8 @@ int main (int argc, char* argv[]) try
   double exactIntegral = 0.5;
   bool passed = true;
 
+  std::cout << "Testing with raw DiscreteScalarGlobalBasisFunction" << std::endl;
   passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, f, exactIntegral);
-
-  using F = decltype(f);
-
-  using Range = F::Range;
-  using Domain = F::Domain;
-
-  auto fAnalytic = [](const Domain& x) {return x[0];};
-  AnalyticGridViewFunction<Range(Domain), GridView, decltype(fAnalytic)> f2(fAnalytic, gridView);
-
-  passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, f2, exactIntegral);
-
-
-
-
-
 
   if (passed)
     std::cout << "All tests passed" << std::endl;
