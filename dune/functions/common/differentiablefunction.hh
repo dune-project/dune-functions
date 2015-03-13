@@ -8,7 +8,7 @@
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/differentiablefunction_imp.hh>
-#include <dune/functions/common/smallobject.hh>
+#include <dune/functions/common/polymorphicsmallobject.hh>
 #include <dune/functions/common/concept.hh>
 #include <dune/functions/common/signature.hh>
 
@@ -94,7 +94,7 @@ public:
   }
 
 private:
-  SmallObject<Imp::DifferentiableFunctionWrapperBase<Signature, DerivativeInterface>, bufferSize > f_;
+  PolymorphicSmallObject<Imp::DifferentiableFunctionWrapperBase<Signature, DerivativeInterface>, bufferSize > f_;
 };
 
 

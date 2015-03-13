@@ -10,7 +10,7 @@ install(FILES
         interfaces.hh
         localfunction.hh
         localfunction_imp.hh
+        polymorphicsmallobject.hh
         signature.hh
-        smallobject.hh
         type_traits.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/common)

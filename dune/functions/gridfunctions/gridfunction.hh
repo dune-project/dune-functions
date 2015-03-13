@@ -8,8 +8,9 @@
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/differentiablefunction_imp.hh>
 #include <dune/functions/common/localfunction.hh>
-#include <dune/functions/common/smallobject.hh>
+#include <dune/functions/common/polymorphicsmallobject.hh>
 #include <dune/functions/gridfunctions/gridfunction_imp.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 
 
 
@@ -127,7 +128,7 @@ public:
 
 
 private:
-  SmallObject<Imp::GridFunctionWrapperBase<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet>, bufferSize > f_;
+  PolymorphicSmallObject<Imp::GridFunctionWrapperBase<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet>, bufferSize > f_;
 };
 
 

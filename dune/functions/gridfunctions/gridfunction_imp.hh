@@ -82,7 +82,7 @@ public:
   }
 
   /**
-   * \copydoc SmallObject::clone()
+   * \copydoc PolymorphicSmallObject::clone()
    */
   virtual GridFunctionWrapper* clone() const
   {

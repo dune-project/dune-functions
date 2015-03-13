@@ -1,7 +1,7 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_FUNCTIONS_COMMON_SMALLOBJECT_HH
-#define DUNE_FUNCTIONS_COMMON_SMALLOBJECT_HH
+#ifndef DUNE_FUNCTIONS_COMMON_POLYMORPHICSMALLOBJECT_HH
+#define DUNE_FUNCTIONS_COMMON_POLYMORPHICSMALLOBJECT_HH
 
 #include <utility>
 
@@ -10,7 +10,7 @@ namespace Functions {
 
 
 /**
- * \brief A wrapper providing small object optimization
+ * \brief A wrapper providing small object optimization with polymorphic types
  *
  * \tparam Base Base class type of wrapped objects
  * \tparam bufferSize Size of small object buffer
@@ -32,16 +32,16 @@ namespace Functions {
  * data but leave the object in a valid and probably unusable state.
  */
 template<class Base, size_t bufferSize>
-class SmallObject
+class PolymorphicSmallObject
 {
 public:
 
-  SmallObject() :
+  PolymorphicSmallObject() :
     p_(nullptr)
   {}
 
   template<class Derived>
-  SmallObject(Derived&& derived)
+  PolymorphicSmallObject(Derived&& derived)
   {
     if (sizeof(Derived)<bufferSize)
       p_ = new (buffer_) Derived(std::forward<Derived>(derived));
@@ -49,29 +49,29 @@ public:
       p_ = new Derived(std::forward<Derived>(derived));
   }
 
-  SmallObject(SmallObject&& other)
+  PolymorphicSmallObject(PolymorphicSmallObject&& other)
   {
     moveToWrappedObject(std::move(other));
   }
 
-  SmallObject(const SmallObject& other)
+  PolymorphicSmallObject(const PolymorphicSmallObject& other)
   {
     copyToWrappedObject(other);
   }
 
-  ~SmallObject()
+  ~PolymorphicSmallObject()
   {
     destroyWrappedObject();
   }
 
-  SmallObject& operator=(const SmallObject& other)
+  PolymorphicSmallObject& operator=(const PolymorphicSmallObject& other)
   {
     destroyWrappedObject();
     copyToWrappedObject(other);
     return *this;
   }
 
-  SmallObject& operator=(SmallObject&& other)
+  PolymorphicSmallObject& operator=(PolymorphicSmallObject&& other)
   {
     destroyWrappedObject();
     moveToWrappedObject(std::move(other));
@@ -111,7 +111,7 @@ private:
     }
   }
 
-  void moveToWrappedObject(SmallObject&& other)
+  void moveToWrappedObject(PolymorphicSmallObject&& other)
   {
     if (other.bufferUsed())
       p_ = other.p_->move(buffer_);
@@ -130,7 +130,7 @@ private:
     }
   }
 
-  void copyToWrappedObject(const SmallObject& other)
+  void copyToWrappedObject(const PolymorphicSmallObject& other)
   {
     if (&other!=this)
     {
@@ -149,4 +149,4 @@ private:
 } // namespace Functions
 } // namespace Dune
 
-#endif // DUNE_FUNCTIONS_COMMON_SMALLOBJECT_HH
+#endif // DUNE_FUNCTIONS_COMMON_POLYMORPHICSMALLOBJECT_HH
