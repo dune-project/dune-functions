@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include <dune/common/exceptions.hh>
+#include <dune/common/typetraits.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -46,8 +47,11 @@ void testScalarBasis(const Basis& feBasis)
 
   auto indexSet = feBasis.indexSet();
 
+  // Check whether the basis exports a type 'MultiIndex'
   typedef typename Basis::MultiIndex MultiIndex;
 
+  // And this type must be indexable
+  static_assert(is_indexable<MultiIndex>(), "MultiIndex must support operator[]");
 
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
