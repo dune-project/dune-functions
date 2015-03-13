@@ -77,7 +77,7 @@ public:
 
   const GridView& gridView() const
   {
-    return &gv_;
+    return *gv_;
   }
 
 private:
