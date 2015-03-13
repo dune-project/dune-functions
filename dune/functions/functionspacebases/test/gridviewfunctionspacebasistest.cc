@@ -53,6 +53,39 @@ void testScalarBasis(const Basis& feBasis)
   // And this type must be indexable
   static_assert(is_indexable<MultiIndex>(), "MultiIndex must support operator[]");
 
+  ///////////////////////////////////////////////////////////////////////////////////
+  //  Check whether the global indices are in the correct range,
+  //  and whether each global index appears at least once.
+  ///////////////////////////////////////////////////////////////////////////////////
+
+  std::vector<bool> seen(indexSet.size());
+  std::fill(seen.begin(), seen.end(), false);
+
+  auto localIndexSet = indexSet.localIndexSet();
+
+  // Loop over all leaf elements
+  for (auto it = gridView.template begin<0>(); it!=gridView.template end<0>(); ++it)
+  {
+    // Bind the local FE basis view to the current element
+    localView.bind(*it);
+    localIndexSet.bind(localView);
+
+    for (size_t i=0; i<localView.tree().size(); i++)
+    {
+      if (localIndexSet.index(i)[0] < 0)
+        DUNE_THROW(Exception, "Index is negative, which is not allowed");
+
+      if (localIndexSet.index(i)[0] >= seen.size())
+        DUNE_THROW(Exception, "Index larger than allowed");
+
+      seen[localIndexSet.index(i)[0]] = true;
+    }
+  }
+
+  for (size_t i=0; i<seen.size(); i++)
+    if (! seen[i])
+      DUNE_THROW(Exception, "Index [" << i << "] does not exist as global basis vector");
+
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
   // we know its integral and can check whether quadrature returns
@@ -65,7 +98,6 @@ void testScalarBasis(const Basis& feBasis)
     x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
 
   // Objects required in the local context
-  auto localIndexSet = indexSet.localIndexSet();
   auto localIndexSet2 = feBasis.indexSet().localIndexSet();
   std::vector<double> coefficients(localView.maxSize());
 
