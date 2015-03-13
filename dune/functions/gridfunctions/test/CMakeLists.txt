@@ -1,5 +1,5 @@
 # tests that should build and run successfully
-set(TESTS discretescalarglobalbasisfunctiontest, gridfunctiontest)
+set(TESTS analyticgridviewfunctiontest discretescalarglobalbasisfunctiontest gridfunctiontest)
 
 set(TESTPROGS ${TESTS})
 
@@ -7,6 +7,10 @@ set(TESTPROGS ${TESTS})
 # but just build them on demand
 add_directory_test_target(_test_target)
 add_dependencies(${_test_target} ${TESTPROGS})
+
+add_executable("analyticgridviewfunctiontest"
+               analyticgridviewfunctiontest.cc)
+target_link_libraries("analyticgridviewfunctiontest" ${DUNE_LIBS})
 
 add_executable("discretescalarglobalbasisfunctiontest"
                discretescalarglobalbasisfunctiontest.cc)
