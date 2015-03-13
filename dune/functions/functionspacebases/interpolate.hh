@@ -30,7 +30,6 @@ template <class B, class C, class F>
 void interpolate(const B& basis, C& coeff, F&& f)
 {
   using GridView = typename B::GridView;
-  using Grid = typename GridView::Grid;
   using Element = typename GridView::template Codim<0>::Entity;
 
   using FiniteElement = typename B::LocalView::Tree::FiniteElement;
