@@ -7,6 +7,8 @@
 
 #include <dune/functions/common/signature.hh>
 #include <dune/functions/common/defaultderivativetraits.hh>
+#include <dune/functions/common/differentiablefunction_imp.hh>
+#include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 
 
@@ -29,8 +31,13 @@ public:
   using Element = typename EntitySet::Element;
   using Geometry = typename Element::Geometry;
 
-//  using GlobalRawDerivative = decltype(derivative(std::declval<F>()));
-//  using LocalDerivative= LocalAnalyticGridViewFunction<DerivativeSignature, GridView, GlobalRawDerivative, DerivativeTraits>;
+  // Use the inderiction via derivativeIfImplemented to also support
+  // function types F that do not implement derivative. In this case
+  // the interface type DifferentiableFunction is used a dummy for
+  // the derivative type
+  using DerivativeDummy = DifferentiableFunction<DerivativeSignature>;
+  using GlobalRawDerivative = decltype(Imp::derivativeIfImplemented<DerivativeDummy, F>(std::declval<F>()));
+  using LocalDerivative = LocalAnalyticGridViewFunction<DerivativeSignature, GridView, GlobalRawDerivative, DerivativeTraits>;
 
   LocalAnalyticGridViewFunction(const F& f)
     : f_(f)
@@ -63,10 +70,10 @@ public:
     return element_;
   }
 
-//  friend LocalDerivative derivative(const LocalAnalyticGridViewFunction& t)
-//  {
-//    return LocalDerivative(derivative(t.f_));
-//  }
+  friend LocalDerivative derivative(const LocalAnalyticGridViewFunction& t)
+  {
+    return LocalDerivative(Imp::derivativeIfImplemented<DerivativeDummy, F>(t.f_));
+  }
 
 private:
 
@@ -98,8 +105,13 @@ public:
   using Element = typename EntitySet::Element;
   using Geometry = typename Element::Geometry;
 
-//  using GlobalRawDerivative = decltype(derivative(std::declval<F>()));
-//  using Derivative = AnalyticGridViewFunction<DerivativeSignature, GridView, GlobalRawDerivative, DerivativeTraits>;
+  // Use the inderiction via derivativeIfImplemented to also support
+  // function types F that do not implement derivative. In this case
+  // the interface type DifferentiableFunction is used a dummy for
+  // the derivative type
+  using DerivativeDummy = DifferentiableFunction<DerivativeSignature>;
+  using GlobalRawDerivative = decltype(Imp::derivativeIfImplemented<DerivativeDummy, F>(std::declval<F>()));
+  using Derivative = AnalyticGridViewFunction<DerivativeSignature, GridView, GlobalRawDerivative, DerivativeTraits>;
 
   using LocalDomain = typename EntitySet::LocalCoordinate;
   using LocalFunction = LocalAnalyticGridViewFunction<Range(LocalDomain), GridView, F, DerivativeTraits>;
@@ -115,10 +127,10 @@ public:
     return f_(x);
   }
 
-//  friend Derivative derivative(const AnalyticGridViewFunction& t)
-//  {
-//    return Derivative(t.f_, t.entitySet_.gridView_());
-//  }
+  friend Derivative derivative(const AnalyticGridViewFunction& t)
+  {
+    return Derivative(Imp::derivativeIfImplemented<DerivativeDummy, F>(t.f_), t.entitySet_.gridView());
+  }
 
   friend LocalFunction localFunction(const AnalyticGridViewFunction& t)
   {
