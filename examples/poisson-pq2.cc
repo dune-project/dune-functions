@@ -1,3 +1,5 @@
+// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+// vi: set et ts=4 sw=2 sts=2:
 #include <config.h>
 
 #include <vector>
@@ -137,13 +139,10 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
   auto localIndexSet = basisIndexSet.localIndexSet();
 
   // Loop over all leaf elements
-  auto it    = feBasis.gridView().template begin<0>();
-  auto endIt = feBasis.gridView().template end<0>  ();
-
-  for (; it!=endIt; ++it)
+  for(const auto& e : elements(feBasis.gridView()))
   {
     // Bind the local FE basis view to the current element
-    localView.bind(*it);
+    localView.bind(e);
     localIndexSet.bind(localView);
 
     // There is a matrix entry a_ij if the i-th and j-th vertex are connected in the grid
@@ -199,17 +198,15 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
   rhs = 0;
 
   // A view on the FE basis on a single element
-  typename FEBasis::LocalView localView(&feBasis);
+  auto localView = feBasis.localView();
   auto localIndexSet = basisIndexSet.localIndexSet();
 
   // A loop over all elements of the grid
-  auto it    = gridView.template begin<0>();
-  auto endIt = gridView.template end<0>  ();
-
-  for( ; it != endIt; ++it ) {
+  for(const auto& e : elements(gridView))
+  {
 
     // Bind the local FE basis view to the current element
-    localView.bind(*it);
+    localView.bind(e);
     localIndexSet.bind(localView);
 
     // Now let's get the element stiffness matrix
@@ -220,12 +217,12 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
     // Add element stiffness matrix onto the global stiffness matrix
     for (size_t i=0; i<elementMatrix.N(); i++) {
 
-      // The global index of the i-th local degree of freedom of the element 'it'
+      // The global index of the i-th local degree of freedom of the element 'e'
       auto row = localIndexSet.index(i)[0];
 
       for (size_t j=0; j<elementMatrix.M(); j++ ) {
 
-        // The global index of the j-th local degree of freedom of the element 'it'
+        // The global index of the j-th local degree of freedom of the element 'e'
         auto col = localIndexSet.index(j)[0];
         matrix[row][col] += elementMatrix[i][j];
 
@@ -235,12 +232,12 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
 
     // Now get the local contribution to the right-hand side vector
     BlockVector<FieldVector<double,1> > localRhs;
-    localVolumeTerm.bind(*it);
+    localVolumeTerm.bind(e);
     getVolumeTerm(localView, localRhs, localVolumeTerm);
 
     for (size_t i=0; i<localRhs.size(); i++) {
 
-      // The global index of the i-th vertex of the element 'it'
+      // The global index of the i-th vertex of the element 'e'
       auto row = localIndexSet.index(i)[0];
       rhs[row] += localRhs[i];
 
