@@ -10,6 +10,7 @@
 
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
+#include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 
 #include <dune/functions/gridfunctions/test/gridfunctiontest.hh>
@@ -29,22 +30,21 @@ int main (int argc, char* argv[]) try
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
-  typedef PQ1NodalBasis<GridView> Basis;
-//  typedef PQ2NodalBasis<GridView> Basis;
+//  typedef PQ1NodalBasis<GridView> Basis;
+  typedef PQ2NodalBasis<GridView> Basis;
 
   const GridView& gridView = grid.leafGridView();
   Basis feBasis(gridView);
-  auto indexSet = feBasis.indexSet();
 
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
   // we know its integral and can check whether quadrature returns
-  // the correct result
-  std::vector<double> x(indexSet.size());
+  // the correct result. Notice that resizing is done by the interpolate method.
+  std::vector<double> x;
 
-  // TODO: Implement interpolation properly using the global basis.
-  for (auto it = gridView.begin<dim>(); it != gridView.end<dim>(); ++it)
-    x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
+  using Domain = GridView::template Codim<0>::Geometry::GlobalCoordinate;
+  auto fAnalytic = [](const Domain& x){ return x[0];};
+  interpolate(feBasis, x, fAnalytic);
 
   // generate a discrete function to evaluate the integral
   Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> f(feBasis,x);
