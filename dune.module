@@ -8,4 +8,6 @@ Version: 2.3-dev
 Maintainer: dune-devel@dune-project.org
 #depending on
 Depends: dune-localfunctions (>= 2.3) dune-grid (>= 2.3) dune-typetree
+# We suggest dune-istl, because it is used by the example programs.
+Suggests: dune-istl
 Whitespace-Hook: Yes
