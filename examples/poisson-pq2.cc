@@ -18,6 +18,8 @@
 
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
+#include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
+#include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 using namespace Dune;
 
@@ -159,10 +161,10 @@ void getLocalMatrix( const LocalView& localView, MatrixType& elementMatrix)
 
 
 // Compute the source term for a single element
-template <class LocalView>
+template <class LocalView, class LocalVolumeTerm>
 void getVolumeTerm( const LocalView& localView,
                     BlockVector<FieldVector<double,1> >& localRhs,
-                    const Dune::VirtualFunction<FieldVector<double,LocalView::Element::dimension>, double>* volumeTerm)
+                    LocalVolumeTerm&& localVolumeTerm)
 {
   // Get the grid element from the local FE basis view
   typedef typename LocalView::Element Element;
@@ -190,8 +192,7 @@ void getVolumeTerm( const LocalView& localView,
     // The multiplicative factor in the integral transformation formula
     const double integrationElement = element.geometry().integrationElement(quadPos);
 
-    double functionValue;
-    volumeTerm->evaluate(element.geometry().global(quadPos), functionValue);
+    double functionValue = localVolumeTerm(quadPos);
 
     // Evaluate all shape function values at this point
     std::vector<FieldVector<double,1> > shapeFunctionValues;
@@ -250,15 +251,20 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
 
 
 /** \brief Assemble the Laplace stiffness matrix on the given grid view */
-template <class FEBasis>
+template <class FEBasis, class VolumeTerm>
 void assembleLaplaceMatrix(const FEBasis& feBasis,
                            BCRSMatrix<FieldMatrix<double,1,1> >& matrix,
                            BlockVector<FieldVector<double,1> >& rhs,
-                           const VirtualFunction<Dune::FieldVector<double,FEBasis::GridView::dimension>,double>* volumeTerm)
+                           VolumeTerm&& volumeTerm)
 {
   // Get the grid view from the finite element basis
   typedef typename FEBasis::GridView GridView;
   GridView gridView = feBasis.gridView();
+
+  auto localVolumeTerm = localFunction(Functions::makeGridViewFunction(volumeTerm, gridView));
+
+
+
 
   // MatrixIndexSets store the occupation pattern of a sparse matrix.
   // They are not particularly efficient, but simple to use.
@@ -313,7 +319,8 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
 
     // Now get the local contribution to the right-hand side vector
     BlockVector<FieldVector<double,1> > localRhs;
-    getVolumeTerm(localView, localRhs, volumeTerm);
+    localVolumeTerm.bind(*it);
+    getVolumeTerm(localView, localRhs, localVolumeTerm);
 
     for (size_t i=0; i<localRhs.size(); i++) {
 
@@ -372,17 +379,6 @@ void boundaryTreatment (const FEBasis& feBasis,
 }
 
 
-// A class implementing the analytical right hand side.  Here simply constant '1'
-template <int dim>
-class RightHandSide
-    : public VirtualFunction<FieldVector<double,dim>, double >
-{
-public:
-    void evaluate(const FieldVector<double,dim>& in, double& out) const {
-        out = 1;
-    }
-};
-
 
 
 int main (int argc, char *argv[]) try
@@ -424,8 +420,10 @@ int main (int argc, char *argv[]) try
   //  Assemble the system
   /////////////////////////////////////////////////////////
 
-  RightHandSide<dim> rightHandSide;
-  assembleLaplaceMatrix(feBasis, stiffnessMatrix, rhs, &rightHandSide);
+  using Domain = GridType::template Codim<0>::Geometry::GlobalCoordinate;
+
+  auto rightHandSide = [] (const Domain& x) { return 1;};
+  assembleLaplaceMatrix(feBasis, stiffnessMatrix, rhs, rightHandSide);
 
   /////////////////////////////////////////////////
   //   Choose an initial iterate
@@ -489,15 +487,16 @@ int main (int argc, char *argv[]) try
   //  Make a discrete function from the FE basis and the coefficient vector
   ////////////////////////////////////////////////////////////////////////////
 
-  std::shared_ptr<VTKBasisGridFunction<FEBasis,VectorType> > xFunction
-    = std::make_shared<VTKBasisGridFunction<FEBasis,VectorType> >(feBasis, x, "solution");
+  Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> xFunction(feBasis,x);
+  auto localXFunction = localFunction(xFunction);
+
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
   //  We need to subsample, because VTK cannot natively display real second-order functions
   //////////////////////////////////////////////////////////////////////////////////////////////
   SubsamplingVTKWriter<GridView> vtkWriter(gridView,2);
-  vtkWriter.addVertexData(xFunction);
+  vtkWriter.addVertexData(localXFunction, VTK::FieldInfo("x", VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.write("poisson-pq2");
 
  }
