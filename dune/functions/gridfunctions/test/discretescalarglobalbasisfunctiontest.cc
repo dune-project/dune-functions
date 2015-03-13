@@ -6,8 +6,6 @@
 
 #include <dune/common/exceptions.hh>
 
-#include <dune/geometry/quadraturerules.hh>
-
 #include <dune/grid/yaspgrid.hh>
 
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
@@ -15,13 +13,13 @@
 #include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 
 
-#include <dune/functions/gridfunctions/gridfunction.hh>
-#include <dune/functions/gridfunctions/gridviewfunction.hh>
-#include <dune/functions/gridfunctions/gridviewentityset.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 
+#include <dune/functions/gridfunctions/test/gridfunctiontest.hh>
 
 using namespace Dune;
 using namespace Dune::Functions;
+using namespace Dune::Functions::Test;
 
 int main (int argc, char* argv[]) try
 {
@@ -52,57 +50,34 @@ int main (int argc, char* argv[]) try
     x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
 
   // generate a discrete function to evaluate the integral
-  Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> fOriginal(feBasis,x);
-
-  using EntitySet = decltype(fOriginal)::EntitySet;
-  using GridView = decltype(fOriginal)::GridView;
-  using Range = decltype(fOriginal)::Range;
-  using Domain = decltype(fOriginal)::Domain;
-
-
-//  auto& f = fOriginal;
-//  GridFunction<Range(Domain), EntitySet> f = fOriginal;
-  GridViewFunction<Range(Domain), GridView> f = fOriginal;
+  Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> f(feBasis,x);
 
 
 
+  double exactIntegral = 0.5;
+  bool passed = true;
 
-//  auto localFunction = Dune::Functions::localFunction(f);
-  auto fLocal = localFunction(f);
+  passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, f, exactIntegral);
 
-  // Loop over elements and integrate over the function
-  double integral = 0;
-  for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
-  {
-//    fLocal->bind(*it);
-    fLocal.bind(*it);
+  using F = decltype(f);
 
-    // A quadrature rule
-    const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1);
+  using Range = F::Range;
+  using Domain = F::Domain;
 
-    // Loop over all quadrature points
-    for ( size_t pt=0; pt < quad.size(); pt++ ) {
+  auto fAnalytic = [](const Domain& x) {return x[0];};
+  AnalyticGridViewFunction<Range(Domain), GridView, decltype(fAnalytic)> f2(fAnalytic, gridView);
 
-      // Position of the current quadrature point in the reference element
-      const FieldVector<double,dim>& quadPos = quad[pt].position();
+  passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, f2, exactIntegral);
 
-      // The multiplicative factor in the integral transformation formula
-      const double integrationElement = it->geometry().integrationElement(quadPos);
 
-      Dune::FieldVector<typename decltype(x)::value_type, 1> v;
-      v = fLocal(quadPos);
-//      fLocal->evaluate(quadPos,v);
-      integral += v * quad[pt].weight() * integrationElement;
-    }
 
-//    fLocal->unbind();
-    fLocal.unbind();
-  }
 
-  std::cout << "Computed integral is " << integral << std::endl;
-  assert(std::abs(integral-0.5)< 1e-10);
 
-  return 0;
+
+  if (passed)
+    std::cout << "All tests passed" << std::endl;
+
+  return passed ? 0: 1;
 
 } catch ( Dune::Exception &e )
 {
