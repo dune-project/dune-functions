@@ -17,7 +17,7 @@ namespace Test {
 
 
 template<class GridView, class F>
-double integrateGridViewFunction(const GridView& gridView, const F& f)
+double integrateGridViewFunction(const GridView& gridView, const F& f, unsigned int quadOrder)
 {
   static const int dim = GridView::dimension;
 
@@ -33,7 +33,7 @@ double integrateGridViewFunction(const GridView& gridView, const F& f)
     fLocal.bind(e);
 
     // A quadrature rule
-    const auto& quad = QuadratureRules<double, dim>::rule(e.type(), 1);
+    const auto& quad = QuadratureRules<double, dim>::rule(e.type(), quadOrder);
 
     // Loop over all quadrature points
     for ( size_t pt=0; pt < quad.size(); pt++ ) {
@@ -53,13 +53,13 @@ double integrateGridViewFunction(const GridView& gridView, const F& f)
 
 
 template<class GridView, class F>
-bool checkGridViewFunction(const GridView& gridView, const F& f, double exactIntegral)
+bool checkGridViewFunction(const GridView& gridView, const F& f, double exactIntegral, unsigned int quadOrder=1)
 {
   bool passed = true;
   double integral;
 
   std::cout << "Checking integration of raw function f on grid view" << std::endl;
-  integral = integrateGridViewFunction(gridView, f);
+  integral = integrateGridViewFunction(gridView, f, quadOrder);
   if (std::abs(integral-0.5)> 1e-10)
   {
     std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
@@ -73,7 +73,7 @@ bool checkGridViewFunction(const GridView& gridView, const F& f, double exactInt
 
   std::cout << "Checking integration of GridFunction<Range(Domain), EntitySet>(f) on grid view" << std::endl;
   GridFunction<Range(Domain), EntitySet> f2 = f;
-  integral = integrateGridViewFunction(gridView, f2);
+  integral = integrateGridViewFunction(gridView, f2, quadOrder);
   if (std::abs(integral-exactIntegral)> 1e-10)
   {
     std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
@@ -82,7 +82,7 @@ bool checkGridViewFunction(const GridView& gridView, const F& f, double exactInt
 
   std::cout << "Checking integration of GridViewFunction<Range(Domain), GridView>(f) on grid view" << std::endl;
   GridViewFunction<Range(Domain), GridView> f3 = f;
-  integral = integrateGridViewFunction(gridView, f3);
+  integral = integrateGridViewFunction(gridView, f3, quadOrder);
   if (std::abs(integral-0.5)> 1e-10)
   {
     std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
@@ -91,7 +91,7 @@ bool checkGridViewFunction(const GridView& gridView, const F& f, double exactInt
 
   std::cout << "Checking integration of makeGridFunction(f) on grid view" << std::endl;
   auto f4 = makeGridViewFunction(f, gridView);
-  integral = integrateGridViewFunction(gridView, f4);
+  integral = integrateGridViewFunction(gridView, f4, quadOrder);
   if (std::abs(integral-0.5)> 1e-10)
   {
     std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
@@ -100,7 +100,7 @@ bool checkGridViewFunction(const GridView& gridView, const F& f, double exactInt
 
   std::cout << "Checking integration of GridViewFunction<Range(Domain), GridView>(makeGridFunction(f)) on grid view" << std::endl;
   GridViewFunction<Range(Domain), GridView> f5 = f4;
-  integral = integrateGridViewFunction(gridView, f5);
+  integral = integrateGridViewFunction(gridView, f5, quadOrder);
   if (std::abs(integral-0.5)> 1e-10)
   {
     std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
