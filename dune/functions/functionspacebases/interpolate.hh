@@ -8,6 +8,8 @@
 
 #include <dune/common/bitsetvector.hh>
 
+#include <dune/localfunctions/common/virtualinterface.hh>
+
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 #include <dune/functions/common/functionfromcallable.hh>
 
