@@ -26,10 +26,8 @@ double integrateGridViewFunction(const GridView& gridView, const F& f)
   auto fLocal = localFunction(f);
 
   // Loop over elements and integrate over the function
-//  for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
   for (const auto& e : elements(gridView))
   {
-//    const auto& e = *it;
     auto geometry = e.geometry();
 
     fLocal.bind(e);
