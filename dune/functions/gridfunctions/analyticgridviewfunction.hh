@@ -143,6 +143,38 @@ private:
 
 
 
+/**
+ * \brief Construct AnalyticGridViewFunction from function and grid view
+ *
+ * The returned function supports localFunction() and
+ * stores a copy of the original function. In contrast
+ * it will only store a pointer to the GridView and can
+ * only be used as long as this exists. Hence you must
+ * take care to store the GridView yourself.
+ * \todo: Should be store a copy of the GridView?
+ *
+ * \param f A function object supporting argument compatible with global coordinates
+ * \param gridView The GridView the function should act on.
+ *
+ * \returns A function that models the GridFunction interface.
+ */
+template<class F, class GridView>
+AnalyticGridViewFunction<
+  typename std::result_of<F(typename GridView::template Codim<0>::Geometry::GlobalCoordinate)>::type  // Range
+  (typename GridView::template Codim<0>::Geometry::GlobalCoordinate),                                 // Domain
+  GridView,
+  typename std::decay<F>::type >                                                                      // Raw type of F (without & or &&)
+  makeAnalyticGridViewFunction(F&& f, const GridView& gridView)
+{
+  using Domain = typename GridView::template Codim<0>::Geometry::GlobalCoordinate;
+  using Range = typename std::result_of<F(Domain)>::type;
+  using FRaw = typename std::decay<F>::type;
+
+  return AnalyticGridViewFunction<Range(Domain), GridView, FRaw>(std::forward<F>(f), gridView);
+}
+
+
+
 }} // namespace Dune::Functions
 
 
