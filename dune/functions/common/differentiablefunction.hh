@@ -14,35 +14,6 @@
 
 namespace Dune {
 namespace Functions {
-namespace Concept {
-
-/**
- * A concept describing types that have a derivative() method found by ADL
- *
- * \todo Can we remove this?
- */
-struct HasFreeDerivative
-{
-  template<class F>
-  auto require(F&& f) -> decltype(
-    derivative(f)
-  );
-};
-
-/**
- * A concept describing types that have a member function foo.derivative()
- *
- * \todo Can we remove this?
- */
-struct HasMemberDerivative
-{
-  template<class F>
-  auto require(F&& f) -> decltype(
-    f.derivative()
-  );
-};
-
-} // namespace Concept
 
 
 
