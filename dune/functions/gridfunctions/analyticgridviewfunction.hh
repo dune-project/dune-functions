@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include <dune/functions/common/signature.hh>
+#include <dune/functions/common/optional.hh>
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/differentiablefunction_imp.hh>
 #include <dune/functions/common/differentiablefunction.hh>
@@ -29,7 +30,8 @@ public:
   using GridView = GV;
   using EntitySet = GridViewEntitySet<GridView, 0>;
   using Element = typename EntitySet::Element;
-  using Geometry = typename Element::Geometry;
+//  using Geometry = typename Element::Geometry;
+  using Geometry = typename std::decay<typename Element::Geometry>::type;
 
   // Use the inderiction via derivativeIfImplemented to also support
   // function types F that do not implement derivative. In this case
@@ -44,10 +46,19 @@ public:
     f_(std::forward<FT>(f))
   {}
 
+
   void bind(const Element& element)
   {
     element_ = element;
-//    geometry_ = element_.geometry();
+
+    // We'd like to do
+    //
+    //   geometry_ = element_.geometry();
+    //
+    // But since Geometry is not assignable we
+    // have to reconstruct it - argh
+    geometry_.release();
+    geometry_.emplace(element_.geometry());
   }
 
   void unbind()
@@ -55,8 +66,7 @@ public:
 
   Range operator()(const LocalDomain& x) const
   {
-//    return f_(geometry_.global(x));
-    return f_(element_.geometry().global(x));
+    return f_(geometry_.value().global(x));
   }
 
   const Element& localContext() const
@@ -71,7 +81,9 @@ public:
 
 private:
 
-//  Geometry geometry_;
+  // Hack around the fact that Geometry is not default constructible.
+  Optional<Geometry> geometry_;
+
   Element element_;
   F f_;
 };
