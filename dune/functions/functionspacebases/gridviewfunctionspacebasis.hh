@@ -25,6 +25,10 @@ public:
 
   //! size of subtree rooted in this node (element-local)
   virtual size_type size() const = 0;
+
+  //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
+  virtual size_type localIndex(size_type i) const = 0;
+
 };
 
 template<typename GV, typename LV, typename IS, typename MI>
@@ -41,16 +45,6 @@ public:
   /** \brief Obtain the grid view that the basis is defined on
    */
   virtual const GridView& gridView() const = 0;
-
-  // /**
-  //  * \brief maximum local size for any element on the GridView
-  //  *
-  //  * This is the maximal size needed for local matrices
-  //  * and local vectors, i.e., the result is
-  //  *
-  //  * max{GridViewLocalBasisView(e).tree().size() | e in GridView}
-  //  */
-  // virtual size_type maxLocalSize() const = 0;
 
   /**
    * \brief Return local view for basis

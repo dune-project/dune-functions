@@ -10,31 +10,44 @@
 
 #include <dune/grid/yaspgrid.hh>
 
+#include <dune/localfunctions/test/test-localfe.hh>
+
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
+#include <dune/functions/functionspacebases/pqknodalbasis.hh>
 
 using namespace Dune;
 using namespace Dune::Functions;
 
-int main (int argc, char* argv[]) try
+template <typename Basis>
+void testScalarBasis(const Basis& feBasis)
 {
-  // Generate grid for testing
-  const int dim = 2;
-  typedef YaspGrid<dim> GridType;
-  FieldVector<double,dim> l(1);
-  std::array<int,dim> elements = {{10, 10}};
-  GridType grid(l,elements);
+  //////////////////////////////////////////////////////////////////////////////////////
+  //  Run the dune-localfunctions test for the LocalFiniteElement of each grid element
+  //////////////////////////////////////////////////////////////////////////////////////
 
-  // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
-  typedef GridType::LeafGridView GridView;
-  typedef PQ1NodalBasis<GridView> Basis;
-//  typedef PQ2NodalBasis<GridView> Basis;
+  typedef typename Basis::GridView GridView;
+  GridView gridView = feBasis.gridView();
 
-  const GridView& gridView = grid.leafGridView();
-  Basis feBasis(gridView);
+  typename Basis::LocalView localView(&feBasis);
+
+
+  // Test the LocalFiniteElement
+  for (auto it = gridView.template begin<0>(); it!=gridView.template end<0>(); ++it)
+  {
+    // Bind the local FE basis view to the current element
+    localView.bind(*it);
+
+    // The general LocalFiniteElement unit test from dune/localfunctions/test/test-localfe.hh
+    const auto& lFE = localView.tree().finiteElement();
+    testFE(lFE);
+  }
+
+
   auto indexSet = feBasis.indexSet();
 
-  typedef Basis::MultiIndex MultiIndex;
+  typedef typename Basis::MultiIndex MultiIndex;
+
 
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
@@ -43,18 +56,18 @@ int main (int argc, char* argv[]) try
   std::vector<double> x(indexSet.size());
 
   // TODO: Implement interpolation properly using the global basis.
-  for (auto it = gridView.begin<dim>(); it != gridView.end<dim>(); ++it)
+  static const int dim = Basis::GridView::dimension;
+  for (auto it = gridView.template begin<dim>(); it != gridView.template end<dim>(); ++it)
     x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
 
   // Objects required in the local context
-  auto localView = feBasis.localView();
   auto localIndexSet = indexSet.localIndexSet();
   auto localIndexSet2 = feBasis.indexSet().localIndexSet();
   std::vector<double> coefficients(localView.maxSize());
 
   // Loop over elements and integrate over the function
   double integral = 0;
-  for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
+  for (auto it = gridView.template begin<0>(); it != gridView.template end<0>(); ++it)
   {
     localView.bind(*it);
     localIndexSet.bind(localView);
@@ -77,9 +90,9 @@ int main (int argc, char* argv[]) try
     }
 
     // get access to the finite element
-    typedef Basis::LocalView::Tree Tree;
+    typedef typename Basis::LocalView::Tree Tree;
     auto& treeImp = localView.tree();
-    const Tree::Interface& tree = treeImp;
+    const typename Tree::Interface& tree = treeImp;
 
     auto& localFiniteElement = tree.finiteElement();
 
@@ -106,7 +119,7 @@ int main (int argc, char* argv[]) try
       // Actually compute the vector entries
       for (size_t i=0; i<localFiniteElement.localBasis().size(); i++)
       {
-        integral += coefficients[i] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
+        integral += coefficients[tree.localIndex(i)] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
       }
     }
 
@@ -116,7 +129,38 @@ int main (int argc, char* argv[]) try
   }
 
   std::cout << "Computed integral is " << integral << std::endl;
-  assert(std::abs(integral-0.5)< 1e-10);
+  if (std::abs(integral-0.5) > 1e-10)
+    std::cerr << "Warning: integral value is wrong!" << std::endl;
+}
+
+int main (int argc, char* argv[]) try
+{
+  // Generate grid for testing
+  const int dim = 2;
+  typedef YaspGrid<dim> GridType;
+  FieldVector<double,dim> l(1);
+  std::array<int,dim> elements = {{10, 10}};
+  GridType grid(l,elements);
+
+  // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
+  typedef GridType::LeafGridView GridView;
+  const GridView& gridView = grid.leafGridView();
+
+  // Test PQ1NodalBasis
+  PQ1NodalBasis<GridView> pq1Basis(gridView);
+  testScalarBasis(pq1Basis);
+
+  // Test PQ2NodalBasis
+  PQ2NodalBasis<GridView> pq2Basis(gridView);
+  testScalarBasis(pq2Basis);
+
+  // Test PQKNodalBasis for k==3
+  PQKNodalBasis<GridView, 3> pq3Basis(gridView);
+  testScalarBasis(pq3Basis);
+
+  // Test PQKNodalBasis for k==4
+  PQKNodalBasis<GridView, 4> pq4Basis(gridView);
+  testScalarBasis(pq4Basis);
 
   return 0;
 

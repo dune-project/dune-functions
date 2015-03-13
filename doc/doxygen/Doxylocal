@@ -6,7 +6,8 @@
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                 += @top_srcdir@/dune/functions
+INPUT                 += @top_srcdir@/dune/functions \
+                         @srcdir@/mainpage
 
 # see e.g. dune-grid for the examples of mainpage and modules
 # INPUT                 += @srcdir@/mainpage \
