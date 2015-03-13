@@ -10,6 +10,7 @@ install(FILES
         interfaces.hh
         localfunction.hh
         localfunction_imp.hh
+        optional.hh
         polymorphicsmallobject.hh
         signature.hh
         type_traits.hh
