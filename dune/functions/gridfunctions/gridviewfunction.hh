@@ -6,6 +6,7 @@
 #include <memory>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 
 
 namespace Dune {
@@ -39,6 +40,56 @@ public:
 
   using Base::Base;
 };
+
+
+
+/**
+ * \brief Construct a function modeling GridViewFunction from function and grid view
+ *
+ * This spezialization is used for functions that already
+ * supports localFunction(). It will simply return a copy of f.
+ *
+ * \param f A function object supporting argument compatible with global coordinates
+ * \param gridView The GridView the function should act on.
+ *
+ * \returns A function that models the GridViewFunction interface.
+ */
+template<class F, class GridView,
+  typename std::enable_if<
+    Dune::Functions::Concept::models< Imp::HasFreeLocalFunction, F>() , int>::type = 0>
+typename std::decay<F>::type
+  makeGridViewFunction(F&& f, const GridView& gridView)
+{
+  return std::forward<F>(f);
+}
+
+
+
+/**
+ * \brief Construct a function modeling GridViewFunction from function and grid view
+ *
+ * This spezialization is used for functions that do not
+ * supports localFunction() themselfes. It will forward
+ * to makeAnalyticGridViewFunction.
+ * Notice that the returned function will stores a copy of
+ * the original function and a pointer to the GridView.
+ * It can only be used as long as the latter exists.
+ * Hence you must take care to store the GridView yourself.
+ * \todo: Should be store a copy of the GridView?
+ *
+ * \param f A function object supporting argument compatible with global coordinates
+ * \param gridView The GridView the function should act on.
+ *
+ * \returns A function that models the GridFunction interface.
+ */
+template<class F, class GridView,
+  typename std::enable_if<
+    not(Dune::Functions::Concept::models< Imp::HasFreeLocalFunction, F>()) , int>::type = 0>
+auto makeGridViewFunction(F&& f, const GridView& gridView)
+  -> decltype(makeAnalyticGridViewFunction(std::forward<F>(f), gridView))
+{
+  return makeAnalyticGridViewFunction(std::forward<F>(f), gridView);
+}
 
 
 
