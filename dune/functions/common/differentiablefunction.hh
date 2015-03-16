@@ -86,7 +86,7 @@ public:
   /**
    * \brief Get derivative of wrapped function
    *
-   * This is free function will be found by ADL.
+   * This is a free function that will be found by ADL.
    */
   friend DerivativeInterface derivative(const DifferentiableFunction& t)
   {
