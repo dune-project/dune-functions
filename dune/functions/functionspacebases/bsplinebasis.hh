@@ -300,6 +300,12 @@ public:
     return finiteElement_.size();
   }
 
+  //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
+  size_type localIndex(size_type i) const DUNE_FINAL
+  {
+    return i;
+  }
+
 private:
   /** \brief Bind to an element
    *
