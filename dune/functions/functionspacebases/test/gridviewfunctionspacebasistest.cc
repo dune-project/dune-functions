@@ -13,6 +13,7 @@
 
 #include <dune/localfunctions/test/test-localfe.hh>
 
+#include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
@@ -86,20 +87,18 @@ void testScalarBasis(const Basis& feBasis)
     if (! seen[i])
       DUNE_THROW(Exception, "Index [" << i << "] does not exist as global basis vector");
 
-  // Sample the function f(x,y) = x on the grid vertices
-  // If we use that as the coefficients of a finite element function,
-  // we know its integral and can check whether quadrature returns
-  // the correct result
-  std::vector<double> x(indexSet.size());
+  //////////////////////////////////////////////////////////////////////////////////////////
+  // Interpolate the function f(x,y) = x wrt the basis, and check whether we get
+  // the expected integral.
+  //////////////////////////////////////////////////////////////////////////////////////////
 
-  // TODO: Implement interpolation properly using the global basis.
   static const int dim = Basis::GridView::dimension;
-  for (auto it = gridView.template begin<dim>(); it != gridView.template end<dim>(); ++it)
-    x[gridView.indexSet().index(*it)] = it->geometry().corner(0)[0];
+  std::vector<double> x(indexSet.size());
+  interpolate(feBasis, x, [](FieldVector<double,dim> x){ return x[0]; });
 
   // Objects required in the local context
   auto localIndexSet2 = feBasis.indexSet().localIndexSet();
-  std::vector<double> coefficients(localView.maxSize());
+  std::vector<double> localCoefficients(localView.maxSize());
 
   // Loop over elements and integrate over the function
   double integral = 0;
@@ -119,11 +118,9 @@ void testScalarBasis(const Basis& feBasis)
       assert(localIndexSet.index(i) == localIndexSet2.index(i));
 
     // copy data from global vector
-    coefficients.resize(localIndexSet.size());
+    localCoefficients.resize(localIndexSet.size());
     for (size_t i=0; i<localIndexSet.size(); i++)
-    {
-      coefficients[i] = x[localIndexSet.index(i)[0]];
-    }
+      localCoefficients[i] = x[localIndexSet.index(i)[0]];
 
     // get access to the finite element
     typedef typename Basis::LocalView::Tree Tree;
@@ -155,7 +152,7 @@ void testScalarBasis(const Basis& feBasis)
       // Actually compute the vector entries
       for (size_t i=0; i<localFiniteElement.localBasis().size(); i++)
       {
-        integral += coefficients[tree.localIndex(i)] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
+        integral += localCoefficients[tree.localIndex(i)] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
       }
     }
 
@@ -164,9 +161,8 @@ void testScalarBasis(const Basis& feBasis)
     localView.unbind();
   }
 
-  std::cout << "Computed integral is " << integral << std::endl;
   if (std::abs(integral-0.5) > 1e-10)
-    std::cerr << "Warning: integral value is wrong!" << std::endl;
+    DUNE_THROW(Dune::Exception, "Error: integral value is wrong!");
 }
 
 int main (int argc, char* argv[]) try
