@@ -22,8 +22,11 @@ using namespace Dune;
 using namespace Dune::Functions;
 
 template <typename Basis>
-void testScalarBasis(const Basis& feBasis)
+void testScalarBasis(const Basis& feBasis,
+                     bool isPartitionOfUnity)
 {
+  static const int dim = Basis::GridView::dimension;
+
   //////////////////////////////////////////////////////////////////////////////////////
   //  Run the dune-localfunctions test for the LocalFiniteElement of each grid element
   //////////////////////////////////////////////////////////////////////////////////////
@@ -44,6 +47,32 @@ void testScalarBasis(const Basis& feBasis)
     const auto& lFE = localView.tree().finiteElement();
     testFE(lFE);
   }
+
+  /////////////////////////////////////////////////////////////////////////
+  //  Make sure the basis is a partition of unity
+  /////////////////////////////////////////////////////////////////////////
+  if (isPartitionOfUnity)
+  {
+    for(const auto& e : elements(gridView))
+    {
+      // Bind the local FE basis view to the current element
+      localView.bind(e);
+
+      const auto& lFE = localView.tree().finiteElement();
+
+      const QuadratureRule<double,dim>& quad = QuadratureRules<double,dim>::rule(e.type(), 3);
+      std::vector<FieldVector<double,1> > values;
+      for (size_t i=0; i<quad.size(); i++)
+      {
+        lFE.localBasis().evaluateFunction(quad[i].position(), values);
+        double sum = std::accumulate(values.begin(), values.end(), 0.0);
+
+        if (std::abs(sum-1.0) > 1e-5)
+          DUNE_THROW(Exception, "B-Spline basis is no partition of unity!");
+      }
+    }
+  }
+
 
 
   auto indexSet = feBasis.indexSet();
@@ -92,7 +121,6 @@ void testScalarBasis(const Basis& feBasis)
   // the expected integral.
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  static const int dim = Basis::GridView::dimension;
   std::vector<double> x(indexSet.size());
   interpolate(feBasis, x, [](FieldVector<double,dim> x){ return x[0]; });
 
@@ -180,19 +208,19 @@ int main (int argc, char* argv[]) try
 
   // Test PQ1NodalBasis
   PQ1NodalBasis<GridView> pq1Basis(gridView);
-  testScalarBasis(pq1Basis);
+  testScalarBasis(pq1Basis, true);
 
   // Test PQ2NodalBasis
   PQ2NodalBasis<GridView> pq2Basis(gridView);
-  testScalarBasis(pq2Basis);
+  testScalarBasis(pq2Basis, true);
 
   // Test PQKNodalBasis for k==3
   PQKNodalBasis<GridView, 3> pq3Basis(gridView);
-  testScalarBasis(pq3Basis);
+  testScalarBasis(pq3Basis, true);
 
   // Test PQKNodalBasis for k==4
   PQKNodalBasis<GridView, 4> pq4Basis(gridView);
-  testScalarBasis(pq4Basis);
+  testScalarBasis(pq4Basis, true);
 
   return 0;
 
