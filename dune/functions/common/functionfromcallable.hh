@@ -60,7 +60,7 @@ public:
    *
    * This call is passed to the function
    */
-  void evaluate(const Domain& x, Range&y) const DUNE_FINAL
+  void evaluate(const Domain& x, Range&y) const
   {
     y = f_(x);
   }
