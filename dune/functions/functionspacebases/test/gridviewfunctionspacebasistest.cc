@@ -73,6 +73,34 @@ void testScalarBasis(const Basis& feBasis,
     }
   }
 
+  ////////////////////////////////////////////////////////////////////////////
+  //  Make sure the basis does not give out constant zero shape functions
+  ////////////////////////////////////////////////////////////////////////////
+  for(const auto& e : elements(gridView))
+  {
+    // Bind the local FE basis view to the current element
+    localView.bind(e);
+
+    const auto& lFE = localView.tree().finiteElement();
+
+    const QuadratureRule<double,dim>& quad = QuadratureRules<double,dim>::rule(e.type(), 3);
+    std::vector<FieldVector<double,1> > values;
+    std::vector<double> sumOfAbsValues(lFE.size());
+    std::fill(sumOfAbsValues.begin(), sumOfAbsValues.end(), 0.0);
+    for (size_t i=0; i<quad.size(); i++)
+    {
+      lFE.localBasis().evaluateFunction(quad[i].position(), values);
+      // Sum the absolute values for each quadrature point
+      for (size_t j=0; j<values.size(); j++)
+        sumOfAbsValues[j] += std::fabs(values[j][0]);
+    }
+
+    for (size_t i=0; i<values.size(); i++)
+      if ( sumOfAbsValues[i] <= 1e-5)
+        DUNE_THROW(Exception, "Basis gives out a constant-zero shape function!");
+  }
+
+
 
 
   auto indexSet = feBasis.indexSet();
