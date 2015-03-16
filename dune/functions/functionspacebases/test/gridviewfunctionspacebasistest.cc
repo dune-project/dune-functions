@@ -68,7 +68,7 @@ void testScalarBasis(const Basis& feBasis,
         double sum = std::accumulate(values.begin(), values.end(), 0.0);
 
         if (std::abs(sum-1.0) > 1e-5)
-          DUNE_THROW(Exception, "B-Spline basis is no partition of unity!");
+          DUNE_THROW(Exception, "Basis is no partition of unity, even though it is supposed to be!");
       }
     }
   }
