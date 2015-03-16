@@ -10,6 +10,7 @@
 #include <dune/common/exceptions.hh>
 
 #include <dune/functions/common/differentiablefunction.hh>
+#include <dune/functions/common/differentiablefunctionfromcallables.hh>
 
 #include <dune/functions/analyticfunctions/polynomial.hh>
 #include <dune/functions/analyticfunctions/trigonometricfunction.hh>
@@ -120,6 +121,14 @@ struct DifferentiableFunctionImplementableTest
 
     passed = passed and checkWithFunction(Dune::Functions::Polynomial<double>({1, 2, 3}));
     passed = passed and checkWithFunction(Dune::Functions::TrigonometricFunction<double, 1, 0>());
+
+    auto f = [](double x){ return std::sin(x);};
+    auto df = [](double x){ return std::cos(x);};
+    auto ddf = [](double x){ return -std::sin(x);};
+    auto dddf = [](double x){ return -std::cos(x);};
+
+    auto F = makeDifferentiableFunctionFromCallables(Dune::Functions::SignatureTag<double(double)>(), f, df, ddf, dddf);
+    passed = passed and checkWithFunction(F);
 
     return passed;
   }

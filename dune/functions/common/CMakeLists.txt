@@ -6,6 +6,7 @@ install(FILES
         defaultderivativetraits.hh
         differentiablefunction.hh
         differentiablefunction_imp.hh
+        differentiablefunctionfromcallables.hh
         functionfromcallable.hh
         interfaces.hh
         localfunction.hh
