@@ -261,21 +261,8 @@ void boundaryTreatment (const FEBasis& feBasis,
 
   // Interpolating the identity function wrt to a Lagrange basis
   // yields the positions of the Lagrange nodes
-
-  // TODO: We are hacking our way around the fact that interpolation
-  // of vector-value functions is not supported yet.
-  BlockVector<FieldVector<double,1> > lagrangeNodes0;
-  BlockVector<FieldVector<double,1> > lagrangeNodes1;
-
-  interpolate(feBasis, lagrangeNodes0, [](FieldVector<double,dim> x){ return x[0]; });
-  interpolate(feBasis, lagrangeNodes1, [](FieldVector<double,dim> x){ return x[1]; });
-
-  BlockVector<FieldVector<double,dim> > lagrangeNodes(lagrangeNodes0.size());
-  for (size_t i=0; i<lagrangeNodes.size(); i++)
-  {
-    lagrangeNodes[i][0] = lagrangeNodes0[i];
-    lagrangeNodes[i][1] = lagrangeNodes1[i];
-  }
+  BlockVector<FieldVector<double,dim> > lagrangeNodes;
+  interpolate(feBasis, lagrangeNodes, [](FieldVector<double,dim> x){ return x; });
 
   dirichletNodes.resize(lagrangeNodes.size());
 
