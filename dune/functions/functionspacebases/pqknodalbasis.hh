@@ -168,10 +168,10 @@ class PQKIndexSet
   const int dofsPerEdge        = k-1;
   const int dofsPerTriangle    = (k-1)*(k-2)/2;
   const int dofsPerQuad        = (k-1)*(k-1);
-  const int dofsPerTetrahedron = (k-1)*(k-2)*(k-3)/3;
+  const int dofsPerTetrahedron = (k-2)*(k-1)*k/6;
   const int dofsPerPrism       = (k-1)*(k-1)*(k-2)/2;
   const int dofsPerHexahedron  = (k-1)*(k-1)*(k-1);
-
+  const int dofsPerPyramid     = ((k-2)*(k-1)*(2*k-3))/6;
 public:
 
   typedef PQKLocalIndexSet<GV,k> LocalIndexSet;
@@ -220,19 +220,21 @@ public:
         triangle.makeTriangle();
         quad.makeQuadrilateral();
         return gridView_.size(dim) + dofsPerEdge*gridView_.size(1)
-             + gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad);
+             + dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad);
       }
       case 3:
       {
-        GeometryType triangle, quad, pyramid, prism, hexahedron;
+        GeometryType triangle, quad, tetrahedron, pyramid, prism, hexahedron;
         triangle.makeTriangle();
         quad.makeQuadrilateral();
+        tetrahedron.makeTetrahedron();
         pyramid.makePyramid();
         prism.makePrism();
         hexahedron.makeCube(3);
         return gridView_.size(dim) + dofsPerEdge*gridView_.size(2)
              + gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad)
-             + gridView_.size(pyramid) + dofsPerPrism*gridView_.size(prism) + dofsPerHexahedron*gridView_.size(hexahedron);
+             + dofsPerTetrahedron*gridView_.size(tetrahedron) + dofsPerPyramid*gridView_.size(pyramid)
+             + dofsPerPrism*gridView_.size(prism) + dofsPerHexahedron*gridView_.size(hexahedron);
       }
 
     }
