@@ -81,7 +81,12 @@ public:
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
   MultiIndex index(size_type i) const
   {
-    return {i};
+    const auto currentKnotSpan = localView_->tree().finiteElement().currentKnotSpan_;
+    const auto order = localView_->globalBasis_->patch_.order_;
+
+    int offset = currentKnotSpan[0] - order[0];  // needs to be a signed type!
+    offset = std::max(offset, 0);
+    return { offset + i};
   }
 
   /** \brief Return the local view that we are attached to
@@ -339,6 +344,8 @@ private:
 template<class D, class R, int dim>
 class BSplinePatch
 {
+  template <class GV>
+  friend class BSplineLocalIndexSet;
   friend class BSplineLocalFiniteElement<D,R,dim>;
   friend class BSplineLocalBasis<D,R,dim>;
 
@@ -376,6 +383,15 @@ class BSplinePatch
     const unsigned int& operator[](int i) const
     {
       return counter_[i];
+    }
+
+    /** \brief How many times can you increment this multi-index before it overflows? */
+    unsigned int cycle() const
+    {
+      unsigned int r = 1;
+      for (int i=0; i<dim; i++)
+        r *= limits_[i];
+      return r;
     }
 
   private:
@@ -427,16 +443,11 @@ public:
   }
 
   /** \brief Evaluate all B-spline basis functions at a given point
-   *
-   * \warning This really evaluates _all_ shape functions, even though most of them
-   * are zero at any given point.
    */
   void evaluateFunction (const FieldVector<D,dim>& in,
                          std::vector<FieldVector<R,1> >& out,
                          const std::array<uint,dim>& currentKnotSpan) const
   {
-    out.resize(size());
-
     // Evaluate
     Dune::array<std::vector<R>, dim> oneDValues;
 
@@ -445,9 +456,11 @@ public:
 
     std::array<unsigned int, dim> limits;
     for (int i=0; i<dim; i++)
-      limits[i] = size(i);
+      limits[i] = oneDValues[i].size();
 
     MultiIndex ijkCounter(limits);
+
+    out.resize(ijkCounter.cycle());
 
     for (size_t i=0; i<out.size(); i++, ++ijkCounter)
     {
@@ -462,13 +475,11 @@ public:
                          std::vector<FieldMatrix<D,1,dim> >& out,
                          const std::array<uint,dim>& currentKnotSpan) const
   {
-    out.resize(size());
-
     // Evaluate 1d function values (needed for the product rule)
     Dune::array<std::vector<R>, dim> oneDValues;
 
     for (size_t i=0; i<dim; i++)
-      evaluateFunction(in[i], oneDValues[i], knotVectors_[i], order_[i], currentKnotSpan[i]);
+      evaluateFunctionFull(in[i], oneDValues[i], knotVectors_[i], order_[i], currentKnotSpan[i]);
 
     // Evaluate 1d function values of one order lower (needed for the derivative formula)
     Dune::array<std::vector<R>, dim> lowOrderOneDValues;
@@ -478,7 +489,7 @@ public:
      * being I leave it as is to have more readable code. */
     for (size_t i=0; i<dim; i++)
       if (order_[i]!=0)
-        evaluateFunction(in[i], lowOrderOneDValues[i], knotVectors_[i], order_[i]-1, currentKnotSpan[i]);
+        evaluateFunctionFull(in[i], lowOrderOneDValues[i], knotVectors_[i], order_[i]-1, currentKnotSpan[i]);
 
     // Evaluate 1d function derivatives
     Dune::array<std::vector<R>, dim> oneDDerivatives;
@@ -499,9 +510,17 @@ public:
     // Set up a multi-index to go from consecutive indices to integer coordinates
     std::array<unsigned int, dim> limits;
     for (int i=0; i<dim; i++)
-      limits[i] = size(i);
+    {
+      // In a proper implementation, the following line would do
+      //limits[i] = oneDValues[i].size();
+      limits[i] = order_[i]+1;  // The 'standard' value away from the boundaries of the knot vector
+      limits[i] = std::min(limits[i], (unsigned)currentKnotSpan[i]+1);  // Less near the left end of the knot vector
+      limits[i] = std::min(limits[i], (unsigned)knotVectors_[i].size() - currentKnotSpan[i]-1);  // Less near the right end of the knot vector
+    }
 
     MultiIndex ijkCounter(limits);
+
+    out.resize(ijkCounter.cycle());
 
     // Complete Jacobian is given by the product rule
     for (size_t i=0; i<out.size(); i++, ++ijkCounter)
@@ -509,7 +528,8 @@ public:
       {
         out[i][0][j] = 1.0;
         for (int k=0; k<dim; k++)
-          out[i][0][j] *= (j==k) ? oneDDerivatives[k][ijkCounter[k]] : oneDValues[k][ijkCounter[k]];
+          out[i][0][j] *= (j==k) ? oneDDerivatives[k][std::max((int)(currentKnotSpan[k] - order_[k]),0) + ijkCounter[k]]
+                                 : oneDValues[k][std::max((int)(currentKnotSpan[k] - order_[k]),0) + ijkCounter[k]];
       }
 
   }
@@ -543,6 +563,61 @@ private:
                                 const std::vector<R>& knotVector,
                                 unsigned int order,
                                 unsigned int currentKnotSpan)
+  {
+    std::size_t outSize = order+1;  // The 'standard' value away from the boundaries of the knot vector
+    outSize = std::min(outSize, (std::size_t)currentKnotSpan+1);  // Less near the left end of the knot vector
+    outSize = std::min(outSize, knotVector.size() - currentKnotSpan-1);  // Less near the right end of the knot vector
+    out.resize(outSize);
+
+    // It's not really a matrix that is needed here, a plain 2d array would do
+    DynamicMatrix<R> N(order+1, knotVector.size()-1);
+
+    // The text books on splines use the following geometric condition here to fill the array N
+    // (see for example Cottrell, Hughes, Bazilevs, Formula (2.1).  However, this condition
+    // only works if splines are never evaluated exactly on the knots.
+    //
+    // for (size_t i=0; i<knotVector.size()-1; i++)
+    //   N[0][i] = (knotVector[i] <= in) and (in < knotVector[i+1]);
+    for (size_t i=0; i<knotVector.size()-1; i++)
+      N[0][i] = (i == currentKnotSpan);
+
+    for (size_t r=1; r<=order; r++)
+      for (size_t i=0; i<knotVector.size()-r-1; i++)
+      {
+        R factor1 = ((knotVector[i+r] - knotVector[i]) > 1e-10)
+        ? (in - knotVector[i]) / (knotVector[i+r] - knotVector[i])
+        : 0;
+        R factor2 = ((knotVector[i+r+1] - knotVector[i+1]) > 1e-10)
+        ? (knotVector[i+r+1] - in) / (knotVector[i+r+1] - knotVector[i+1])
+        : 0;
+        N[r][i] = factor1 * N[r-1][i] + factor2 * N[r-1][i+1];
+      }
+
+      /** \todo We only hand out function values for those basis functions whose support overlaps
+       *  the current knot span.  However, in the preceding loop we still computed _all_ values_.
+       * This won't scale.
+       */
+      for (size_t i=0; i<out.size(); i++) {
+        out[i] = N[order][std::max((int)(currentKnotSpan - order),0) + i];
+      }
+  }
+
+  /** \brief Evaluate all one-dimensional B-spline functions for a given coordinate direction
+   *
+   * This implementations was based on the explanations in the book of
+   * Cottrell, Hughes, Bazilevs, "Isogeometric Analysis"
+   *
+   * \todo This method is a hack!  I computes the derivatives of ALL B-splines, even the ones that
+   * are zero on the current knot span.  I need it as an intermediate step to get the derivatives
+   * working.  It will/must be removed as soon as possible.
+   *
+   * \param in Scalar(!) coordinate where to evaluate the functions
+   * \param [out] out Vector containing the values of all B-spline functions at 'in'
+   */
+  static void evaluateFunctionFull(const D& in, std::vector<R>& out,
+                                   const std::vector<R>& knotVector,
+                                   unsigned int order,
+                                   unsigned int currentKnotSpan)
   {
     out.resize(knotVector.size()-order-1);
 
@@ -593,6 +668,7 @@ private:
 template<class D, class R, int dim>
 class BSplineLocalBasis
 {
+  friend class BSplineLocalFiniteElement<D,R,dim>;
 public:
 
   //! \brief export type traits for function signature
@@ -603,8 +679,10 @@ public:
    *
    * The patch object does all the work.
    */
-  BSplineLocalBasis(const BSplinePatch<D,R,dim>& patch)
-  : patch_(patch)
+  BSplineLocalBasis(const BSplinePatch<D,R,dim>& patch,
+                    const BSplineLocalFiniteElement<D,R,dim>& lFE)
+  : patch_(patch),
+    lFE_(lFE)
   {}
 
   /** \brief Evaluate all shape functions
@@ -613,12 +691,10 @@ public:
   void evaluateFunction (const FieldVector<D,dim>& in,
                          std::vector<FieldVector<R,1> >& out) const
   {
-    out.resize(size());
-
     FieldVector<D,dim> globalIn = offset_;
     scaling_.umv(in,globalIn);
 
-    patch_.evaluateFunction(globalIn, out, currentKnotSpan_);
+    patch_.evaluateFunction(globalIn, out, lFE_.currentKnotSpan_);
   }
 
   /** \brief Evaluate Jacobian of all shape functions
@@ -627,12 +703,10 @@ public:
   void evaluateJacobian (const FieldVector<D,dim>& in,
                          std::vector<FieldMatrix<D,1,dim> >& out) const
   {
-    out.resize(size());
-
     FieldVector<D,dim> globalIn = offset_;
     scaling_.umv(in,globalIn);
 
-    patch_.evaluateJacobian(globalIn, out, currentKnotSpan_);
+    patch_.evaluateJacobian(globalIn, out, lFE_.currentKnotSpan_);
 
     for (size_t i=0; i<out.size(); i++)
       for (int j=0; j<dim; j++)
@@ -659,55 +733,21 @@ public:
   }
 
   /** \brief Return the number of basis functions on the current knot span
-   * \todo Currently, the number of all basis functions on the entire patch is returned.
-   *   This will include many that are simply constant zero on the current knot span.
    */
   std::size_t size() const
   {
-    return patch_.size();
+    return lFE_.size();
   }
 
-  /** \brief Elements are the non-empty knot spans, here we do the renumbering
-   */
-  void setCurrentKnotSpan(const std::array<uint,dim>& elementIdx)
-  {
-    /* \todo In the long run we need to precompute a table for this */
-    for (size_t i=0; i<elementIdx.size(); i++)
-    {
-      currentKnotSpan_[i] = 0;
-
-      // Skip over degenerate knot spans
-      while (patch_.knotVectors_[i][currentKnotSpan_[i]+1] < patch_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
-        currentKnotSpan_[i]++;
-
-      for (size_t j=0; j<elementIdx[i]; j++)
-      {
-        currentKnotSpan_[i]++;
-
-        // Skip over degenerate knot spans
-        while (patch_.knotVectors_[i][currentKnotSpan_[i]+1] < patch_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
-          currentKnotSpan_[i]++;
-      }
-
-      // Compute the geometric transformation from knotspan-local to global coordinates
-      for (int i=0; i<dim; i++)
-      {
-        offset_[i] = patch_.knotVectors_[i][currentKnotSpan_[i]];
-        scaling_[i][i] = patch_.knotVectors_[i][currentKnotSpan_[i]+1] - patch_.knotVectors_[i][currentKnotSpan_[i]];
-      }
-    }
-  }
-
-
+private:
   const BSplinePatch<D,R,dim>& patch_;
+
+  const BSplineLocalFiniteElement<D,R,dim>& lFE_;
 
   // Coordinates in a single knot span differ from coordinates on the B-spline patch
   // by an affine transformation.  This transformation is stored in offset_ and scaling_.
   FieldVector<D,dim>    offset_;
   DiagonalMatrix<D,dim> scaling_;
-
-  // The knot span we are bound to
-  std::array<uint,dim> currentKnotSpan_;
 };
 
 /** \brief Local coefficients in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
@@ -721,9 +761,8 @@ public:
   /** \brief Standard constructor
    * \todo Not implemented yet
    */
-  BSplineLocalCoefficients (const BSplinePatch<D,R,dim>& patch)
-  : patch_(patch),
-  li_(size())
+  BSplineLocalCoefficients (const BSplineLocalFiniteElement<D,R,dim>& lFE)
+  : lFE_(lFE)
   {
     std::cout << "WARNING: LocalCoefficients array should be initialized here!" << std::endl;
   }
@@ -734,7 +773,7 @@ public:
    */
   std::size_t size () const
   {
-    return patch_.size();
+    return lFE_.size();
   }
 
   //! get i'th index
@@ -744,7 +783,7 @@ public:
   }
 
 private:
-  const BSplinePatch<D,R,dim>& patch_;
+  const BSplineLocalFiniteElement<D,R,dim>& lFE_;
   std::vector<LocalKey> li_;
 };
 
@@ -774,6 +813,9 @@ public:
 template<class D, class R, int dim>
 class BSplineLocalFiniteElement
 {
+  template <class GV>
+  friend class BSplineLocalIndexSet;
+  friend class BSplineLocalBasis<D,R,dim>;
 public:
 
   /** \brief Export various types related to this LocalFiniteElement
@@ -785,16 +827,44 @@ public:
   /** \brief Constructor with a given B-spline patch
    */
   BSplineLocalFiniteElement(const BSplinePatch<D,R,dim>& patch)
-  : localBasis_(patch),
-  localCoefficients_(patch)
+  : patch_(patch),
+    localBasis_(patch,*this),
+    localCoefficients_(*this)
   {}
 
   /** \brief Bind LocalFiniteElement to a specific knot span of the spline patch
+   *
+   * Elements are the non-empty knot spans, here we do the renumbering
+   *
    * \param ijk Integer coordinates in the tensor product patch
    */
   void bind(const std::array<uint,dim>& elementIdx)
   {
-    localBasis_.setCurrentKnotSpan(elementIdx);
+    /* \todo In the long run we need to precompute a table for this */
+    for (size_t i=0; i<elementIdx.size(); i++)
+    {
+      currentKnotSpan_[i] = 0;
+
+      // Skip over degenerate knot spans
+      while (patch_.knotVectors_[i][currentKnotSpan_[i]+1] < patch_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
+        currentKnotSpan_[i]++;
+
+      for (size_t j=0; j<elementIdx[i]; j++)
+      {
+        currentKnotSpan_[i]++;
+
+        // Skip over degenerate knot spans
+        while (patch_.knotVectors_[i][currentKnotSpan_[i]+1] < patch_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
+          currentKnotSpan_[i]++;
+      }
+
+      // Compute the geometric transformation from knotspan-local to global coordinates
+      for (int i=0; i<dim; i++)
+      {
+        localBasis_.offset_[i] = patch_.knotVectors_[i][currentKnotSpan_[i]];
+        localBasis_.scaling_[i][i] = patch_.knotVectors_[i][currentKnotSpan_[i]+1] - patch_.knotVectors_[i][currentKnotSpan_[i]];
+      }
+    }
   }
 
   /** \brief Hand out a LocalBasis object */
@@ -818,7 +888,15 @@ public:
   /** \brief Number of shape functions in this finite element */
   uint size () const
   {
-    return localBasis_.size();
+    std::size_t r = 1;
+    for (int i=0; i<dim; i++)
+    {
+      std::size_t oneDSize = patch_.order_[i]+1;   // The 'normal' value
+      oneDSize = std::min(oneDSize, (std::size_t)currentKnotSpan_[i]+1);  // Less near the left end of the knot vector
+      oneDSize = std::min(oneDSize, patch_.knotVectors_[i].size() - currentKnotSpan_[i]-1);  // Less near the right end of the knot vector
+      r *= oneDSize;
+    }
+    return r;
   }
 
   /** \brief Return the reference element that the local finite element is defined on (here, a hypercube)
@@ -830,10 +908,13 @@ public:
 
 private:
 
+  const BSplinePatch<D,R,dim>& patch_;
   BSplineLocalBasis<D,R,dim> localBasis_;
   BSplineLocalCoefficients<D,R,dim> localCoefficients_;
   BSplineLocalInterpolation<dim,BSplineLocalBasis<D,R,dim> > localInterpolation_;
 
+  // The knot span we are bound to
+  std::array<uint,dim> currentKnotSpan_;
 };
 
 /** \brief A B-spline function space basis on a tensor-product grid
@@ -857,6 +938,7 @@ class BSplineBasis
   enum {dim = GV::dimension};
 
   friend class BSplineBasisLeafNode<GV>;
+  friend class BSplineLocalIndexSet<GV>;
 
 public:
 
