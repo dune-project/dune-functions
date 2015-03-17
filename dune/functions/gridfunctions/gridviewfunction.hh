@@ -14,7 +14,7 @@ namespace Functions {
 
 
 
-template<class Signature, class GridView, template<class> class DerivativeTraits=DefaultDerivativeTraits, size_t bufferSize=64>
+template<class Signature, class GridView, template<class> class DerivativeTraits=DefaultDerivativeTraits, size_t bufferSize=56>
 class GridViewFunction
 {};
 

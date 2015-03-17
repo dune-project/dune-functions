@@ -22,7 +22,7 @@ namespace Functions {
  * The actual implementation is only given if Signature is an type
  * describing a function signature as Range(Domain).
  */
-template<class Signature, template<class> class DerivativeTraits=DefaultDerivativeTraits, size_t bufferSize=64>
+template<class Signature, template<class> class DerivativeTraits=DefaultDerivativeTraits, size_t bufferSize=56>
 class DifferentiableFunction
 {};
 
