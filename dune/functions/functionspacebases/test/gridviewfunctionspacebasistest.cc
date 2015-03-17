@@ -134,7 +134,9 @@ void testScalarBasis(const Basis& feBasis,
         DUNE_THROW(Exception, "Index is negative, which is not allowed");
 
       if (localIndexSet.index(i)[0] >= seen.size())
-        DUNE_THROW(Exception, "Index larger than allowed");
+        DUNE_THROW(Exception, "Local index " << i
+                           << " is mapped to global index " << localIndexSet.index(i)
+                           << ", which is larger than allowed");
 
       seen[localIndexSet.index(i)[0]] = true;
     }
