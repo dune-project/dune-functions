@@ -550,7 +550,7 @@ private:
     DynamicMatrix<R> N(order+1, knotVector.size()-1);
 
     // The text books on splines use the following geometric condition here to fill the array N
-    // (see for example CottreLL, Hughes, Bazilevs, Formula (2.1).  However, this condition
+    // (see for example Cottrell, Hughes, Bazilevs, Formula (2.1).  However, this condition
     // only works if splines are never evaluated exactly on the knots.
     //
     // for (size_t i=0; i<knotVector.size()-1; i++)
