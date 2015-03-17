@@ -212,7 +212,7 @@ public:
    */
   size_type size() const
   {
-    return globalBasis_->indexSet().size();
+    return tree_.size();
   }
 
   /**
