@@ -75,7 +75,7 @@ public:
    */
   size_type size() const
   {
-    return indexSet_.size();
+    return localView_->size();
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
