@@ -3,6 +3,7 @@
 #include <config.h>
 
 #include <vector>
+#include <cmath>
 
 #include <dune/common/function.hh>
 #include <dune/common/bitsetvector.hh>
@@ -322,7 +323,7 @@ int main (int argc, char *argv[]) try
 
   using Domain = GridType::template Codim<0>::Geometry::GlobalCoordinate;
 
-  auto rightHandSide = [] (const Domain& x) { return 1;};
+  auto rightHandSide = [] (const Domain& x) { return 10;};
   assembleLaplaceMatrix(feBasis, stiffnessMatrix, rhs, rightHandSide);
 
   /////////////////////////////////////////////////
@@ -335,11 +336,22 @@ int main (int argc, char *argv[]) try
   std::vector<bool> dirichletNodes;
   boundaryTreatment(feBasis, l, dirichletNodes);
 
+
+
+  // Don't trust on non-standard M_PI.
+  auto pi = std::acos(-1.0);
+  auto dirichletValueFunction = [pi](FieldVector<double,dim> x){ return std::sin(2*pi*x[0]); };
+
+  // Interpolate to separate vector as long as interpolate()
+  // does not support restriction to marked dofs.
+  VectorType dirichletValues;
+  interpolate(feBasis, dirichletValues, dirichletValueFunction);
+
   // Set Dirichlet values
   for (size_t i=0; i<rhs.size(); i++)
     if (dirichletNodes[i])
-      // The zero is the value of the Dirichlet boundary condition
-      rhs[i] = 0;
+      // Copy value of the Dirichlet boundary condition
+      rhs[i] = dirichletValues[i];
 
   ////////////////////////////////////////////
   //   Modify Dirichlet rows
