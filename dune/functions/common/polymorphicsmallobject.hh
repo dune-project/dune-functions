@@ -141,8 +141,8 @@ private:
     }
   }
 
+  alignas(Base) char buffer_[bufferSize];
   Base* p_;
-  char buffer_[bufferSize];
 };
 
 
