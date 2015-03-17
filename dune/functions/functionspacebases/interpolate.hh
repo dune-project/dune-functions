@@ -129,10 +129,10 @@ void interpolate(const B& basis, C& coeff, F&& f)
   using FiniteElement = typename B::LocalView::Tree::FiniteElement;
   using FunctionBaseClass = typename Dune::LocalFiniteElementFunctionBase<FiniteElement>::type;
 
-  using ScalarRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+  using LocalBasisRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
   using LocalDomain = typename Element::Geometry::LocalCoordinate;
 
-  using Block = typename C::value_type;
+  using CoefficientBlock = typename std::decay<decltype(coeff[0])>::type;
 
   auto&& gridView = basis.gridView();
 
@@ -143,19 +143,22 @@ void interpolate(const B& basis, C& coeff, F&& f)
   auto localF = localFunction(gf);
 
   // Note that we capture j by reference. Hence we can switch
-  // the selected component later on by modifying j.
+  // the selected component later on by modifying j. Maybe we
+  // should avoid this naughty statefull lambda hack in favor
+  // of a separate helper class.
   int j=0;
   auto localFj = [&](const LocalDomain& x){
-    return Imp::FlatIndexContainerAccess<Block>::getEntry(localF(x), j);
+    using FunctionRange = typename std::decay<decltype(localF(LocalDomain(0)))>::type;
+    return Imp::FlatIndexContainerAccess<FunctionRange>::getEntry(localF(x), j);
   };
 
-  using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<ScalarRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
+  using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<LocalBasisRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
 
   auto basisIndexSet = basis.indexSet();
   coeff.resize(basisIndexSet.size());
 
-  typename Dune::BitSetVector<1> processed(basisIndexSet.size(), false);
-  std::vector<ScalarRange> interpolationValues;
+  auto processed = Dune::BitSetVector<1>(basisIndexSet.size(), false);
+  auto interpolationValues = std::vector<LocalBasisRange>();
 
   auto localView = basis.localView();
   auto localIndexSet = basisIndexSet.localIndexSet();
@@ -175,7 +178,7 @@ void interpolate(const B& basis, C& coeff, F&& f)
 
     if (not(allProcessed))
     {
-      auto blockSize = Imp::FlatIndexContainerAccess<Block>::size(coeff[0]);
+      auto blockSize = Imp::FlatIndexContainerAccess<CoefficientBlock>::size(coeff[0]);
 
       // We loop over j defined above and thus over the components of the
       // range type of localF.
@@ -187,7 +190,7 @@ void interpolate(const B& basis, C& coeff, F&& f)
         {
           size_t index = localIndexSet.index(i)[0];
           if (not(processed[index][0]))
-            Imp::FlatIndexContainerAccess<Block>::setEntry(coeff[index], j, interpolationValues[i]);
+            Imp::FlatIndexContainerAccess<CoefficientBlock>::setEntry(coeff[index], j, interpolationValues[i]);
         }
       }
       for (size_t i=0; i<fe.localBasis().size(); ++i)
