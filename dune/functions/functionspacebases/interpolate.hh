@@ -23,12 +23,12 @@ struct AllTrueBitSetVector
 {
   struct AllTrueBitSet
   {
-      bool test(int i) const { return true; }
+    bool test(int i) const { return true; }
   } allTrue_;
 
   const AllTrueBitSet& operator[](int i) const
   {
-      return allTrue_;
+    return allTrue_;
   }
 };
 
@@ -138,7 +138,7 @@ struct FlatIndexContainerAccess<Dune::BitSetVectorConstReference<k, Alloc> >
 
   static int size(const RT& x)
   {
-      return x.size();
+    return x.size();
   }
 };
 
