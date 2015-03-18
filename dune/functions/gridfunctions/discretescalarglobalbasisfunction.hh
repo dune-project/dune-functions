@@ -20,7 +20,8 @@ public:
   using EntitySet = GridViewEntitySet<GridView, 0>;
 
   using Domain = typename EntitySet::GlobalCoordinate;
-  using Range = typename Basis::LocalView::Tree::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+  using Range = typename V::value_type;
+  using LocalBasisRange = typename Basis::LocalView::Tree::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
 
   using LocalDomain = typename EntitySet::LocalCoordinate;
   using Element = typename EntitySet::Element;
@@ -90,7 +91,19 @@ public:
       auto& basis = localBasisView_.tree().finiteElement().localBasis();
       basis.evaluateFunction(x, shapeFunctionValues_);
       for (size_type i = 0; i < basis.size(); ++i)
-        y += localDoFs_[i] * shapeFunctionValues_[i];
+      {
+        // Here we essentially want to do
+        //
+        //   y += localDoFs_[i] * shapeFunctionValues_[i];
+        //
+        // Currently we support vector valued coefficients and scalar
+        // local basis functions only. In order to generalize this we
+        // have to use a more general product implementation here.
+        // Maybe we want do adopt the framework of dune-fufem.
+        auto yy = localDoFs_[i];
+        yy *= shapeFunctionValues_[i];
+        y += yy;
+      }
       return y;
     }
 
@@ -105,7 +118,7 @@ public:
     LocalBasisView localBasisView_;
     LocalIndexSet localIndexSet_;
     std::vector<typename V::value_type> localDoFs_;
-    mutable std::vector<Range> shapeFunctionValues_;
+    mutable std::vector<LocalBasisRange> shapeFunctionValues_;
   };
 
   DiscreteScalarGlobalBasisFunction(const Basis & basis, const V & dofs)
