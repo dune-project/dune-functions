@@ -342,16 +342,8 @@ int main (int argc, char *argv[]) try
   auto pi = std::acos(-1.0);
   auto dirichletValueFunction = [pi](FieldVector<double,dim> x){ return std::sin(2*pi*x[0]); };
 
-  // Interpolate to separate vector as long as interpolate()
-  // does not support restriction to marked dofs.
-  VectorType dirichletValues;
-  interpolate(feBasis, dirichletValues, dirichletValueFunction);
-
-  // Set Dirichlet values
-  for (size_t i=0; i<rhs.size(); i++)
-    if (dirichletNodes[i])
-      // Copy value of the Dirichlet boundary condition
-      rhs[i] = dirichletValues[i];
+  // Interpolate dirichlet values at the boundary nodes
+  interpolate(feBasis, rhs, dirichletValueFunction, dirichletNodes);
 
   ////////////////////////////////////////////
   //   Modify Dirichlet rows
