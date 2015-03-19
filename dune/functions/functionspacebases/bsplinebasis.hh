@@ -40,6 +40,7 @@ class BSplinePatch;
 template<typename GV>
 class BSplineLocalIndexSet
 {
+  static const int dim = GV::dimension;
 public:
   /** \brief Type used for sizes and local indices */
   typedef std::size_t size_type;
@@ -62,6 +63,15 @@ public:
   void bind(const BSplineBasisLocalView<GV>& localView)
   {
     localView_ = &localView;
+
+    // Local degrees of freedom are arranged in a lattice.
+    // We need the lattice dimensions to be able to compute lattice coordinates from a local index
+    for (int i=0; i<dim; i++)
+    {
+      localSizes_[i] = localView_->globalBasis_->patch_.order_[i]+1;   // The 'normal' value
+      localSizes_[i] = std::min(localSizes_[i], (unsigned)localView_->tree().finiteElement().currentKnotSpan_[i]+1);  // Less near the left end of the knot vector
+      localSizes_[i] = std::min(localSizes_[i], (unsigned)localView_->globalBasis_->patch_.knotVectors_[i].size() - localView_->tree().finiteElement().currentKnotSpan_[i]-1);  // Less near the right end of the knot vector
+    }
   }
 
   /** \brief Unbind the index set
@@ -81,12 +91,22 @@ public:
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
   MultiIndex index(size_type i) const
   {
+    std::array<unsigned int,dim> localIJK = localView_->globalBasis_->getIJK(i, localSizes_);
+
     const auto currentKnotSpan = localView_->tree().finiteElement().currentKnotSpan_;
     const auto order = localView_->globalBasis_->patch_.order_;
 
-    int offset = currentKnotSpan[0] - order[0];  // needs to be a signed type!
-    offset = std::max(offset, 0);
-    return { offset + i};
+    std::array<unsigned int,dim> globalIJK;
+    for (int i=0; i<dim; i++)
+      globalIJK[i] = std::max((int)currentKnotSpan[i] - (int)order[i], 0) + localIJK[i];  // needs to be a signed type!
+
+    // Make one global flat index from the globalIJK tuple
+    size_type globalIdx = globalIJK[dim-1];
+
+    for (int i=dim-2; i>=0; i--)
+      globalIdx = globalIdx * localView_->globalBasis_->patch_.size(i) + globalIJK[i];
+
+    return { globalIdx };
   }
 
   /** \brief Return the local view that we are attached to
@@ -100,6 +120,8 @@ private:
   const BSplineBasisLocalView<GV>* localView_;
 
   const BSplineIndexSet<GV> indexSet_;
+
+  std::array<unsigned int, dim> localSizes_;
 };
 
 /** \brief Provides the size of the global basis, and hands out the local index sets */
@@ -323,7 +345,7 @@ private:
     element_ = &e;
 
     auto elementIndex = globalBasis_->gridView().indexSet().index(e);
-    finiteElement_.bind(globalBasis_->getIJK(elementIndex));
+    finiteElement_.bind(globalBasis_->getIJK(elementIndex,globalBasis_->elements_));
   }
 
   const GlobalBasis* globalBasis_;
@@ -1011,13 +1033,13 @@ protected:
    * \warning This method makes strong assumptions about the grid, namely that it is
    *   structured, and that indices are given in a x-fastest fashion.
    */
-  std::array<unsigned int,dim> getIJK(typename GridView::IndexSet::IndexType idx) const
+  static std::array<unsigned int,dim> getIJK(typename GridView::IndexSet::IndexType idx, std::array<unsigned int,dim> elements)
   {
     std::array<uint,dim> result;
     for (int i=0; i<dim; i++)
     {
-      result[i] = idx%elements_[i];
-      idx /= elements_[i];
+      result[i] = idx%elements[i];
+      idx /= elements[i];
     }
     return result;
   }
