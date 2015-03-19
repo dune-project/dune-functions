@@ -859,11 +859,8 @@ public:
       }
 
       // Compute the geometric transformation from knotspan-local to global coordinates
-      for (int i=0; i<dim; i++)
-      {
-        localBasis_.offset_[i] = patch_.knotVectors_[i][currentKnotSpan_[i]];
-        localBasis_.scaling_[i][i] = patch_.knotVectors_[i][currentKnotSpan_[i]+1] - patch_.knotVectors_[i][currentKnotSpan_[i]];
-      }
+      localBasis_.offset_[i] = patch_.knotVectors_[i][currentKnotSpan_[i]];
+      localBasis_.scaling_[i][i] = patch_.knotVectors_[i][currentKnotSpan_[i]+1] - patch_.knotVectors_[i][currentKnotSpan_[i]];
     }
   }
 
