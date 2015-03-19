@@ -5,14 +5,7 @@
 
 #include <array>
 #include <dune/common/exceptions.hh>
-#include <dune/common/version.hh>
-#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
 #include <dune/common/std/final.hh>
-#else
- #ifndef DUNE_FINAL
-  #define DUNE_FINAL
- #endif
-#endif
 
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
 
@@ -71,11 +64,7 @@ public:
    */
   size_type size() const
   {
-#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
     return localView_->tree().finiteElement_->size();
-#else
-    return localView_->tree().finiteElement_->localBasis().size();
-#endif
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
@@ -277,11 +266,7 @@ public:
   size_type size() const
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
-#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
     return tree_.finiteElement_->size();
-#else
-    return tree_.finiteElement_->localBasis().size();
-#endif
   }
 
   /**
@@ -363,11 +348,7 @@ public:
   size_type size() const DUNE_FINAL
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
-#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
     return finiteElement_->size();
-#else
-    return finiteElement_->localBasis().size();
-#endif
   }
 
   //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]

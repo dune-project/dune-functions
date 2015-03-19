@@ -5,14 +5,7 @@
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/reservedvector.hh>
-#include <dune/common/version.hh>
-#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
 #include <dune/common/std/final.hh>
-#else
- #ifndef DUNE_FINAL
-  #define DUNE_FINAL
- #endif
-#endif
 
 #include <dune/typetree/powernode.hh>
 #include <dune/typetree/compositenode.hh>
