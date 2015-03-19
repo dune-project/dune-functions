@@ -67,11 +67,7 @@ public:
     // Local degrees of freedom are arranged in a lattice.
     // We need the lattice dimensions to be able to compute lattice coordinates from a local index
     for (int i=0; i<dim; i++)
-    {
-      localSizes_[i] = localView_->globalBasis_->patch_.order_[i]+1;   // The 'normal' value
-      localSizes_[i] = std::min(localSizes_[i], (unsigned)localView_->tree().finiteElement().currentKnotSpan_[i]+1);  // Less near the left end of the knot vector
-      localSizes_[i] = std::min(localSizes_[i], (unsigned)localView_->globalBasis_->patch_.knotVectors_[i].size() - localView_->tree().finiteElement().currentKnotSpan_[i]-1);  // Less near the right end of the knot vector
-    }
+      localSizes_[i] = localView_->tree().finiteElement().size(i);
   }
 
   /** \brief Unbind the index set
@@ -536,8 +532,10 @@ public:
       // In a proper implementation, the following line would do
       //limits[i] = oneDValues[i].size();
       limits[i] = order_[i]+1;  // The 'standard' value away from the boundaries of the knot vector
-      limits[i] = std::min(limits[i], (unsigned)currentKnotSpan[i]+1);  // Less near the left end of the knot vector
-      limits[i] = std::min(limits[i], (unsigned)knotVectors_[i].size() - currentKnotSpan[i]-1);  // Less near the right end of the knot vector
+      if (currentKnotSpan[i]<order_[i])
+        limits[i] -= (order_[i] - currentKnotSpan[i]);
+      if ( order_[i] > (knotVectors_[i].size() - currentKnotSpan[i] - 2) )
+        limits[i] -= order_[i] - (knotVectors_[i].size() - currentKnotSpan[i] - 2);
     }
 
     MultiIndex ijkCounter(limits);
@@ -587,8 +585,10 @@ private:
                                 unsigned int currentKnotSpan)
   {
     std::size_t outSize = order+1;  // The 'standard' value away from the boundaries of the knot vector
-    outSize = std::min(outSize, (std::size_t)currentKnotSpan+1);  // Less near the left end of the knot vector
-    outSize = std::min(outSize, knotVector.size() - currentKnotSpan-1);  // Less near the right end of the knot vector
+    if (currentKnotSpan<order)   // Less near the left end of the knot vector
+      outSize -= (order - currentKnotSpan);
+    if ( order > (knotVector.size() - currentKnotSpan - 2) )
+      outSize -= order - (knotVector.size() - currentKnotSpan - 2);
     out.resize(outSize);
 
     // It's not really a matrix that is needed here, a plain 2d array would do
@@ -909,12 +909,7 @@ public:
   {
     std::size_t r = 1;
     for (int i=0; i<dim; i++)
-    {
-      std::size_t oneDSize = patch_.order_[i]+1;   // The 'normal' value
-      oneDSize = std::min(oneDSize, (std::size_t)currentKnotSpan_[i]+1);  // Less near the left end of the knot vector
-      oneDSize = std::min(oneDSize, patch_.knotVectors_[i].size() - currentKnotSpan_[i]-1);  // Less near the right end of the knot vector
-      r *= oneDSize;
-    }
+      r *= size(i);
     return r;
   }
 
@@ -926,6 +921,18 @@ public:
   }
 
 private:
+
+  /** \brief Number of degrees of freedom for one coordinate direction */
+  unsigned int size(int i) const
+  {
+    const auto& order = patch_.order_;
+    unsigned int r = order[i]+1;   // The 'normal' value
+    if (currentKnotSpan_[i]<order[i])   // Less near the left end of the knot vector
+      r -= (order[i] - currentKnotSpan_[i]);
+    if ( order[i] > (patch_.knotVectors_[i].size() - currentKnotSpan_[i] - 2) )
+      r -= order[i] - (patch_.knotVectors_[i].size() - currentKnotSpan_[i] - 2);
+    return r;
+  }
 
   const BSplinePatch<D,R,dim>& patch_;
   BSplineLocalBasis<D,R,dim> localBasis_;
