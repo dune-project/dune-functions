@@ -6,9 +6,8 @@
 #include <dune/common/exceptions.hh>
 
 #include <dune/functions/common/type_traits.hh>
-#include <dune/functions/common/interfaces.hh>
+#include <dune/functions/common/concept.hh>
 
-#include "concept.hh"
 
 namespace Dune {
 namespace Functions {
@@ -48,15 +47,17 @@ Dummy derivativeIfImplemented(const F& f)
 
 
 template<class Signature, class DerivativeInterface>
-class DifferentiableFunctionWrapperBase
+class DifferentiableFunctionWrapperInterface
 {};
 
+// Interface of type erasure wrapper
+//
+// Notice that the basic interface of polymorphic classes (destructor, clone, ...)
+// will be added by the type erasure foundation classes.
 template<class Range, class Domain, class DerivativeInterface>
-class DifferentiableFunctionWrapperBase<Range(Domain), DerivativeInterface> :
-  public PolymorphicType<DifferentiableFunctionWrapperBase<Range(Domain), DerivativeInterface> >
+class DifferentiableFunctionWrapperInterface<Range(Domain), DerivativeInterface>
 {
 public:
-
   virtual Range operator() (const Domain& x) const = 0;
 
   virtual DerivativeInterface derivative() const = 0;
@@ -64,48 +65,30 @@ public:
 
 
 
-template<class Signature, class DerivativeInterface, class FImp>
-class DifferentiableFunctionWrapper
+template<class Signature, class DerivativeInterface, class B>
+class DifferentiableFunctionWrapperImplementation
 {};
 
-template<class Range, class Domain, class DerivativeInterface, class FImp>
-class DifferentiableFunctionWrapper< Range(Domain), DerivativeInterface, FImp> :
-  public DifferentiableFunctionWrapperBase<Range(Domain), DerivativeInterface>
+// Implementation of type erasure wrapper
+template<class Range, class Domain, class DerivativeInterface, class B>
+class DifferentiableFunctionWrapperImplementation< Range(Domain), DerivativeInterface, B> :
+  public B
 {
 public:
 
-  template<class F, disableCopyMove<DifferentiableFunctionWrapper, F> = 0>
-  DifferentiableFunctionWrapper(F&& f) :
-    f_(std::forward<F>(f))
-  {}
+  using B::B;
+  using Wrapped = typename B::Wrapped;
+  using B::wrapped_;
 
   virtual Range operator() (const Domain& x) const
   {
-    return f_(x);
+    return wrapped_(x);
   }
 
   virtual DerivativeInterface derivative() const
   {
-    return derivativeIfImplemented<DerivativeInterface, FImp>(f_);
+    return derivativeIfImplemented<DerivativeInterface, Wrapped>(wrapped_);
   }
-
-  virtual DifferentiableFunctionWrapper* clone() const
-  {
-    return new DifferentiableFunctionWrapper(*this);
-  }
-
-  virtual DifferentiableFunctionWrapper* clone(void* buffer) const
-  {
-    return new (buffer) DifferentiableFunctionWrapper(*this);
-  }
-
-  virtual DifferentiableFunctionWrapper* move(void* buffer)
-  {
-    return new (buffer) DifferentiableFunctionWrapper(std::move(*this));
-  }
-
-private:
-  FImp f_;
 };
 
 

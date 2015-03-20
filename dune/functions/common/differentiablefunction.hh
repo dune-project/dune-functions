@@ -11,6 +11,7 @@
 #include <dune/functions/common/polymorphicsmallobject.hh>
 #include <dune/functions/common/concept.hh>
 #include <dune/functions/common/signature.hh>
+#include <dune/functions/common/typeerasure.hh>
 
 namespace Dune {
 namespace Functions {
@@ -57,6 +58,15 @@ public:
    */
   using DerivativeInterface = DifferentiableFunction<DerivativeSignature, DerivativeTraits, bufferSize>;
 
+protected:
+
+  using TEInterface = Imp::DifferentiableFunctionWrapperInterface<Signature, DerivativeInterface>;
+
+  template<class B>
+  using TEImplementation = Imp::DifferentiableFunctionWrapperImplementation<Signature, DerivativeInterface, B>;
+
+public:
+
   /**
    * \brief Construct from function
    *
@@ -70,7 +80,7 @@ public:
    */
   template<class F, disableCopyMove<DifferentiableFunction, F> = 0 >
   DifferentiableFunction(F&& f) :
-    f_(Imp::DifferentiableFunctionWrapper<Signature, DerivativeInterface, typename std::decay<F>::type>(std::forward<F>(f)))
+    f_(Imp::TypeErasureDerived<TEInterface, TEImplementation, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
   DifferentiableFunction() = default;
@@ -94,7 +104,7 @@ public:
   }
 
 private:
-  PolymorphicSmallObject<Imp::DifferentiableFunctionWrapperBase<Signature, DerivativeInterface>, bufferSize > f_;
+  PolymorphicSmallObject<Imp::TypeErasureBase<TEInterface>, bufferSize > f_;
 };
 
 
