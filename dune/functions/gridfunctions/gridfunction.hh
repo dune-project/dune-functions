@@ -9,6 +9,7 @@
 #include <dune/functions/common/differentiablefunction_imp.hh>
 #include <dune/functions/common/localfunction.hh>
 #include <dune/functions/common/polymorphicsmallobject.hh>
+#include <dune/functions/gridfunctions/localderivativetraits.hh>
 #include <dune/functions/gridfunctions/gridfunction_imp.hh>
 
 
@@ -64,7 +65,7 @@ public:
   /**
    * \brief Wrapper type of returned local functions
    */
-  using LocalFunctionInterface = LocalFunction<Signature, Element, DerivativeTraits, bufferSize>;
+  using LocalFunctionInterface = LocalFunction<Range(LocalDomain), Element, LocalDerivativeTraits<EntitySet, DerivativeTraits>::template Traits, bufferSize>;
 
 protected:
 

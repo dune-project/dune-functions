@@ -11,6 +11,7 @@
 #include <dune/functions/common/differentiablefunction_imp.hh>
 #include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
+#include <dune/functions/gridfunctions/localderivativetraits.hh>
 
 
 namespace Dune {
@@ -120,7 +121,7 @@ public:
   using Derivative = AnalyticGridViewFunction<DerivativeSignature, GridView, GlobalRawDerivative, DerivativeTraits>;
 
   using LocalDomain = typename EntitySet::LocalCoordinate;
-  using LocalFunction = LocalAnalyticGridViewFunction<Range(LocalDomain), GridView, F, DerivativeTraits>;
+  using LocalFunction = LocalAnalyticGridViewFunction<Range(LocalDomain), GridView, F, LocalDerivativeTraits<EntitySet, DerivativeTraits>::template Traits>;
 
   template<class FT>
   AnalyticGridViewFunction(FT&& f, const GridView& gridView) :
