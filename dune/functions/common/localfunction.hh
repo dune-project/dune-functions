@@ -56,10 +56,10 @@ public:
 
 protected:
 
-  using TEInterface = Imp::LocalFunctionInterface<Signature, DerivativeInterface, LocalContext>;
+  using WrapperIf = Imp::LocalFunctionWrapperInterface<Signature, DerivativeInterface, LocalContext>;
 
   template<class B>
-  using TEImplementation = Imp::LocalFunctionImp<Signature, DerivativeInterface, LocalContext, B>;
+  using WrapperImp = Imp::LocalFunctionWrapperImplementation<Signature, DerivativeInterface, LocalContext, B>;
 
 public:
 
@@ -76,7 +76,7 @@ public:
    */
   template<class F, disableCopyMove<LocalFunction, F> = 0 >
   LocalFunction(F&& f) :
-    f_(Imp::TypeErasureDerived<TEInterface, TEImplementation, typename std::decay<F>::type>(std::forward<F>(f)))
+    f_(Imp::TypeErasureDerived<WrapperIf, WrapperImp, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
   LocalFunction() = default;
@@ -115,7 +115,7 @@ public:
   }
 
 private:
-  PolymorphicSmallObject<Imp::TypeErasureBase<TEInterface>, bufferSize > f_;
+  PolymorphicSmallObject<Imp::TypeErasureBase<WrapperIf>, bufferSize > f_;
 };
 
 

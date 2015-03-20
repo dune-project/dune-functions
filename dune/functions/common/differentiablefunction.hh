@@ -60,10 +60,10 @@ public:
 
 protected:
 
-  using TEInterface = Imp::DifferentiableFunctionWrapperInterface<Signature, DerivativeInterface>;
+  using WrapperIf = Imp::DifferentiableFunctionWrapperInterface<Signature, DerivativeInterface>;
 
   template<class B>
-  using TEImplementation = Imp::DifferentiableFunctionWrapperImplementation<Signature, DerivativeInterface, B>;
+  using WrapperImp = Imp::DifferentiableFunctionWrapperImplementation<Signature, DerivativeInterface, B>;
 
 public:
 
@@ -80,7 +80,7 @@ public:
    */
   template<class F, disableCopyMove<DifferentiableFunction, F> = 0 >
   DifferentiableFunction(F&& f) :
-    f_(Imp::TypeErasureDerived<TEInterface, TEImplementation, typename std::decay<F>::type>(std::forward<F>(f)))
+    f_(Imp::TypeErasureDerived<WrapperIf, WrapperImp, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
   DifferentiableFunction() = default;
@@ -104,7 +104,7 @@ public:
   }
 
 private:
-  PolymorphicSmallObject<Imp::TypeErasureBase<TEInterface>, bufferSize > f_;
+  PolymorphicSmallObject<Imp::TypeErasureBase<WrapperIf>, bufferSize > f_;
 };
 
 

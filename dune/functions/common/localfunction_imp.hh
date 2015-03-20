@@ -17,7 +17,7 @@ namespace Imp {
 // Notice that the basic interface of polymorphic classes (destructor, clone, ...)
 // will be added by the type erasure foundation classes.
 template<class Signature, class DerivativeInterface, class LocalContext>
-class LocalFunctionInterface :
+class LocalFunctionWrapperInterface :
   public DifferentiableFunctionWrapperInterface<Signature, DerivativeInterface>
 {
 public:
@@ -31,27 +31,26 @@ public:
 
 // Implementation of type erasure wrapper
 template<class Signature, class DerivativeInterface, class LocalContext, class B>
-class LocalFunctionImp :
+class LocalFunctionWrapperImplementation :
   public DifferentiableFunctionWrapperImplementation<Signature, DerivativeInterface, B>
 {
   using Base = DifferentiableFunctionWrapperImplementation<Signature, DerivativeInterface, B>;
 public:
   using Base::Base;
-  using B::wrapped_;
 
   virtual void bind(const LocalContext& context)
   {
-    return wrapped_.bind(context);
+    return B::wrapped_.bind(context);
   }
 
   virtual void unbind()
   {
-    return wrapped_.unbind();
+    return B::wrapped_.unbind();
   }
 
   virtual const LocalContext& localContext() const
   {
-    return wrapped_.localContext();
+    return B::wrapped_.localContext();
   }
 };
 
