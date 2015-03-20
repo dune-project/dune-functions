@@ -15,7 +15,7 @@ namespace Dune
 namespace Functions {
 
 // A maze of dependencies between the different parts of this.  We need lots of forward declarations
-template<typename D, typename R, int dim>
+template<typename GV, typename R>
 class BSplineLocalFiniteElement;
 
 template<typename GV>
@@ -27,14 +27,11 @@ class BSplineBasisLeafNode;
 template<typename GV>
 class BSplineIndexSet;
 
-template <class D, class R, int dim>
+template <class GV, class R>
 class BSplineLocalBasis;
 
 template<typename GV>
 class BSplineBasis;
-
-template<class D, class R, int dim>
-class BSplinePatch;
 
 /** \brief Maps local shape functions to global indices */
 template<typename GV>
@@ -90,7 +87,7 @@ public:
     std::array<unsigned int,dim> localIJK = localView_->globalBasis_->getIJK(i, localSizes_);
 
     const auto currentKnotSpan = localView_->tree().finiteElement().currentKnotSpan_;
-    const auto order = localView_->globalBasis_->patch_.order_;
+    const auto order = localView_->globalBasis_->order_;
 
     std::array<unsigned int,dim> globalIJK;
     for (int i=0; i<dim; i++)
@@ -100,7 +97,7 @@ public:
     size_type globalIdx = globalIJK[dim-1];
 
     for (int i=dim-2; i>=0; i--)
-      globalIdx = globalIdx * localView_->globalBasis_->patch_.size(i) + globalIJK[i];
+      globalIdx = globalIdx * localView_->globalBasis_->size(i) + globalIJK[i];
 
     return { globalIdx };
   }
@@ -128,14 +125,14 @@ public:
 
   typedef BSplineLocalIndexSet<GV> LocalIndexSet;
 
-  BSplineIndexSet(const BSplinePatch<typename GV::ctype, double, GV::dimension>* patch)
-  : patch_(patch)
+  BSplineIndexSet(const BSplineBasis<GV>* globalBasis)
+  : globalBasis_(globalBasis)
   {}
 
   /** \brief Total number of basis vectors in the basis */
   std::size_t size() const
   {
-    return patch_->size();
+    return globalBasis_->size();
   }
 
   /** \brief Provide a local index set, which hands out global indices for all shape functions of an element */
@@ -145,7 +142,7 @@ public:
   }
 
 private:
-  const BSplinePatch<typename GV::ctype, double, GV::dimension>* patch_;
+  const BSplineBasis<GV>* globalBasis_;
 };
 
 
@@ -269,14 +266,14 @@ template<typename GV>
 class BSplineBasisLeafNode :
   public GridFunctionSpaceBasisLeafNodeInterface<
     typename GV::template Codim<0>::Entity,
-    BSplineLocalFiniteElement<typename GV::ctype,double,GV::dimension>,
+    BSplineLocalFiniteElement<GV,double>,
     typename BSplineBasis<GV>::size_type>
 {
   typedef BSplineBasis<GV> GlobalBasis;
   static const int dim = GV::dimension;
 
   typedef typename GV::template Codim<0>::Entity E;
-  typedef BSplineLocalFiniteElement<typename GV::ctype,double,GV::dimension> FE;
+  typedef BSplineLocalFiniteElement<GV,double> FE;
   typedef typename GlobalBasis::size_type ST;
   typedef typename GlobalBasis::MultiIndex MI;
 
@@ -294,7 +291,7 @@ public:
   /** \brief Construct a leaf node for a given global B-spline basis */
   BSplineBasisLeafNode(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis),
-    finiteElement_(globalBasis->patch_),
+    finiteElement_(*globalBasis),
     element_(nullptr)
   {}
 
@@ -350,39 +347,318 @@ private:
 };
 
 
-/** \brief Tensor product of 1d B-Spline functions with arbitrary knot vectors
+
+/** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
+ * of a B-spline patch to a knot span
  *
- * \internal This is an internal implementation class, used to implement the BSplineBasis class.
- * \todo Try to merge this into the BSplineBasis class
+ * \tparam GV Grid view that the basis is defined on
+ * \tparam R Number type used for spline function values
+ */
+template<class GV, class R>
+class BSplineLocalBasis
+{
+  friend class BSplineLocalFiniteElement<GV,R>;
+
+  typedef typename GV::ctype D;
+  enum {dim = GV::dimension};
+public:
+
+  //! \brief export type traits for function signature
+  typedef LocalBasisTraits<D,dim,Dune::FieldVector<D,dim>,R,1,Dune::FieldVector<R,1>,
+  Dune::FieldMatrix<R,1,dim>, 2> Traits;
+
+  /** \brief Constructor with a given B-spline patch
+   *
+   * The patch object does all the work.
+   */
+  BSplineLocalBasis(const BSplineBasis<GV>& globalBasis,
+                    const BSplineLocalFiniteElement<GV,R>& lFE)
+  : globalBasis_(globalBasis),
+    lFE_(lFE)
+  {}
+
+  /** \brief Evaluate all shape functions
+   * \param in Coordinates where to evaluate the functions, in local coordinates of the current knot span
+   */
+  void evaluateFunction (const FieldVector<D,dim>& in,
+                         std::vector<FieldVector<R,1> >& out) const
+  {
+    FieldVector<D,dim> globalIn = offset_;
+    scaling_.umv(in,globalIn);
+
+    globalBasis_.evaluateFunction(globalIn, out, lFE_.currentKnotSpan_);
+  }
+
+  /** \brief Evaluate Jacobian of all shape functions
+   * \param in Coordinates where to evaluate the Jacobian, in local coordinates of the current knot span
+   */
+  void evaluateJacobian (const FieldVector<D,dim>& in,
+                         std::vector<FieldMatrix<D,1,dim> >& out) const
+  {
+    FieldVector<D,dim> globalIn = offset_;
+    scaling_.umv(in,globalIn);
+
+    globalBasis_.evaluateJacobian(globalIn, out, lFE_.currentKnotSpan_);
+
+    for (size_t i=0; i<out.size(); i++)
+      for (int j=0; j<dim; j++)
+        out[i][0][j] *= scaling_[j][j];
+  }
+
+  //! \brief Evaluate all shape functions and derivatives of any order
+  template<unsigned int k>
+  inline void evaluate (const typename Dune::array<int,k>& directions,
+                        const typename Traits::DomainType& in,
+                        std::vector<typename Traits::RangeType>& out) const
+  {
+    if (k==0)
+      evaluateFunction(in, out);
+    else
+      DUNE_THROW(NotImplemented, "B-Spline derivatives not implemented yet!");
+  }
+
+  /** \brief Polynomial order of the shape functions
+   */
+  unsigned int order () const
+  {
+    DUNE_THROW(NotImplemented, "!");
+  }
+
+  /** \brief Return the number of basis functions on the current knot span
+   */
+  std::size_t size() const
+  {
+    return lFE_.size();
+  }
+
+private:
+  const BSplineBasis<GV>& globalBasis_;
+
+  const BSplineLocalFiniteElement<GV,R>& lFE_;
+
+  // Coordinates in a single knot span differ from coordinates on the B-spline patch
+  // by an affine transformation.  This transformation is stored in offset_ and scaling_.
+  FieldVector<D,dim>    offset_;
+  DiagonalMatrix<D,dim> scaling_;
+};
+
+/** \brief Local coefficients in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
+ *
+ *      \implements Dune::LocalCoefficientsVirtualImp
+ */
+template <class GV, class R>
+class BSplineLocalCoefficients
+{
+public:
+  /** \brief Standard constructor
+   * \todo Not implemented yet
+   */
+  BSplineLocalCoefficients (const BSplineLocalFiniteElement<GV,R>& lFE)
+  : lFE_(lFE)
+  {
+    std::cout << "WARNING: LocalCoefficients array should be initialized here!" << std::endl;
+  }
+
+  /** \brief Number of coefficients
+   * \todo Currently, the number of all basis functions on the entire patch is returned.
+   *   This will include many that are simply constant zero on the current knot span.
+   */
+  std::size_t size () const
+  {
+    return lFE_.size();
+  }
+
+  //! get i'th index
+  const LocalKey& localKey (std::size_t i) const
+  {
+    return li_[i];
+  }
+
+private:
+  const BSplineLocalFiniteElement<GV,R>& lFE_;
+  std::vector<LocalKey> li_;
+};
+
+/** \brief Local interpolation in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
+ */
+template<int dim, class LB>
+class BSplineLocalInterpolation
+{
+public:
+  //! \brief Local interpolation of a function
+  template<typename F, typename C>
+  void interpolate (const F& f, std::vector<C>& out) const
+  {
+    DUNE_THROW(NotImplemented, "BSplineLocalInterpolation::interpolate");
+  }
+
+};
+
+/** \brief LocalFiniteElement in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
+ *
+ * This class ties together the implementation classes BSplineLocalBasis, BSplineLocalCoefficients, and BSplineLocalInterpolation
  *
  * \tparam D Number type used for domain coordinates
  * \tparam R Number type used for spline function values
  * \tparam dim Dimension of the patch
  */
-template<class D, class R, int dim>
-class BSplinePatch
+template<class GV, class R>
+class BSplineLocalFiniteElement
 {
-  template <class GV>
-  friend class BSplineLocalIndexSet;
-  friend class BSplineLocalFiniteElement<D,R,dim>;
-  friend class BSplineLocalBasis<D,R,dim>;
+  typedef typename GV::ctype D;
+  enum {dim = GV::dimension};
+  friend class BSplineLocalIndexSet<GV>;
+  friend class BSplineLocalBasis<GV,R>;
+public:
+
+  /** \brief Export various types related to this LocalFiniteElement
+   */
+  typedef LocalFiniteElementTraits<BSplineLocalBasis<GV,R>,
+  BSplineLocalCoefficients<GV,R>,
+  BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R> > > Traits;
+
+  /** \brief Constructor with a given B-spline basis
+   */
+  BSplineLocalFiniteElement(const BSplineBasis<GV>& globalBasis)
+  : globalBasis_(globalBasis),
+    localBasis_(globalBasis,*this),
+    localCoefficients_(*this)
+  {}
+
+  /** \brief Bind LocalFiniteElement to a specific knot span of the spline patch
+   *
+   * Elements are the non-empty knot spans, here we do the renumbering
+   *
+   * \param ijk Integer coordinates in the tensor product patch
+   */
+  void bind(const std::array<uint,dim>& elementIdx)
+  {
+    /* \todo In the long run we need to precompute a table for this */
+    for (size_t i=0; i<elementIdx.size(); i++)
+    {
+      currentKnotSpan_[i] = 0;
+
+      // Skip over degenerate knot spans
+      while (globalBasis_.knotVectors_[i][currentKnotSpan_[i]+1] < globalBasis_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
+        currentKnotSpan_[i]++;
+
+      for (size_t j=0; j<elementIdx[i]; j++)
+      {
+        currentKnotSpan_[i]++;
+
+        // Skip over degenerate knot spans
+        while (globalBasis_.knotVectors_[i][currentKnotSpan_[i]+1] < globalBasis_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
+          currentKnotSpan_[i]++;
+      }
+
+      // Compute the geometric transformation from knotspan-local to global coordinates
+      localBasis_.offset_[i] = globalBasis_.knotVectors_[i][currentKnotSpan_[i]];
+      localBasis_.scaling_[i][i] = globalBasis_.knotVectors_[i][currentKnotSpan_[i]+1] - globalBasis_.knotVectors_[i][currentKnotSpan_[i]];
+    }
+  }
+
+  /** \brief Hand out a LocalBasis object */
+  const BSplineLocalBasis<GV,R>& localBasis() const
+  {
+    return localBasis_;
+  }
+
+  /** \brief Hand out a LocalCoefficients object */
+  const BSplineLocalCoefficients<GV,R>& localCoefficients() const
+  {
+    return localCoefficients_;
+  }
+
+  /** \brief Hand out a LocalInterpolation object */
+  const BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R> >& localInterpolation() const
+  {
+    return localInterpolation_;
+  }
+
+  /** \brief Number of shape functions in this finite element */
+  uint size () const
+  {
+    std::size_t r = 1;
+    for (int i=0; i<dim; i++)
+      r *= size(i);
+    return r;
+  }
+
+  /** \brief Return the reference element that the local finite element is defined on (here, a hypercube)
+   */
+  GeometryType type () const
+  {
+    return GeometryType(GeometryType::cube,dim);
+  }
+
+private:
+
+  /** \brief Number of degrees of freedom for one coordinate direction */
+  unsigned int size(int i) const
+  {
+    const auto& order = globalBasis_.order_;
+    unsigned int r = order[i]+1;   // The 'normal' value
+    if (currentKnotSpan_[i]<order[i])   // Less near the left end of the knot vector
+      r -= (order[i] - currentKnotSpan_[i]);
+    if ( order[i] > (globalBasis_.knotVectors_[i].size() - currentKnotSpan_[i] - 2) )
+      r -= order[i] - (globalBasis_.knotVectors_[i].size() - currentKnotSpan_[i] - 2);
+    return r;
+  }
+
+  const BSplineBasis<GV>& globalBasis_;
+  BSplineLocalBasis<GV,R> localBasis_;
+  BSplineLocalCoefficients<GV,R> localCoefficients_;
+  BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R> > localInterpolation_;
+
+  // The knot span we are bound to
+  std::array<uint,dim> currentKnotSpan_;
+};
+
+/** \brief A B-spline function space basis on a tensor-product grid
+ *
+ * \tparam GV GridView, this must match the knot vectors describing the B-spline basis
+ * \tparam RT Number type used for function values
+ *
+ * \todo Various features are not implemented yet:
+ *  - No multiple knots in a knot vector
+ *  - No sparsity; currently the implementation pretends that the support of any B-spline basis
+ *    function covers the entire patch.
+ */
+template <class GV>
+class BSplineBasis
+: public GridViewFunctionSpaceBasis<GV,
+                                    BSplineBasisLocalView<GV>,
+                                    BSplineIndexSet<GV>,
+                                    std::array<std::size_t, 1> >
+{
+
+  enum {dim = GV::dimension};
+
+  friend class BSplineBasisLeafNode<GV>;
+  friend class BSplineLocalIndexSet<GV>;
+  friend class BSplineLocalFiniteElement<GV,double>;
+  friend class BSplineLocalBasis<GV,double>;
+  friend class BSplineIndexSet<GV>;
+
+  // Type used for basis function values
+  typedef double R;
 
   /** \brief Simple dim-dimensional multi-index class */
-  class MultiIndex
+  class MultiDigitCounter
   {
   public:
 
     /** \brief Constructs a new multi-index, and sets all digits to zero
      *  \param limits Number of different digit values for each digit, i.e., digit i counts from 0 to limits[i]-1
      */
-    MultiIndex(const std::array<unsigned int,dim>& limits)
+    MultiDigitCounter(const std::array<unsigned int,dim>& limits)
     : limits_(limits)
     {
       std::fill(counter_.begin(), counter_.end(), 0);
     }
 
     /** \brief Increment the multi-index */
-    MultiIndex& operator++()
+    MultiDigitCounter& operator++()
     {
       for (int i=0; i<dim; i++)
       {
@@ -424,15 +700,50 @@ class BSplinePatch
 
 public:
 
-  /** \brief Constructor: same knot vector and order in all space directions
+  /** \brief The grid view that the FE space is defined on */
+  typedef GV GridView;
+
+  /** \todo Do we really have to export this here? */
+  typedef std::size_t size_type;
+
+  /** \brief Type of the local view on the restriction of the basis to a single element */
+  typedef BSplineBasisLocalView<GV> LocalView;
+
+  /** \brief Type used for global numbering of the basis vectors */
+  typedef std::array<size_type, 1> MultiIndex;
+
+  /** \brief Construct a B-spline basis for a given grid view and set of knot vectors
+   *
+   * The grid *must* match the knot vectors, i.e.:
+   *  - The grid must be structured and Cartesian, and have cube elements only
+   *  - The number of elements in each direction must match the number of knot spans in that direction
+   *  - In fact, the element spacing in any direction must match the knot spacing in that direction
+   *    (disregarding knot multiplicities)
+   *  - When ordering the grid elements according to their indices, the resulting order must
+   *    be lexicographical, with the x-index increasing fastest.
+   *
+   * Unfortunately, not all of these conditions can be checked for automatically.
+   *
+   * \param knotVector A single knot vector, which will be used for all coordinate directions
+   * \param order B-spline order, will be used for all coordinate directions
    * \param makeOpen If this is true, then knots are prepended and appended to the knot vector to make the knot vector 'open'.
    *        i.e., start and end with 'order+1' identical knots.  Basis functions from such knot vectors are interpolatory at
    *        the end of the parameter interval.
    */
-  BSplinePatch(const std::vector<R>& knotVector,
+  BSplineBasis(const GridView& gridView,
+               const std::vector<double>& knotVector,
                unsigned int order,
-               bool makeOpen)
+               bool makeOpen = true)
+  : gridView_(gridView),
+    indexSet_(this)
   {
+    // \todo Detection of duplicate knots
+    std::fill(elements_.begin(), elements_.end(), knotVector.size()-1);
+
+    // Mediocre sanity check: we don't know the number of grid elements in each direction.
+    // but at least we now the total number of elements.
+    assert( std::accumulate(elements_.begin(), elements_.end(), 1, std::multiplies<uint>()) == gridView_.size(0) );
+
     for (int i=0; i<dim; i++)
     {
       // Prepend the correct number of additional knots to open the knot vector
@@ -441,7 +752,7 @@ public:
         for (unsigned int j=0; j<order; j++)
           knotVectors_[i].push_back(knotVector[0]);
 
-        knotVectors_[i].insert(knotVectors_[i].end(), knotVector.begin(), knotVector.end());
+      knotVectors_[i].insert(knotVectors_[i].end(), knotVector.begin(), knotVector.end());
 
       if (makeOpen)
         for (unsigned int j=0; j<order; j++)
@@ -450,6 +761,28 @@ public:
 
     std::fill(order_.begin(), order_.end(), order);
   }
+
+  /** \brief Obtain the grid view that the basis is defined on
+   */
+  const GridView& gridView() const DUNE_FINAL
+  {
+    return gridView_;
+  }
+
+  BSplineIndexSet<GV> indexSet() const
+  {
+    return indexSet_;
+  }
+
+  /** \brief Return local view for basis
+   *
+   */
+  LocalView localView() const
+  {
+    return LocalView(this);
+  }
+
+protected:
 
   //! \brief Total number of B-spline basis functions
   unsigned int size () const
@@ -462,7 +795,7 @@ public:
 
   /** \brief Evaluate all B-spline basis functions at a given point
    */
-  void evaluateFunction (const FieldVector<D,dim>& in,
+  void evaluateFunction (const FieldVector<typename GV::ctype,dim>& in,
                          std::vector<FieldVector<R,1> >& out,
                          const std::array<uint,dim>& currentKnotSpan) const
   {
@@ -476,7 +809,7 @@ public:
     for (int i=0; i<dim; i++)
       limits[i] = oneDValues[i].size();
 
-    MultiIndex ijkCounter(limits);
+    MultiDigitCounter ijkCounter(limits);
 
     out.resize(ijkCounter.cycle());
 
@@ -489,8 +822,8 @@ public:
   }
 
   //! \brief Evaluate Jacobian of all B-spline basis functions
-  void evaluateJacobian (const FieldVector<D,dim>& in,
-                         std::vector<FieldMatrix<D,1,dim> >& out,
+  void evaluateJacobian (const FieldVector<typename GV::ctype,dim>& in,
+                         std::vector<FieldMatrix<R,1,dim> >& out,
                          const std::array<uint,dim>& currentKnotSpan) const
   {
     // Evaluate 1d function values (needed for the product rule)
@@ -538,7 +871,7 @@ public:
         limits[i] -= order_[i] - (knotVectors_[i].size() - currentKnotSpan[i] - 2);
     }
 
-    MultiIndex ijkCounter(limits);
+    MultiDigitCounter ijkCounter(limits);
 
     out.resize(ijkCounter.cycle());
 
@@ -554,17 +887,23 @@ public:
 
   }
 
-  /** \brief Polynomial order of the shape functions
-   * \todo Only implemented for 1d patches
+
+  /** \brief Compute integer element coordinates from the element index
+   * \warning This method makes strong assumptions about the grid, namely that it is
+   *   structured, and that indices are given in a x-fastest fashion.
    */
-  unsigned int order () const
+  static std::array<unsigned int,dim> getIJK(typename GridView::IndexSet::IndexType idx, std::array<unsigned int,dim> elements)
   {
-    return order_;
+    std::array<uint,dim> result;
+    for (int i=0; i<dim; i++)
+    {
+      result[i] = idx%elements[i];
+      idx /= elements[i];
+    }
+    return result;
   }
 
-private:
-
-  //! \brief Number of shape functions in one direction
+    //! \brief Number of shape functions in one direction
   unsigned int size (size_t d) const
   {
     return knotVectors_[d].size() - order_[d] - 1;
@@ -579,7 +918,7 @@ private:
    * \param in Scalar(!) coordinate where to evaluate the functions
    * \param [out] out Vector containing the values of all B-spline functions at 'in'
    */
-  static void evaluateFunction (const D& in, std::vector<R>& out,
+  static void evaluateFunction (const typename GV::ctype& in, std::vector<R>& out,
                                 const std::vector<R>& knotVector,
                                 unsigned int order,
                                 unsigned int currentKnotSpan)
@@ -636,7 +975,8 @@ private:
    * \param in Scalar(!) coordinate where to evaluate the functions
    * \param [out] out Vector containing the values of all B-spline functions at 'in'
    */
-  static void evaluateFunctionFull(const D& in, std::vector<R>& out,
+  static void evaluateFunctionFull(const typename GV::ctype& in,
+                                   std::vector<R>& out,
                                    const std::vector<R>& knotVector,
                                    unsigned int order,
                                    unsigned int currentKnotSpan)
@@ -676,383 +1016,7 @@ private:
   array<unsigned int, dim> order_;
 
   /** \brief The knot vectors, one for each space dimension */
-  array<std::vector<R>, dim> knotVectors_;
-};
-
-
-/** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
- * of a B-spline patch to a knot span
- *
- * \tparam D Number type used for domain coordinates
- * \tparam R Number type used for spline function values
- * \tparam dim Dimension of the patch
- */
-template<class D, class R, int dim>
-class BSplineLocalBasis
-{
-  friend class BSplineLocalFiniteElement<D,R,dim>;
-public:
-
-  //! \brief export type traits for function signature
-  typedef LocalBasisTraits<D,dim,Dune::FieldVector<D,dim>,R,1,Dune::FieldVector<R,1>,
-  Dune::FieldMatrix<R,1,dim>, 2> Traits;
-
-  /** \brief Constructor with a given B-spline patch
-   *
-   * The patch object does all the work.
-   */
-  BSplineLocalBasis(const BSplinePatch<D,R,dim>& patch,
-                    const BSplineLocalFiniteElement<D,R,dim>& lFE)
-  : patch_(patch),
-    lFE_(lFE)
-  {}
-
-  /** \brief Evaluate all shape functions
-   * \param in Coordinates where to evaluate the functions, in local coordinates of the current knot span
-   */
-  void evaluateFunction (const FieldVector<D,dim>& in,
-                         std::vector<FieldVector<R,1> >& out) const
-  {
-    FieldVector<D,dim> globalIn = offset_;
-    scaling_.umv(in,globalIn);
-
-    patch_.evaluateFunction(globalIn, out, lFE_.currentKnotSpan_);
-  }
-
-  /** \brief Evaluate Jacobian of all shape functions
-   * \param in Coordinates where to evaluate the Jacobian, in local coordinates of the current knot span
-   */
-  void evaluateJacobian (const FieldVector<D,dim>& in,
-                         std::vector<FieldMatrix<D,1,dim> >& out) const
-  {
-    FieldVector<D,dim> globalIn = offset_;
-    scaling_.umv(in,globalIn);
-
-    patch_.evaluateJacobian(globalIn, out, lFE_.currentKnotSpan_);
-
-    for (size_t i=0; i<out.size(); i++)
-      for (int j=0; j<dim; j++)
-        out[i][0][j] *= scaling_[j][j];
-  }
-
-  //! \brief Evaluate all shape functions and derivatives of any order
-  template<unsigned int k>
-  inline void evaluate (const typename Dune::array<int,k>& directions,
-                        const typename Traits::DomainType& in,
-                        std::vector<typename Traits::RangeType>& out) const
-  {
-    if (k==0)
-      evaluateFunction(in, out);
-    else
-      DUNE_THROW(NotImplemented, "B-Spline derivatives not implemented yet!");
-  }
-
-  /** \brief Polynomial order of the shape functions
-   */
-  unsigned int order () const
-  {
-    DUNE_THROW(NotImplemented, "!");
-  }
-
-  /** \brief Return the number of basis functions on the current knot span
-   */
-  std::size_t size() const
-  {
-    return lFE_.size();
-  }
-
-private:
-  const BSplinePatch<D,R,dim>& patch_;
-
-  const BSplineLocalFiniteElement<D,R,dim>& lFE_;
-
-  // Coordinates in a single knot span differ from coordinates on the B-spline patch
-  // by an affine transformation.  This transformation is stored in offset_ and scaling_.
-  FieldVector<D,dim>    offset_;
-  DiagonalMatrix<D,dim> scaling_;
-};
-
-/** \brief Local coefficients in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
- *
- *      \implements Dune::LocalCoefficientsVirtualImp
- */
-template <class D, class R, int dim>
-class BSplineLocalCoefficients
-{
-public:
-  /** \brief Standard constructor
-   * \todo Not implemented yet
-   */
-  BSplineLocalCoefficients (const BSplineLocalFiniteElement<D,R,dim>& lFE)
-  : lFE_(lFE)
-  {
-    std::cout << "WARNING: LocalCoefficients array should be initialized here!" << std::endl;
-  }
-
-  /** \brief Number of coefficients
-   * \todo Currently, the number of all basis functions on the entire patch is returned.
-   *   This will include many that are simply constant zero on the current knot span.
-   */
-  std::size_t size () const
-  {
-    return lFE_.size();
-  }
-
-  //! get i'th index
-  const LocalKey& localKey (std::size_t i) const
-  {
-    return li_[i];
-  }
-
-private:
-  const BSplineLocalFiniteElement<D,R,dim>& lFE_;
-  std::vector<LocalKey> li_;
-};
-
-/** \brief Local interpolation in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
- */
-template<int dim, class LB>
-class BSplineLocalInterpolation
-{
-public:
-  //! \brief Local interpolation of a function
-  template<typename F, typename C>
-  void interpolate (const F& f, std::vector<C>& out) const
-  {
-    DUNE_THROW(NotImplemented, "BSplineLocalInterpolation::interpolate");
-  }
-
-};
-
-/** \brief LocalFiniteElement in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
- *
- * This class ties together the implementation classes BSplineLocalBasis, BSplineLocalCoefficients, and BSplineLocalInterpolation
- *
- * \tparam D Number type used for domain coordinates
- * \tparam R Number type used for spline function values
- * \tparam dim Dimension of the patch
- */
-template<class D, class R, int dim>
-class BSplineLocalFiniteElement
-{
-  template <class GV>
-  friend class BSplineLocalIndexSet;
-  friend class BSplineLocalBasis<D,R,dim>;
-public:
-
-  /** \brief Export various types related to this LocalFiniteElement
-   */
-  typedef LocalFiniteElementTraits<BSplineLocalBasis<D,R,dim>,
-  BSplineLocalCoefficients<D,R,dim>,
-  BSplineLocalInterpolation<dim,BSplineLocalBasis<D,R,dim> > > Traits;
-
-  /** \brief Constructor with a given B-spline patch
-   */
-  BSplineLocalFiniteElement(const BSplinePatch<D,R,dim>& patch)
-  : patch_(patch),
-    localBasis_(patch,*this),
-    localCoefficients_(*this)
-  {}
-
-  /** \brief Bind LocalFiniteElement to a specific knot span of the spline patch
-   *
-   * Elements are the non-empty knot spans, here we do the renumbering
-   *
-   * \param ijk Integer coordinates in the tensor product patch
-   */
-  void bind(const std::array<uint,dim>& elementIdx)
-  {
-    /* \todo In the long run we need to precompute a table for this */
-    for (size_t i=0; i<elementIdx.size(); i++)
-    {
-      currentKnotSpan_[i] = 0;
-
-      // Skip over degenerate knot spans
-      while (patch_.knotVectors_[i][currentKnotSpan_[i]+1] < patch_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
-        currentKnotSpan_[i]++;
-
-      for (size_t j=0; j<elementIdx[i]; j++)
-      {
-        currentKnotSpan_[i]++;
-
-        // Skip over degenerate knot spans
-        while (patch_.knotVectors_[i][currentKnotSpan_[i]+1] < patch_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
-          currentKnotSpan_[i]++;
-      }
-
-      // Compute the geometric transformation from knotspan-local to global coordinates
-      localBasis_.offset_[i] = patch_.knotVectors_[i][currentKnotSpan_[i]];
-      localBasis_.scaling_[i][i] = patch_.knotVectors_[i][currentKnotSpan_[i]+1] - patch_.knotVectors_[i][currentKnotSpan_[i]];
-    }
-  }
-
-  /** \brief Hand out a LocalBasis object */
-  const BSplineLocalBasis<D,R,dim>& localBasis() const
-  {
-    return localBasis_;
-  }
-
-  /** \brief Hand out a LocalCoefficients object */
-  const BSplineLocalCoefficients<D,R,dim>& localCoefficients() const
-  {
-    return localCoefficients_;
-  }
-
-  /** \brief Hand out a LocalInterpolation object */
-  const BSplineLocalInterpolation<dim,BSplineLocalBasis<D,R,dim> >& localInterpolation() const
-  {
-    return localInterpolation_;
-  }
-
-  /** \brief Number of shape functions in this finite element */
-  uint size () const
-  {
-    std::size_t r = 1;
-    for (int i=0; i<dim; i++)
-      r *= size(i);
-    return r;
-  }
-
-  /** \brief Return the reference element that the local finite element is defined on (here, a hypercube)
-   */
-  GeometryType type () const
-  {
-    return GeometryType(GeometryType::cube,dim);
-  }
-
-private:
-
-  /** \brief Number of degrees of freedom for one coordinate direction */
-  unsigned int size(int i) const
-  {
-    const auto& order = patch_.order_;
-    unsigned int r = order[i]+1;   // The 'normal' value
-    if (currentKnotSpan_[i]<order[i])   // Less near the left end of the knot vector
-      r -= (order[i] - currentKnotSpan_[i]);
-    if ( order[i] > (patch_.knotVectors_[i].size() - currentKnotSpan_[i] - 2) )
-      r -= order[i] - (patch_.knotVectors_[i].size() - currentKnotSpan_[i] - 2);
-    return r;
-  }
-
-  const BSplinePatch<D,R,dim>& patch_;
-  BSplineLocalBasis<D,R,dim> localBasis_;
-  BSplineLocalCoefficients<D,R,dim> localCoefficients_;
-  BSplineLocalInterpolation<dim,BSplineLocalBasis<D,R,dim> > localInterpolation_;
-
-  // The knot span we are bound to
-  std::array<uint,dim> currentKnotSpan_;
-};
-
-/** \brief A B-spline function space basis on a tensor-product grid
- *
- * \tparam GV GridView, this must match the knot vectors describing the B-spline basis
- * \tparam RT Number type used for function values
- *
- * \todo Various features are not implemented yet:
- *  - No multiple knots in a knot vector
- *  - No sparsity; currently the implementation pretends that the support of any B-spline basis
- *    function covers the entire patch.
- */
-template <class GV>
-class BSplineBasis
-: public GridViewFunctionSpaceBasis<GV,
-                                    BSplineBasisLocalView<GV>,
-                                    BSplineIndexSet<GV>,
-                                    std::array<std::size_t, 1> >
-{
-
-  enum {dim = GV::dimension};
-
-  friend class BSplineBasisLeafNode<GV>;
-  friend class BSplineLocalIndexSet<GV>;
-
-public:
-
-  /** \brief The grid view that the FE space is defined on */
-  typedef GV GridView;
-
-  /** \todo Do we really have to export this here? */
-  typedef std::size_t size_type;
-
-  /** \brief Type of the local view on the restriction of the basis to a single element */
-  typedef BSplineBasisLocalView<GV> LocalView;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  typedef std::array<size_type, 1> MultiIndex;
-
-  /** \brief Construct a B-spline basis for a given grid view and set of knot vectors
-   *
-   * The grid *must* match the knot vectors, i.e.:
-   *  - The grid must be structured and Cartesian, and have cube elements only
-   *  - The number of elements in each direction must match the number of knot spans in that direction
-   *  - In fact, the element spacing in any direction must match the knot spacing in that direction
-   *    (disregarding knot multiplicities)
-   *  - When ordering the grid elements according to their indices, the resulting order must
-   *    be lexicographical, with the x-index increasing fastest.
-   *
-   * Unfortunately, not all of these conditions can be checked for automatically.
-   *
-   * \param knotVector A single knot vector, which will be used for all coordinate directions
-   * \param order B-spline order, will be used for all coordinate directions
-   * \param makeOpen If this is true, then knots are prepended and appended to the knot vector to make the knot vector 'open'.
-   *        i.e., start and end with 'order+1' identical knots.  Basis functions from such knot vectors are interpolatory at
-   *        the end of the parameter interval.
-   */
-  BSplineBasis(const GridView& gridView,
-               const std::vector<double>& knotVector,
-               unsigned int order,
-               bool makeOpen = true)
-  : patch_(knotVector, order, makeOpen),
-    gridView_(gridView),
-    indexSet_(&patch_)
-  {
-    // \todo Detection of duplicate knots
-    std::fill(elements_.begin(), elements_.end(), knotVector.size()-1);
-
-    // Mediocre sanity check: we don't know the number of grid elements in each direction.
-    // but at least we now the total number of elements.
-    assert( std::accumulate(elements_.begin(), elements_.end(), 1, std::multiplies<uint>()) == gridView_.size(0) );
-  }
-
-  /** \brief Obtain the grid view that the basis is defined on
-   */
-  const GridView& gridView() const DUNE_FINAL
-  {
-    return gridView_;
-  }
-
-  BSplineIndexSet<GV> indexSet() const
-  {
-    return indexSet_;
-  }
-
-  /** \brief Return local view for basis
-   *
-   */
-  LocalView localView() const
-  {
-    return LocalView(this);
-  }
-
-protected:
-
-  /** \brief Compute integer element coordinates from the element index
-   * \warning This method makes strong assumptions about the grid, namely that it is
-   *   structured, and that indices are given in a x-fastest fashion.
-   */
-  static std::array<unsigned int,dim> getIJK(typename GridView::IndexSet::IndexType idx, std::array<unsigned int,dim> elements)
-  {
-    std::array<uint,dim> result;
-    for (int i=0; i<dim; i++)
-    {
-      result[i] = idx%elements[i];
-      idx /= elements[i];
-    }
-    return result;
-  }
-
-  /** \brief The underlying B-spline basis patch */
-  BSplinePatch<double,double,dim> patch_;
+  array<std::vector<double>, dim> knotVectors_;
 
   /** \brief Number of grid elements in the different coordinate directions */
   std::array<uint,dim> elements_;
