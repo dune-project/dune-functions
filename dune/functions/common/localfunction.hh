@@ -9,6 +9,7 @@
 #include <dune/functions/common/differentiablefunction_imp.hh>
 #include <dune/functions/common/localfunction_imp.hh>
 #include <dune/functions/common/polymorphicsmallobject.hh>
+#include <dune/functions/common/typeerasure.hh>
 
 
 
@@ -53,6 +54,15 @@ public:
    */
   using DerivativeInterface = LocalFunction<DerivativeSignature, LocalContext, DerivativeTraits, bufferSize>;
 
+protected:
+
+  using TEInterface = Imp::LocalFunctionInterface<Signature, DerivativeInterface, LocalContext>;
+
+  template<class B>
+  using TEImplementation = Imp::LocalFunctionImp<Signature, DerivativeInterface, LocalContext, B>;
+
+public:
+
   /**
    * \brief Construct from function
    *
@@ -66,7 +76,7 @@ public:
    */
   template<class F, disableCopyMove<LocalFunction, F> = 0 >
   LocalFunction(F&& f) :
-    f_(Imp::LocalFunctionWrapper<Signature, DerivativeInterface, LocalContext, typename std::decay<F>::type>(std::forward<F>(f)))
+    f_(Imp::TypeErasureDerived<TEInterface, TEImplementation, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
   LocalFunction() = default;
@@ -105,7 +115,7 @@ public:
   }
 
 private:
-  PolymorphicSmallObject<Imp::LocalFunctionWrapperBase<Signature, DerivativeInterface, LocalContext>, bufferSize > f_;
+  PolymorphicSmallObject<Imp::TypeErasureBase<TEInterface>, bufferSize > f_;
 };
 
 
