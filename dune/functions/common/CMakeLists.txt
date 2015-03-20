@@ -15,4 +15,5 @@ install(FILES
         polymorphicsmallobject.hh
         signature.hh
         type_traits.hh
+        typeerasure.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/common)
