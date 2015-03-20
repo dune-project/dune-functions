@@ -107,6 +107,25 @@ bool checkGridViewFunction(const GridView& gridView, const F& f, double exactInt
     passed = false;
   }
 
+  std::cout << "Checking integration of default constructed and assigned GridViewFunction<Range(Domain), GridView> on grid view" << std::endl;
+  GridViewFunction<Range(Domain), GridView> f6;
+  f6 = f5;
+  integral = integrateGridViewFunction(gridView, f6, quadOrder);
+  if (std::abs(integral-0.5)> 1e-10)
+  {
+    std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
+    passed = false;
+  }
+
+  std::cout << "Checking integration of reassigned GridViewFunction<Range(Domain), GridView> on grid view" << std::endl;
+  f6 = f3;
+  integral = integrateGridViewFunction(gridView, f6, quadOrder);
+  if (std::abs(integral-0.5)> 1e-10)
+  {
+    std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
+    passed = false;
+  }
+
   return passed;
 }
 
