@@ -5,6 +5,7 @@
 
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/common/interfaces.hh>
+#include <dune/functions/common/differentiablefunction_imp.hh>
 
 
 
@@ -25,82 +26,39 @@ struct HasFreeLocalFunction
 
 
 
+// Interface of type erasure wrapper
+//
+// Notice that the basic interface of polymorphic classes (destructor, clone, ...)
+// will be added by the type erasure foundation classes.
 template<class Signature, class DerivativeInterface, class LocalFunctionInterface, class EntitySet>
-class GridFunctionWrapperBase
-{};
-
-template<class Range, class Domain, class DerivativeInterface, class LocalFunctionInterface, class EntitySet>
-class GridFunctionWrapperBase<Range(Domain), DerivativeInterface, LocalFunctionInterface, EntitySet> :
-  public PolymorphicType<GridFunctionWrapperBase<Range(Domain), DerivativeInterface, LocalFunctionInterface, EntitySet> >
+class GridFunctionWrapperInterface :
+  public DifferentiableFunctionWrapperInterface<Signature, DerivativeInterface>
 {
 public:
-
-  virtual Range operator() (const Domain& x) const = 0;
-
-  virtual DerivativeInterface derivative() const = 0;
-
   virtual LocalFunctionInterface wrappedLocalFunction() const = 0;
 
   virtual const EntitySet& wrappedEntitySet() const = 0;
 };
 
 
-
-template<class Signature, class DerivativeInterface, class LocalFunctionInterface, class EntitySet, class FImp>
-class GridFunctionWrapper
-{};
-
-template<class Range, class Domain, class DerivativeInterface, class LocalFunctionInterface, class EntitySet, class FImp>
-class GridFunctionWrapper< Range(Domain), DerivativeInterface, LocalFunctionInterface, EntitySet, FImp> :
-  public GridFunctionWrapperBase<Range(Domain), DerivativeInterface, LocalFunctionInterface, EntitySet>
+// Implementation of type erasure wrapper
+template<class Signature, class DerivativeInterface, class LocalFunctionInterface, class EntitySet, class B>
+class GridFunctionWrapperImplementation :
+  public DifferentiableFunctionWrapperImplementation<Signature, DerivativeInterface, B>
 {
+  using Base = DifferentiableFunctionWrapperImplementation<Signature, DerivativeInterface, B>;
 public:
-
-  template<class F, disableCopyMove<GridFunctionWrapper, F> = 0>
-  GridFunctionWrapper(F&& f) :
-    f_(std::forward<F>(f))
-  {}
-
-  virtual Range operator() (const Domain& x) const
-  {
-    return f_(x);
-  }
-
-  virtual DerivativeInterface derivative() const
-  {
-    return derivativeIfImplemented<DerivativeInterface, FImp>(f_);
-  }
+  using Base::Base;
 
   virtual LocalFunctionInterface wrappedLocalFunction() const
   {
-    return localFunction(f_);
+    return localFunction(B::wrapped_);
   }
 
   virtual const EntitySet& wrappedEntitySet() const
   {
-    return f_.entitySet();
+    return B::wrapped_.entitySet();
   }
-
-  /**
-   * \copydoc PolymorphicSmallObject::clone()
-   */
-  virtual GridFunctionWrapper* clone() const
-  {
-    return new GridFunctionWrapper(*this);
-  }
-
-  virtual GridFunctionWrapper* clone(void* buffer) const
-  {
-    return new (buffer) GridFunctionWrapper(*this);
-  }
-
-  virtual GridFunctionWrapper* move(void* buffer)
-  {
-    return new (buffer) GridFunctionWrapper(std::move(*this));
-  }
-
-private:
-  FImp f_;
 };
 
 

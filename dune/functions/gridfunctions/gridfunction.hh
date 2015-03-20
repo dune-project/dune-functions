@@ -66,6 +66,14 @@ public:
    */
   using LocalFunctionInterface = LocalFunction<Signature, Element, DerivativeTraits, bufferSize>;
 
+protected:
+
+  using WrapperIf = Imp::GridFunctionWrapperInterface<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet>;
+
+  template<class B>
+  using WrapperImp = Imp::GridFunctionWrapperImplementation<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet, B>;
+
+public:
 
   /**
    * \brief Construct from function
@@ -80,7 +88,7 @@ public:
    */
   template<class F, disableCopyMove<GridFunction, F> = 0 >
   GridFunction(F&& f) :
-    f_(Imp::GridFunctionWrapper<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet, typename std::decay<F>::type>(std::forward<F>(f)))
+    f_(Imp::TypeErasureDerived<WrapperIf, WrapperImp, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
   GridFunction() = default;
@@ -127,7 +135,7 @@ public:
 
 
 private:
-  PolymorphicSmallObject<Imp::GridFunctionWrapperBase<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet>, bufferSize > f_;
+  PolymorphicSmallObject<Imp::TypeErasureBase<WrapperIf>, bufferSize > f_;
 };
 
 
