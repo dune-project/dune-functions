@@ -6,9 +6,8 @@
 #include <type_traits>
 
 #include <dune/functions/common/defaultderivativetraits.hh>
-#include <dune/functions/common/differentiablefunction_imp.hh>
+#include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/common/localfunction_imp.hh>
-#include <dune/functions/common/polymorphicsmallobject.hh>
 #include <dune/functions/common/typeerasure.hh>
 
 
@@ -29,37 +28,53 @@ class LocalFunction
 
 
 
+namespace Imp
+{
+
+  /// Traits class providing type information for DifferentiableFunction
+  template<class S, class L, template<class> class DerivativeTraits, size_t bufferSize>
+  struct LocalFunctionTraits :
+    DifferentiableFunctionTraits<S, DerivativeTraits, bufferSize>
+  {
+  protected:
+    using Base=DifferentiableFunctionTraits<S, DerivativeTraits, bufferSize>;
+
+  public:
+    /// LocalContext type
+    using LocalContext = L;
+
+    /// Signature of the derivative
+    using DerivativeSignature = typename Base::DerivativeSignature;
+
+    /// Interface type of the derivative
+    using DerivativeInterface = LocalFunction<DerivativeSignature, L, DerivativeTraits, bufferSize>;
+
+    /// Internal concept type for type erasure
+    using Concept = LocalFunctionWrapperInterface<S, DerivativeInterface, L>;
+
+    /// Internal model template for type erasure
+    template<class B>
+    using Model = LocalFunctionWrapperImplementation<S, DerivativeInterface, L, B>;
+  };
+}
+
+
+
 /**
  * \brief Class storing differentiable functions using type erasure
  *
  */
 template<class Range, class Domain, class LocalContext, template<class> class DerivativeTraits, size_t bufferSize>
-class LocalFunction< Range(Domain), LocalContext, DerivativeTraits, bufferSize>
+class LocalFunction< Range(Domain), LocalContext, DerivativeTraits, bufferSize> :
+  public TypeErasure<
+    typename Imp::LocalFunctionTraits<Range(Domain), LocalContext, DerivativeTraits, bufferSize>::Concept,
+    Imp::LocalFunctionTraits<Range(Domain), LocalContext, DerivativeTraits, bufferSize>::template Model>
 {
-  using RawDomain = typename std::decay<Domain>::type;
-public:
+  using Traits = Imp::LocalFunctionTraits<Range(Domain), LocalContext, DerivativeTraits, bufferSize>;
 
-  /**
-   * \brief Signature of wrapped functions
-   */
-  using Signature = Range(Domain);
+  using Base = TypeErasure<typename Traits::Concept, Traits::template Model>;
 
-  /**
-   * \brief Signature of derivative of wrapped functions
-   */
-  using DerivativeSignature = typename DerivativeTraits<Range(RawDomain)>::Range(Domain);
-
-  /**
-   * \brief Wrapper type of returned derivatives
-   */
-  using DerivativeInterface = LocalFunction<DerivativeSignature, LocalContext, DerivativeTraits, bufferSize>;
-
-protected:
-
-  using WrapperIf = Imp::LocalFunctionWrapperInterface<Signature, DerivativeInterface, LocalContext>;
-
-  template<class B>
-  using WrapperImp = Imp::LocalFunctionWrapperImplementation<Signature, DerivativeInterface, LocalContext, B>;
+  using DerivativeInterface = typename Traits::DerivativeInterface;
 
 public:
 
@@ -76,7 +91,7 @@ public:
    */
   template<class F, disableCopyMove<LocalFunction, F> = 0 >
   LocalFunction(F&& f) :
-    f_(Imp::TypeErasureDerived<WrapperIf, WrapperImp, typename std::decay<F>::type>(std::forward<F>(f)))
+    Base(std::forward<F>(f))
   {}
 
   LocalFunction() = default;
@@ -86,7 +101,7 @@ public:
    */
   Range operator() (const Domain& x) const
   {
-    return f_.get().operator()(x);
+    return this->asInterface().operator()(x);
   }
 
   /**
@@ -96,26 +111,23 @@ public:
    */
   friend DerivativeInterface derivative(const LocalFunction& t)
   {
-    return t.f_.get().derivative();
+    return t.asInterface().derivative();
   }
 
   void bind(const LocalContext& context)
   {
-    return f_.get().bind(context);
+    this->asInterface().bind(context);
   }
 
   void unbind()
   {
-    return f_.get().unbind();
+    this->asInterface().unbind();
   }
 
   const LocalContext& localContext() const
   {
-    return f_.get().localContext();
+    return this->asInterface().localContext();
   }
-
-private:
-  PolymorphicSmallObject<Imp::TypeErasureBase<WrapperIf>, bufferSize > f_;
 };
 
 
