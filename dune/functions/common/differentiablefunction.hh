@@ -29,6 +29,42 @@ class DifferentiableFunction
 
 
 
+namespace Imp
+{
+
+  /// Traits class providing type information for DifferentiableFunction
+  template<class S, template<class> class DerivativeTraits, size_t bufferSize>
+  struct DifferentiableFunctionTraits
+  {
+    /// Signature type
+    using Signature = S;
+
+    /// Raw signature with unqualified types
+    using RawSignature = typename SignatureTraits<Signature>::RawSignature;
+
+    /// Range type
+    using Range = typename SignatureTraits<Signature>::Range;
+
+    /// Domain type
+    using Domain = typename SignatureTraits<Signature>::Domain;
+
+    /// Signature of the derivative
+    using DerivativeSignature = typename DerivativeTraits<RawSignature>::Range(Domain);
+
+    /// Interface type of the derivative
+    using DerivativeInterface = DifferentiableFunction<DerivativeSignature, DerivativeTraits, bufferSize>;
+
+    /// Internal concept type for type erasure
+    using Concept = DifferentiableFunctionWrapperInterface<Signature, DerivativeInterface>;
+
+    /// Internal model template for type erasure
+    template<class B>
+    using Model = DifferentiableFunctionWrapperImplementation<Signature, DerivativeInterface, B>;
+  };
+}
+
+
+
 /**
  * \brief Class storing differentiable functions using type erasure
  *
@@ -36,34 +72,9 @@ class DifferentiableFunction
 template<class Range, class Domain, template<class> class DerivativeTraits, size_t bufferSize>
 class DifferentiableFunction< Range(Domain), DerivativeTraits, bufferSize>
 {
-public:
+  using Traits = Imp::DifferentiableFunctionTraits<Range(Domain), DerivativeTraits, bufferSize>;
 
-  /**
-   * \brief Signature of wrapped functions
-   */
-  using Signature = Range(Domain);
-
-  /**
-   * \brief Raw signature of wrapped functions without possible const and reference qualifiers
-   */
-  using RawSignature = typename SignatureTraits<Signature>::RawSignature;
-
-  /**
-   * \brief Signature of derivative of wrapped functions
-   */
-  using DerivativeSignature = typename DerivativeTraits<RawSignature>::Range(Domain);
-
-  /**
-   * \brief Wrapper type of returned derivatives
-   */
-  using DerivativeInterface = DifferentiableFunction<DerivativeSignature, DerivativeTraits, bufferSize>;
-
-protected:
-
-  using WrapperIf = Imp::DifferentiableFunctionWrapperInterface<Signature, DerivativeInterface>;
-
-  template<class B>
-  using WrapperImp = Imp::DifferentiableFunctionWrapperImplementation<Signature, DerivativeInterface, B>;
+  using DerivativeInterface = typename Traits::DerivativeInterface;
 
 public:
 
@@ -80,7 +91,7 @@ public:
    */
   template<class F, disableCopyMove<DifferentiableFunction, F> = 0 >
   DifferentiableFunction(F&& f) :
-    f_(Imp::TypeErasureDerived<WrapperIf, WrapperImp, typename std::decay<F>::type>(std::forward<F>(f)))
+    f_(Imp::TypeErasureDerived<typename Traits::Concept, Traits::template Model, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
   DifferentiableFunction() = default;
@@ -104,7 +115,7 @@ public:
   }
 
 private:
-  PolymorphicSmallObject<Imp::TypeErasureBase<WrapperIf>, bufferSize > f_;
+  PolymorphicSmallObject<Imp::TypeErasureBase<typename Traits::Concept>, bufferSize > f_;
 };
 
 
