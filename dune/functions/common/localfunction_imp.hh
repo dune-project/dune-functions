@@ -40,12 +40,12 @@ public:
 
   virtual void bind(const LocalContext& context)
   {
-    return this->get().bind(context);
+    this->get().bind(context);
   }
 
   virtual void unbind()
   {
-    return this->get().unbind();
+    this->get().unbind();
   }
 
   virtual const LocalContext& localContext() const
