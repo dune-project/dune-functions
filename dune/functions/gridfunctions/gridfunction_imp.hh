@@ -57,7 +57,7 @@ public:
 
   virtual const EntitySet& wrappedEntitySet() const
   {
-    return B::wrapped_.entitySet();
+    return this->get().entitySet();
   }
 };
 

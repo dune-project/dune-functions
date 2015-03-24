@@ -78,16 +78,15 @@ public:
 
   using B::B;
   using Wrapped = typename B::Wrapped;
-  using B::wrapped_;
 
   virtual Range operator() (const Domain& x) const
   {
-    return wrapped_(x);
+    return this->get()(x);
   }
 
   virtual DerivativeInterface derivative() const
   {
-    return derivativeIfImplemented<DerivativeInterface, Wrapped>(wrapped_);
+    return derivativeIfImplemented<DerivativeInterface, Wrapped>(this->get());
   }
 };
 

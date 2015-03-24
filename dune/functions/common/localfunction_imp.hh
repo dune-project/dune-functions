@@ -40,17 +40,17 @@ public:
 
   virtual void bind(const LocalContext& context)
   {
-    return B::wrapped_.bind(context);
+    return this->get().bind(context);
   }
 
   virtual void unbind()
   {
-    return B::wrapped_.unbind();
+    return this->get().unbind();
   }
 
   virtual const LocalContext& localContext() const
   {
-    return B::wrapped_.localContext();
+    return this->get().localContext();
   }
 };
 
