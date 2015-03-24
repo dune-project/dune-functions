@@ -8,7 +8,6 @@
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/differentiablefunction_imp.hh>
-#include <dune/functions/common/polymorphicsmallobject.hh>
 #include <dune/functions/common/concept.hh>
 #include <dune/functions/common/signature.hh>
 #include <dune/functions/common/typeerasure.hh>
@@ -70,9 +69,14 @@ namespace Imp
  *
  */
 template<class Range, class Domain, template<class> class DerivativeTraits, size_t bufferSize>
-class DifferentiableFunction< Range(Domain), DerivativeTraits, bufferSize>
+class DifferentiableFunction< Range(Domain), DerivativeTraits, bufferSize> :
+  public TypeErasure<
+    typename Imp::DifferentiableFunctionTraits<Range(Domain), DerivativeTraits, bufferSize>::Concept,
+    Imp::DifferentiableFunctionTraits<Range(Domain), DerivativeTraits, bufferSize>::template Model>
 {
   using Traits = Imp::DifferentiableFunctionTraits<Range(Domain), DerivativeTraits, bufferSize>;
+
+  using Base = TypeErasure<typename Traits::Concept, Traits::template Model>;
 
   using DerivativeInterface = typename Traits::DerivativeInterface;
 
@@ -91,7 +95,7 @@ public:
    */
   template<class F, disableCopyMove<DifferentiableFunction, F> = 0 >
   DifferentiableFunction(F&& f) :
-    f_(Imp::TypeErasureDerived<typename Traits::Concept, Traits::template Model, typename std::decay<F>::type>(std::forward<F>(f)))
+    Base(std::forward<F>(f))
   {}
 
   DifferentiableFunction() = default;
@@ -101,7 +105,7 @@ public:
    */
   Range operator() (const Domain& x) const
   {
-    return f_.get().operator()(x);
+    return this->asInterface().operator()(x);
   }
 
   /**
@@ -111,11 +115,8 @@ public:
    */
   friend DerivativeInterface derivative(const DifferentiableFunction& t)
   {
-    return t.f_.get().derivative();
+    return t.asInterface().derivative();
   }
-
-private:
-  PolymorphicSmallObject<Imp::TypeErasureBase<typename Traits::Concept>, bufferSize > f_;
 };
 
 
