@@ -70,13 +70,13 @@ namespace Imp
  */
 template<class Range, class Domain, template<class> class DerivativeTraits, size_t bufferSize>
 class DifferentiableFunction< Range(Domain), DerivativeTraits, bufferSize> :
-  public TypeErasure<
+  public TypeErasureBase<
     typename Imp::DifferentiableFunctionTraits<Range(Domain), DerivativeTraits, bufferSize>::Concept,
     Imp::DifferentiableFunctionTraits<Range(Domain), DerivativeTraits, bufferSize>::template Model>
 {
   using Traits = Imp::DifferentiableFunctionTraits<Range(Domain), DerivativeTraits, bufferSize>;
 
-  using Base = TypeErasure<typename Traits::Concept, Traits::template Model>;
+  using Base = TypeErasureBase<typename Traits::Concept, Traits::template Model>;
 
   using DerivativeInterface = typename Traits::DerivativeInterface;
 

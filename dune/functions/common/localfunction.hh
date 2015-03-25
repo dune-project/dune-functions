@@ -66,13 +66,13 @@ namespace Imp
  */
 template<class Range, class Domain, class LocalContext, template<class> class DerivativeTraits, size_t bufferSize>
 class LocalFunction< Range(Domain), LocalContext, DerivativeTraits, bufferSize> :
-  public TypeErasure<
+  public TypeErasureBase<
     typename Imp::LocalFunctionTraits<Range(Domain), LocalContext, DerivativeTraits, bufferSize>::Concept,
     Imp::LocalFunctionTraits<Range(Domain), LocalContext, DerivativeTraits, bufferSize>::template Model>
 {
   using Traits = Imp::LocalFunctionTraits<Range(Domain), LocalContext, DerivativeTraits, bufferSize>;
 
-  using Base = TypeErasure<typename Traits::Concept, Traits::template Model>;
+  using Base = TypeErasureBase<typename Traits::Concept, Traits::template Model>;
 
   using DerivativeInterface = typename Traits::DerivativeInterface;
 

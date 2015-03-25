@@ -80,13 +80,13 @@ namespace Imp
  */
 template<class Range, class Domain, class ES, template<class> class DerivativeTraits, size_t bufferSize>
 class GridFunction<Range(Domain), ES, DerivativeTraits, bufferSize> :
-  public TypeErasure<
+  public TypeErasureBase<
     typename Imp::GridFunctionTraits<Range(Domain), ES, DerivativeTraits, bufferSize>::Concept,
     Imp::GridFunctionTraits<Range(Domain), ES, DerivativeTraits, bufferSize>::template Model>
 {
   using Traits = Imp::GridFunctionTraits<Range(Domain), ES, DerivativeTraits, bufferSize>;
 
-  using Base = TypeErasure<typename Traits::Concept, Traits::template Model>;
+  using Base = TypeErasureBase<typename Traits::Concept, Traits::template Model>;
 
   using DerivativeInterface = typename Traits::DerivativeInterface;
 

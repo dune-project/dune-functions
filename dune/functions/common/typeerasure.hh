@@ -27,9 +27,9 @@ namespace Imp {
  * \tparam Interface Class defininig the internal abstract virtual interface
  */
 template<class Interface>
-class TypeErasureBase :
+class TypeErasureWrapperInterface :
   public Interface,
-  public PolymorphicType<TypeErasureBase<Interface>>
+  public PolymorphicType<TypeErasureWrapperInterface<Interface>>
 {
 public:
   virtual const std::type_info& target_type() const = 0;
@@ -52,12 +52,12 @@ public:
  * \tparam T A type modelleding the desired interface
  */
 template<class Interface, class T>
-class TypeErasureImp :
-  public TypeErasureBase<Interface>
+class TypeErasureWrapperBase :
+  public TypeErasureWrapperInterface<Interface>
 {
 public:
-  template<class TT, disableCopyMove<TypeErasureImp, TT> = 0>
-  TypeErasureImp(TT&& t) :
+  template<class TT, disableCopyMove<TypeErasureWrapperBase, TT> = 0>
+  TypeErasureWrapperBase(TT&& t) :
     wrapped_(std::forward<TT>(t))
   {}
 
@@ -84,7 +84,7 @@ protected:
  * This class implements the foundation and user interfaces
  * of the internal type erasure wrapper.
  *
- * The foundation interface of TypeErasureBase is directly
+ * The foundation interface of TypeErasureWrapperInterface is directly
  * implemented here whereas the user interface is implemented
  * by deriving from the user-provides Implementation template.
  *
@@ -100,29 +100,29 @@ protected:
  * \tparam T A type modelleding the desired interface
  */
 template<class Interface, template<class> class Implementation, class T>
-class TypeErasureDerived :
-  public Implementation<TypeErasureImp<Interface, T> >
+class TypeErasureWrapperImplementation :
+  public Implementation<TypeErasureWrapperBase<Interface, T> >
 {
 public:
 
-  template<class TT, disableCopyMove<TypeErasureDerived, T> = 0>
-  TypeErasureDerived(TT&& t) :
-    Implementation<TypeErasureImp<Interface, T> >(std::forward<TT>(t))
+  template<class TT, disableCopyMove<TypeErasureWrapperImplementation, T> = 0>
+  TypeErasureWrapperImplementation(TT&& t) :
+    Implementation<TypeErasureWrapperBase<Interface, T> >(std::forward<TT>(t))
   {}
 
-  virtual TypeErasureDerived* clone() const
+  virtual TypeErasureWrapperImplementation* clone() const
   {
-    return new TypeErasureDerived(*this);
+    return new TypeErasureWrapperImplementation(*this);
   }
 
-  virtual TypeErasureDerived* clone(void* buffer) const
+  virtual TypeErasureWrapperImplementation* clone(void* buffer) const
   {
-    return new (buffer) TypeErasureDerived(*this);
+    return new (buffer) TypeErasureWrapperImplementation(*this);
   }
 
-  virtual TypeErasureDerived* move(void* buffer)
+  virtual TypeErasureWrapperImplementation* move(void* buffer)
   {
-    return new (buffer) TypeErasureDerived(std::move(*this));
+    return new (buffer) TypeErasureWrapperImplementation(std::move(*this));
   }
 
   virtual const std::type_info& target_type() const
@@ -134,16 +134,16 @@ public:
 } // namespace Dune::Functions::Imp
 
 template<class Interface, template<class> class Implementation, size_t bufferSize = 56>
-class TypeErasure
+class TypeErasureBase
 {
 public:
 
-  template<class T, disableCopyMove<TypeErasure, T> = 0 >
-  TypeErasure(T&& t) :
-    wrapped_(Imp::TypeErasureDerived<Interface, Implementation, typename std::decay<T>::type>(std::forward<T>(t)))
+  template<class T, disableCopyMove<TypeErasureBase, T> = 0 >
+  TypeErasureBase(T&& t) :
+    wrapped_(Imp::TypeErasureWrapperImplementation<Interface, Implementation, typename std::decay<T>::type>(std::forward<T>(t)))
   {}
 
-  TypeErasure() = default;
+  TypeErasureBase() = default;
 
   Interface& asInterface()
   {
@@ -161,7 +161,7 @@ public:
   }
 
 protected:
-  PolymorphicSmallObject<Imp::TypeErasureBase<Interface>, bufferSize > wrapped_;
+  PolymorphicSmallObject<Imp::TypeErasureWrapperInterface<Interface>, bufferSize > wrapped_;
 };
 
 
