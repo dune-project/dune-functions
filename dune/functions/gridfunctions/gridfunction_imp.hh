@@ -52,7 +52,7 @@ public:
 
   virtual LocalFunctionInterface wrappedLocalFunction() const
   {
-    return localFunction(B::wrapped_);
+    return localFunction(this->get());
   }
 
   virtual const EntitySet& wrappedEntitySet() const
