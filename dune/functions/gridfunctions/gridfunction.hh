@@ -5,10 +5,10 @@
 
 #include <type_traits>
 
+#include <dune/functions/common/typeerasure.hh>
 #include <dune/functions/common/defaultderivativetraits.hh>
-#include <dune/functions/common/differentiablefunction_imp.hh>
+#include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/common/localfunction.hh>
-#include <dune/functions/common/polymorphicsmallobject.hh>
 #include <dune/functions/gridfunctions/localderivativetraits.hh>
 #include <dune/functions/gridfunctions/gridfunction_imp.hh>
 
@@ -79,9 +79,14 @@ namespace Imp
  *
  */
 template<class Range, class Domain, class ES, template<class> class DerivativeTraits, size_t bufferSize>
-class GridFunction<Range(Domain), ES, DerivativeTraits, bufferSize>
+class GridFunction<Range(Domain), ES, DerivativeTraits, bufferSize> :
+  public TypeErasure<
+    typename Imp::GridFunctionTraits<Range(Domain), ES, DerivativeTraits, bufferSize>::Concept,
+    Imp::GridFunctionTraits<Range(Domain), ES, DerivativeTraits, bufferSize>::template Model>
 {
   using Traits = Imp::GridFunctionTraits<Range(Domain), ES, DerivativeTraits, bufferSize>;
+
+  using Base = TypeErasure<typename Traits::Concept, Traits::template Model>;
 
   using DerivativeInterface = typename Traits::DerivativeInterface;
 
@@ -104,7 +109,7 @@ public:
    */
   template<class F, disableCopyMove<GridFunction, F> = 0 >
   GridFunction(F&& f) :
-    f_(Imp::TypeErasureDerived<typename Traits::Concept, Traits::template Model, typename std::decay<F>::type>(std::forward<F>(f)))
+    Base(std::forward<F>(f))
   {}
 
   GridFunction() = default;
@@ -114,7 +119,7 @@ public:
    */
   Range operator() (const Domain& x) const
   {
-    return f_.get().operator()(x);
+    return this->asInterface().operator()(x);
   }
 
   /**
@@ -122,7 +127,7 @@ public:
    */
   friend DerivativeInterface derivative(const GridFunction& t)
   {
-    return t.f_.get().derivative();
+    return t.asInterface().derivative();
   }
 
   /**
@@ -136,7 +141,7 @@ public:
    */
   friend LocalFunctionInterface localFunction(const GridFunction& t)
   {
-    return t.f_.get().wrappedLocalFunction();
+    return t.asInterface().wrappedLocalFunction();
   }
 
   /**
@@ -146,12 +151,8 @@ public:
    */
   const EntitySet& entitySet() const
   {
-    return f_.get().wrappedEntitySet();
+    return this->asInterface().wrappedEntitySet();
   }
-
-
-private:
-  PolymorphicSmallObject<Imp::TypeErasureBase<typename Traits::Concept>, bufferSize > f_;
 };
 
 
