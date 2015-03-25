@@ -30,6 +30,50 @@ class GridFunction
 
 
 
+namespace Imp
+{
+
+  /// Traits class providing type information for DifferentiableFunction
+  template<class S, class ES, template<class> class DerivativeTraits, size_t bufferSize>
+  struct GridFunctionTraits :
+    DifferentiableFunctionTraits<S, DerivativeTraits, bufferSize>
+  {
+  protected:
+    using Base=DifferentiableFunctionTraits<S, DerivativeTraits, bufferSize>;
+
+  public:
+    /// EntitySet the GridFunction lives on
+    using EntitySet = ES;
+
+    /// Element type of EntitySet
+    using Element = typename EntitySet::Element;
+
+    /// Signature of the derivative
+    using DerivativeSignature = typename Base::DerivativeSignature;
+
+    /// Interface type of the derivative
+    using DerivativeInterface = GridFunction<DerivativeSignature, ES, DerivativeTraits, bufferSize>;
+
+    /// Signature of the derivative
+    using LocalSignature = typename Base::Range(typename EntitySet::LocalCoordinate);
+
+    template<class R>
+    using LocalDerivativeTraits = typename Dune::Functions::LocalDerivativeTraits<EntitySet, DerivativeTraits>::template Traits<R>;
+
+    /// Interface type of the local function
+    using LocalFunctionInterface = LocalFunction<LocalSignature, Element, LocalDerivativeTraits, bufferSize>;
+
+    /// Internal concept type for type erasure
+    using Concept = GridFunctionWrapperInterface<S, DerivativeInterface, LocalFunctionInterface, ES>;
+
+    /// Internal model template for type erasure
+    template<class B>
+    using Model = GridFunctionWrapperImplementation<S, DerivativeInterface, LocalFunctionInterface, ES, B>;
+  };
+}
+
+
+
 /**
  * \brief Class storing differentiable functions using type erasure
  *
@@ -37,42 +81,13 @@ class GridFunction
 template<class Range, class Domain, class ES, template<class> class DerivativeTraits, size_t bufferSize>
 class GridFunction<Range(Domain), ES, DerivativeTraits, bufferSize>
 {
-  using RawDomain = typename std::decay<Domain>::type;
-public:
+  using Traits = Imp::GridFunctionTraits<Range(Domain), ES, DerivativeTraits, bufferSize>;
 
-  /**
-   * \brief Signature of wrapped functions
-   */
-  using Signature = Range(Domain);
+  using DerivativeInterface = typename Traits::DerivativeInterface;
 
-  /**
-   * \brief Signature of derivative of wrapped functions
-   */
-  using DerivativeSignature = typename DerivativeTraits<Range(RawDomain)>::Range(Domain);
+  using LocalFunctionInterface = typename Traits::LocalFunctionInterface;
 
-  /**
-   * \brief Wrapper type of returned derivatives
-   */
-  using DerivativeInterface = GridFunction<DerivativeSignature, ES, DerivativeTraits, bufferSize>;
-
-  using EntitySet = ES;
-
-  // \todo Should this be called local context?
-  using Element = typename EntitySet::Element;
-
-  using LocalDomain = typename EntitySet::LocalCoordinate;
-
-  /**
-   * \brief Wrapper type of returned local functions
-   */
-  using LocalFunctionInterface = LocalFunction<Range(LocalDomain), Element, LocalDerivativeTraits<EntitySet, DerivativeTraits>::template Traits, bufferSize>;
-
-protected:
-
-  using WrapperIf = Imp::GridFunctionWrapperInterface<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet>;
-
-  template<class B>
-  using WrapperImp = Imp::GridFunctionWrapperImplementation<Signature, DerivativeInterface, LocalFunctionInterface, EntitySet, B>;
+  using EntitySet = typename Traits::EntitySet;
 
 public:
 
@@ -89,7 +104,7 @@ public:
    */
   template<class F, disableCopyMove<GridFunction, F> = 0 >
   GridFunction(F&& f) :
-    f_(Imp::TypeErasureDerived<WrapperIf, WrapperImp, typename std::decay<F>::type>(std::forward<F>(f)))
+    f_(Imp::TypeErasureDerived<typename Traits::Concept, Traits::template Model, typename std::decay<F>::type>(std::forward<F>(f)))
   {}
 
   GridFunction() = default;
@@ -136,7 +151,7 @@ public:
 
 
 private:
-  PolymorphicSmallObject<Imp::TypeErasureBase<WrapperIf>, bufferSize > f_;
+  PolymorphicSmallObject<Imp::TypeErasureBase<typename Traits::Concept>, bufferSize > f_;
 };
 
 
