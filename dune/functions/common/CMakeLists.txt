@@ -16,4 +16,5 @@ install(FILES
         signature.hh
         type_traits.hh
         typeerasure.hh
+        typelist.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/common)

@@ -6,41 +6,14 @@
 #include <type_traits>
 #include <utility>
 
+#include <dune/functions/common/typelist.hh>
+
 namespace Dune {
 namespace Functions {
 namespace Concept {
 
 namespace Imp // All types and functions in this namespace are implementation details
 {
-  // A simple type list. If T... is not empty
-  // it provides access to Head and Tail.
-  template<class... T>
-  struct TypeList
-  {};
-
-  template<class T0, class... T>
-  struct TypeList<T0, T...>
-  {
-    typedef T0 Head;
-    typedef TypeList<T...> Tail;
-  };
-
-
-  // Simplify recognition of lists
-  template<class T>
-  struct IsTypeList : std::false_type {};
-
-  template<class... T>
-  struct IsTypeList<TypeList<T...> > : std::true_type {};
-
-  template<class T>
-  static constexpr bool isTypeList()
-  { return IsTypeList<T>(); }
-
-  template<class T>
-  static constexpr bool isEmptyTypeList()
-  { return isTypeList<T>() and std::is_same<T, TypeList<> >(); }
-
 
   // Base class to mark refined concepts
   // Please derive from the derived template Concept::Refines
@@ -160,7 +133,7 @@ static constexpr bool models()
 template<class... Base>
 struct Refines : Imp::RefinedConcept
 {
-  typedef Imp::TypeList<Base...> BaseConceptList;
+  typedef TypeList<Base...> BaseConceptList;
 };
 
 
