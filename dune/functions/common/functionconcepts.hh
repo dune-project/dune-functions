@@ -89,6 +89,29 @@ static constexpr bool isDifferentiableFunction(F&& f, SignatureTag<Signature, De
 
 
 
+// LocalFunction concept ##############################################
+template<class Signature, class LocalContext, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+struct LocalFunction;
+
+template<class Range, class Domain, class LocalContext, template<class> class DerivativeTraits>
+struct LocalFunction<Range(Domain), LocalContext, DerivativeTraits> :
+    Refines<Dune::Functions::Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> >
+{
+  template<class F>
+  auto require(F&& f) -> decltype(
+    f.bind(std::declval<LocalContext>()),
+    f.unbind(),
+    requireConvertible<decltype(f.localContext()), LocalContext>()
+  );
+};
+
+/// Check if F models the LocalFunction concept with given signature and local context
+template<class F, class Signature, class LocalContext, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+static constexpr bool isLocalFunction()
+{ return Concept::models<Concept::LocalFunction<Signature, LocalContext, DerivativeTraits>, F>(); }
+
+
+
 }}} // namespace Dune::Functions::Concept
 
 #endif // DUNE_FUNCTIONS_COMMON_FUNCTIONCONCEPT_HH
