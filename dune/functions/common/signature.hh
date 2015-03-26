@@ -5,6 +5,8 @@
 
 #include <type_traits>
 
+#include <dune/functions/common/defaultderivativetraits.hh>
+
 namespace Dune {
 namespace Functions {
 
@@ -23,6 +25,9 @@ struct SignatureTraits<R(D)>
     using RawDomain = typename std::decay<Domain>::type;
 
     using RawSignature = RawRange(RawDomain);
+
+    template<template<class> class DerivativeTraits=DefaultDerivativeTraits>
+    using DerivativeSignature = typename DerivativeTraits<RawSignature>::Range(Domain);
 };
 
 
