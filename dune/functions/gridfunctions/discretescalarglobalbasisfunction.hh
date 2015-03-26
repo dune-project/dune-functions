@@ -8,6 +8,7 @@
 #include <dune/common/shared_ptr.hh>
 
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
+#include <dune/functions/gridfunctions/gridfunction.hh>
 
 namespace Dune {
 namespace Functions {
@@ -25,6 +26,8 @@ public:
 
   using LocalDomain = typename EntitySet::LocalCoordinate;
   using Element = typename EntitySet::Element;
+
+  using Traits = Imp::GridFunctionTraits<Range(Domain), EntitySet, DefaultDerivativeTraits, 16>;
 
   class LocalFunction
   {
@@ -110,6 +113,11 @@ public:
     const Element& localContext() const
     {
       return localBasisView_.element();
+    }
+
+    friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction& t)
+    {
+      DUNE_THROW(NotImplemented,"not implemented");
     }
 
   private:
