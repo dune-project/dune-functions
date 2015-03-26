@@ -60,6 +60,9 @@ namespace Imp
     template<class R>
     using LocalDerivativeTraits = typename Dune::Functions::LocalDerivativeTraits<EntitySet, DerivativeTraits>::template Traits<R>;
 
+    /// LocalFunctionTraits associated with this type
+    using LocalFunctionTraits = typename Dune::Functions::Imp::LocalFunctionTraits<LocalSignature, Element, LocalDerivativeTraits, bufferSize>;
+
     /// Interface type of the local function
     using LocalFunctionInterface = LocalFunction<LocalSignature, Element, LocalDerivativeTraits, bufferSize>;
 
