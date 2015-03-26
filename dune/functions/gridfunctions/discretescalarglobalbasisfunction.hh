@@ -159,6 +159,11 @@ public:
     DUNE_THROW(NotImplemented,"not implemented");
   }
 
+  friend typename Traits::DerivativeInterface derivative(const DiscreteScalarGlobalBasisFunction& t)
+  {
+    DUNE_THROW(NotImplemented,"not implemented");
+  }
+
   friend LocalFunction localFunction(const DiscreteScalarGlobalBasisFunction& t)
   {
     return LocalFunction(t);
