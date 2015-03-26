@@ -38,9 +38,6 @@ namespace Imp
     /// Signature type
     using Signature = S;
 
-    /// Raw signature with unqualified types
-    using RawSignature = typename SignatureTraits<Signature>::RawSignature;
-
     /// Range type
     using Range = typename SignatureTraits<Signature>::Range;
 
@@ -48,7 +45,7 @@ namespace Imp
     using Domain = typename SignatureTraits<Signature>::Domain;
 
     /// Signature of the derivative
-    using DerivativeSignature = typename DerivativeTraits<RawSignature>::Range(Domain);
+    using DerivativeSignature = typename SignatureTraits<Signature>::template DerivativeSignature<DerivativeTraits>;
 
     /// Interface type of the derivative
     using DerivativeInterface = DifferentiableFunction<DerivativeSignature, DerivativeTraits, bufferSize>;
