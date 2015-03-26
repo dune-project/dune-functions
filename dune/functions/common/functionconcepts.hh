@@ -13,16 +13,39 @@ namespace Concept {
 
 
 
+// Callable concept ############################################################
+template<class... Args>
+struct Callable
+{
+  template<class F>
+  auto require(F&& f) -> decltype(
+    f(std::declval<Args>()...)
+  );
+};
+
+/// Check if F models the Function concept with given signature
+template<class F, class... Args>
+static constexpr bool isCallable()
+{ return Concept::models<Concept::Callable<Args...>, F>(); }
+
+/// Check if f models the Function concept with given signature
+template<class F, class... Args>
+static constexpr bool isCallable(F&& f, TypeList<Args...>)
+{ return Concept::models<Concept::Callable<Args...>, F>(); }
+
+
+
 // Function concept ############################################################
 template<class Signature>
 struct Function;
 
 template<class Range, class Domain>
-struct Function<Range(Domain)>
+struct Function<Range(Domain)> : Refines<Callable<Domain> >
 {
   template<class F>
   auto require(F&& f) -> decltype(
-    Range(f(std::declval<Domain>()))
+    // F models Function<Range(Domain)> if the result of F(Domain) is implicitly convertible to Range
+    requireTrue< std::is_convertible<typename std::result_of<F(Domain)>::type, Range>::value >()
   );
 };
 
@@ -43,13 +66,12 @@ template<class Signature, template<class> class DerivativeTraits = DefaultDeriva
 struct DifferentiableFunction;
 
 template<class Range, class Domain, template<class> class DerivativeTraits>
-struct DifferentiableFunction<Range(Domain), DerivativeTraits>
+struct DifferentiableFunction<Range(Domain), DerivativeTraits> : Refines<Dune::Functions::Concept::Function<Range(Domain)> >
 {
   using DerivativeSignature = typename SignatureTraits<Range(Domain)>::template DerivativeSignature<DerivativeTraits>;
 
   template<class F>
   auto require(F&& f) -> decltype(
-    Range(f(std::declval<Domain>())),
     requireTrue<isFunction<decltype(derivative(f)), DerivativeSignature>()>()
   );
 };
