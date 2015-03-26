@@ -15,6 +15,7 @@ namespace Functions {
 namespace Test {
 
 
+#define CHECK(B,M) ( [&]() { if (not(B)) std::cout << "TEST FAILURE:" << M << std::endl; return B;}() )
 
 template<class GridView, class F>
 double integrateGridViewFunction(const GridView& gridView, const F& f, unsigned int quadOrder)
@@ -74,57 +75,33 @@ bool checkGridViewFunction(const GridView& gridView, const F& f, double exactInt
   std::cout << "Checking integration of GridFunction<Range(Domain), EntitySet>(f) on grid view" << std::endl;
   GridFunction<Range(Domain), EntitySet> f2 = f;
   integral = integrateGridViewFunction(gridView, f2, quadOrder);
-  if (std::abs(integral-exactIntegral)> 1e-10)
-  {
-    std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
-    passed = false;
-  }
+  passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
   std::cout << "Checking integration of GridViewFunction<Range(Domain), GridView>(f) on grid view" << std::endl;
   GridViewFunction<Range(Domain), GridView> f3 = f;
   integral = integrateGridViewFunction(gridView, f3, quadOrder);
-  if (std::abs(integral-0.5)> 1e-10)
-  {
-    std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
-    passed = false;
-  }
+  passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
   std::cout << "Checking integration of makeGridFunction(f) on grid view" << std::endl;
   auto f4 = makeGridViewFunction(f, gridView);
   integral = integrateGridViewFunction(gridView, f4, quadOrder);
-  if (std::abs(integral-0.5)> 1e-10)
-  {
-    std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
-    passed = false;
-  }
+  passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
   std::cout << "Checking integration of GridViewFunction<Range(Domain), GridView>(makeGridFunction(f)) on grid view" << std::endl;
   GridViewFunction<Range(Domain), GridView> f5 = f4;
   integral = integrateGridViewFunction(gridView, f5, quadOrder);
-  if (std::abs(integral-0.5)> 1e-10)
-  {
-    std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
-    passed = false;
-  }
+  passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
   std::cout << "Checking integration of default constructed and assigned GridViewFunction<Range(Domain), GridView> on grid view" << std::endl;
   GridViewFunction<Range(Domain), GridView> f6;
   f6 = f5;
   integral = integrateGridViewFunction(gridView, f6, quadOrder);
-  if (std::abs(integral-0.5)> 1e-10)
-  {
-    std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
-    passed = false;
-  }
+  passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
   std::cout << "Checking integration of reassigned GridViewFunction<Range(Domain), GridView> on grid view" << std::endl;
   f6 = f3;
   integral = integrateGridViewFunction(gridView, f6, quadOrder);
-  if (std::abs(integral-0.5)> 1e-10)
-  {
-    std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
-    passed = false;
-  }
+  passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
   return passed;
 }
