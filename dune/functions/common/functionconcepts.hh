@@ -27,9 +27,9 @@ struct Function<Range(Domain)>
 };
 
 /// Check if F models the Function concept with given signature
-template<class F, class... T>
+template<class F, class Signature>
 static constexpr bool isFunction()
-{ return Concept::models<Concept::Function<T...>, F>(); }
+{ return Concept::models<Concept::Function<Signature>, F>(); }
 
 /// Check if f models the Function concept with given signature
 template<class F, class Signature, template<class> class DerivativeTraits>
@@ -55,9 +55,9 @@ struct DifferentiableFunction<Range(Domain), DerivativeTraits>
 };
 
 /// Check if F models the DifferentiableFunction concept with given signature
-template<class F, class... T>
+template<class F, class Signature, template<class> class DerivativeTraits>
 static constexpr bool isDifferentiableFunction()
-{ return Concept::models<Concept::DifferentiableFunction<T...>, F>(); }
+{ return Concept::models<Concept::DifferentiableFunction<Signature, DerivativeTraits>, F>(); }
 
 /// Check if f models the DifferentiableFunction concept with given signature
 template<class F, class Signature, template<class> class DerivativeTraits>
