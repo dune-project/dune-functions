@@ -11,6 +11,7 @@
 
 #include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/common/differentiablefunctionfromcallables.hh>
+#include <dune/functions/common/functionconcepts.hh>
 
 #include <dune/functions/analyticfunctions/polynomial.hh>
 #include <dune/functions/analyticfunctions/trigonometricfunction.hh>
