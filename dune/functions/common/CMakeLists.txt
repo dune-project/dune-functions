@@ -8,6 +8,7 @@ install(FILES
         differentiablefunction_imp.hh
         differentiablefunctionfromcallables.hh
         functionfromcallable.hh
+        functionconcepts.hh
         interfaces.hh
         localfunction.hh
         localfunction_imp.hh
