@@ -146,6 +146,17 @@ static constexpr bool requireTrue()
   return true;
 }
 
+// Helper function for use in concept definitions.
+// If the first passed type is not convertible to the secand, the concept will to be satisfied.
+template<class From, class To,
+  typename std::enable_if< std::is_convertible<From, To>::value, int>::type = 0>
+static constexpr bool requireConvertible()
+{
+  return true;
+}
+
+
+
 
 
 }}} // namespace Dune::Functions::Concept
