@@ -74,6 +74,7 @@ struct DifferentiableFunction<Range(Domain), DerivativeTraits> : Refines<Dune::F
 
   template<class F>
   auto require(F&& f) -> decltype(
+    derivative(f),
     requireTrue<isFunction<decltype(derivative(f)), DerivativeSignature>()>()
   );
 };
@@ -102,6 +103,7 @@ struct LocalFunction<Range(Domain), LocalContext, DerivativeTraits> :
   auto require(F&& f) -> decltype(
     f.bind(std::declval<LocalContext>()),
     f.unbind(),
+    f.localContext(),
     requireConvertible<decltype(f.localContext()), LocalContext>()
   );
 };
@@ -129,7 +131,8 @@ struct GridFunction<Range(Domain), EntitySet, DerivativeTraits> :
 
   template<class F>
   auto require(F&& f) -> decltype(
-//    localFunction(f),
+    localFunction(f),
+    f.entitySet(),
     requireTrue<isLocalFunction<decltype(localFunction(f)), LocalSignature, LocalContext, LocalDerivativeTraits>()> (),
     requireConvertible<decltype(f.entitySet()), EntitySet>()
   );
