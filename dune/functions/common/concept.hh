@@ -138,6 +138,16 @@ struct Refines : Imp::RefinedConcept
 
 
 
+// Helper function for use in concept definitions.
+// If the passed value b is not true, the concept will to be satisfied.
+template<bool b, typename std::enable_if<b, int>::type = 0>
+static constexpr bool requireTrue()
+{
+  return true;
+}
+
+
+
 }}} // namespace Dune::Functions::Concept
 
 
