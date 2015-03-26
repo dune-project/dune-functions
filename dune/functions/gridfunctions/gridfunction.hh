@@ -9,6 +9,7 @@
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/common/localfunction.hh>
+#include <dune/functions/common/functionconcepts.hh>
 #include <dune/functions/gridfunctions/localderivativetraits.hh>
 #include <dune/functions/gridfunctions/gridfunction_imp.hh>
 
@@ -113,7 +114,9 @@ public:
   template<class F, disableCopyMove<GridFunction, F> = 0 >
   GridFunction(F&& f) :
     Base(std::forward<F>(f))
-  {}
+  {
+    static_assert(Dune::Functions::Concept::isGridFunction<F, Range(Domain), EntitySet, DerivativeTraits>(), "Trying to construct a GridFunction from type that does not model the GridFunction concept");
+  }
 
   GridFunction() = default;
 
