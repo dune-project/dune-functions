@@ -45,7 +45,8 @@ struct Function<Range(Domain)> : Refines<Callable<Domain> >
   template<class F>
   auto require(F&& f) -> decltype(
     // F models Function<Range(Domain)> if the result of F(Domain) is implicitly convertible to Range
-    requireTrue< std::is_convertible<typename std::result_of<F(Domain)>::type, Range>::value >()
+//    requireTrue< std::is_convertible<typename std::result_of<F(Domain)>::type, Range>::value >()
+    requireConvertible<typename std::result_of<F(Domain)>::type, Range>()
   );
 };
 
