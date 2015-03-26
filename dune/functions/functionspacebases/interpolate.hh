@@ -13,6 +13,7 @@
 
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 #include <dune/functions/common/functionfromcallable.hh>
+#include <dune/functions/common/functionconcepts.hh>
 
 namespace Dune {
 namespace Functions {
@@ -194,8 +195,12 @@ void interpolate(const B& basis, C& coeff, F&& f, BV&& bitVector)
   using LocalBasisRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
   using LocalDomain = typename Element::Geometry::LocalCoordinate;
 
+  using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
+
   using CoefficientBlock = typename std::decay<decltype(coeff[0])>::type;
   using BitVectorBlock = typename std::decay<decltype(bitVector[0])>::type;
+
+  static_assert(Dune::Functions::Concept::isCallable<F, GlobalDomain>(), "Function passed to interpolate does not model the Callable<GlobalCoordinate> concept");
 
   auto&& gridView = basis.gridView();
 
