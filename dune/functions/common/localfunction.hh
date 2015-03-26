@@ -9,6 +9,7 @@
 #include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/common/localfunction_imp.hh>
 #include <dune/functions/common/typeerasure.hh>
+#include <dune/functions/common/functionconcepts.hh>
 
 
 
@@ -92,7 +93,9 @@ public:
   template<class F, disableCopyMove<LocalFunction, F> = 0 >
   LocalFunction(F&& f) :
     Base(std::forward<F>(f))
-  {}
+  {
+    static_assert(Dune::Functions::Concept::isLocalFunction<F, Range(Domain), LocalContext, DerivativeTraits>(), "Trying to construct a LocalFunction from type that does not model the LocalFunction concept");
+  }
 
   LocalFunction() = default;
 
