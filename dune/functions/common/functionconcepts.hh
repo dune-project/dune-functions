@@ -6,6 +6,7 @@
 
 #include <dune/functions/common/concept.hh>
 #include <dune/functions/common/signature.hh>
+#include <dune/functions/gridfunctions/localderivativetraits.hh>
 
 namespace Dune {
 namespace Functions {
@@ -109,6 +110,35 @@ struct LocalFunction<Range(Domain), LocalContext, DerivativeTraits> :
 template<class F, class Signature, class LocalContext, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 static constexpr bool isLocalFunction()
 { return Concept::models<Concept::LocalFunction<Signature, LocalContext, DerivativeTraits>, F>(); }
+
+
+
+// GridFunction concept ##############################################
+template<class Signature, class EntitySet, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+struct GridFunction;
+
+template<class Range, class Domain, class EntitySet, template<class> class DerivativeTraits>
+struct GridFunction<Range(Domain), EntitySet, DerivativeTraits> :
+    Refines<Dune::Functions::Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> >
+{
+  using LocalSignature = Range(typename EntitySet::LocalCoordinate);
+  using LocalContext = typename EntitySet::Element;
+
+  template<class R>
+  using LocalDerivativeTraits = typename Dune::Functions::LocalDerivativeTraits<EntitySet, DerivativeTraits>::template Traits<R>;
+
+  template<class F>
+  auto require(F&& f) -> decltype(
+//    localFunction(f),
+    requireTrue<isLocalFunction<decltype(localFunction(f)), LocalSignature, LocalContext, LocalDerivativeTraits>()> (),
+    requireConvertible<decltype(f.entitySet()), EntitySet>()
+  );
+};
+
+/// Check if F models the GridFunction concept with given signature and entity set
+template<class F, class Signature, class EntitySet, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+static constexpr bool isGridFunction()
+{ return Concept::models<Concept::GridFunction<Signature, EntitySet, DerivativeTraits>, F>(); }
 
 
 
