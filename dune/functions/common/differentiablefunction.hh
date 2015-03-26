@@ -10,6 +10,7 @@
 #include <dune/functions/common/differentiablefunction_imp.hh>
 #include <dune/functions/common/signature.hh>
 #include <dune/functions/common/typeerasure.hh>
+#include <dune/functions/common/functionconcepts.hh>
 
 namespace Dune {
 namespace Functions {
@@ -95,7 +96,9 @@ public:
   template<class F, disableCopyMove<DifferentiableFunction, F> = 0 >
   DifferentiableFunction(F&& f) :
     Base(std::forward<F>(f))
-  {}
+  {
+    static_assert(Dune::Functions::Concept::isFunction<F, Range(Domain)>(), "Trying to construct a DifferentiableFunction from type that does not model the Function concept");
+  }
 
   DifferentiableFunction() = default;
 
