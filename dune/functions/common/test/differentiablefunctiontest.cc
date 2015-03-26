@@ -19,6 +19,12 @@
 
 //#include "derivativecheck.hh"
 
+bool checkTrue(bool value, std::string error)
+{
+  if (not(value))
+    std::cout << "TEST FAILURE:" << error << std::endl;
+  return value;
+}
 
 // Check if interface compiles and is implementable by a simple dummy
 struct DifferentiableFunctionImplementableTest
@@ -28,6 +34,9 @@ struct DifferentiableFunctionImplementableTest
   static bool checkWithFunction(F&& f)
   {
     bool passed = true;
+    using Dune::Functions::Concept::isFunction;
+    using Dune::Functions::Concept::isDifferentiableFunction;
+    using Dune::Functions::SignatureTag;
 
     {
       std::cout << "--------------" << std::endl;
@@ -36,62 +45,74 @@ struct DifferentiableFunctionImplementableTest
 
       // Test whether I can evaluate the function somewhere
       std::cout << "Function value at x=5: " << f(5) << std::endl;
-
-
+      passed = checkTrue(isDifferentiableFunction(f, SignatureTag<double(double)>()), "Raw function f does not satisfy DifferentiableFunction concept");
 
       std::cout << std::endl << "Check calling derivatives through function object" << std::endl;
 
       // Test whether I can evaluate the first derivative
       auto df = derivative(f);
+      passed = checkTrue(isDifferentiableFunction(df, SignatureTag<double(double)>()), "Raw function df does not satisfy DifferentiableFunction concept");
       std::cout << "Derivative at x=5: " << df(5) << std::endl;
 
       // Test whether I can evaluate the second derivative through FunctionHandle
       auto ddf = derivative(df);
+      passed = checkTrue(isDifferentiableFunction(ddf, SignatureTag<double(double)>()), "Raw function ddf does not satisfy DifferentiableFunction concept");
       std::cout << "Second derivative at x=5: " << ddf(5) << std::endl;
 
       // Test whether I can evaluate the third derivative through FunctionHandle
       auto dddf = derivative(ddf);
+      passed = checkTrue(isFunction(dddf, SignatureTag<double(double)>()), "Raw function dddf does not satisfy Function concept");
       std::cout << "Third derivative at x=5: " << dddf(5) << std::endl;
-
 
 
       std::cout << std::endl << "Check calling derivatives through DifferentiableFunction object" << std::endl;
       Dune::Functions::DifferentiableFunction<double(const double&)> fi = f;
+      passed = checkTrue(isDifferentiableFunction(fi, SignatureTag<double(double)>()), "Wrapped function fi does not satisfy DifferentiableFunction concept");
 
       // Try to reassign wrapper
       fi = f;
 
       // Try assigning a default constructed wrapper
       Dune::Functions::DifferentiableFunction<double(const double&)> fii;
+      passed = checkTrue(isDifferentiableFunction(fii, SignatureTag<double(double)>()), "Wrapped function fii does not satisfy DifferentiableFunction concept");
       fii = fi;
 
       // Try to copy wrapper
       auto fiii = fii;
+      passed = checkTrue(isDifferentiableFunction(fiii, SignatureTag<double(double)>()), "Wrapped function fiii does not satisfy DifferentiableFunction concept");
 
       std::cout << "Function value at x=5: " << fiii(5) << std::endl;
       // Test whether I can evaluate the first derivative
       auto dfiii = derivative(fiii);
+      passed = checkTrue(isDifferentiableFunction(dfiii, SignatureTag<double(double)>()), "Wrapped function dfiii does not satisfy DifferentiableFunction concept");
       std::cout << "Derivative at x=5: " << dfiii(5) << std::endl;
 
       // Test whether I can evaluate the second derivative through FunctionHandle
       auto ddfiii = derivative(dfiii);
+      passed = checkTrue(isDifferentiableFunction(ddfiii, SignatureTag<double(double)>()), "Wrapped function ddfiii does not satisfy DifferentiableFunction concept");
       std::cout << "Second derivative at x=5: " << ddfiii(5) << std::endl;
 
       // Test whether I can evaluate the third derivative through FunctionHandle
       auto dddfiii = derivative(ddfiii);
+      passed = checkTrue(isFunction(dddfiii, SignatureTag<double(double)>()), "Wrapped function dddfiii does not satisfy Function concept");
       std::cout << "Third derivative at x=5: " << dddfiii(5) << std::endl;
 
       // Wrap as non-differentiable function
-      Dune::Functions::DifferentiableFunction<double(const double&)> g = [=] (const double& x) {return f(x);};
-      std::cout << "Function value at x=5: " << g(5) << std::endl;
+      auto g = [=] (const double& x) {return f(x);};
+      passed = checkTrue(isFunction(g, SignatureTag<double(double)>()), "Lambda function g does not satisfy Function concept");
+
+      Dune::Functions::DifferentiableFunction<double(const double&)> gg = [=] (const double& x) {return f(x);};
+      passed = checkTrue(isFunction(gg, SignatureTag<double(double)>()), "Wrapped function gg does not satisfy DifferentiableFunction concept");
+      std::cout << "Function value at x=5: " << gg(5) << std::endl;
 
       try {
-        auto dg = derivative(g);
+        auto dg = derivative(gg);
         passed = false;
       }
       catch (Dune::NotImplemented e)
       {
         std::cout << "Obtaining derivative from nondifferentiable function failed expectedly" << std::endl;
+        passed = checkTrue(not(isDifferentiableFunction(g, SignatureTag<double(double)>())), "But unwrapped function g does satisfy DifferentiableFunction concept");
       }
 
     }
