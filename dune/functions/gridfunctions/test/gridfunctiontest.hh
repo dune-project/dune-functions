@@ -5,6 +5,7 @@
 
 #include <dune/geometry/quadraturerules.hh>
 
+#include <dune/functions/common/functionconcepts.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
@@ -59,46 +60,49 @@ bool checkGridViewFunction(const GridView& gridView, const F& f, double exactInt
   bool passed = true;
   double integral;
 
-  std::cout << "Checking integration of raw function f on grid view" << std::endl;
-  integral = integrateGridViewFunction(gridView, f, quadOrder);
-  if (std::abs(integral-0.5)> 1e-10)
-  {
-    std::cout << "ERROR: Integral is " << integral << " but should be " << exactIntegral << std::endl;
-    passed = false;
-  }
+  using Dune::Functions::Concept::isGridFunction;
 
   using EntitySet = typename F::EntitySet;
-
   using Domain = typename EntitySet::GlobalCoordinate;
   using Range = typename std::result_of<F(Domain)>::type;
 
-  std::cout << "Checking integration of GridFunction<Range(Domain), EntitySet>(f) on grid view" << std::endl;
+
+
+  std::cout << "Checking raw function f on grid view" << std::endl;
+  passed = CHECK((isGridFunction<decltype(f), Range(Domain), EntitySet>()), "Function does not model GridFunction concept");
+  integral = integrateGridViewFunction(gridView, f, quadOrder);
+  passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
+
+  std::cout << "Checking GridFunction<Range(Domain), EntitySet>(f) on grid view" << std::endl;
   GridFunction<Range(Domain), EntitySet> f2 = f;
+  passed = CHECK((isGridFunction<decltype(f2), Range(Domain), EntitySet>()), "Function does not model GridFunction concept");
   integral = integrateGridViewFunction(gridView, f2, quadOrder);
   passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
-  std::cout << "Checking integration of GridViewFunction<Range(Domain), GridView>(f) on grid view" << std::endl;
+  std::cout << "Checking GridViewFunction<Range(Domain), GridView>(f) on grid view" << std::endl;
   GridViewFunction<Range(Domain), GridView> f3 = f;
+  passed = CHECK((isGridFunction<decltype(f3), Range(Domain), EntitySet>()), "Function does not model GridFunction concept");
   integral = integrateGridViewFunction(gridView, f3, quadOrder);
   passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
-  std::cout << "Checking integration of makeGridFunction(f) on grid view" << std::endl;
+  std::cout << "Checking makeGridFunction(f) on grid view" << std::endl;
   auto f4 = makeGridViewFunction(f, gridView);
+  passed = CHECK((isGridFunction<decltype(f4), Range(Domain), EntitySet>()), "Function does not model GridFunction concept");
   integral = integrateGridViewFunction(gridView, f4, quadOrder);
   passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
-  std::cout << "Checking integration of GridViewFunction<Range(Domain), GridView>(makeGridFunction(f)) on grid view" << std::endl;
+  std::cout << "Checking GridViewFunction<Range(Domain), GridView>(makeGridFunction(f)) on grid view" << std::endl;
   GridViewFunction<Range(Domain), GridView> f5 = f4;
   integral = integrateGridViewFunction(gridView, f5, quadOrder);
   passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
-  std::cout << "Checking integration of default constructed and assigned GridViewFunction<Range(Domain), GridView> on grid view" << std::endl;
+  std::cout << "Checking default constructed and assigned GridViewFunction<Range(Domain), GridView> on grid view" << std::endl;
   GridViewFunction<Range(Domain), GridView> f6;
   f6 = f5;
   integral = integrateGridViewFunction(gridView, f6, quadOrder);
   passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
 
-  std::cout << "Checking integration of reassigned GridViewFunction<Range(Domain), GridView> on grid view" << std::endl;
+  std::cout << "Checking reassigned GridViewFunction<Range(Domain), GridView> on grid view" << std::endl;
   f6 = f3;
   integral = integrateGridViewFunction(gridView, f6, quadOrder);
   passed = CHECK(std::abs(integral-exactIntegral) < 1e-10, "Integral is " << integral << " but should be " << exactIntegral);
