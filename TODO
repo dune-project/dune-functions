@@ -5,13 +5,15 @@ It would be nice to prefix your statements with your initials
 or one more letter if needed.
 
 # IO
-* Make SubsamplingVTKWriter accept a DiscreteScalarGlobalBasisFunction
+* OS: Make SubsamplingVTKWriter accept a DiscreteScalarGlobalBasisFunction
   directly, rather than a local function
 
 # Function space basis interface
-* The TaylorHoodIndexSet class currently contains two members
+* OS: The TaylorHoodIndexSet class currently contains two members
+
     enum { multiIndexMaxSize = 2 };
     size_type dimension() const;
+
   which were never officially discussed.  Christian added them because
   something like this was needed, but we may want to discuss these
   methods at the next meeting.
@@ -24,36 +26,46 @@ or one more letter if needed.
 
 
 
-# DifferentiableFunction interface
-* CaG: Should the derivative type for a Function<FV<T,n>, FM<T,m,1> >
-  mapping a vector FV<T,n> to a single columns matrix FM<T,m,1>
-  be the FM<T,n,m> ? If yes we would have second derivatives
-  for functions mapping FV<T,n> to FV<T,1>.
-
+# DefaultDerivativeTraits
+* CaG: Should the derivative range for a function with signature
+  FM<T,m,1>(FV<T,n>) be FM<T,n,m> ? If yes we would have second
+  derivatives for functions mapping FV<T,n> to FV<T,1>.
 
 
 
 # EntitySet interface
 * CaG: It seems that the EntitySet concept and GridViewEntitySet are
   candidates for dune-grid.
-* CaG: Should the EntitySet export the grid type?
-* CaG: If yes, should EntitySet store/export a pointer/reference to the grid?
 
 
 
-# GridFunction interface
+# GridFunction concept
 * CaG: Should GridFunction export the grid type?
-* CaG: If yes, should GridFunction store/export a pointer/reference to the grid?
-* CaG: Does the current GridFunction interface support Element!=Entiy<0> ?
-  We dicussed that we would in priciple like such functions in the future.
-  With the current interface GridFunction could directly support this
-  since the type Element and LocalCoordinate is fully parametrized
-  by the EntitySet.
+* CaG: If yes, should GridFunction store/export a pointer to the grid?
+* CaG: While LocalFunction is defined in a grid-agnostig way with
+  local coordinates from a 'LocalContext'. In contrast to this
+  the naming of GridFunction is linked to Grids:
+  entitySet(), LocalContext=decltype(entitySet())::Element.
+  There seems to be no need for this and we could
+  simply rename this in a grid-agnostic way if someone
+  comes up with better names than LocalizableFunction,
+  localContextSet()
 
 
 
-# GridViewFunction interface
-* CaG: Should GridViewnction default-implement the global evaluate() method?
+# LocalFunction concept
+* CaG: What's the precise definition of a local function?
+  Currently it represents a GridFunction locally it
+  terms of local coordinates. However its derivatives
+  (not the values!) are still returned wrt the global
+  coordinate system, exactly like GlobalFiniteElement does.
+  Although the LocalFunctions implements the DifferentiableFunction
+  concept, this  makes its derivatives somehow inconsistent.
+
+
+
+# GridViewFunction concept
+* CaG: Should GridViewFunction default-implement the global evaluate() method?
   This would be as simple as
 
     typedef typename GridView::Grid::template Codim<0>::EntityPointer ElementPointer;
