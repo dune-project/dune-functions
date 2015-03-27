@@ -4,6 +4,19 @@ Feel free to put your wishes and questions into this file.
 It would be nice to prefix your statements with your initials
 or one more letter if needed.
 
+# IO
+* Make SubsamplingVTKWriter accept a DiscreteScalarGlobalBasisFunction
+  directly, rather than a local function
+
+# Function space basis interface
+* The TaylorHoodIndexSet class currently contains two members
+    enum { multiIndexMaxSize = 2 };
+    size_type dimension() const;
+  which were never officially discussed.  Christian added them because
+  something like this was needed, but we may want to discuss these
+  methods at the next meeting.
+
+
 
 # Development
 * CaG: Should we discuss the further development using a bug tracker?

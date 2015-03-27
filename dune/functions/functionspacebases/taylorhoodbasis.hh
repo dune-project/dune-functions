@@ -124,11 +124,12 @@ public:
   typedef TaylorHoodLocalIndexSet<GV> LocalIndexSet;
 
   typedef std::size_t size_type;
-#warning new interface enum
+
+  /** \todo This enum has been added to the interface without prior discussion. */
   enum { multiIndexMaxSize = 2 };
   typedef std::array<size_type,2> MultiIndex;
 
-#warning new interface method
+  /** \todo This method has been added to the interface without prior discussion. */
   size_type dimension() const
   {
     return dim * pq2IndexSet_.size()
