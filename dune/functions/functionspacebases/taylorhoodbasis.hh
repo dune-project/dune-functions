@@ -287,7 +287,7 @@ public:
    */
   const Element& element() const
   {
-    pq1localView_.element();
+    return pq1localView_.element();
   }
 
   /** \brief Unbind from the current element
