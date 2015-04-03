@@ -155,6 +155,16 @@ static constexpr bool requireConvertible()
   return true;
 }
 
+// Helper function for use in concept definitions.
+// This will always evaluate to true. If just allow
+// to turn a type into an expression. The failure happens
+// already during substitution for the type argument.
+template<typename T>
+static constexpr bool requireType()
+{
+  return true;
+}
+
 
 
 

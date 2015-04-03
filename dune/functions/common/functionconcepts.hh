@@ -115,6 +115,24 @@ static constexpr bool isLocalFunction()
 
 
 
+// EntitySet concept ##############################################
+struct EntitySet
+{
+  template<class E>
+  auto require(E&& f) -> decltype(
+    requireType<typename E::Element>(),
+    requireType<typename E::LocalCoordinate>(),
+    requireType<typename E::GlobalCoordinate>()
+  );
+};
+
+/// Check if F models the GridFunction concept with given signature and entity set
+template<class E>
+static constexpr bool isEntitySet()
+{ return Concept::models<Concept::EntitySet, E>(); }
+
+
+
 // GridFunction concept ##############################################
 template<class Signature, class EntitySet, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 struct GridFunction;
@@ -134,7 +152,9 @@ struct GridFunction<Range(Domain), EntitySet, DerivativeTraits> :
     localFunction(f),
     f.entitySet(),
     requireTrue<isLocalFunction<decltype(localFunction(f)), LocalSignature, LocalContext, LocalDerivativeTraits>()> (),
-    requireConvertible<decltype(f.entitySet()), EntitySet>()
+    requireTrue<isEntitySet<EntitySet>()>(),
+    requireConvertible<decltype(f.entitySet()), EntitySet>(),
+    requireConvertible<typename EntitySet::GlobalCoordinate, Domain>()
   );
 };
 
