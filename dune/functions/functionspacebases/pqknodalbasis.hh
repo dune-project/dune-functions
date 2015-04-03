@@ -431,6 +431,7 @@ class PQKNodalBasisLeafNode :
 {
   typedef PQKNodalBasis<GV,k> GlobalBasis;
   static const int dim = GV::dimension;
+  static const int maxSize = StaticPower<(k+1),GV::dimension>::power;
 
   typedef typename GV::template Codim<0>::Entity E;
   typedef typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k> FiniteElementCache;
@@ -480,7 +481,12 @@ public:
   //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
   size_type localIndex(size_type i) const DUNE_FINAL
   {
-    return i;
+    return localIndices_[i];
+  }
+
+  void setLocalIndex(size_type leafindex, size_type localindex) DUNE_FINAL
+  {
+    localIndices_[leafindex] = localindex;
   }
 
 protected:
@@ -490,11 +496,14 @@ protected:
   {
     element_ = &e;
     finiteElement_ = &(cache_.get(element_->type()));
+    for(auto i=0; i<localIndices_.size(); ++i)
+      setLocalIndex(i, i);
   }
 
   FiniteElementCache cache_;
   const FiniteElement* finiteElement_;
   const Element* element_;
+  std::array<size_type, maxSize> localIndices_;
 };
 
 } // end namespace Functions
