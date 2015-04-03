@@ -344,8 +344,7 @@ public:
 
   /** \brief Construct local view for a given global finite element basis */
   PQKNodalBasisLocalView(const GlobalBasis* globalBasis) :
-    globalBasis_(globalBasis),
-    tree_(globalBasis)
+    globalBasis_(globalBasis)
   {}
 
   /** \brief Bind the view to a grid element
@@ -450,8 +449,7 @@ public:
   typedef typename Interface::Element Element;
   typedef typename Interface::FiniteElement FiniteElement;
 
-  PQKNodalBasisLeafNode(const GlobalBasis* globalBasis) :
-    globalBasis_(globalBasis),
+  PQKNodalBasisLeafNode() :
     finiteElement_(nullptr),
     element_(nullptr)
   {}
@@ -494,7 +492,6 @@ protected:
     finiteElement_ = &(cache_.get(element_->type()));
   }
 
-  const GlobalBasis* globalBasis_;
   FiniteElementCache cache_;
   const FiniteElement* finiteElement_;
   const Element* element_;
