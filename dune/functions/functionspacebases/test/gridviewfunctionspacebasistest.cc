@@ -223,17 +223,21 @@ void testScalarBasis(const Basis& feBasis,
     DUNE_THROW(Dune::Exception, "Error: integral value is wrong!");
 }
 
-int main (int argc, char* argv[]) try
+template <int dim>
+void testOnStructuredGrid()
 {
+  std::cout << "   +++++++++++  Testing on structured " << dim << "d grids  ++++++++++++" << std::endl;
+
   // Generate grid for testing
-  const int dim = 2;
   typedef YaspGrid<dim> GridType;
-  FieldVector<double,dim> l(1);
-  std::array<int,dim> elements = {{10, 10}};
+  FieldVector<double,dim> l;
+  std::fill(l.begin(), l.end(), 1.0);
+  std::array<int,dim> elements;
+  std::fill(elements.begin(), elements.end(), 2);
   GridType grid(l,elements);
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
-  typedef GridType::LeafGridView GridView;
+  typedef typename GridType::LeafGridView GridView;
   const GridView& gridView = grid.leafGridView();
 
   // Test PQ1NodalBasis
@@ -252,6 +256,12 @@ int main (int argc, char* argv[]) try
   PQKNodalBasis<GridView, 4> pq4Basis(gridView);
   testScalarBasis(pq4Basis, true);
 
+}
+
+int main (int argc, char* argv[]) try
+{
+  testOnStructuredGrid<1>();
+  testOnStructuredGrid<2>();
   return 0;
 
 } catch ( Dune::Exception &e )
