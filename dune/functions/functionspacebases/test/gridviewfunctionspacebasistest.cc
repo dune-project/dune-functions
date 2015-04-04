@@ -17,15 +17,20 @@
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/bsplinebasis.hh>
 
 using namespace Dune;
 using namespace Dune::Functions;
 
-/** \param disabledLocalTests Allows to disable certain local tests (see dune-localfunctions/dune/localfunctions/test/test-localfe.hh)
+/** \param disableInterpolate Not all bases can correctly represent the linear function
+ *      that we use to test whether integrating over a given function gives the correct
+ *      value (e.g. basis without dofs on the boundary).  Therefore we allow to disable this test.
+ *  \param disabledLocalTests Allows to disable certain local tests (see dune-localfunctions/dune/localfunctions/test/test-localfe.hh)
  */
 template <typename Basis>
 void testScalarBasis(const Basis& feBasis,
                      bool isPartitionOfUnity,
+                     bool disableInterpolate = false,
                      char disabledLocalTests = DisableNone)
 {
   static const int dim = Basis::GridView::dimension;
@@ -155,7 +160,10 @@ void testScalarBasis(const Basis& feBasis,
   //////////////////////////////////////////////////////////////////////////////////////////
 
   std::vector<double> x(indexSet.size());
-  interpolate(feBasis, x, [](FieldVector<double,dim> x){ return x[0]; });
+  if (! disableInterpolate)
+    interpolate(feBasis, x, [](FieldVector<double,dim> x){ return x[0]; });
+  else  // dummy values
+    std::fill(x.begin(), x.end(), 0.5);
 
   // Objects required in the local context
   auto localIndexSet2 = feBasis.indexSet().localIndexSet();
@@ -222,7 +230,7 @@ void testScalarBasis(const Basis& feBasis,
     localView.unbind();
   }
 
-  if (std::abs(integral-0.5) > 1e-10)
+  if (!disableInterpolate && std::abs(integral-0.5) > 1e-10)
     DUNE_THROW(Dune::Exception, "Error: integral value is wrong!");
 }
 
@@ -261,6 +269,36 @@ void testOnStructuredGrid()
   if (dim<3) // Currently not implemented for dim >= 3
     testScalarBasis(pq4Basis, true);
 
+  // Testing B-spline basis with open knot vectors
+  std::vector<double> knotVector(elements[0]+1);
+  for (size_t i=0; i<knotVector.size(); i++)
+    knotVector[i] = i*l[0] / elements[0];
+
+  // Test open knot vectors
+  std::cout << "  Testing B-spline basis with open knot vectors" << std::endl;
+  for (unsigned int order : {0, 1, 2})
+  {
+    std::cout << "   order: " << order << std::endl;
+
+    BSplineBasis<GridView> bSplineBasis(gridView, knotVector, order);
+    testScalarBasis(bSplineBasis,
+                    true,
+                    true,      // Don't interpolate a given function and try to integrate over it
+                    DisableLocalInterpolation);
+  }
+
+  // Testing B-spline basis with non-open knot vectors
+  std::cout << "  Testing B-spline basis with non-open knot vectors" << std::endl;
+  for (unsigned int order : {0, 1, 2})
+  {
+    std::cout << "   order: " << order << std::endl;
+
+    BSplineBasis<GridView> bSplineBasis(gridView, knotVector, order, false);
+    testScalarBasis(bSplineBasis,
+                    order==0,   // only zero-order B-splines for a partition of unity
+                    true,      // Don't interpolate a given function and try to integrate over it
+                    DisableLocalInterpolation);
+  }
 }
 
 int main (int argc, char* argv[]) try
