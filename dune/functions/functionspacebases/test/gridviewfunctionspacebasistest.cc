@@ -250,11 +250,13 @@ void testOnStructuredGrid()
 
   // Test PQKNodalBasis for k==3
   PQKNodalBasis<GridView, 3> pq3Basis(gridView);
-  testScalarBasis(pq3Basis, true);
+  if (dim<3) // Currently not implemented for dim >= 3
+    testScalarBasis(pq3Basis, true);
 
   // Test PQKNodalBasis for k==4
   PQKNodalBasis<GridView, 4> pq4Basis(gridView);
-  testScalarBasis(pq4Basis, true);
+  if (dim<3) // Currently not implemented for dim >= 3
+    testScalarBasis(pq4Basis, true);
 
 }
 
@@ -262,6 +264,7 @@ int main (int argc, char* argv[]) try
 {
   testOnStructuredGrid<1>();
   testOnStructuredGrid<2>();
+  testOnStructuredGrid<3>();
   return 0;
 
 } catch ( Dune::Exception &e )
