@@ -21,9 +21,12 @@
 using namespace Dune;
 using namespace Dune::Functions;
 
+/** \param disabledLocalTests Allows to disable certain local tests (see dune-localfunctions/dune/localfunctions/test/test-localfe.hh)
+ */
 template <typename Basis>
 void testScalarBasis(const Basis& feBasis,
-                     bool isPartitionOfUnity)
+                     bool isPartitionOfUnity,
+                     char disabledLocalTests = DisableNone)
 {
   static const int dim = Basis::GridView::dimension;
 
@@ -45,7 +48,7 @@ void testScalarBasis(const Basis& feBasis,
 
     // The general LocalFiniteElement unit test from dune/localfunctions/test/test-localfe.hh
     const auto& lFE = localView.tree().finiteElement();
-    testFE(lFE);
+    testFE(lFE, disabledLocalTests);
   }
 
   /////////////////////////////////////////////////////////////////////////
