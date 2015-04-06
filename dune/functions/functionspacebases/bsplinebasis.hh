@@ -8,7 +8,6 @@
 /** \todo Don't use this matrix */
 #include <dune/common/dynmatrix.hh>
 
-#include <dune/common/version.hh>
 
 namespace Dune
 {
