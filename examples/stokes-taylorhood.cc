@@ -281,12 +281,9 @@ int main (int argc, char *argv[]) try
   typedef FieldVector<BlockVector<FieldVector<double,1> >, 2> VectorType;
   typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
 
-  ReservedVector<size_t,2> velocityPrefix = {0};
-  ReservedVector<size_t,2> pressurePrefix = {1};
-
   VectorType rhs;
-  rhs[0].resize(taylorHoodBasis.indexSet().size(velocityPrefix));
-  rhs[1].resize(taylorHoodBasis.indexSet().size(pressurePrefix));
+  rhs[0].resize(taylorHoodBasis.indexSet().size({0}));
+  rhs[1].resize(taylorHoodBasis.indexSet().size({1}));
   rhs[0] = 0;
   rhs[1] = 0;
   MatrixType stiffnessMatrix;
@@ -301,8 +298,8 @@ int main (int argc, char *argv[]) try
   //   Choose an initial iterate
   /////////////////////////////////////////////////
   VectorType x;
-  x[0].resize(taylorHoodBasis.indexSet().size(velocityPrefix));
-  x[1].resize(taylorHoodBasis.indexSet().size(pressurePrefix));
+  x[0].resize(taylorHoodBasis.indexSet().size({0}));
+  x[1].resize(taylorHoodBasis.indexSet().size({1}));
   x[0] = 0;
   x[1] = 0;
 
