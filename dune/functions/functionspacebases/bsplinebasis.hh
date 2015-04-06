@@ -741,7 +741,7 @@ public:
     std::fill(elements_.begin(), elements_.end(), knotVector.size()-1);
 
     // Mediocre sanity check: we don't know the number of grid elements in each direction.
-    // but at least we now the total number of elements.
+    // but at least we know the total number of elements.
     assert( std::accumulate(elements_.begin(), elements_.end(), 1, std::multiplies<uint>()) == gridView_.size(0) );
 
     for (int i=0; i<dim; i++)
