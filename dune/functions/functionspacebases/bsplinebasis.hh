@@ -762,6 +762,61 @@ public:
     std::fill(order_.begin(), order_.end(), order);
   }
 
+  /** \brief Construct a B-spline basis for a given grid view with uniform knot vectors
+   *
+   * The grid *must* match the knot vectors, i.e.:
+   *  - The grid must be structured and Cartesian, and have cube elements only
+   *  - Bounding box and number of elements of the grid must match the corresponding arguments
+   *    given to this constructor.
+   *  - The element spacing must be uniform
+   *  - When ordering the grid elements according to their indices, the resulting order must
+   *    be lexicographical, with the x-index increasing fastest.
+   *
+   * Unfortunately, not all of these conditions can be checked for automatically.
+   *
+   * \param gridView The grid we are defining the basis on
+   * \param lowerLeft Lower left corner of the structured grid
+   * \param upperRight Upper right corner of the structured grid
+   * \param elements Number of elements in each coordinate direction
+   * \param order B-spline order, will be used for all coordinate directions
+   * \param makeOpen If this is true, then knots are prepended and appended to the knot vector to make the knot vector 'open'.
+   *        i.e., start and end with 'order+1' identical knots.  Basis functions from such knot vectors are interpolatory at
+   *        the end of the parameter interval.
+   */
+  BSplineBasis(const GridView& gridView,
+               const FieldVector<double,dim>& lowerLeft,
+               const FieldVector<double,dim>& upperRight,
+               const array<unsigned int,dim>& elements,
+               unsigned int order,
+               bool makeOpen = true)
+  : elements_(elements),
+    gridView_(gridView),
+    indexSet_(this)
+  {
+    // Mediocre sanity check: we don't know the number of grid elements in each direction.
+    // but at least we know the total number of elements.
+    assert( std::accumulate(elements_.begin(), elements_.end(), 1, std::multiplies<uint>()) == gridView_.size(0) );
+
+    for (int i=0; i<dim; i++)
+    {
+      // Prepend the correct number of additional knots to open the knot vector
+      //! \todo maybe test whether the knot vector is already open?
+      if (makeOpen)
+        for (unsigned int j=0; j<order; j++)
+          knotVectors_[i].push_back(lowerLeft[i]);
+
+      // Construct the actual knot vector
+      for (size_t j=0; j<elements[i]+1; j++)
+        knotVectors_[i].push_back(lowerLeft[i] + j*(upperRight[i]-lowerLeft[i]) / elements[i]);
+
+      if (makeOpen)
+        for (unsigned int j=0; j<order; j++)
+          knotVectors_[i].push_back(upperRight[i]);
+    }
+
+    std::fill(order_.begin(), order_.end(), order);
+  }
+
   /** \brief Obtain the grid view that the basis is defined on
    */
   const GridView& gridView() const DUNE_FINAL
