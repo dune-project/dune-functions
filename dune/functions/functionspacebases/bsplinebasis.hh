@@ -325,6 +325,11 @@ public:
     return i;
   }
 
+  void setLocalIndex(size_type leafindex, size_type localindex) DUNE_FINAL
+  {
+    DUNE_THROW(Dune::NotImplemented, "BSplineBasisLeafNode does not support setLocalIndex() yet");
+  }
+
 private:
   /** \brief Bind to an element
    *
