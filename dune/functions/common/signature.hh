@@ -11,6 +11,40 @@ namespace Dune {
 namespace Functions {
 
 /**
+ * \brief Helper class to check that F is callable
+ */
+template<typename F>
+struct IsCallable;
+
+#ifndef DOXYGEN
+template<typename F>
+struct IsCallable
+{
+    struct yes { std::size_t dummy[2]; };
+    struct no  { std::size_t dummy[1]; };
+
+    template<typename C>
+    static yes test(const decltype(&C::operator()) *);
+    template<typename C>
+    static no  test(...);
+
+    enum { value = (sizeof(test<F>(0)) == sizeof(yes)) };
+};
+
+template<typename R, typename D>
+struct IsCallable<R(D)>
+{
+    enum { value = true };
+};
+
+template<typename R, typename D>
+struct IsCallable<R(*)(D)>
+{
+    enum { value = true };
+};
+#endif
+
+/**
  * \brief Helper class to deduce the signature of a callable
  */
 template<class Signature>
