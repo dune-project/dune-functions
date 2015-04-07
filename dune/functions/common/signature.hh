@@ -47,31 +47,37 @@ struct IsCallable<R(*)(D)>
 /**
  * \brief Helper class to deduce the signature of a callable
  */
-template<class Signature>
-struct SignatureTraits;
+template<class Signature, bool isCallable = IsCallable<Signature>::value >
+struct SignatureTraits {};
 
 #ifndef DOXYGEN
 /** \brief deduce the signature of the operator() of a class T */
 template<class T>
-struct SignatureTraits
-    : public SignatureTraits<decltype(&T::operator())>
+struct SignatureTraits<T, true>
+    : public SignatureTraits<decltype(&T::operator()), true>
 {};
 
 /** \brief deduce the signature of an arbitrary const member function of class C */
 template <typename C, typename R, typename D>
-struct SignatureTraits<R(C::*)(D) const>
-    : public SignatureTraits<R(D)>
+struct SignatureTraits<R(C::*)(D) const, true>
+    : public SignatureTraits<R(D), true>
 {};
 
 /** \brief deduce the signature of an arbitrary member function of class C */
 template <typename C, typename R, typename D>
-struct SignatureTraits<R(C::*)(D)>
-    : public SignatureTraits<R(D)>
+struct SignatureTraits<R(C::*)(D), true>
+    : public SignatureTraits<R(D), true>
+{};
+
+/** \brief extract domain and range from a free functions pointer */
+template <typename R, typename D>
+struct SignatureTraits<R(*)(D), true>
+    : public SignatureTraits<R(D), true>
 {};
 
 /** \brief extract domain and range from a signature (works only for free functions) */
 template<class R, class D>
-struct SignatureTraits<R(D)>
+struct SignatureTraits<R(D), true>
 {
     using Range = R;
     using Domain = D;
