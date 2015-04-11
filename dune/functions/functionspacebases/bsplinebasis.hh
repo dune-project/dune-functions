@@ -920,9 +920,16 @@ protected:
         if (order_[i]==0)  // order-zero functions are piecewise constant, hence all derivatives are zero
           std::fill(oneDDerivatives[i].begin(), oneDDerivatives[i].end(), R(0.0));
         else
-          oneDDerivatives[i][j] = order_[i] * (lowOrderOneDValues[i][j] / (knotVectors_[i][j+order_[i]]-knotVectors_[i][j])
-                                - lowOrderOneDValues[i][j+1] / (knotVectors_[i][j+order_[i]+1]-knotVectors_[i][j+1]) );
-
+        {
+          R derivativeAddend1 = lowOrderOneDValues[i][j] / (knotVectors_[i][j+order_[i]]-knotVectors_[i][j]);
+          R derivativeAddend2 = lowOrderOneDValues[i][j+1] / (knotVectors_[i][j+order_[i]+1]-knotVectors_[i][j+1]);
+          // The two previous terms may evaluate as 0/0.  This is to be interpreted as 0.
+          if (std::isnan(derivativeAddend1))
+            derivativeAddend1 = 0;
+          if (std::isnan(derivativeAddend2))
+            derivativeAddend2 = 0;
+          oneDDerivatives[i][j] = order_[i] * ( derivativeAddend1 - derivativeAddend2 );
+        }
       }
     }
 
