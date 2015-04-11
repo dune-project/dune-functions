@@ -422,10 +422,15 @@ public:
   }
 
   /** \brief Polynomial order of the shape functions
+   *
+   * Unfortunately, the general interface of the LocalBasis class mandates that the 'order' method
+   * takes no arguments, and returns a single integer.  It therefore cannot reflect that fact that
+   * a B-spline basis function can easily have different orders in the different coordinate directions.
+   * We therefore take the conservative choice and return the maximum over the orders of all directions.
    */
   unsigned int order () const
   {
-    DUNE_THROW(NotImplemented, "!");
+    return *std::max_element(globalBasis_.order_.begin(), globalBasis_.order_.end());
   }
 
   /** \brief Return the number of basis functions on the current knot span
