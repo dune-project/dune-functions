@@ -8,6 +8,7 @@
 /** \todo Don't use this matrix */
 #include <dune/common/dynmatrix.hh>
 
+#include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 
 namespace Dune
 {
