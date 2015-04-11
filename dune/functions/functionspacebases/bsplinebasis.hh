@@ -242,8 +242,10 @@ public:
    */
   size_type maxSize() const
   {
-    /** \todo This is not correct for non-open knot vectors */
-    return size();
+    size_type result = 1;
+    for (int i=0; i<dim; i++)
+      result *= globalBasis_->order_[i]+1;
+    return result;
   }
 
   /** \brief Return the global basis that we are a view on
@@ -645,6 +647,7 @@ class BSplineBasis
 
   friend class BSplineBasisLeafNode<GV>;
   friend class BSplineLocalIndexSet<GV>;
+  friend class BSplineBasisLocalView<GV>;
   friend class BSplineLocalFiniteElement<GV,double>;
   friend class BSplineLocalBasis<GV,double>;
   friend class BSplineIndexSet<GV>;
