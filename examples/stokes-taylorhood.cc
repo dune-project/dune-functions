@@ -296,15 +296,6 @@ int main (int argc, char *argv[]) try
 
   assembleStokesProblem(taylorHoodBasis, stiffnessMatrix);
 
-  /////////////////////////////////////////////////
-  //   Choose an initial iterate
-  /////////////////////////////////////////////////
-  VectorType x(2);
-  x[0].resize(taylorHoodBasis.indexSet().size({0}));
-  x[1].resize(taylorHoodBasis.indexSet().size({1}));
-  x[0] = 0;
-  x[1] = 0;
-
   // Determine Dirichlet dofs
   typedef Functions::PQ2NodalBasis<GridView> VelocityBasis;
   VelocityBasis velocityBasis(gridView);
@@ -348,6 +339,13 @@ int main (int argc, char *argv[]) try
     }
 
   }
+
+  /////////////////////////////////////////////////
+  //   Choose an initial iterate
+  /////////////////////////////////////////////////
+
+  // Start from the rhs vector; that way the Dirichlet entries are already correct
+  VectorType x = rhs;
 
   ////////////////////////////
   //   Compute solution
