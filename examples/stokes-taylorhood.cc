@@ -15,6 +15,8 @@
 #include <dune/istl/matrix.hh>
 #include <dune/istl/bcrsmatrix.hh>
 #include <dune/istl/matrixindexset.hh>
+#include <dune/istl/solvers.hh>
+#include <dune/istl/preconditioners.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
@@ -278,10 +280,10 @@ int main (int argc, char *argv[]) try
   //   Stiffness matrix and right hand side vector
   /////////////////////////////////////////////////////////
 
-  typedef FieldVector<BlockVector<FieldVector<double,1> >, 2> VectorType;
+  typedef BlockVector<BlockVector<FieldVector<double,1> > > VectorType;
   typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
 
-  VectorType rhs;
+  VectorType rhs(2);
   rhs[0].resize(taylorHoodBasis.indexSet().size({0}));
   rhs[1].resize(taylorHoodBasis.indexSet().size({1}));
   rhs[0] = 0;
@@ -297,7 +299,7 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////
   //   Choose an initial iterate
   /////////////////////////////////////////////////
-  VectorType x;
+  VectorType x(2);
   x[0].resize(taylorHoodBasis.indexSet().size({0}));
   x[1].resize(taylorHoodBasis.indexSet().size({1}));
   x[0] = 0;
@@ -351,7 +353,25 @@ int main (int argc, char *argv[]) try
   //   Compute solution
   ////////////////////////////
 
-  // MISSING!
+  // Technicality:  turn the matrix into a linear operator
+  MatrixAdapter<MatrixType,VectorType,VectorType> op(stiffnessMatrix);
+
+  // Fancy (but only) way to not have a preconditioner at all
+  Richardson<VectorType,VectorType> preconditioner(1.0);
+
+  // Preconditioned conjugate-gradient solver
+  RestartedGMResSolver<VectorType> solver(op,
+                                          preconditioner,
+                                          1e-4,  // desired residual reduction factor
+                                          5,     // number of iterations between restarts
+                                          100,   // maximum number of iterations
+                                          2);    // verbosity of the solver
+
+  // Object storing some statistics about the solving process
+  InverseOperatorResult statistics;
+
+  // Solve!
+  solver.apply(x, rhs, statistics);
 
   ////////////////////////////////////////////////////////////////////////////
   //  Make a discrete function from the FE basis and the coefficient vector
