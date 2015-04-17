@@ -1060,11 +1060,12 @@ protected:
     for (size_t i=0; i<dim; i++)
     {
       oneDDerivatives[i].resize(oneDValues[i].size());
-      for (size_t j=0; j<oneDDerivatives[i].size(); j++)
+
+      if (order_[i]==0)  // order-zero functions are piecewise constant, hence all derivatives are zero
+        std::fill(oneDDerivatives[i].begin(), oneDDerivatives[i].end(), R(0.0));
+      else
       {
-        if (order_[i]==0)  // order-zero functions are piecewise constant, hence all derivatives are zero
-          std::fill(oneDDerivatives[i].begin(), oneDDerivatives[i].end(), R(0.0));
-        else
+        for (size_t j=0; j<oneDDerivatives[i].size(); j++)
         {
           R derivativeAddend1 = lowOrderOneDValues[i][j] / (knotVectors_[i][j+order_[i]]-knotVectors_[i][j]);
           R derivativeAddend2 = lowOrderOneDValues[i][j+1] / (knotVectors_[i][j+order_[i]+1]-knotVectors_[i][j+1]);
