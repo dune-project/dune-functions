@@ -496,7 +496,7 @@ protected:
   {
     element_ = &e;
     finiteElement_ = &(cache_.get(element_->type()));
-    for(auto i=0; i<localIndices_.size(); ++i)
+    for(size_t i=0; i<localIndices_.size(); ++i)
       setLocalIndex(i, i);
   }
 
