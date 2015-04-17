@@ -1034,18 +1034,26 @@ protected:
     // Evaluate 1d function values (needed for the product rule)
     Dune::array<std::vector<R>, dim> oneDValues;
 
-    for (size_t i=0; i<dim; i++)
-      evaluateFunctionFull(in[i], oneDValues[i], knotVectors_[i], order_[i], currentKnotSpan[i]);
-
     // Evaluate 1d function values of one order lower (needed for the derivative formula)
     Dune::array<std::vector<R>, dim> lowOrderOneDValues;
 
-    /** \todo Calling evaluateFunction again here is a waste: the lower-order values have
-     * already been computed during the first call to evaluateFunction.  Still, for the time
-     * being I leave it as is to have more readable code. */
+    Dune::array<DynamicMatrix<R>, dim> values;
+
     for (size_t i=0; i<dim; i++)
+    {
+      evaluateFunctionFull(in[i], values[i], knotVectors_[i], order_[i], currentKnotSpan[i]);
+      oneDValues[i].resize(knotVectors_[i].size()-order_[i]-1);
+      for (size_t j=0; j<oneDValues[i].size(); j++)
+        oneDValues[i][j] = values[i][order_[i]][j];
+
       if (order_[i]!=0)
-        evaluateFunctionFull(in[i], lowOrderOneDValues[i], knotVectors_[i], order_[i]-1, currentKnotSpan[i]);
+      {
+        lowOrderOneDValues[i].resize(knotVectors_[i].size()-(order_[i]-1)-1);
+        for (size_t j=0; j<lowOrderOneDValues[i].size(); j++)
+          lowOrderOneDValues[i][j] = values[i][order_[i]-1][j];
+      }
+    }
+
 
     // Evaluate 1d function derivatives
     Dune::array<std::vector<R>, dim> oneDDerivatives;
@@ -1188,15 +1196,15 @@ protected:
    * \param [out] out Vector containing the values of all B-spline functions at 'in'
    */
   static void evaluateFunctionFull(const typename GV::ctype& in,
-                                   std::vector<R>& out,
+                                   DynamicMatrix<R>& out,
                                    const std::vector<R>& knotVector,
                                    unsigned int order,
                                    unsigned int currentKnotSpan)
   {
-    out.resize(knotVector.size()-order-1);
-
     // It's not really a matrix that is needed here, a plain 2d array would do
-    DynamicMatrix<R> N(order+1, knotVector.size()-1);
+    DynamicMatrix<R>& N = out;
+
+    N.resize(order+1, knotVector.size()-1);
 
     // The text books on splines use the following geometric condition here to fill the array N
     // (see for example Cottrell, Hughes, Bazilevs, Formula (2.1).  However, this condition
@@ -1217,10 +1225,6 @@ protected:
         ? (knotVector[i+r+1] - in) / (knotVector[i+r+1] - knotVector[i+1])
         : 0;
         N[r][i] = factor1 * N[r-1][i] + factor2 * N[r-1][i+1];
-      }
-
-      for (size_t i=0; i<out.size(); i++) {
-        out[i] = N[order][i];
       }
   }
 
