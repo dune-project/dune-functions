@@ -454,30 +454,159 @@ private:
   DiagonalMatrix<D,dim> scaling_;
 };
 
-/** \brief Local coefficients in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
+/** \brief Attaches a shape function to an entity
  *
- *      \implements Dune::LocalCoefficientsVirtualImp
+ * The attachment uses the same order as for Qk elements.  This does *not* provide sufficient information
+ * to compute global indices for the shape functions.  However, it does allow to find all degrees of freedom
+ * that belong to the grid boundary, if the knot vector is open.
+ *
+ * \note Currently only implemented for 1d and 2d grids.  For higher dimensions you can still use
+ *   the BSplineBasis, but you won't be able to find the degrees of freedom on the grid boundary.
+ *
+ * \tparam dim Dimension of the reference cube
  */
-template <class GV, class R>
+template<int dim>
 class BSplineLocalCoefficients
 {
-public:
-  /** \brief Standard constructor
-   * \todo Not implemented yet
-   */
-  BSplineLocalCoefficients (const BSplineLocalFiniteElement<GV,R>& lFE)
-  : lFE_(lFE)
+  // Return i as a d-digit number in the (k+1)-nary system
+  std::array<unsigned int,dim> multiindex (unsigned int i) const
   {
-    std::cout << "WARNING: LocalCoefficients array should be initialized here!" << std::endl;
+    std::array<unsigned int,dim> alpha;
+    for (int j=0; j<dim; j++)
+    {
+      alpha[j] = i % sizes_[j];
+      i = i/sizes_[j];
+    }
+    return alpha;
   }
 
-  /** \brief Number of coefficients
-   * \todo Currently, the number of all basis functions on the entire patch is returned.
-   *   This will include many that are simply constant zero on the current knot span.
-   */
+  /** \brief Set the 'subentity' field for each dof for a 1d element */
+  void setup1d(std::vector<unsigned int>& subEntity)
+  {
+    if (sizes_[0]==1)
+    {
+      subEntity[0] = 0;
+      return;
+    }
+
+    /* edge and vertex numbering
+       0----0----1
+     */
+    unsigned lastIndex=0;
+    subEntity[lastIndex++] = 0;                 // corner 0
+    for (unsigned i = 0; i < sizes_[0] - 2; ++i)
+      subEntity[lastIndex++] = 0;               // inner dofs of element (0)
+
+    subEntity[lastIndex++] = 1;                 // corner 1
+
+    assert(size()==lastIndex);
+  }
+
+  void setup2d(std::vector<unsigned int>& subEntity)
+  {
+    unsigned lastIndex=0;
+
+    // LocalKey: entity number , entity codim, dof indices within each entity
+    /* edge and vertex numbering
+       2----3----3
+       |         |
+       |         |
+       0         1
+       |         |
+       |         |
+       0----2----1
+     */
+
+    // lower edge (2)
+    subEntity[lastIndex++] = 0;                 // corner 0
+    for (unsigned i = 0; i < sizes_[0]-2; ++i)
+      subEntity[lastIndex++] = 2;           // inner dofs of lower edge (2)
+
+    subEntity[lastIndex++] = 1;                 // corner 1
+
+    // iterate from bottom to top over inner edge dofs
+    for (unsigned e = 0; e < sizes_[1]-2; ++e)
+    {
+      subEntity[lastIndex++] = 0;                   // left edge (0)
+      for (unsigned i = 0; i < sizes_[0]-2; ++i)
+        subEntity[lastIndex++] = 0;                     // face dofs
+      subEntity[lastIndex++] = 1;                   // right edge (1)
+    }
+
+    // upper edge (3)
+    subEntity[lastIndex++] = 2;                 // corner 2
+    for (unsigned i = 0; i < sizes_[0]-2; ++i)
+      subEntity[lastIndex++] = 3;                   // inner dofs of upper edge (3)
+
+    subEntity[lastIndex++] = 3;                 // corner 3
+
+    assert(size()==lastIndex);
+  }
+
+
+public:
+  void init(const std::array<unsigned,dim>& sizes)
+  {
+    sizes_ = sizes;
+
+    li_.resize(size());
+
+    // Set up array of codimension-per-dof-number
+    std::vector<unsigned int> codim(li_.size());
+
+    for (std::size_t i=0; i<codim.size(); i++)
+    {
+      codim[i] = 0;
+      // Codimension gets increased by 1 for each coordinate direction
+      // where dof is on boundary
+      std::array<unsigned int,dim> mIdx = multiindex(i);
+      for (int j=0; j<dim; j++)
+        if (mIdx[j]==0 or mIdx[j]==sizes[j]-1)
+          codim[i]++;
+    }
+
+    // Set up index vector (the index of the dof in the set of dofs of a given subentity)
+    // Algorithm: the 'index' has the same ordering as the dof number 'i'.
+    // To make it consecutive we interpret 'i' in the (k+1)-adic system, omit all digits
+    // that correspond to axes where the dof is on the element boundary, and transform the
+    // rest to the (k-1)-adic system.
+    std::vector<unsigned int> index(size());
+
+    for (std::size_t i=0; i<index.size(); i++)
+    {
+      index[i] = 0;
+
+      std::array<unsigned int,dim> mIdx = multiindex(i);
+
+      for (int j=dim-1; j>=0; j--)
+        if (mIdx[j]>0 and mIdx[j]<sizes[j]-1)
+          index[i] = (sizes[j]-1)*index[i] + (mIdx[j]-1);
+    }
+
+    // Set up entity and dof numbers for each (supported) dimension separately
+    std::vector<unsigned int> subEntity(li_.size());
+
+    if (subEntity.size() > 0)
+    {
+      if (dim==1) {
+
+        setup1d(subEntity);
+
+      } else if (dim==2 and sizes_[0]>1 and sizes_[1]>1) {
+
+        setup2d(subEntity);
+
+      }
+    }
+
+    for (size_t i=0; i<li_.size(); i++)
+      li_[i] = LocalKey(subEntity[i], codim[i], index[i]);
+  }
+
+  //! number of coefficients
   std::size_t size () const
   {
-    return lFE_.size();
+    return std::accumulate(sizes_.begin(), sizes_.end(), 1, std::multiplies<unsigned int>());
   }
 
   //! get i'th index
@@ -487,7 +616,10 @@ public:
   }
 
 private:
-  const BSplineLocalFiniteElement<GV,R>& lFE_;
+
+  // Number of shape functions on this element per coordinate direction
+  std::array<unsigned, dim> sizes_;
+
   std::vector<LocalKey> li_;
 };
 
@@ -526,15 +658,14 @@ public:
   /** \brief Export various types related to this LocalFiniteElement
    */
   typedef LocalFiniteElementTraits<BSplineLocalBasis<GV,R>,
-  BSplineLocalCoefficients<GV,R>,
+  BSplineLocalCoefficients<dim>,
   BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R> > > Traits;
 
   /** \brief Constructor with a given B-spline basis
    */
   BSplineLocalFiniteElement(const BSplineBasis<GV>& globalBasis)
   : globalBasis_(globalBasis),
-    localBasis_(globalBasis,*this),
-    localCoefficients_(*this)
+    localBasis_(globalBasis,*this)
   {}
 
   /** \brief Bind LocalFiniteElement to a specific knot span of the spline patch
@@ -567,6 +698,12 @@ public:
       localBasis_.offset_[i] = globalBasis_.knotVectors_[i][currentKnotSpan_[i]];
       localBasis_.scaling_[i][i] = globalBasis_.knotVectors_[i][currentKnotSpan_[i]+1] - globalBasis_.knotVectors_[i][currentKnotSpan_[i]];
     }
+
+    // Set up the LocalCoefficients object
+    std::array<unsigned int, dim> sizes;
+    for (size_t i=0; i<dim; i++)
+      sizes[i] = size(i);
+    localCoefficients_.init(sizes);
   }
 
   /** \brief Hand out a LocalBasis object */
@@ -576,7 +713,7 @@ public:
   }
 
   /** \brief Hand out a LocalCoefficients object */
-  const BSplineLocalCoefficients<GV,R>& localCoefficients() const
+  const BSplineLocalCoefficients<dim>& localCoefficients() const
   {
     return localCoefficients_;
   }
@@ -619,7 +756,7 @@ private:
 
   const BSplineBasis<GV>& globalBasis_;
   BSplineLocalBasis<GV,R> localBasis_;
-  BSplineLocalCoefficients<GV,R> localCoefficients_;
+  BSplineLocalCoefficients<dim> localCoefficients_;
   BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R> > localInterpolation_;
 
   // The knot span we are bound to
