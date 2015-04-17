@@ -1026,11 +1026,31 @@ protected:
     }
   }
 
-  //! \brief Evaluate Jacobian of all B-spline basis functions
+  /** \brief Evaluate Jacobian of all B-spline basis functions
+   *
+   * In theory this is easy: just look up the formula in a B-spline text of your choice.
+   * The challenge is compute only the values needed for the current knot span.
+   */
   void evaluateJacobian (const FieldVector<typename GV::ctype,dim>& in,
                          std::vector<FieldMatrix<R,1,dim> >& out,
                          const std::array<uint,dim>& currentKnotSpan) const
   {
+    // How many shape functions to we have in each coordinate direction?
+    std::array<unsigned int, dim> limits;
+    for (int i=0; i<dim; i++)
+    {
+      limits[i] = order_[i]+1;  // The 'standard' value away from the boundaries of the knot vector
+      if (currentKnotSpan[i]<order_[i])
+        limits[i] -= (order_[i] - currentKnotSpan[i]);
+      if ( order_[i] > (knotVectors_[i].size() - currentKnotSpan[i] - 2) )
+        limits[i] -= order_[i] - (knotVectors_[i].size() - currentKnotSpan[i] - 2);
+    }
+
+    // The lowest knot spans that we need values from
+    std::array<unsigned int, dim> offset;
+    for (int i=0; i<dim; i++)
+      offset[i] = std::max((int)(currentKnotSpan[i] - order_[i]),0);
+
     // Evaluate 1d function values (needed for the product rule)
     Dune::array<std::vector<R>, dim> oneDValues;
 
@@ -1059,13 +1079,13 @@ protected:
     Dune::array<std::vector<R>, dim> oneDDerivatives;
     for (size_t i=0; i<dim; i++)
     {
-      oneDDerivatives[i].resize(oneDValues[i].size());
+      oneDDerivatives[i].resize(limits[i]);
 
       if (order_[i]==0)  // order-zero functions are piecewise constant, hence all derivatives are zero
         std::fill(oneDDerivatives[i].begin(), oneDDerivatives[i].end(), R(0.0));
       else
       {
-        for (size_t j=0; j<oneDDerivatives[i].size(); j++)
+        for (size_t j=offset[i]; j<offset[i]+limits[i]; j++)
         {
           R derivativeAddend1 = lowOrderOneDValues[i][j] / (knotVectors_[i][j+order_[i]]-knotVectors_[i][j]);
           R derivativeAddend2 = lowOrderOneDValues[i][j+1] / (knotVectors_[i][j+order_[i]+1]-knotVectors_[i][j+1]);
@@ -1074,24 +1094,26 @@ protected:
             derivativeAddend1 = 0;
           if (std::isnan(derivativeAddend2))
             derivativeAddend2 = 0;
-          oneDDerivatives[i][j] = order_[i] * ( derivativeAddend1 - derivativeAddend2 );
+          oneDDerivatives[i][j-offset[i]] = order_[i] * ( derivativeAddend1 - derivativeAddend2 );
         }
       }
     }
 
-    // Set up a multi-index to go from consecutive indices to integer coordinates
-    std::array<unsigned int, dim> limits;
+    // Working towards computing only the parts that we really need:
+    // Let's copy them out into a separate array
+    Dune::array<std::vector<R>, dim> oneDValuesShort;
+
     for (int i=0; i<dim; i++)
     {
-      // In a proper implementation, the following line would do
-      //limits[i] = oneDValues[i].size();
-      limits[i] = order_[i]+1;  // The 'standard' value away from the boundaries of the knot vector
-      if (currentKnotSpan[i]<order_[i])
-        limits[i] -= (order_[i] - currentKnotSpan[i]);
-      if ( order_[i] > (knotVectors_[i].size() - currentKnotSpan[i] - 2) )
-        limits[i] -= order_[i] - (knotVectors_[i].size() - currentKnotSpan[i] - 2);
+      oneDValuesShort[i].resize(limits[i]);
+
+      for (size_t j=0; j<limits[i]; j++)
+        oneDValuesShort[i][j]      = oneDValues[i][offset[i] + j];
     }
 
+
+
+    // Set up a multi-index to go from consecutive indices to integer coordinates
     MultiDigitCounter ijkCounter(limits);
 
     out.resize(ijkCounter.cycle());
@@ -1102,8 +1124,8 @@ protected:
       {
         out[i][0][j] = 1.0;
         for (int k=0; k<dim; k++)
-          out[i][0][j] *= (j==k) ? oneDDerivatives[k][std::max((int)(currentKnotSpan[k] - order_[k]),0) + ijkCounter[k]]
-                                 : oneDValues[k][std::max((int)(currentKnotSpan[k] - order_[k]),0) + ijkCounter[k]];
+          out[i][0][j] *= (j==k) ? oneDDerivatives[k][ijkCounter[k]]
+                                 : oneDValuesShort[k][ijkCounter[k]];
       }
 
   }
