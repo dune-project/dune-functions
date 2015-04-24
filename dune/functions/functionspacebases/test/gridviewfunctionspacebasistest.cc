@@ -17,6 +17,7 @@
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/functions/functionspacebases/bsplinebasis.hh>
 
 using namespace Dune;
@@ -268,6 +269,18 @@ void testOnStructuredGrid()
   PQKNodalBasis<GridView, 4> pq4Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
     testScalarBasis(pq4Basis, true);
+
+  // Test LagrangeDGBasis for k==1
+  LagrangeDGBasis<GridView, 1> lagrangeDG1Basis(gridView);
+  testScalarBasis(lagrangeDG1Basis, true);
+
+  // Test LagrangeDGBasis for k==2
+  LagrangeDGBasis<GridView, 2> lagrangeDG2Basis(gridView);
+  testScalarBasis(lagrangeDG2Basis, true);
+
+  // Test LagrangeDGBasis for k==3
+  LagrangeDGBasis<GridView, 3> lagrangeDG3Basis(gridView);
+  testScalarBasis(lagrangeDG3Basis, true);
 
   // Testing B-spline basis with open knot vectors
   std::vector<double> knotVector(elements[0]+1);
