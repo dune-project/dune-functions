@@ -4,6 +4,7 @@ install(FILES
         bsplinebasis.hh
         gridviewfunctionspacebasis.hh
         interpolate.hh
+        lagrangedgbasis.hh
         pq1nodalbasis.hh
         pq2nodalbasis.hh
         pqknodalbasis.hh
