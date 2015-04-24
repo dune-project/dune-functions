@@ -8,7 +8,14 @@ or one more letter if needed.
 * OS: Make SubsamplingVTKWriter accept a DiscreteScalarGlobalBasisFunction
   directly, rather than a local function
 
+# Development
+* CaG: Should we discuss the further development using a bug tracker?
+  And put everythig below into requests?
+
+#########################################
 # Function space basis interface
+#########################################
+
 * OS: The TaylorHoodIndexSet class currently contains two members
 
     enum { multiIndexMaxSize = 2 };
@@ -18,12 +25,25 @@ or one more letter if needed.
   something like this was needed, but we may want to discuss these
   methods at the next meeting.
 
+* Here is another point that needs future discussion:
+  I just added the first implementation of a basis of a DG space.
+  This one uses Lagrangian shape functions.  I expect other DG spaces using
+  other shape functions to appear eventually.  Here is the issue:  Currently,
+  the LagrangeDGBasis has the shape function type hard-wired into the code.
+  Any implementation for a DG space using a different set of shape functions
+  will differ very little from it.  Hence one may consider implementing
+  a single DGBasis, and making the shape functions a template parameter.
+  However, it is not clear what exactly this template parameter should be.
+  It cannot be a LocalFiniteElement, because that would force us to pick
+  a grid element type at compile time (you currently could not use the
+  VirtualLocalFiniteElement here, because the code does not properly set it up).
+  You cannot expect a factory here either, because then you cannot currently
+  hard-wire the element type if that is what you want.
+  I don't think this is a difficult issue, it just needs a bit of discussion.
 
-
-# Development
-* CaG: Should we discuss the further development using a bug tracker?
-  And put everythig below into requests?
-
+#########################################
+# Function interface
+#########################################
 
 
 # DefaultDerivativeTraits
