@@ -30,7 +30,7 @@ class LagrangeDGIndexSet;
 template<typename GV, int k>
 class LagrangeDGLocalIndexSet
 {
-  enum {dim = GV::dimension};
+  static const int dim = GV::dimension;
 
 public:
   typedef std::size_t size_type;
