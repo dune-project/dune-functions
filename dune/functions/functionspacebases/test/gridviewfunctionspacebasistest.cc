@@ -260,13 +260,13 @@ void testOnStructuredGrid()
   PQ2NodalBasis<GridView> pq2Basis(gridView);
   testScalarBasis(pq2Basis, true);
 
-  // Test PQKNodalBasis for k==3
-  PQKNodalBasis<GridView, 3> pq3Basis(gridView);
+  // Test PQkNodalBasis for k==3
+  PQkNodalBasis<GridView, 3> pq3Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
     testScalarBasis(pq3Basis, true);
 
-  // Test PQKNodalBasis for k==4
-  PQKNodalBasis<GridView, 4> pq4Basis(gridView);
+  // Test PQkNodalBasis for k==4
+  PQkNodalBasis<GridView, 4> pq4Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
     testScalarBasis(pq4Basis, true);
 

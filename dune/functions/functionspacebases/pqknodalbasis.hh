@@ -18,16 +18,16 @@ namespace Dune {
 namespace Functions {
 
 template<typename GV, int k>
-class PQKNodalBasisLocalView;
+class PQkNodalBasisLocalView;
 
 template<typename GV, int k>
-class PQKNodalBasisLeafNode;
+class PQkNodalBasisLeafNode;
 
 template<typename GV, int k>
-class PQKIndexSet;
+class PQkIndexSet;
 
 template<typename GV, int k>
-class PQKLocalIndexSet
+class PQkLocalIndexSet
 {
   enum {dim = GV::dimension};
 
@@ -35,12 +35,12 @@ public:
   typedef std::size_t size_type;
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
-  typedef PQKNodalBasisLocalView<GV,k> LocalView;
+  typedef PQkNodalBasisLocalView<GV,k> LocalView;
 
   /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type, 1> MultiIndex;
 
-  PQKLocalIndexSet(const PQKIndexSet<GV,k> & indexSet)
+  PQkLocalIndexSet(const PQkIndexSet<GV,k> & indexSet)
   : basisIndexSet_(indexSet)
   {}
 
@@ -49,7 +49,7 @@ public:
    * Having to bind the view to an element before being able to actually access any of its data members
    * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
    */
-  void bind(const PQKNodalBasisLocalView<GV,k>& localView)
+  void bind(const PQkNodalBasisLocalView<GV,k>& localView)
   {
     localView_ = &localView;
   }
@@ -125,12 +125,12 @@ public:
 
         if (! refElement.type(localKey.subEntity(), localKey.codim()).isTriangle()
             or k>3)
-          DUNE_THROW(Dune::NotImplemented, "PQKNodalBasis for 3D grids is only implemented if k<=3 and if the grid is a simplex grid");
+          DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids is only implemented if k<=3 and if the grid is a simplex grid");
 
         return {{ basisIndexSet_.triangleOffset_ + gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) }};
       }
     }
-    DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the PQKNodalBasis");
+    DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the PQkNodalBasis");
   }
 
   /** \brief Return the local view that we are attached to
@@ -140,18 +140,18 @@ public:
     return *localView_;
   }
 
-  const PQKNodalBasisLocalView<GV,k>* localView_;
+  const PQkNodalBasisLocalView<GV,k>* localView_;
 
-  const PQKIndexSet<GV,k> basisIndexSet_;
+  const PQkIndexSet<GV,k> basisIndexSet_;
 };
 
 template<typename GV, int k>
-class PQKIndexSet
+class PQkIndexSet
 {
   static const int dim = GV::dimension;
 
   // Needs the mapper
-  friend class PQKLocalIndexSet<GV,k>;
+  friend class PQkLocalIndexSet<GV,k>;
 
   // Precompute the number of dofs per entity type
   const int dofsPerEdge        = k-1;
@@ -163,9 +163,9 @@ class PQKIndexSet
   const int dofsPerPyramid     = ((k-2)*(k-1)*(2*k-3))/6;
 public:
 
-  typedef PQKLocalIndexSet<GV,k> LocalIndexSet;
+  typedef PQkLocalIndexSet<GV,k> LocalIndexSet;
 
-  PQKIndexSet(const GV& gridView)
+  PQkIndexSet(const GV& gridView)
   : gridView_(gridView)
   {
     vertexOffset_        = 0;
@@ -260,10 +260,10 @@ private:
  * \tparam k The order of the basis
  */
 template<typename GV, int k>
-class PQKNodalBasis
+class PQkNodalBasis
 : public GridViewFunctionSpaceBasis<GV,
-                                    PQKNodalBasisLocalView<GV,k>,
-                                    PQKIndexSet<GV,k>,
+                                    PQkNodalBasisLocalView<GV,k>,
+                                    PQkIndexSet<GV,k>,
                                     std::array<std::size_t, 1> >
 {
   static const int dim = GV::dimension;
@@ -275,13 +275,13 @@ public:
   typedef std::size_t size_type;
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
-  typedef PQKNodalBasisLocalView<GV,k> LocalView;
+  typedef PQkNodalBasisLocalView<GV,k> LocalView;
 
   /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type, 1> MultiIndex;
 
   /** \brief Constructor for a given grid view object */
-  PQKNodalBasis(const GridView& gv) :
+  PQkNodalBasis(const GridView& gv) :
     gridView_(gv),
     indexSet_(gv)
   {}
@@ -293,7 +293,7 @@ public:
     return gridView_;
   }
 
-  PQKIndexSet<GV,k> indexSet() const
+  PQkIndexSet<GV,k> indexSet() const
   {
     return indexSet_;
   }
@@ -309,17 +309,17 @@ public:
 protected:
   const GridView gridView_;
 
-  PQKIndexSet<GV,k> indexSet_;
+  PQkIndexSet<GV,k> indexSet_;
 };
 
 
 /** \brief The restriction of a finite element basis to a single element */
 template<typename GV, int k>
-class PQKNodalBasisLocalView
+class PQkNodalBasisLocalView
 {
 public:
   /** \brief The global FE basis that this is a view on */
-  typedef PQKNodalBasis<GV,k> GlobalBasis;
+  typedef PQkNodalBasis<GV,k> GlobalBasis;
   typedef typename GlobalBasis::GridView GridView;
 
   /** \brief The type used for sizes */
@@ -340,10 +340,10 @@ public:
    * In the case of a P3 space this tree consists of a single leaf only,
    * i.e., Tree is basically the type of the LocalFiniteElement
    */
-  typedef PQKNodalBasisLeafNode<GV,k> Tree;
+  typedef PQkNodalBasisLeafNode<GV,k> Tree;
 
   /** \brief Construct local view for a given global finite element basis */
-  PQKNodalBasisLocalView(const GlobalBasis* globalBasis) :
+  PQkNodalBasisLocalView(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis)
   {}
 
@@ -373,7 +373,7 @@ public:
   /** \brief Unbind from the current element
    *
    * Calling this method should only be a hint that the view can be unbound.
-   * And indeed, in the PQKNodalBasisView implementation this method does nothing.
+   * And indeed, in the PQkNodalBasisView implementation this method does nothing.
    */
   void unbind()
   {}
@@ -423,13 +423,13 @@ protected:
 
 
 template<typename GV, int k>
-class PQKNodalBasisLeafNode :
+class PQkNodalBasisLeafNode :
   public GridFunctionSpaceBasisLeafNodeInterface<
     typename GV::template Codim<0>::Entity,
     typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, GV::dimension, k>::FiniteElementType,
-    typename PQKNodalBasis<GV,k>::size_type>
+    typename PQkNodalBasis<GV,k>::size_type>
 {
-  typedef PQKNodalBasis<GV,k> GlobalBasis;
+  typedef PQkNodalBasis<GV,k> GlobalBasis;
   static const int dim = GV::dimension;
   static const int maxSize = StaticPower<(k+1),GV::dimension>::power;
 
@@ -442,7 +442,7 @@ class PQKNodalBasisLeafNode :
   typedef typename GlobalBasis::LocalView LocalView;
 
   friend LocalView;
-  friend class PQKLocalIndexSet<GV,k>;
+  friend class PQkLocalIndexSet<GV,k>;
 
 public:
   typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST> Interface;
@@ -450,7 +450,7 @@ public:
   typedef typename Interface::Element Element;
   typedef typename Interface::FiniteElement FiniteElement;
 
-  PQKNodalBasisLeafNode() :
+  PQkNodalBasisLeafNode() :
     finiteElement_(nullptr),
     element_(nullptr)
   {}
