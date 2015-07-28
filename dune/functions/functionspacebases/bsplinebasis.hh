@@ -8,6 +8,12 @@
 /** \todo Don't use this matrix */
 #include <dune/common/dynmatrix.hh>
 
+#include <dune/common/std/final.hh>
+#include <dune/localfunctions/common/localbasis.hh>
+#include <dune/common/diagonalmatrix.hh>
+#include <dune/localfunctions/common/localkey.hh>
+#include <dune/localfunctions/common/localfiniteelementtraits.hh>
+#include <dune/geometry/type.hh>
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 
 namespace Dune
@@ -413,15 +419,41 @@ public:
   }
 
   //! \brief Evaluate all shape functions and derivatives of any order
-  template<unsigned int k>
+  template<size_t k>
   inline void evaluate (const typename Dune::array<int,k>& directions,
                         const typename Traits::DomainType& in,
                         std::vector<typename Traits::RangeType>& out) const
   {
-    if (k==0)
+    switch(k)
+    {
+    case 0:
       evaluateFunction(in, out);
-    else
-      DUNE_THROW(NotImplemented, "B-Spline derivatives not implemented yet!");
+      break;
+    case 1:
+    {
+      FieldVector<D,dim> globalIn = offset_;
+      scaling_.umv(in,globalIn);
+
+      globalBasis_.evaluate(directions, globalIn, out, lFE_.currentKnotSpan_);
+
+      for (size_t i=0; i<out.size(); i++)
+        out[i][0] *= scaling_[directions[0]][directions[0]];
+      break;
+    }
+    case 2:
+    {
+      FieldVector<D,dim> globalIn = offset_;
+      scaling_.umv(in,globalIn);
+
+      globalBasis_.evaluate(directions, globalIn, out, lFE_.currentKnotSpan_);
+
+      for (size_t i=0; i<out.size(); i++)
+        out[i][0] *= scaling_[directions[0]][directions[0]]*scaling_[directions[1]][directions[1]];
+      break;
+    }
+    default:
+      DUNE_THROW(NotImplemented, "B-Spline derivatives of order " << k << " not implemented yet!");
+    }
   }
 
   /** \brief Polynomial order of the shape functions
@@ -1130,6 +1162,99 @@ protected:
 
   }
 
+  //! \brief Evaluate Derivatives of all B-spline basis functions
+  template <size_type k>
+  void evaluate(const typename std::array<int,k>& directions,
+                const FieldVector<typename GV::ctype,dim>& in,
+                std::vector<FieldVector<R,1> >& out,
+                const std::array<uint,dim>& currentKnotSpan) const
+  {
+    if (k != 1 && k != 2)
+      DUNE_THROW(RangeError, "Differentiation order greater than 2 is not supported!");
+
+    // Evaluate 1d function values (needed for the product rule)
+    std::array<std::vector<R>, dim> oneDValues;
+    std::array<std::vector<R>, dim> oneDDerivatives;
+    std::array<std::vector<R>, dim> oneDSecondDerivatives;
+
+    // Evaluate 1d function derivatives
+    if (k==1)
+      for (size_t i=0; i<dim; i++)
+        evaluateAll(in[i], oneDValues[i], true, oneDDerivatives[i], false, oneDSecondDerivatives[i], knotVectors_[i], order_[i], currentKnotSpan[i]);
+    else
+      for (size_t i=0; i<dim; i++)
+        evaluateAll(in[i], oneDValues[i], true, oneDDerivatives[i], true, oneDSecondDerivatives[i], knotVectors_[i], order_[i], currentKnotSpan[i]);
+
+    // The lowest knot spans that we need values from
+    std::array<unsigned int, dim> offset;
+    for (int i=0; i<dim; i++)
+      offset[i] = std::max((int)(currentKnotSpan[i] - order_[i]),0);
+
+    // Set up a multi-index to go from consecutive indices to integer coordinates
+    std::array<unsigned int, dim> limits;
+    for (int i=0; i<dim; i++)
+    {
+      // In a proper implementation, the following line would do
+      //limits[i] = oneDValues[i].size();
+      limits[i] = order_[i]+1;  // The 'standard' value away from the boundaries of the knot vector
+      if (currentKnotSpan[i]<order_[i])
+        limits[i] -= (order_[i] - currentKnotSpan[i]);
+      if ( order_[i] > (knotVectors_[i].size() - currentKnotSpan[i] - 2) )
+        limits[i] -= order_[i] - (knotVectors_[i].size() - currentKnotSpan[i] - 2);
+    }
+
+    // Working towards computing only the parts that we really need:
+    // Let's copy them out into a separate array
+    std::array<std::vector<R>, dim> oneDValuesShort;
+
+    for (int i=0; i<dim; i++)
+    {
+      oneDValuesShort[i].resize(limits[i]);
+
+      for (size_t j=0; j<limits[i]; j++)
+        oneDValuesShort[i][j]  = oneDValues[i][offset[i] + j];
+    }
+
+
+    MultiDigitCounter ijkCounter(limits);
+
+    out.resize(ijkCounter.cycle());
+
+    if (k == 1)
+    {
+      // Complete Jacobian is given by the product rule
+      for (size_t i=0; i<out.size(); i++, ++ijkCounter)
+      {
+        out[i][0] = 1.0;
+        for (int l=0; l<dim; l++)
+          out[i][0] *= (directions[0]==l) ? oneDDerivatives[l][ijkCounter[l]]
+                                          : oneDValuesShort[l][ijkCounter[l]];
+      }
+    }
+
+    if (k == 2)
+    {
+      // Complete derivation by deriving the tensor product
+      for (size_t i=0; i<out.size(); i++, ++ijkCounter)
+      {
+        out[i][0] = 1.0;
+        for (int j=0; j<dim; j++)
+        {
+          if (directions[0] != directions[1]) //derivation in two different variables
+            if (directions[0] == j || directions[1] == j) //the spline has to be derived (once) in this direction
+              out[i][0] *= oneDDerivatives[j][ijkCounter[j]];
+            else //no derivation in this direction
+              out[i][0] *= oneDValuesShort[j][ijkCounter[j]];
+          else //spline is derived two times in the same direction
+            if (directions[0] == j) //the spline is derived two times in this direction
+              out[i][0] *= oneDSecondDerivatives[j][ijkCounter[j]];
+            else //no derivation in this direction
+              out[i][0] *= oneDValuesShort[j][ijkCounter[j]];
+        }
+      }
+    }
+  }
+
 
   /** \brief Compute integer element coordinates from the element index
    * \warning This method makes strong assumptions about the grid, namely that it is
@@ -1250,6 +1375,121 @@ protected:
         N[r][i] = factor1 * N[r-1][i] + factor2 * N[r-1][i+1];
       }
   }
+
+
+  /** \brief Evaluate the second derivatives of all one-dimensional B-spline functions for a given coordinate direction
+   *
+   * \param in Scalar(!) coordinate where to evaluate the functions
+   * \param enableEvaluations switches calculation of desired derivatives on
+   * \param [out] out Vector containing the values of all B-spline derivatives at 'in'
+   * \param [out] outJac Vector containing the first derivatives of all B-spline derivatives at 'in' (only if calculation was switched on by enableEvaluations)
+   * \param [out] outHess Vector containing the second derivatives of all B-spline derivatives at 'in' (only if calculation was switched on by enableEvaluations)
+   */
+
+  static void evaluateAll(const typename GV::ctype& in,
+                                   std::vector<R>& out,
+                                   bool evaluateJacobian, std::vector<R>& outJac,
+                                   bool evaluateHessian, std::vector<R>& outHess,
+                                   const std::vector<R>& knotVector,
+                                   unsigned int order,
+                                   unsigned int currentKnotSpan)
+  {
+    // How many shape functions to we have in each coordinate direction?
+    unsigned int limit;
+    limit = order+1;  // The 'standard' value away from the boundaries of the knot vector
+    if (currentKnotSpan<order)
+      limit -= (order - currentKnotSpan);
+    if ( order > (knotVector.size() - currentKnotSpan - 2) )
+      limit -= order - (knotVector.size() - currentKnotSpan - 2);
+
+    // The lowest knot spans that we need values from
+    unsigned int offset;
+    offset = std::max((int)(currentKnotSpan - order),0);
+
+    // Evaluate 1d function values (needed for the product rule)
+    DynamicMatrix<R> values;
+
+    evaluateFunctionFull(in, values, knotVector, order, currentKnotSpan);
+
+    out.resize(knotVector.size()-order-1);
+    for (size_t j=0; j<out.size(); j++)
+        out[j] = values[order][j];
+
+    // Evaluate 1d function values of one order lower (needed for the derivative formula)
+    std::vector<R> lowOrderOneDValues;
+
+    if (order!=0)
+    {
+      lowOrderOneDValues.resize(knotVector.size()-(order-1)-1);
+      for (size_t j=0; j<lowOrderOneDValues.size(); j++)
+        lowOrderOneDValues[j] = values[order-1][j];
+    }
+
+    // Evaluate 1d function values of two order lower (needed for the (second) derivative formula)
+    std::vector<R> lowOrderTwoDValues;
+
+    if (order>1 && evaluateHessian)
+    {
+      lowOrderTwoDValues.resize(knotVector.size()-(order-2)-1);
+      for (size_t j=0; j<lowOrderTwoDValues.size(); j++)
+        lowOrderTwoDValues[j] = values[order-2][j];
+    }
+
+    // Evaluate 1d function derivatives
+    if (evaluateJacobian)
+    {
+      outJac.resize(limit);
+
+      if (order==0)  // order-zero functions are piecewise constant, hence all derivatives are zero
+        std::fill(outJac.begin(), outJac.end(), R(0.0));
+      else
+      {
+        for (size_t j=offset; j<offset+limit; j++)
+        {
+          R derivativeAddend1 = lowOrderOneDValues[j] / (knotVector[j+order]-knotVector[j]);
+          R derivativeAddend2 = lowOrderOneDValues[j+1] / (knotVector[j+order+1]-knotVector[j+1]);
+          // The two previous terms may evaluate as 0/0.  This is to be interpreted as 0.
+          if (std::isnan(derivativeAddend1))
+            derivativeAddend1 = 0;
+          if (std::isnan(derivativeAddend2))
+            derivativeAddend2 = 0;
+          outJac[j-offset] = order * ( derivativeAddend1 - derivativeAddend2 );
+        }
+      }
+    }
+
+    // Evaluate 1d function second derivatives
+    if (evaluateHessian)
+    {
+      outHess.resize(limit);
+
+      if (order<2)  // order-zero functions are piecewise constant, hence all derivatives are zero
+        std::fill(outHess.begin(), outHess.end(), R(0.0));
+      else
+      {
+        for (size_t j=offset; j<offset+limit; j++)
+        {
+          assert(j+2 < lowOrderTwoDValues.size());
+          R derivativeAddend1 = lowOrderTwoDValues[j] / (knotVector[j+order]-knotVector[j]) / (knotVector[j+order-1]-knotVector[j]);
+          R derivativeAddend2 = lowOrderTwoDValues[j+1] / (knotVector[j+order]-knotVector[j]) / (knotVector[j+order]-knotVector[j+1]);
+          R derivativeAddend3 = lowOrderTwoDValues[j+1] / (knotVector[j+order+1]-knotVector[j+1]) / (knotVector[j+order]-knotVector[j+1]);
+          R derivativeAddend4 = lowOrderTwoDValues[j+2] / (knotVector[j+order+1]-knotVector[j+1]) / (knotVector[j+1+order]-knotVector[j+2]);
+          // The two previous terms may evaluate as 0/0.  This is to be interpreted as 0.
+
+          if (std::isnan(derivativeAddend1))
+            derivativeAddend1 = 0;
+          if (std::isnan(derivativeAddend2))
+            derivativeAddend2 = 0;
+          if (std::isnan(derivativeAddend3))
+            derivativeAddend3 = 0;
+          if (std::isnan(derivativeAddend4))
+            derivativeAddend4 = 0;
+          outHess[j-offset] = order * (order-1) * ( derivativeAddend1 - derivativeAddend2 -derivativeAddend3 + derivativeAddend4 );
+        }
+      }
+    }
+  }
+
 
   /** \brief Order of the B-spline for each space dimension */
   array<unsigned int, dim> order_;
