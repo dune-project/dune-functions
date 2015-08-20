@@ -62,8 +62,6 @@ public:
       localBasisView_.bind(element);
       localIndexSet_.bind(localBasisView_);
 
-      auto& tree = localBasisView_.tree();
-
       // Read dofs associated to bound element
       localDoFs_.resize(localIndexSet_.size());
       for (size_type i = 0; i < localIndexSet_.size(); ++i)
