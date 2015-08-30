@@ -12,6 +12,18 @@ or one more letter if needed.
 * CaG: Should we discuss the further development using a bug tracker?
   And put everythig below into requests?
 
+# Misc
+* OS: On 21.7.2015, Felix Gruber wrote the following mail to the dune-functions list.
+  I think his proposal is worth considering:
+
+"Currently the classes in dune/functions/functionspacebases/pqknodalbasis.hh are all named with the prefix PQK (capital K), while dune-localfunctions uses the prefix PQk (with lowercase k) in the class names in dune/localfunctions/lagrange/pqkfactory.hh. Also all the Pk and Qk finite element classes are named with a lowercase k.
+
+I propose to change the class names in pqknodalbasis.hh to make them more consistent with the naming scheme from dune-localfunctions.
+This renaming of classes will definitely be an inconvenience for users of dune-functions, but in my opinion this inconvenience will be outweighted by the reduction of inconsistencies to dune-localfunctions which is used by many more people at the moment who might be annoyed at this inconsistency when starting to use dune-functions."
+
+  The mail contains a patch with the proposed change.
+
+
 #########################################
 # Function space basis interface
 #########################################
