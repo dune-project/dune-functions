@@ -174,9 +174,9 @@ void testScalarBasis(const Basis& feBasis,
 
   // Loop over elements and integrate over the function
   double integral = 0;
-  for (auto it = gridView.template begin<0>(); it != gridView.template end<0>(); ++it)
+  for (const auto& element : elements(gridView))
   {
-    localView.bind(*it);
+    localView.bind(element);
     localIndexSet.bind(localView);
     localIndexSet2.bind(localView);
 
@@ -207,7 +207,7 @@ void testScalarBasis(const Basis& feBasis,
 
     // A quadrature rule
     // BUG: I need more than just the order given by the localBasis to make the integral come out precisely
-    const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1+tree.finiteElement().localBasis().order());
+    const auto& quad = QuadratureRules<double, dim>::rule(element.type(), 1+tree.finiteElement().localBasis().order());
 
     // Loop over all quadrature points
     for ( size_t pt=0; pt < quad.size(); pt++ ) {
@@ -216,7 +216,7 @@ void testScalarBasis(const Basis& feBasis,
       const FieldVector<double,dim>& quadPos = quad[pt].position();
 
       // The multiplicative factor in the integral transformation formula
-      const double integrationElement = it->geometry().integrationElement(quadPos);
+      const double integrationElement = element.geometry().integrationElement(quadPos);
 
       // Evaluate all shape function values at this point
       std::vector<FieldVector<double,1> > shapeFunctionValues;
