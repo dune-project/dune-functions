@@ -1,3 +1,6 @@
+# Path to the example grid files in dune-grid
+add_definitions(-DDUNE_GRID_EXAMPLE_GRIDS_PATH=\"${DUNE_GRID_EXAMPLE_GRIDS_PATH}\")
+
 # tests that should build and run successfully
 set(TESTS gridviewfunctionspacebasistest taylorhoodbasistest)
 
@@ -14,6 +17,8 @@ add_executable("taylorhoodbasistest"
                taylorhoodbasistest.cc)
 target_link_libraries("gridviewfunctionspacebasistest" "dunecommon" "dunegeometry")
 target_link_libraries("taylorhoodbasistest" "dunecommon" "dunegeometry")
+
+add_dune_ug_flags("gridviewfunctionspacebasistest")
 
 # Add the tests to be executed
 foreach(_TEST ${TESTPROGS})

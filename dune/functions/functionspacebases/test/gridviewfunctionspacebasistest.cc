@@ -10,6 +10,8 @@
 #include <dune/geometry/quadraturerules.hh>
 
 #include <dune/grid/yaspgrid.hh>
+#include <dune/grid/uggrid.hh>
+#include <dune/grid/io/file/gmshreader.hh>
 
 #include <dune/localfunctions/test/test-localfe.hh>
 
@@ -204,7 +206,8 @@ void testScalarBasis(const Basis& feBasis,
     assert(localView.size() == tree.finiteElement().localBasis().size());
 
     // A quadrature rule
-    const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1);
+    // BUG: I need more than just the order given by the localBasis to make the integral come out precisely
+    const QuadratureRule<double, dim>& quad = QuadratureRules<double, dim>::rule(it->type(), 1+tree.finiteElement().localBasis().order());
 
     // Loop over all quadrature points
     for ( size_t pt=0; pt < quad.size(); pt++ ) {
@@ -314,11 +317,79 @@ void testOnStructuredGrid()
   }
 }
 
+template <int dim>
+void testOnHybridGrid()
+{
+#if ! HAVE_UG
+  std::cout << "   ---- Skipping test on hybrid " << dim << "d grid -- UGGrid is not installed ----" << std::endl;
+#else
+  std::cout << "   +++++++++++  Testing on hybrid " << dim << "d grid  ++++++++++++" << std::endl;
+
+  // Generate grid for testing
+  typedef UGGrid<dim> GridType;
+
+  const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
+
+  std::string filename = path + "hybrid-testgrid-" + std::to_string(dim) + "d.msh";
+
+  std::shared_ptr<GridType> grid(GmshReader<GridType>::read(filename));
+
+  // Test whether function space basis can be instantiated on the leaf view
+  typedef typename GridType::LeafGridView GridView;
+  GridView gridView = grid->leafGridView();
+
+  // Disable the global interpolation test for 3d grids.
+  // Global interpolation should work for all grids and spaces, but the hard-coded
+  // reference value is wrong.
+  bool disableInterpolate = (dim==3);
+
+  // Test PQ1NodalBasis -- dedicated implementation
+  PQ1NodalBasis<GridView> pq1DedicatedBasis(gridView);
+  testScalarBasis(pq1DedicatedBasis, true, disableInterpolate);
+
+  // Test PQ1NodalBasis -- generic basis
+  PQkNodalBasis<GridView, 1> pq1Basis(gridView);
+  testScalarBasis(pq1Basis, true, disableInterpolate);
+
+  // Test PQ2NodalBasis
+  PQ2NodalBasis<GridView> pq2Basis(gridView);
+  testScalarBasis(pq2Basis, true, disableInterpolate);
+
+  // Test PQkNodalBasis for k==3
+  PQkNodalBasis<GridView, 3> pq3Basis(gridView);
+  if (dim<3) // Currently not implemented for dim >= 3
+    testScalarBasis(pq3Basis, true, disableInterpolate);
+
+  // Test PQkNodalBasis for k==4
+  PQkNodalBasis<GridView, 4> pq4Basis(gridView);
+  if (dim<3) // Currently not implemented for dim >= 3
+    testScalarBasis(pq4Basis, true, disableInterpolate);
+
+  // Test LagrangeDGBasis for k==1
+  LagrangeDGBasis<GridView, 1> lagrangeDG1Basis(gridView);
+  testScalarBasis(lagrangeDG1Basis, true, disableInterpolate);
+
+  // Test LagrangeDGBasis for k==2
+  LagrangeDGBasis<GridView, 2> lagrangeDG2Basis(gridView);
+  testScalarBasis(lagrangeDG2Basis, true, disableInterpolate);
+
+  // Test LagrangeDGBasis for k==3
+  LagrangeDGBasis<GridView, 3> lagrangeDG3Basis(gridView);
+  testScalarBasis(lagrangeDG3Basis, true, disableInterpolate);
+#endif
+}
+
+
+
 int main (int argc, char* argv[]) try
 {
   testOnStructuredGrid<1>();
   testOnStructuredGrid<2>();
   testOnStructuredGrid<3>();
+
+  testOnHybridGrid<2>();
+  testOnHybridGrid<3>();
+
   return 0;
 
 } catch ( Dune::Exception &e )
