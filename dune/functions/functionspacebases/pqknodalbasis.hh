@@ -221,7 +221,7 @@ public:
         prism.makePrism();
         hexahedron.makeCube(3);
         return gridView_.size(dim) + dofsPerEdge*gridView_.size(2)
-             + gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad)
+             + dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad)
              + dofsPerTetrahedron*gridView_.size(tetrahedron) + dofsPerPyramid*gridView_.size(pyramid)
              + dofsPerPrism*gridView_.size(prism) + dofsPerHexahedron*gridView_.size(hexahedron);
       }
