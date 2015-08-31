@@ -15,6 +15,17 @@ using namespace Dune;
 using namespace Dune::Functions;
 using namespace Dune::Functions::Test;
 
+double x_component_A(const Dune::FieldVector<double, 2> & x)
+{
+    return x[0];
+}
+
+template<typename Coord>
+double x_component_B(const Coord & x)
+{
+    return x[0];
+}
+
 int main (int argc, char* argv[]) try
 {
   // Generate grid for testing
@@ -57,6 +68,18 @@ int main (int argc, char* argv[]) try
     auto f = [](const Domain& x) {return x[0];};
 
     passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, makeGridViewFunction(f, gridView), exactIntegral);
+  }
+
+  std::cout << "Testing makeAnalyticGridViewFunction with free function" << std::endl;
+  {
+    auto f = x_component_A;
+    passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, makeAnalyticGridViewFunction(f, gridView), exactIntegral);
+  }
+
+  std::cout << "Testing makeAnalyticGridViewFunction with free template function" << std::endl;
+  {
+    auto f = x_component_B<Domain>;
+    passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, makeAnalyticGridViewFunction(f, gridView), exactIntegral);
   }
 
 
