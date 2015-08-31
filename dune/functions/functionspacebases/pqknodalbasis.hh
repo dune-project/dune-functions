@@ -201,7 +201,6 @@ public:
     switch (dim)
     {
       case 1:
-        // One for each vertex, and two for each element
         return gridView_.size(1) + dofsPerEdge*gridView_.size(0);
       case 2:
       {
