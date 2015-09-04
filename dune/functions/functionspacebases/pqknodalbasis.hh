@@ -132,6 +132,24 @@ public:
         return {{ basisIndexSet_.triangleOffset_ + gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) }};
       }
     }
+
+    if (dofDim==3)
+    {
+      if (dim==3)   // element dof -- any local numbering is fine
+      {
+        if (element.type().isTetrahedron())
+          return {{ basisIndexSet_.tetrahedronOffset_ + PQkIndexSet<GV,k>::dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
+        else if (element.type().isHexahedron())
+          return {{ basisIndexSet_.hexahedronOffset_ + PQkIndexSet<GV,k>::dofsPerHexahedron*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
+        else if (element.type().isPrism())
+          return {{ basisIndexSet_.prismOffset_ + PQkIndexSet<GV,k>::dofsPerPrism*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
+        else if (element.type().isPyramid())
+          return {{ basisIndexSet_.pyramidOffset_ + PQkIndexSet<GV,k>::dofsPerPyramid*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
+        else
+          DUNE_THROW(Dune::NotImplemented, "3d elements have to be tetrahedra, hexahedra, prisms, or pyramids");
+      } else
+        DUNE_THROW(Dune::NotImplemented, "Grids of dimension larger than 3 are no supported");
+    }
     DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the PQkNodalBasis");
   }
 
@@ -156,13 +174,13 @@ class PQkIndexSet
   friend class PQkLocalIndexSet<GV,k>;
 
   // Precompute the number of dofs per entity type
-  const int dofsPerEdge        = k-1;
-  const int dofsPerTriangle    = (k-1)*(k-2)/2;
-  const int dofsPerQuad        = (k-1)*(k-1);
-  const int dofsPerTetrahedron = std::max((k-3)*(k-2)*(k-1)/6, 0);
-  const int dofsPerPrism       = (k-1)*(k-1)*(k-2)/2;
-  const int dofsPerHexahedron  = (k-1)*(k-1)*(k-1);
-  const int dofsPerPyramid     = ((k-2)*(k-1)*(2*k-3))/6;
+  const static int dofsPerEdge        = k-1;
+  const static int dofsPerTriangle    = (k-1)*(k-2)/2;
+  const static int dofsPerQuad        = (k-1)*(k-1);
+  const static int dofsPerTetrahedron = ((k-3)*(k-2)*(k-1)/6 > 0) ? (k-3)*(k-2)*(k-1)/6  : 0;
+  const static int dofsPerPrism       = (k-1)*(k-1)*(k-2)/2;
+  const static int dofsPerHexahedron  = (k-1)*(k-1)*(k-1);
+  const static int dofsPerPyramid     = ((k-2)*(k-1)*(2*k-3))/6;
 public:
 
   typedef PQkLocalIndexSet<GV,k> LocalIndexSet;
