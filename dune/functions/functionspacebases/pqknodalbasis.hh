@@ -123,9 +123,11 @@ public:
         const Dune::ReferenceElement<double,dim>& refElement
             = Dune::ReferenceElements<double,dim>::general(element.type());
 
-        if (! refElement.type(localKey.subEntity(), localKey.codim()).isTriangle()
-            or k>3)
-          DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids is only implemented if k<=3 and if the grid is a simplex grid");
+        if (k>3)
+          DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids is only implemented if k<=3");
+
+        if (k==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
+          DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
 
         return {{ basisIndexSet_.triangleOffset_ + gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) }};
       }
