@@ -157,7 +157,7 @@ class PQkIndexSet
   const int dofsPerEdge        = k-1;
   const int dofsPerTriangle    = (k-1)*(k-2)/2;
   const int dofsPerQuad        = (k-1)*(k-1);
-  const int dofsPerTetrahedron = (k-2)*(k-1)*k/6;
+  const int dofsPerTetrahedron = std::max((k-3)*(k-2)*(k-1)/6, 0);
   const int dofsPerPrism       = (k-1)*(k-1)*(k-2)/2;
   const int dofsPerHexahedron  = (k-1)*(k-1)*(k-1);
   const int dofsPerPyramid     = ((k-2)*(k-1)*(2*k-3))/6;
