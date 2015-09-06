@@ -79,16 +79,12 @@ public:
     mi[0] = localIndex / v_size;
     if (mi[0] == 0)
     {
-      size_type v_comp = (localIndex % v_size) / pq2LocalIndexSet_.size();
-      size_type v_localIndex = (localIndex % v_size) % pq2LocalIndexSet_.size();
-      mi[1] = v_comp * indexSet_.pq2IndexSet_.size() +
-        pq2LocalIndexSet_.index(v_localIndex)[0];
+      size_type v_comp = localIndex % dim;
+      size_type v_localIndex = localIndex / dim;
+      mi[1] = pq2LocalIndexSet_.index(v_localIndex)[0] * dim + v_comp;
     }
     if (mi[0] == 1)
-    {
-      size_type p_localIndex = localIndex % v_size;
-      mi[1] = pq1LocalIndexSet_.index(p_localIndex)[0];
-    }
+      mi[1] = pq1LocalIndexSet_.index(localIndex-v_size)[0];
     return mi;
   }
 
@@ -360,6 +356,7 @@ class TaylorHoodVelocityTree :
   TaylorHoodVelocityTree(PQ2NodalBasisLeafNode<GV> & pq2leafNode) :
     TypeTree::PowerNode<PQ2NodalBasisLeafNode<GV>, GV::dimension>(
       pq2leafNode, false /* don't make copies */)
+//      pq2leafNode, true /* make copies, otherwise we can't set local indices */)
   {}
 };
 
