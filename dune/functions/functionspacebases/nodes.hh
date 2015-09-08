@@ -10,6 +10,7 @@ namespace Dune {
 
     template<typename size_t, typename TP>
     class LeafBasisNode
+      : public TypeTree::LeafNode
     {
 
     public:
@@ -22,7 +23,7 @@ namespace Dune {
         treePath_(treePath)
       {}
 
-      size_type index(size_type i) const
+      size_type localIndex(size_type i) const
       {
         return offset_ + i;
       }
@@ -61,7 +62,7 @@ namespace Dune {
         size_(0)
       {}
 
-      size_type index(size_type i) const
+      size_type localIndex(size_type i) const
       {
         return offset_ + i;
       }
