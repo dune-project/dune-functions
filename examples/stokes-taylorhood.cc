@@ -394,12 +394,12 @@ int main (int argc, char *argv[]) try
   typedef BlockVector<FieldVector<double,dim> > VelocityVectorType;
   typedef BlockVector<FieldVector<double,1> >   PressureVectorType;
 
-  VelocityVectorType velocity(velocityBasis.indexSet().size());
+  VelocityVectorType velocity(velocityBasis.size());
   for (size_t i=0; i<velocity.size(); i++)
     for (int j=0; j<dim; j++)
       velocity[i][j] = x[0][dim*i+j];
 
-  PressureVectorType pressure(pressureBasis.indexSet().size());
+  PressureVectorType pressure(pressureBasis.size());
   for (size_t i=0; i<pressure.size(); i++)
     pressure[i] = x[1][i];
 
