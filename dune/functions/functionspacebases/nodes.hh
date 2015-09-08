@@ -142,9 +142,10 @@ namespace Dune {
       using TreePath = TP;
       using size_type = size_t;
 
-      InternalBasisNodeMixin() :
+      InternalBasisNodeMixin(const TreePath& treePath) :
         offset_(0),
-        size_(0)
+        size_(0),
+        treePath_(treePath)
       {}
 
       size_type localIndex(size_type i) const
