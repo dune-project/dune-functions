@@ -9,6 +9,49 @@ namespace Dune {
 namespace Functions {
 
 
+template<class size_type>
+class ShiftedIdentity
+{
+public:
+
+  ShiftedIdentity(size_type offset) :
+    offset_(offset)
+  {}
+
+  size_type operator()(size_type index) const
+  {
+    return offset_ + index;
+  }
+
+protected:
+  size_type offset_;
+};
+
+
+
+template<class size_type>
+class ShiftedIdentityWithStride
+{
+public:
+
+  ShiftedIdentityWithStride(size_type offset, size_type stride) :
+    offset_(offset),
+    stride_(stride)
+  {}
+
+  size_type operator()(size_type index) const
+  {
+    return offset_ + stride_ * index;
+  }
+
+protected:
+  size_type offset_;
+  size_type stride_;
+};
+
+
+
+
 template<typename E, typename FE, typename ST>
 class GridFunctionSpaceBasisLeafNodeInterface :
   public TypeTree::LeafNode
