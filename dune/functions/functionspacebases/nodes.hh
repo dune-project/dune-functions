@@ -4,6 +4,7 @@
 #include <dune/typetree/leafnode.hh>
 #include <dune/typetree/powernode.hh>
 #include <dune/typetree/compositenode.hh>
+#include <dune/typetree/traversal.hh>
 
 namespace Dune {
   namespace Functions {
