@@ -8,4 +8,6 @@ install(FILES
         pq1nodalbasis.hh
         pq2nodalbasis.hh
         pqknodalbasis.hh
+        nodes.hh
+        tupletreepath.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/functionspacebases)
