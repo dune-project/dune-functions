@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_GRIDVIEWFUNCTIONSPACEBASIS_HH
 
 #include <dune/typetree/leafnode.hh>
+#include <dune/functions/functionspacebases/nodes.hh>
 
 namespace Dune {
 namespace Functions {
@@ -52,14 +53,22 @@ protected:
 
 
 
-template<typename E, typename FE, typename ST>
+template<typename E, typename FE, typename ST, typename TP>
 class GridFunctionSpaceBasisLeafNodeInterface :
-  public TypeTree::LeafNode
+  public LeafBasisNode<ST, TP>
 {
+  using Base = LeafBasisNode<ST, TP>;
 public:
   typedef ST size_type;
   typedef E Element;
   typedef FE FiniteElement;
+
+  using TreePath = typename Base::TreePath;
+
+  GridFunctionSpaceBasisLeafNodeInterface(TreePath treePath = TreePath()) :
+    Base(treePath)
+  {}
+
 
   //! Return current element, throw if unbound
   virtual const Element& element() const = 0;
@@ -68,9 +77,6 @@ public:
 
   //! size of subtree rooted in this node (element-local)
   virtual size_type size() const = 0;
-
-  //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
-  virtual size_type localIndex(size_type i) const = 0;
 
 };
 
