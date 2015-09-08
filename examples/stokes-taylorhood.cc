@@ -19,8 +19,7 @@
 #include <dune/istl/preconditioners.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
-#include <dune/functions/functionspacebases/pq2nodalbasis.hh>
+#include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
 #include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
@@ -40,8 +39,10 @@ void getLocalMatrix(const LocalView& localView,
   auto geometry = element.geometry();
 
   // Get set of shape functions for this element
-  const auto& velocityLocalFiniteElement = localView.tree().template child<0>().child(0).finiteElement();
-  const auto& pressureLocalFiniteElement = localView.tree().template child<1>().finiteElement();
+//  const auto&& velocityLocalFiniteElement = localView.tree().template child<0>().child(0).finiteElement();
+//  const auto&& pressureLocalFiniteElement = localView.tree().template child<1>().finiteElement();
+  auto&& velocityLocalFiniteElement = localView.tree().template child<0>().child(0).finiteElement();
+  auto&& pressureLocalFiniteElement = localView.tree().template child<1>().finiteElement();
 
   // Set all matrix entries to zero
   elementMatrix.setSize(dim*velocityLocalFiniteElement.size() + pressureLocalFiniteElement.size(),
@@ -81,7 +82,11 @@ void getLocalMatrix(const LocalView& localView,
     for (size_t i=0; i<velocityLocalFiniteElement.size(); i++)
       for (size_t j=0; j<velocityLocalFiniteElement.size(); j++ )
         for (size_t k=0; k<dim; k++)
-          elementMatrix[dim*i+k][dim*j+k] += ( gradients[i] * gradients[j] ) * quad[pt].weight() * integrationElement;
+        {
+          size_t row = localView.tree().template child<0>().child(k).localIndex(i);
+          size_t col = localView.tree().template child<0>().child(k).localIndex(j);
+          elementMatrix[row][col] += ( gradients[i] * gradients[j] ) * quad[pt].weight() * integrationElement;
+        }
 
     ///////////////////////////////////////////////////////////////////////
     //  Velocity--pressure coupling
@@ -96,8 +101,11 @@ void getLocalMatrix(const LocalView& localView,
       for (size_t j=0; j<pressureLocalFiniteElement.size(); j++ )
         for (size_t k=0; k<dim; k++)
         {
-          elementMatrix[dim*i+k][dim*velocityLocalFiniteElement.size() + j] += gradients[i][k] * pressureValues[j] * quad[pt].weight() * integrationElement;
-          elementMatrix[dim*velocityLocalFiniteElement.size() + j][dim*i+k] += gradients[i][k] * pressureValues[j] * quad[pt].weight() * integrationElement;
+          size_t vIndex = localView.tree().template child<0>().child(k).localIndex(i);
+          size_t pIndex = localView.tree().template child<1>().localIndex(j);
+
+          elementMatrix[vIndex][pIndex] += gradients[i][k] * pressureValues[j] * quad[pt].weight() * integrationElement;
+          elementMatrix[pIndex][vIndex] += gradients[i][k] * pressureValues[j] * quad[pt].weight() * integrationElement;
         }
 
   }
@@ -120,7 +128,8 @@ void getOccupationPattern(const Basis& basis,
       nb[i][j].resize(basisIndexSet.size({i}), basisIndexSet.size({j}));
 
   // A view on the FE basis on a single element
-  typename Basis::LocalView localView(&basis);
+//  typename Basis::LocalView localView(&basis);
+  auto localView = basis.localView();
   auto localIndexSet = basisIndexSet.localIndexSet();
 
   // Loop over all leaf elements
@@ -140,6 +149,7 @@ void getOccupationPattern(const Basis& basis,
 
         // The global index of the j-th local degree of freedom of the element 'e'
         auto col = localIndexSet.index(j);
+
         nb[row[0]][col[0]].add(row[1],col[1]);
 
       }
@@ -227,7 +237,11 @@ void boundaryTreatment (const VelocityBasis& velocityBasis,
   BlockVector<FieldVector<double,dim> > lagrangeNodes;
   interpolate(velocityBasis, lagrangeNodes, [](FieldVector<double,dim> x){ return x; });
 
-  dirichletNodes.resize(dim*velocityBasis.indexSet().size());
+  dirichletNodes.resize(dim*velocityBasis.indexSet().size(), 0);
+//  for(auto && d: dirichletNodes)
+//    d = 0;
+  for (size_t i=0; i<dirichletNodes.size(); i++)
+    dirichletNodes[i] = 0;
 
   // Mark all Lagrange nodes on the bounding box as Dirichlet
   for (size_t i=0; i<lagrangeNodes.size(); i++)
@@ -297,10 +311,10 @@ int main (int argc, char *argv[]) try
   assembleStokesProblem(taylorHoodBasis, stiffnessMatrix);
 
   // Determine Dirichlet dofs
-  typedef Functions::PQ2NodalBasis<GridView> VelocityBasis;
+  typedef Functions::PQkNodalBasis<GridView,2> VelocityBasis;
   VelocityBasis velocityBasis(gridView);
 
-  typedef Functions::PQ1NodalBasis<GridView> PressureBasis;
+  typedef Functions::PQkNodalBasis<GridView,1> PressureBasis;
   PressureBasis pressureBasis(gridView);
 
   std::vector<int> dirichletNodes;
@@ -334,7 +348,9 @@ int main (int argc, char *argv[]) try
         *cIt = (i==cIt.index()) ? 1 : 0;
 
       // Upper right matrix block
-      stiffnessMatrix[0][1][i] = 0;
+//      stiffnessMatrix[0][1][i] = 0;
+      for(auto&& entry: stiffnessMatrix[0][1][i])
+        entry = 0.0;
 
     }
 
@@ -360,9 +376,9 @@ int main (int argc, char *argv[]) try
   // Preconditioned conjugate-gradient solver
   RestartedGMResSolver<VectorType> solver(op,
                                           preconditioner,
-                                          1e-4,  // desired residual reduction factor
-                                          5,     // number of iterations between restarts
-                                          100,   // maximum number of iterations
+                                          1e-10,  // desired residual reduction factor
+                                          500,     // number of iterations between restarts
+                                          500,   // maximum number of iterations
                                           2);    // verbosity of the solver
 
   // Object storing some statistics about the solving process
