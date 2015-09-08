@@ -47,13 +47,6 @@ or one more letter if needed.
 #########################################
 
 
-# DefaultDerivativeTraits
-* CaG: Should the derivative range for a function with signature
-  FM<T,m,1>(FV<T,n>) be FM<T,n,m> ? If yes we would have second
-  derivatives for functions mapping FV<T,n> to FV<T,1>.
-
-
-
 # EntitySet interface
 * CaG: It seems that the EntitySet concept and GridViewEntitySet are
   candidates for dune-grid.
@@ -76,12 +69,13 @@ or one more letter if needed.
 
 # LocalFunction concept
 * CaG: What's the precise definition of a local function?
-  Currently it represents a GridFunction locally it
+  Currently it represents a GridFunction locally in
   terms of local coordinates. However its derivatives
   (not the values!) are still returned wrt the global
   coordinate system, exactly like GlobalFiniteElement does.
   Although the LocalFunctions implements the DifferentiableFunction
   concept, this  makes its derivatives somehow inconsistent.
+  Done.
 
 
 
@@ -96,3 +90,4 @@ or one more letter if needed.
 
   In priciple this would also work for GridFunction if it knows the grid
   and if Element=Entity<0>.
+  Done: No.
