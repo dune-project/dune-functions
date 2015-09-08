@@ -228,7 +228,7 @@ namespace Dune {
       {}
 
       template<typename... Children>
-      CompositeBasisNode(const shared_ptr<Children>&... children)
+      CompositeBasisNode(const shared_ptr<Children>&... children, const TP& tp)
         : Mixin(tp)
         , Node(children...)
       {}
