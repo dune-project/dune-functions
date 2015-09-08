@@ -49,43 +49,53 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type,2> MultiIndex;
 
-  TaylorHoodLocalIndexSet(const TaylorHoodIndexSet<GV> & indexSet)
-    : indexSet_(indexSet)
-    , pq1LocalIndexSet_(indexSet_.pq1IndexSet_.localIndexSet())
-    , pq2LocalIndexSet_(indexSet_.pq2IndexSet_.localIndexSet())
+  using PQMultiIndex = std::array<size_type, 1>;
+  using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex>;
+  using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex>;
+
+  using PQ1LocalIndexFunctor=ShiftedIdentity<size_type>;
+  using PQ2LocalIndexFunctor=ShiftedIdentityWithStride<size_type>;
+
+  using PQ1NodeIndexSet = typename PQ1Factory::template IndexSet<PQ1LocalIndexFunctor>;
+  using PQ2NodeIndexSet = typename PQ2Factory::template IndexSet<PQ2LocalIndexFunctor>;
+
+  TaylorHoodLocalIndexSet(const TaylorHoodIndexSet<GV> & indexSet) :
+    pq1NodeIndexSet_(indexSet.basis_->pq1Factory_.template indexSet<PQ1LocalIndexFunctor>()),
+    pq2NodeIndexSet_(indexSet.basis_->pq2Factory_.template indexSet<PQ2LocalIndexFunctor>())
   {}
 
   void bind(const TaylorHoodBasisLocalView<GV>& localView)
   {
     localView_ = & localView;
-    pq1LocalIndexSet_.bind(localView.pq1localView_);
-    pq2LocalIndexSet_.bind(localView.pq2localView_);
+
+    pq1NodeIndexSet_.bind(localView_->tree().template child<1>());
+    pq2NodeIndexSet_.bind(localView_->tree().template child<0>().child(0));
   }
   void unbind()
   {
     localView_ = nullptr;
-    pq1LocalIndexSet_.unbind();
-    pq2LocalIndexSet_.unbind();
+    pq1NodeIndexSet_.unbind();
+    pq2NodeIndexSet_.unbind();
   }
 
   size_type size() const
   {
-    return dim*pq2LocalIndexSet_.size() + pq1LocalIndexSet_.size();
+    return dim*pq2NodeIndexSet_.size() + pq1NodeIndexSet_.size();
   }
 
   MultiIndex index(size_type localIndex) const
   {
     MultiIndex mi;
-    size_type v_size = dim * pq2LocalIndexSet_.size();
+    size_type v_size = dim * pq2NodeIndexSet_.size();
     mi[0] = localIndex / v_size;
     if (mi[0] == 0)
     {
       size_type v_comp = localIndex % dim;
       size_type v_localIndex = localIndex / dim;
-      mi[1] = pq2LocalIndexSet_.index(v_localIndex)[0] * dim + v_comp;
+      mi[1] = pq2NodeIndexSet_.index(v_localIndex)[0] * dim + v_comp;
     }
     if (mi[0] == 1)
-      mi[1] = pq1LocalIndexSet_.index(localIndex-v_size)[0];
+      mi[1] = pq1NodeIndexSet_.index(localIndex-v_size)[0];
     return mi;
   }
 
@@ -97,10 +107,9 @@ public:
   }
 
 private:
-  const LocalView * localView_;
-  TaylorHoodIndexSet<GV> indexSet_;
-  typename PQkNodalBasis<GV,1>::IndexSet::LocalIndexSet pq1LocalIndexSet_;
-  typename PQkNodalBasis<GV,2>::IndexSet::LocalIndexSet pq2LocalIndexSet_;
+  const LocalView* localView_;
+  PQ1NodeIndexSet pq1NodeIndexSet_;
+  PQ2NodeIndexSet pq2NodeIndexSet_;
 };
 
 template<typename GV>
@@ -111,9 +120,8 @@ class TaylorHoodIndexSet
   /** \brief The global FE basis that this is a view on */
   typedef TaylorHoodBasis<GV> GlobalBasis;
 
-  TaylorHoodIndexSet(const GlobalBasis & basis)
-    : pq1IndexSet_(basis.pq1nodalbasis_.indexSet())
-    , pq2IndexSet_(basis.pq2nodalbasis_.indexSet())
+  TaylorHoodIndexSet(const GlobalBasis & basis) :
+    basis_(&basis)
   {}
 
 public:
@@ -129,8 +137,8 @@ public:
   /** \todo This method has been added to the interface without prior discussion. */
   size_type dimension() const
   {
-    return dim * pq2IndexSet_.size()
-      + pq1IndexSet_.size();
+    return dim * basis_->pq2Factory_.size()
+      + basis_->pq1Factory_.size();
   }
 
   //! Return number of possible values for next position in empty multi index
@@ -147,9 +155,9 @@ public:
     if (prefix.size() == 1)
     {
       if (prefix[0] == 0)
-        return dim * pq2IndexSet_.size();
+        return dim * basis_->pq2Factory_.size();
       if (prefix[0] == 1)
-        return pq1IndexSet_.size();
+        return basis_->pq2Factory_.size();
     }
     assert(false);
   }
@@ -163,8 +171,7 @@ private:
   friend GlobalBasis;
   friend LocalIndexSet;
 
-  typename PQkNodalBasis<GV,1>::IndexSet pq1IndexSet_;
-  typename PQkNodalBasis<GV,2>::IndexSet pq2IndexSet_;
+  const GlobalBasis* basis_;
 };
 
 
@@ -180,28 +187,44 @@ class TaylorHoodBasis
                                       TaylorHoodIndexSet<GV>,
                                       std::array<std::size_t, 2> >
 {
-  static const int dim = GV::dimension;
-
 public:
 
   /** \brief The grid view that the FE space is defined on */
   typedef GV GridView;
   typedef std::size_t size_type;
 
+protected:
+
+  static const int dim = GV::dimension;
+
+  using PQMultiIndex = std::array<size_type, 1>;
+  using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex>;
+  using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex>;
+
+  using PQ1LocalIndexFunctor=ShiftedIdentity<size_type>;
+  using PQ2LocalIndexFunctor=ShiftedIdentityWithStride<size_type>;
+
+  using PQ2Node=PQkNodalBasisLeafNode<GV,2, PQ2LocalIndexFunctor >;
+
+public:
+
   /** \brief Type of the local view on the restriction of the basis to a single element */
   typedef TaylorHoodBasisLocalView<GV> LocalView;
 
   /** \brief Constructor for a given grid view object */
-  TaylorHoodBasis(const GridView& gv)
-    : pq1nodalbasis_(gv)
-    , pq2nodalbasis_(gv)
-  {}
+  TaylorHoodBasis(const GridView& gv) :
+    pq1Factory_(gv),
+    pq2Factory_(gv)
+  {
+    pq1Factory_.initializeIndices();
+    pq2Factory_.initializeIndices();
+  }
 
   /** \brief Obtain the grid view that the basis is defined on
    */
   const GridView& gridView() const DUNE_FINAL
   {
-    return pq1nodalbasis_.gridView();
+    return pq1Factory_.gridView();
   }
 
   TaylorHoodIndexSet<GV> indexSet() const
@@ -218,12 +241,12 @@ public:
     return LocalView(this);
   }
 
-private:
+//private:
   friend TaylorHoodIndexSet<GV>;
   friend TaylorHoodBasisLocalView<GV>;
 
-  PQkNodalBasis<GV,1> pq1nodalbasis_;
-  PQkNodalBasis<GV,2> pq2nodalbasis_;
+  PQ1Factory pq1Factory_;
+  PQ2Factory pq2Factory_;
 };
 
 
@@ -261,8 +284,6 @@ public:
   /** \brief Construct local view for a given global finite element basis */
   TaylorHoodBasisLocalView(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis),
-    pq1localView_(globalBasis->pq1nodalbasis_.localView()),
-    pq2localView_(globalBasis->pq2nodalbasis_.localView()),
     tree_()
   {
   }
@@ -275,17 +296,18 @@ public:
   void bind(const Element& e)
   {
     element_ = e;
-    pq1localView_.bind(element_);
-    pq2localView_.bind(element_);
 
     for(int i=0; i<GV::dimension; ++i)
       tree_.template child<0>().child(i).bind(element_);
     tree_.template child<1>().bind(element_);
 
 //    size_type pressureOffset = tree_.template child<0>().size();
-    size_type pressureOffset = tree_.template child<0>().child(0).size() * GV::dimension;
+    size_type pressureOffset = tree_.template child<0>().child(0).size() * dim;
 
     tree_.template child<1>().localIndexFunctor() = ShiftedIdentity<std::size_t>(pressureOffset);
+
+    // TODO: Implement this using generic tree-leaf loop
+    size_ = dim*tree_.template child<0>().child(0).size() + tree_.template child<1>().size();
   }
 
   /** \brief Return the grid element that the view is bound to
@@ -303,10 +325,7 @@ public:
    * And indeed, in the TaylorHoodBasisView implementation this method does nothing.
    */
   void unbind()
-  {
-    pq1localView_.unbind();
-    pq2localView_.unbind();
-  }
+  {}
 
   /** \brief Return the local ansatz tree associated to the bound entity
    *
@@ -326,7 +345,7 @@ public:
    */
   size_type size() const
   {
-    return dim*pq2localView_.size() + pq1localView_.size();
+    return size_;
   }
 
   /**
@@ -338,7 +357,7 @@ public:
    */
   size_type maxSize() const
   {
-    return dim*pq2localView_.maxSize() + pq1localView_.maxSize();
+    return dim*globalBasis_->pq2Factory_.maxNodeSize() + globalBasis_->pq1Factory_.maxNodeSize();
   }
 
   /** \brief Return the global basis that we are a view on
@@ -352,10 +371,9 @@ protected:
   friend TaylorHoodLocalIndexSet<GV>;
 
   const GlobalBasis* globalBasis_;
-  PQkNodalBasisLocalView<GV,1> pq1localView_;
-  PQkNodalBasisLocalView<GV,2> pq2localView_;
   Element element_;
   Tree tree_;
+  size_type size_;
 };
 
 template<typename GV>
