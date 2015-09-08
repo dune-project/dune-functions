@@ -29,15 +29,6 @@ public:
   //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
   virtual size_type localIndex(size_type i) const = 0;
 
-  /**
-   * \brief Set local indices
-   *
-   * This is needed because the indices will change depending on
-   * the tree the leaf node is contained in. This interface
-   * has not been discussed yet!
-   */
-  virtual void setLocalIndex(size_type leafindex, size_type localindex) = 0;
-
 };
 
 template<typename GV, typename LV, typename IS, typename MI>
