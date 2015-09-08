@@ -8,10 +8,87 @@
 namespace Dune {
   namespace Functions {
 
+
+    namespace {
+
+
+      template<typename size_type>
+      struct ClearSizeVisitor
+        : public TypeTree::TreeVisitor
+        , public TypeTree::DynamicTraversal
+      {
+
+        template<typename Node, typename TreePath>
+        void pre(Node& node, TreePath treePath)
+        {
+          leaf(node,treePath);
+          node.setSize(0);
+        }
+
+        template<typename Node, typename TreePath>
+        void leaf(Node& node, TreePath treePath)
+        {
+          node.setOffset(offset_);
+        }
+
+        ClearSizeVisitor(size_type offset)
+          : offset_(offset)
+        {}
+
+        const size_type offset;
+
+      };
+
+
+      template<typename Entity, typename size_type>
+      struct BindVisitor
+        : public TypeTree::TreeVisitor
+        , public TypeTree::DynamicTraversal
+      {
+
+        template<typename Node, typename TreePath>
+        void pre(Node& node, TreePath treePath)
+        {
+          node.setOffset(offset_);
+        }
+
+        template<typename Node, typename TreePath>
+        void post(Node& node, TreePath treePath)
+        {
+          node.setSize(offset_ - node.offset());
+        }
+
+        template<typename Node, typename TreePath>
+        void leaf(Node& node, TreePath treePath)
+        {
+          node.setOffset(offset_);
+          node.bind(entity_);
+          offset_ += node.size();
+        }
+
+        ComputeSizeVisitor(const Entity& entity, size_type offset = 0)
+          : entity_(entity)
+          , offset_(offset)
+        {}
+
+        const Entity& e;
+        size_type offset;
+
+      };
+
+    }
+
+
     template<typename size_t, typename TP>
     class LeafBasisNode
       : public TypeTree::LeafNode
     {
+
+      template<typename>
+      friend struct ClearSizeVisitor;
+
+      template<typename,typename>
+      friend struct BindVisitor;
 
     public:
 
@@ -51,6 +128,12 @@ namespace Dune {
     template<typename size_t, typename TP>
     class InternalBasisNodeMixin
     {
+
+      template<typename>
+      friend struct ClearSizeVisitor;
+
+      template<typename,typename>
+      friend struct BindVisitor;
 
     public:
 
@@ -148,75 +231,6 @@ namespace Dune {
 
     };
 
-
-    namespace {
-
-
-      template<typename size_type>
-      struct ClearSizeVisitor
-        : public TypeTree::TreeVisitor
-        , public TypeTree::DynamicTraversal
-      {
-
-        template<typename Node, typename TreePath>
-        void pre(Node& node, TreePath treePath)
-        {
-          leaf(node,treePath);
-          node.setSize(0);
-        }
-
-        template<typename Node, typename TreePath>
-        void leaf(Node& node, TreePath treePath)
-        {
-          node.setOffset(offset_);
-        }
-
-        ClearSizeVisitor(size_type offset)
-          : offset_(offset)
-        {}
-
-        const size_type offset;
-
-      };
-
-
-      template<typename Entity, typename size_type>
-      struct BindVisitor
-        : public TypeTree::TreeVisitor
-        , public TypeTree::DynamicTraversal
-      {
-
-        template<typename Node, typename TreePath>
-        void pre(Node& node, TreePath treePath)
-        {
-          node.setOffset(offset_);
-        }
-
-        template<typename Node, typename TreePath>
-        void post(Node& node, TreePath treePath)
-        {
-          node.setSize(offset_ - node.offset());
-        }
-
-        template<typename Node, typename TreePath>
-        void leaf(Node& node, TreePath treePath)
-        {
-          node.setOffset(offset_);
-          node.bind(entity_);
-          offset_ += node.size();
-        }
-
-        ComputeSizeVisitor(const Entity& entity, size_type offset = 0)
-          : entity_(entity)
-          , offset_(offset)
-        {}
-
-        const Entity& e;
-        size_type offset;
-
-      };
-
-    }
 
     template<typename Tree, typename size_type>
     void clearSize(Tree& tree, size_type offset)
