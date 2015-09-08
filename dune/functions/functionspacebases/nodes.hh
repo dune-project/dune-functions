@@ -68,7 +68,7 @@ namespace Dune {
           offset_ += node.size();
         }
 
-        ComputeSizeVisitor(const Entity& entity, size_type offset = 0)
+        BindVisitor(const Entity& entity, size_type offset = 0)
           : entity_(entity)
           , offset_(offset)
         {}
@@ -178,6 +178,7 @@ namespace Dune {
 
       size_type offset_;
       size_type size_;
+      const TreePath treePath_;
 
     };
 
