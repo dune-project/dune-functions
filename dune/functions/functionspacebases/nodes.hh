@@ -37,7 +37,7 @@ namespace Dune {
           : offset_(offset)
         {}
 
-        const size_type offset;
+        const size_type offset_;
 
       };
 
@@ -73,8 +73,8 @@ namespace Dune {
           , offset_(offset)
         {}
 
-        const Entity& e;
-        size_type offset;
+        const Entity& entity_;
+        size_type offset_;
 
       };
 
