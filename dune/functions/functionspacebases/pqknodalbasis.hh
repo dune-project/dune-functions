@@ -149,7 +149,10 @@ public:
     DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
   }
 
-
+  size_type maxNodeSize() const
+  {
+    return StaticPower<(k+1),GV::dimension>::power;
+  }
 
 //protected:
   const GridView gridView_;
@@ -506,6 +509,7 @@ class PQkNodalBasis
 {
   static const int dim = GV::dimension;
 
+
 public:
 
   /** \brief The grid view that the FE space is defined on */
@@ -514,6 +518,8 @@ public:
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
   typedef PQkNodalBasisLocalView<GV,k> LocalView;
+
+  friend LocalView;
 
   /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type, 1> MultiIndex;
@@ -648,8 +654,8 @@ public:
    */
   size_type size() const
   {
-  // We have subTreeSize==lfe.size() because we're in a leaf node.
-  return tree_.finiteElement_->size();
+    // We have subTreeSize==lfe.size() because we're in a leaf node.
+    return tree_.finiteElement_->size();
   }
 
   /**
@@ -662,7 +668,7 @@ public:
    */
   size_type maxSize() const
   {
-  return StaticPower<(k+1),GV::dimension>::power;
+  return globalBasis_->nodeFactory_.maxNodeSize();
   }
 
   /** \brief Return the global basis that we are a view on
