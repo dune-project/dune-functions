@@ -13,7 +13,8 @@
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
-#include <dune/functions/functionspacebases/pq2nodalbasis.hh>
+//#include <dune/functions/functionspacebases/pq2nodalbasis.hh>
+#include <dune/functions/functionspacebases/pqknodalbasis.hh>
 
 namespace Dune {
 namespace Functions {
@@ -98,8 +99,8 @@ public:
 private:
   const LocalView * localView_;
   TaylorHoodIndexSet<GV> indexSet_;
-  typename PQ1NodalBasis<GV>::IndexSet::LocalIndexSet pq1LocalIndexSet_;
-  typename PQ2NodalBasis<GV>::IndexSet::LocalIndexSet pq2LocalIndexSet_;
+  typename PQkNodalBasis<GV,1>::IndexSet::LocalIndexSet pq1LocalIndexSet_;
+  typename PQkNodalBasis<GV,2>::IndexSet::LocalIndexSet pq2LocalIndexSet_;
 };
 
 template<typename GV>
@@ -162,8 +163,8 @@ private:
   friend GlobalBasis;
   friend LocalIndexSet;
 
-  typename PQ1NodalBasis<GV>::IndexSet pq1IndexSet_;
-  typename PQ2NodalBasis<GV>::IndexSet pq2IndexSet_;
+  typename PQkNodalBasis<GV,1>::IndexSet pq1IndexSet_;
+  typename PQkNodalBasis<GV,2>::IndexSet pq2IndexSet_;
 };
 
 
@@ -205,7 +206,7 @@ public:
 
   TaylorHoodIndexSet<GV> indexSet() const
   {
-    return TaylorHoodIndexSet<GV>(gridView());
+    return TaylorHoodIndexSet<GV>(*this);
   }
 
   /**
@@ -221,8 +222,8 @@ private:
   friend TaylorHoodIndexSet<GV>;
   friend TaylorHoodBasisLocalView<GV>;
 
-  PQ1NodalBasis<GV> pq1nodalbasis_;
-  PQ2NodalBasis<GV> pq2nodalbasis_;
+  PQkNodalBasis<GV,1> pq1nodalbasis_;
+  PQkNodalBasis<GV,2> pq2nodalbasis_;
 };
 
 
@@ -262,9 +263,9 @@ public:
     globalBasis_(globalBasis),
     pq1localView_(globalBasis->pq1nodalbasis_.localView()),
     pq2localView_(globalBasis->pq2nodalbasis_.localView()),
-    velocityTree_(pq2localView_.tree()),
-    tree_(velocityTree_, pq1localView_.tree())
-  {}
+    tree_()
+  {
+  }
 
   /** \brief Bind the view to a grid element
    *
@@ -273,8 +274,18 @@ public:
    */
   void bind(const Element& e)
   {
-    pq1localView_.bind(e);
-    pq2localView_.bind(e);
+    element_ = e;
+    pq1localView_.bind(element_);
+    pq2localView_.bind(element_);
+
+    for(int i=0; i<GV::dimension; ++i)
+      tree_.template child<0>().child(i).bind(element_);
+    tree_.template child<1>().bind(element_);
+
+//    size_type pressureOffset = tree_.template child<0>().size();
+    size_type pressureOffset = tree_.template child<0>().child(0).size() * GV::dimension;
+
+    tree_.template child<1>().localIndexFunctor() = ShiftedIdentity<std::size_t>(pressureOffset);
   }
 
   /** \brief Return the grid element that the view is bound to
@@ -283,7 +294,7 @@ public:
    */
   const Element& element() const
   {
-    return pq1localView_.element();
+    return element_;
   }
 
   /** \brief Unbind from the current element
@@ -341,38 +352,51 @@ protected:
   friend TaylorHoodLocalIndexSet<GV>;
 
   const GlobalBasis* globalBasis_;
-  PQ1NodalBasisLocalView<GV> pq1localView_;
-  PQ2NodalBasisLocalView<GV> pq2localView_;
-  TaylorHoodVelocityTree<GV> velocityTree_;
+  PQkNodalBasisLocalView<GV,1> pq1localView_;
+  PQkNodalBasisLocalView<GV,2> pq2localView_;
+  Element element_;
   Tree tree_;
 };
 
 template<typename GV>
 class TaylorHoodVelocityTree :
-    public TypeTree::PowerNode<PQ2NodalBasisLeafNode<GV>, GV::dimension>
+    public TypeTree::PowerNode<PQkNodalBasisLeafNode<GV,2, ShiftedIdentityWithStride<std::size_t> >, GV::dimension>
 {
-  friend TaylorHoodBasisLocalView<GV>;
+//  friend TaylorHoodBasisLocalView<GV>;
 
-  TaylorHoodVelocityTree(PQ2NodalBasisLeafNode<GV> & pq2leafNode) :
-    TypeTree::PowerNode<PQ2NodalBasisLeafNode<GV>, GV::dimension>(
-      pq2leafNode, false /* don't make copies */)
-//      pq2leafNode, true /* make copies, otherwise we can't set local indices */)
-  {}
+  using LocalIndexFunctor=ShiftedIdentityWithStride<std::size_t>;
+  using Q2Node=PQkNodalBasisLeafNode<GV,2, LocalIndexFunctor >;
+  using Base=TypeTree::PowerNode<Q2Node, GV::dimension>;
+
+public:
+  TaylorHoodVelocityTree() :
+    Base()
+  {
+    for(int i=0; i<GV::dimension; ++i)
+      this->setChild(i, std::make_shared<Q2Node>(LocalIndexFunctor(i, GV::dimension)));
+  }
 };
 
 template<typename GV>
 class TaylorHoodBasisTree :
     public TypeTree::CompositeNode<TaylorHoodVelocityTree<GV>,
-                                   PQ1NodalBasisLeafNode<GV>>
+                                   PQkNodalBasisLeafNode<GV,1,ShiftedIdentity<std::size_t>>>
 {
   friend TaylorHoodBasisLocalView<GV>;
 
-  typedef TypeTree::CompositeNode<TaylorHoodVelocityTree<GV>,
-                                  PQ1NodalBasisLeafNode<GV>> Base;
-  TaylorHoodBasisTree(TaylorHoodVelocityTree<GV> & velocityTree,
-    PQ1NodalBasisLeafNode<GV> & pq1leafNode) :
-    Base(velocityTree, pq1leafNode)
-  {}
+  using VelocityNode=TaylorHoodVelocityTree<GV>;
+  using PressureNode=PQkNodalBasisLeafNode<GV,1,ShiftedIdentity<std::size_t>>;
+
+  using Base=TypeTree::CompositeNode<VelocityNode, PressureNode>;
+
+public:
+  TaylorHoodBasisTree():
+    Base()
+  {
+      this->template setChild<0>(std::make_shared<VelocityNode>());
+      // 0 is just a dummy here. We must set the correct offset during bind (???).
+      this->template setChild<1>(std::make_shared<PressureNode>(ShiftedIdentity<std::size_t>(0)));
+  }
 };
 
 } // end namespace Functions
