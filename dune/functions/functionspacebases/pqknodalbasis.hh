@@ -542,6 +542,11 @@ public:
     return indexSet_;
   }
 
+  std::size_t size() const
+  {
+    return nodeFactory_.size();
+  }
+
   /** \brief Return local view for basis
    *
    */
