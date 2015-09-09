@@ -12,7 +12,7 @@
 
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 
-#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
+//#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 //#include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 
@@ -29,11 +29,141 @@ class TaylorHoodBasisLocalView;
 template<typename GV>
 class TaylorHoodIndexSet;
 
-template<typename GV>
+template<typename GV, typename TP>
 class TaylorHoodVelocityTree;
 
-template<typename GV>
+template<typename GV, typename TP>
 class TaylorHoodBasisTree;
+
+
+#if 0
+template<typename GV, class MI>
+class TaylorHoodNodeFactory
+{
+  static const int dim = GV::dimension;
+
+public:
+
+  template<class LocalIndexFunctor>
+  using Node = TaylorHoodBasisTree<GV>;
+
+  template<class LocalIndexFunctor>
+  using IndexSet = PQkNodeIndexSet<GV, k, MI, LocalIndexFunctor>;
+
+  /** \brief The grid view that the FE space is defined on */
+  typedef GV GridView;
+  typedef std::size_t size_type;
+
+  /** \brief Type used for global numbering of the basis vectors */
+  using MultiIndex = MI;
+
+  /** \brief Constructor for a given grid view object */
+  TaylorHoodNodeFactory(const GridView& gv) :
+    gridView_(gv)
+  {
+  }
+
+
+  void initializeIndices()
+  {
+    vertexOffset_        = 0;
+    edgeOffset_          = vertexOffset_          + gridView_.size(dim);
+    triangleOffset_      = edgeOffset_            + dofsPerEdge * gridView_.size(dim-1);
+
+    GeometryType triangle;
+    triangle.makeTriangle();
+    quadrilateralOffset_ = triangleOffset_        + dofsPerTriangle * gridView_.size(triangle);
+
+    Dune::GeometryType quadrilateral;
+    quadrilateral.makeQuadrilateral();
+    if (dim==3) {
+      tetrahedronOffset_   = quadrilateralOffset_ + dofsPerQuad * gridView_.size(quadrilateral);
+
+      GeometryType tetrahedron;
+      tetrahedron.makeSimplex(3);
+      prismOffset_         = tetrahedronOffset_   +   dofsPerTetrahedron * gridView_.size(tetrahedron);
+
+      GeometryType prism;
+      prism.makePrism();
+      hexahedronOffset_    = prismOffset_         +   dofsPerPrism * gridView_.size(prism);
+
+      GeometryType hexahedron;
+      hexahedron.makeCube(3);
+      pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * gridView_.size(hexahedron);
+    }
+  }
+
+  /** \brief Obtain the grid view that the basis is defined on
+   */
+  const GridView& gridView() const
+  {
+    return gridView_;
+  }
+
+  template<class LocalIndexFunctor>
+  Node<LocalIndexFunctor> node(const LocalIndexFunctor& localIndexFunctor) const
+  {
+    return Node<LocalIndexFunctor>{localIndexFunctor};
+  }
+
+  template<class LocalIndexFunctor>
+  IndexSet<LocalIndexFunctor> indexSet() const
+  {
+    return IndexSet<LocalIndexFunctor>{*this};
+  }
+
+  std::size_t size() const
+  {
+    switch (dim)
+    {
+      case 1:
+        return gridView_.size(1) + dofsPerEdge*gridView_.size(0);
+      case 2:
+      {
+        GeometryType triangle, quad;
+        triangle.makeTriangle();
+        quad.makeQuadrilateral();
+        return gridView_.size(dim) + dofsPerEdge*gridView_.size(1)
+             + dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad);
+      }
+      case 3:
+      {
+        GeometryType triangle, quad, tetrahedron, pyramid, prism, hexahedron;
+        triangle.makeTriangle();
+        quad.makeQuadrilateral();
+        tetrahedron.makeTetrahedron();
+        pyramid.makePyramid();
+        prism.makePrism();
+        hexahedron.makeCube(3);
+        return gridView_.size(dim) + dofsPerEdge*gridView_.size(2)
+             + dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad)
+             + dofsPerTetrahedron*gridView_.size(tetrahedron) + dofsPerPyramid*gridView_.size(pyramid)
+             + dofsPerPrism*gridView_.size(prism) + dofsPerHexahedron*gridView_.size(hexahedron);
+      }
+    }
+    DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
+  }
+
+  size_type maxNodeSize() const
+  {
+    return StaticPower<(k+1),GV::dimension>::power;
+  }
+
+//protected:
+  const GridView gridView_;
+
+  size_t vertexOffset_;
+  size_t edgeOffset_;
+  size_t triangleOffset_;
+  size_t quadrilateralOffset_;
+  size_t tetrahedronOffset_;
+  size_t pyramidOffset_;
+  size_t prismOffset_;
+  size_t hexahedronOffset_;
+
+};
+#endif
+
 
 template<typename GV>
 class TaylorHoodLocalIndexSet
@@ -41,27 +171,31 @@ class TaylorHoodLocalIndexSet
   static const int dim = GV::dimension;
 
 public:
-  typedef std::size_t size_type;
+
+  using ST = std::size_t;
+  using size_type = ST;
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
   typedef TaylorHoodBasisLocalView<GV> LocalView;
+
+  using Tree = typename LocalView::Tree;
 
   /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type,2> MultiIndex;
 
   using PQMultiIndex = std::array<size_type, 1>;
-  using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex>;
-  using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex>;
+  using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex, ST>;
+  using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex, ST>;
 
-  using PQ1LocalIndexFunctor=ShiftedIdentity<size_type>;
-  using PQ2LocalIndexFunctor=ShiftedIdentityWithStride<size_type>;
+  using PQ1TreePath = typename Tree::template Child<1>::Type::TreePath;
+  using PQ2TreePath = typename Tree::template Child<0>::Type::template Child<0>::Type::TreePath;
 
-  using PQ1NodeIndexSet = typename PQ1Factory::template IndexSet<PQ1LocalIndexFunctor>;
-  using PQ2NodeIndexSet = typename PQ2Factory::template IndexSet<PQ2LocalIndexFunctor>;
+  using PQ1NodeIndexSet = typename PQ1Factory::template IndexSet<PQ1TreePath>;
+  using PQ2NodeIndexSet = typename PQ2Factory::template IndexSet<PQ2TreePath>;
 
   TaylorHoodLocalIndexSet(const TaylorHoodIndexSet<GV> & indexSet) :
-    pq1NodeIndexSet_(indexSet.basis_->pq1Factory_.template indexSet<PQ1LocalIndexFunctor>()),
-    pq2NodeIndexSet_(indexSet.basis_->pq2Factory_.template indexSet<PQ2LocalIndexFunctor>())
+    pq1NodeIndexSet_(indexSet.basis_->pq1Factory_.template indexSet<PQ1TreePath>()),
+    pq2NodeIndexSet_(indexSet.basis_->pq2Factory_.template indexSet<PQ2TreePath>())
   {}
 
   void bind(const TaylorHoodBasisLocalView<GV>& localView)
@@ -71,6 +205,7 @@ public:
     pq1NodeIndexSet_.bind(localView_->tree().template child<1>());
     pq2NodeIndexSet_.bind(localView_->tree().template child<0>().child(0));
   }
+
   void unbind()
   {
     localView_ = nullptr;
@@ -86,16 +221,19 @@ public:
   MultiIndex index(size_type localIndex) const
   {
     MultiIndex mi;
-    size_type v_size = dim * pq2NodeIndexSet_.size();
-    mi[0] = localIndex / v_size;
+
+    size_type velocityComponentSize = pq2NodeIndexSet_.size();
+    size_type pressureOffset = velocityComponentSize * dim;
+
+    mi[0] = localIndex / pressureOffset;
     if (mi[0] == 0)
     {
-      size_type v_comp = localIndex % dim;
-      size_type v_localIndex = localIndex / dim;
+      size_type v_comp = localIndex / velocityComponentSize;
+      size_type v_localIndex = localIndex % velocityComponentSize;
       mi[1] = pq2NodeIndexSet_.index(v_localIndex)[0] * dim + v_comp;
     }
     if (mi[0] == 1)
-      mi[1] = pq1NodeIndexSet_.index(localIndex-v_size)[0];
+      mi[1] = pq1NodeIndexSet_.index(localIndex-pressureOffset)[0];
     return mi;
   }
 
@@ -191,20 +329,17 @@ public:
 
   /** \brief The grid view that the FE space is defined on */
   typedef GV GridView;
-  typedef std::size_t size_type;
+
+  using ST = std::size_t;
+  using size_type = ST;
 
 protected:
 
   static const int dim = GV::dimension;
 
   using PQMultiIndex = std::array<size_type, 1>;
-  using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex>;
-  using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex>;
-
-  using PQ1LocalIndexFunctor=ShiftedIdentity<size_type>;
-  using PQ2LocalIndexFunctor=ShiftedIdentityWithStride<size_type>;
-
-  using PQ2Node=PQkNodalBasisLeafNode<GV,2, PQ2LocalIndexFunctor >;
+  using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex,ST>;
+  using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex,ST>;
 
 public:
 
@@ -274,17 +409,19 @@ public:
   /** \brief Type of the grid element we are bound to */
   typedef typename GridView::template Codim<0>::Entity Element;
 
+  using TreePath = std::tuple<>;
+
   /** \brief Tree of local finite elements / local shape function sets
    *
    * In the case of a P2 space this tree consists of a single leaf only,
    * i.e., Tree is basically the type of the LocalFiniteElement
    */
-  typedef TaylorHoodBasisTree<GV> Tree;
+  typedef TaylorHoodBasisTree<GV,TreePath> Tree;
 
   /** \brief Construct local view for a given global finite element basis */
   TaylorHoodBasisLocalView(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis),
-    tree_()
+    tree_(TreePath())
   {
   }
 
@@ -296,18 +433,7 @@ public:
   void bind(const Element& e)
   {
     element_ = e;
-
-    for(int i=0; i<GV::dimension; ++i)
-      tree_.template child<0>().child(i).bind(element_);
-    tree_.template child<1>().bind(element_);
-
-//    size_type pressureOffset = tree_.template child<0>().size();
-    size_type pressureOffset = tree_.template child<0>().child(0).size() * dim;
-
-    tree_.template child<1>().localIndexFunctor() = ShiftedIdentity<std::size_t>(pressureOffset);
-
-    // TODO: Implement this using generic tree-leaf loop
-    size_ = dim*tree_.template child<0>().child(0).size() + tree_.template child<1>().size();
+    bindTree(tree_, element_, 0);
   }
 
   /** \brief Return the grid element that the view is bound to
@@ -345,7 +471,7 @@ public:
    */
   size_type size() const
   {
-    return size_;
+    return tree_.size();
   }
 
   /**
@@ -373,47 +499,50 @@ protected:
   const GlobalBasis* globalBasis_;
   Element element_;
   Tree tree_;
-  size_type size_;
 };
 
-template<typename GV>
+template<typename GV, typename TP>
 class TaylorHoodVelocityTree :
-    public TypeTree::PowerNode<PQkNodalBasisLeafNode<GV,2, ShiftedIdentityWithStride<std::size_t> >, GV::dimension>
+    public PowerBasisNode<std::size_t, TP ,PQkNode<GV,2, std::size_t, decltype(extendTreePath(TP(), int())) >, GV::dimension>
 {
-//  friend TaylorHoodBasisLocalView<GV>;
+  using ComponentTreePath = decltype(extendTreePath(TP(), int()));
 
-  using LocalIndexFunctor=ShiftedIdentityWithStride<std::size_t>;
-  using Q2Node=PQkNodalBasisLeafNode<GV,2, LocalIndexFunctor >;
-  using Base=TypeTree::PowerNode<Q2Node, GV::dimension>;
+  using PQ2Node = PQkNode<GV,2, std::size_t, ComponentTreePath >;
+  using Base = PowerBasisNode<std::size_t, TP ,PQ2Node, GV::dimension>;
 
 public:
-  TaylorHoodVelocityTree() :
-    Base()
+  TaylorHoodVelocityTree(const TP& tp) :
+    Base(tp)
   {
     for(int i=0; i<GV::dimension; ++i)
-      this->setChild(i, std::make_shared<Q2Node>(LocalIndexFunctor(i, GV::dimension)));
+      this->setChild(i, std::make_shared<PQ2Node>(extendTreePath(tp, i)));
   }
 };
 
-template<typename GV>
+template<typename GV, typename TP>
 class TaylorHoodBasisTree :
-    public TypeTree::CompositeNode<TaylorHoodVelocityTree<GV>,
-                                   PQkNodalBasisLeafNode<GV,1,ShiftedIdentity<std::size_t>>>
+    public CompositeBasisNode<std::size_t, TP,
+      TaylorHoodVelocityTree<GV, decltype(extendTreePath<0>(TP()))>,
+      PQkNode<GV,1,std::size_t, decltype(extendTreePath<1>(TP()))>
+    >
 {
-  friend TaylorHoodBasisLocalView<GV>;
+  using VelocityTreePath = decltype(extendTreePath<0>(TP()));
+  using PressureTreePath = decltype(extendTreePath<1>(TP()));
 
-  using VelocityNode=TaylorHoodVelocityTree<GV>;
-  using PressureNode=PQkNodalBasisLeafNode<GV,1,ShiftedIdentity<std::size_t>>;
 
-  using Base=TypeTree::CompositeNode<VelocityNode, PressureNode>;
+  using VelocityNode=TaylorHoodVelocityTree<GV, VelocityTreePath>;
+  using PressureNode=PQkNode<GV,1,std::size_t, PressureTreePath>;
+
+  using Base=CompositeBasisNode<std::size_t, TP, VelocityNode, PressureNode>;
 
 public:
-  TaylorHoodBasisTree():
-    Base()
+  TaylorHoodBasisTree(const TP& tp):
+    Base(tp)
   {
-      this->template setChild<0>(std::make_shared<VelocityNode>());
-      // 0 is just a dummy here. We must set the correct offset during bind (???).
-      this->template setChild<1>(std::make_shared<PressureNode>(ShiftedIdentity<std::size_t>(0)));
+    using namespace StaticIndices;
+
+    this->template setChild<0>(std::make_shared<VelocityNode>(extendTreePath(tp, _0)));
+    this->template setChild<1>(std::make_shared<PressureNode>(extendTreePath(tp, _1)));
   }
 };
 
