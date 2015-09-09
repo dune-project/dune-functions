@@ -19,8 +19,18 @@ namespace Dune {
 namespace Functions {
 
 
-template<typename GV, class ST = std::size_t>
-class TaylorHoodBasis;
+// *****************************************************************************
+// This is the reusable part of the basis. It contains
+//
+//   TaylorHoodNodeFactory
+//   TaylorHoodNodeIndexSet
+//   TaylorHoodBasisTree
+//   TaylorHoodVelocityTree
+//
+// The factory allows to create the others and is the owner of possible shared
+// state. These three components do _not_ depend on the global basis or index
+// set and can be used without a global basis.
+// *****************************************************************************
 
 template<typename GV, typename TP>
 class TaylorHoodVelocityTree;
@@ -141,6 +151,53 @@ protected:
 
 
 
+template<typename GV, typename TP>
+class TaylorHoodVelocityTree :
+    public PowerBasisNode<std::size_t, TP ,PQkNode<GV,2, std::size_t, decltype(extendTreePath(TP(), int())) >, GV::dimension>
+{
+  using ComponentTreePath = decltype(extendTreePath(TP(), int()));
+
+  using PQ2Node = PQkNode<GV,2, std::size_t, ComponentTreePath >;
+  using Base = PowerBasisNode<std::size_t, TP ,PQ2Node, GV::dimension>;
+
+public:
+  TaylorHoodVelocityTree(const TP& tp) :
+    Base(tp)
+  {
+    for(int i=0; i<GV::dimension; ++i)
+      this->setChild(i, std::make_shared<PQ2Node>(extendTreePath(tp, i)));
+  }
+};
+
+template<typename GV, typename TP>
+class TaylorHoodBasisTree :
+    public CompositeBasisNode<std::size_t, TP,
+      TaylorHoodVelocityTree<GV, decltype(extendTreePath<0>(TP()))>,
+      PQkNode<GV,1,std::size_t, decltype(extendTreePath<1>(TP()))>
+    >
+{
+  using VelocityTreePath = decltype(extendTreePath<0>(TP()));
+  using PressureTreePath = decltype(extendTreePath<1>(TP()));
+
+
+  using VelocityNode=TaylorHoodVelocityTree<GV, VelocityTreePath>;
+  using PressureNode=PQkNode<GV,1,std::size_t, PressureTreePath>;
+
+  using Base=CompositeBasisNode<std::size_t, TP, VelocityNode, PressureNode>;
+
+public:
+  TaylorHoodBasisTree(const TP& tp):
+    Base(tp)
+  {
+    using namespace StaticIndices;
+
+    this->template setChild<0>(std::make_shared<VelocityNode>(extendTreePath(tp, _0)));
+    this->template setChild<1>(std::make_shared<PressureNode>(extendTreePath(tp, _1)));
+  }
+};
+
+
+
 template<typename GV, class MI, class TP, class ST>
 class TaylorHoodNodeIndexSet
 {
@@ -218,12 +275,15 @@ private:
 
 
 
+// *****************************************************************************
+// This is the actual global basis implementation based on the reusable parts.
+// *****************************************************************************
 
 /** \brief Nodal basis of a scalar second-order Lagrangean finite element space
  *
  * \tparam GV The GridView that the space is defined on.
  */
-template<typename GV, class ST>
+template<typename GV, class ST = std::size_t>
 class TaylorHoodBasis
   : public GridViewFunctionSpaceBasis<GV,
                                       DefaultLocalView<TaylorHoodBasis<GV,ST>>,
@@ -295,50 +355,6 @@ protected:
 };
 
 
-template<typename GV, typename TP>
-class TaylorHoodVelocityTree :
-    public PowerBasisNode<std::size_t, TP ,PQkNode<GV,2, std::size_t, decltype(extendTreePath(TP(), int())) >, GV::dimension>
-{
-  using ComponentTreePath = decltype(extendTreePath(TP(), int()));
-
-  using PQ2Node = PQkNode<GV,2, std::size_t, ComponentTreePath >;
-  using Base = PowerBasisNode<std::size_t, TP ,PQ2Node, GV::dimension>;
-
-public:
-  TaylorHoodVelocityTree(const TP& tp) :
-    Base(tp)
-  {
-    for(int i=0; i<GV::dimension; ++i)
-      this->setChild(i, std::make_shared<PQ2Node>(extendTreePath(tp, i)));
-  }
-};
-
-template<typename GV, typename TP>
-class TaylorHoodBasisTree :
-    public CompositeBasisNode<std::size_t, TP,
-      TaylorHoodVelocityTree<GV, decltype(extendTreePath<0>(TP()))>,
-      PQkNode<GV,1,std::size_t, decltype(extendTreePath<1>(TP()))>
-    >
-{
-  using VelocityTreePath = decltype(extendTreePath<0>(TP()));
-  using PressureTreePath = decltype(extendTreePath<1>(TP()));
-
-
-  using VelocityNode=TaylorHoodVelocityTree<GV, VelocityTreePath>;
-  using PressureNode=PQkNode<GV,1,std::size_t, PressureTreePath>;
-
-  using Base=CompositeBasisNode<std::size_t, TP, VelocityNode, PressureNode>;
-
-public:
-  TaylorHoodBasisTree(const TP& tp):
-    Base(tp)
-  {
-    using namespace StaticIndices;
-
-    this->template setChild<0>(std::make_shared<VelocityNode>(extendTreePath(tp, _0)));
-    this->template setChild<1>(std::make_shared<PressureNode>(extendTreePath(tp, _1)));
-  }
-};
 
 } // end namespace Functions
 } // end namespace Dune
