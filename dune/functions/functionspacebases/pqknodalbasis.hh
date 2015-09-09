@@ -14,6 +14,7 @@
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/tupletreepath.hh>
+#include <dune/functions/functionspacebases/defaultlocalindexset.hh>
 
 
 namespace Dune {
@@ -392,7 +393,6 @@ public:
 // This is the actual global basis implementation based on the reusable parts
 // above. It contains
 //
-//   PQkLocalIndexSet
 //   PQkIndexSet
 //   PQkNodalBasis
 //   PQkNodalBasisLocalView
@@ -405,86 +405,10 @@ class PQkNodalBasisLocalView;
 template<typename GV, int k, class MI, class ST>
 class PQkIndexSet;
 
-template<typename GV, int k, class MI, class ST>
-class PQkLocalIndexSet;
-
 template<typename GV, int k, class ST = std::size_t>
 class PQkNodalBasis;
 
 
-
-template<typename GV, int k, class MI, class ST>
-class PQkLocalIndexSet
-{
-  enum {dim = GV::dimension};
-
-public:
-  using size_type = ST;
-
-  /** \brief Type of the local view on the restriction of the basis to a single element */
-  using LocalView = PQkNodalBasisLocalView<GV, k, ST>;
-  using NodeFactory = typename LocalView::GlobalBasis::NodeFactory;
-  using TreePath = typename LocalView::TreePath;
-  using NodeIndexSet = typename NodeFactory::template IndexSet<TreePath>;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-
-  template<class NI>
-  PQkLocalIndexSet(NI&& nodeIndexSet) :
-    nodeIndexSet_(std::forward<NI>(nodeIndexSet))
-  {}
-
-//  PQkLocalIndexSet(const NodeIndexSet& nodeIndexSet) :
-//    nodeIndexSet_(nodeIndexSet)
-//  {}
-
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
-   */
-  void bind(const LocalView& localView)
-  {
-    localView_ = &localView;
-    nodeIndexSet_.bind(localView_->tree());
-  }
-
-  /** \brief Unbind the view
-   */
-  void unbind()
-  {
-    localView_ = nullptr;
-    nodeIndexSet_.unbind();
-  }
-
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const
-  {
-    return nodeIndexSet_.size();
-  }
-
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  const MultiIndex index(size_type i) const
-  {
-    return nodeIndexSet_.index(i);
-  }
-
-  /** \brief Return the local view that we are attached to
-   */
-  const LocalView& localView() const
-  {
-    return *localView_;
-  }
-
-protected:
-
-  const LocalView* localView_;
-
-  NodeIndexSet nodeIndexSet_;
-};
 
 template<typename GV, int k, class MI, class ST>
 class PQkIndexSet
@@ -498,7 +422,7 @@ public:
   using NodeFactory = PQkNodeFactory<GV,k,MI,ST>;
   using NodeIndexSet = typename NodeFactory::template IndexSet<TreePath>;
 
-  typedef PQkLocalIndexSet<GV,k,MI,ST> LocalIndexSet;
+  using LocalIndexSet = DefaultLocalIndexSet<LocalView, NodeIndexSet>;
 
   PQkIndexSet(const NodeFactory& nodeFactory) :
     nodeFactory_(&nodeFactory),
