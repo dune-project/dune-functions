@@ -32,10 +32,10 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, typename TP>
+template<typename GV, class ST, typename TP>
 class TaylorHoodVelocityTree;
 
-template<typename GV, typename TP>
+template<typename GV, class ST, typename TP>
 class TaylorHoodBasisTree;
 
 template<typename GV, class MI, class TP, class ST>
@@ -59,7 +59,7 @@ public:
 
 
   template<class TP>
-  using Node = TaylorHoodBasisTree<GV, TP>;
+  using Node = TaylorHoodBasisTree<GV, ST, TP>;
 
   template<class TP>
   using IndexSet = TaylorHoodNodeIndexSet<GV, MI, TP, ST>;
@@ -151,14 +151,14 @@ protected:
 
 
 
-template<typename GV, typename TP>
+template<typename GV, class ST, typename TP>
 class TaylorHoodVelocityTree :
-    public PowerBasisNode<std::size_t, TP ,PQkNode<GV,2, std::size_t, decltype(extendTreePath(TP(), int())) >, GV::dimension>
+    public PowerBasisNode<ST, TP ,PQkNode<GV,2, ST, decltype(extendTreePath(TP(), int())) >, GV::dimension>
 {
   using ComponentTreePath = decltype(extendTreePath(TP(), int()));
 
-  using PQ2Node = PQkNode<GV,2, std::size_t, ComponentTreePath >;
-  using Base = PowerBasisNode<std::size_t, TP ,PQ2Node, GV::dimension>;
+  using PQ2Node = PQkNode<GV,2, ST, ComponentTreePath >;
+  using Base = PowerBasisNode<ST, TP ,PQ2Node, GV::dimension>;
 
 public:
   TaylorHoodVelocityTree(const TP& tp) :
@@ -169,21 +169,21 @@ public:
   }
 };
 
-template<typename GV, typename TP>
+template<typename GV, class ST, typename TP>
 class TaylorHoodBasisTree :
-    public CompositeBasisNode<std::size_t, TP,
-      TaylorHoodVelocityTree<GV, decltype(extendTreePath<0>(TP()))>,
-      PQkNode<GV,1,std::size_t, decltype(extendTreePath<1>(TP()))>
+    public CompositeBasisNode<ST, TP,
+      TaylorHoodVelocityTree<GV, ST, decltype(extendTreePath<0>(TP()))>,
+      PQkNode<GV,1,ST, decltype(extendTreePath<1>(TP()))>
     >
 {
   using VelocityTreePath = decltype(extendTreePath<0>(TP()));
   using PressureTreePath = decltype(extendTreePath<1>(TP()));
 
 
-  using VelocityNode=TaylorHoodVelocityTree<GV, VelocityTreePath>;
-  using PressureNode=PQkNode<GV,1,std::size_t, PressureTreePath>;
+  using VelocityNode=TaylorHoodVelocityTree<GV, ST, VelocityTreePath>;
+  using PressureNode=PQkNode<GV,1,ST, PressureTreePath>;
 
-  using Base=CompositeBasisNode<std::size_t, TP, VelocityNode, PressureNode>;
+  using Base=CompositeBasisNode<ST, TP, VelocityNode, PressureNode>;
 
 public:
   TaylorHoodBasisTree(const TP& tp):
@@ -288,7 +288,7 @@ class TaylorHoodBasis
   : public GridViewFunctionSpaceBasis<GV,
                                       DefaultLocalView<TaylorHoodBasis<GV,ST>>,
                                       DefaultGlobalIndexSet<DefaultLocalView<TaylorHoodBasis<GV,ST>>, TaylorHoodNodeFactory<GV, std::array<ST, 2>, ST> >,
-                                      std::array<std::size_t, 2> >
+                                      std::array<ST, 2> >
 {
 public:
 
