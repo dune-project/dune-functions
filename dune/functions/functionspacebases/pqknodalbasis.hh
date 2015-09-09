@@ -15,6 +15,7 @@
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/tupletreepath.hh>
 #include <dune/functions/functionspacebases/defaultglobalindexset.hh>
+#include <dune/functions/functionspacebases/defaultlocalview.hh>
 
 
 namespace Dune {
@@ -411,12 +412,8 @@ protected:
 // above. It contains
 //
 //   PQkNodalBasis
-//   PQkNodalBasisLocalView
 //
 // *****************************************************************************
-
-template<typename GV, int k, class ST>
-class PQkNodalBasisLocalView;
 
 template<typename GV, int k, class ST = std::size_t>
 class PQkNodalBasis;
@@ -434,8 +431,8 @@ class PQkNodalBasis;
 template<typename GV, int k, class ST>
 class PQkNodalBasis
 : public GridViewFunctionSpaceBasis<GV,
-                                    PQkNodalBasisLocalView<GV, k, ST>,
-                                    DefaultGlobalIndexSet<PQkNodalBasisLocalView<GV, k, ST>, PQkNodeFactory<GV, k, std::array<ST, 1>, ST>>,
+                                    DefaultLocalView<PQkNodalBasis<GV,k,ST>>,
+                                    DefaultGlobalIndexSet<DefaultLocalView<PQkNodalBasis<GV,k,ST>>, PQkNodeFactory<GV, k, std::array<ST, 1>, ST>>,
                                     std::array<ST, 1> >
 {
   static const int dim = GV::dimension;
@@ -449,7 +446,7 @@ public:
 
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
-  typedef PQkNodalBasisLocalView<GV, k, ST> LocalView;
+  using LocalView = DefaultLocalView<PQkNodalBasis<GV,k,ST>>;
 
   /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type, 1> MultiIndex;
