@@ -13,20 +13,17 @@
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
-#include <dune/functions/functionspacebases/defaultlocalindexset.hh>
+#include <dune/functions/functionspacebases/defaultglobalindexset.hh>
 
 namespace Dune {
 namespace Functions {
 
 
-template<typename GV>
+template<typename GV, class ST = std::size_t>
 class TaylorHoodBasis;
 
 template<typename GV>
 class TaylorHoodBasisLocalView;
-
-template<typename GV>
-class TaylorHoodIndexSet;
 
 template<typename GV, typename TP>
 class TaylorHoodVelocityTree;
@@ -223,69 +220,16 @@ private:
 
 
 
-template<typename GV>
-class TaylorHoodIndexSet
-{
-public:
-
-  using ST = std::size_t;
-  using MI = std::array<ST, 2>;
-
-  using size_type = ST;
-  using TreePath = std::tuple<>;
-
-  using LocalView = TaylorHoodBasisLocalView<GV>;
-  using NodeFactory = TaylorHoodNodeFactory<GV, MI, ST>;
-  using NodeIndexSet = typename NodeFactory::template IndexSet<TreePath>;
-  using SizePrefix = typename NodeFactory::SizePrefix;
-
-  using LocalIndexSet = DefaultLocalIndexSet<LocalView, NodeIndexSet>;
-
-  TaylorHoodIndexSet(const NodeFactory& nodeFactory) :
-    nodeFactory_(&nodeFactory),
-    gridView_(nodeFactory_->gridView())
-  {}
-
-
-  size_type dimension() const
-  {
-    return nodeFactory_->dimension();
-  }
-
-  //! Return number of possible values for next position in empty multi index
-  size_type size() const
-  {
-    return nodeFactory_->size();
-  }
-
-  //! Return number possible values for next position in multi index
-  size_type size(const SizePrefix& prefix) const
-  {
-    return nodeFactory_->size(prefix);
-  }
-
-  LocalIndexSet localIndexSet() const
-  {
-    return LocalIndexSet(nodeFactory_->template indexSet<TreePath>());
-  }
-
-private:
-
-  const NodeFactory* nodeFactory_;
-  const GV gridView_;
-};
-
-
 
 /** \brief Nodal basis of a scalar second-order Lagrangean finite element space
  *
  * \tparam GV The GridView that the space is defined on.
  */
-template<typename GV>
+template<typename GV, class ST>
 class TaylorHoodBasis
   : public GridViewFunctionSpaceBasis<GV,
                                       TaylorHoodBasisLocalView<GV>,
-                                      TaylorHoodIndexSet<GV>,
+                                      DefaultGlobalIndexSet<TaylorHoodBasisLocalView<GV>, TaylorHoodNodeFactory<GV, std::array<ST, 2>, ST> >,
                                       std::array<std::size_t, 2> >
 {
 public:
@@ -293,7 +237,6 @@ public:
   /** \brief The grid view that the FE space is defined on */
   typedef GV GridView;
 
-  using ST = std::size_t;
   using size_type = ST;
 
 protected:
@@ -304,13 +247,16 @@ protected:
   using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex,ST>;
   using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex,ST>;
 
+public:
+
   using MultiIndex = std::array<size_type, 2>;
   using NodeFactory = TaylorHoodNodeFactory<GV, MultiIndex, size_type>;
 
-public:
-
   /** \brief Type of the local view on the restriction of the basis to a single element */
-  typedef TaylorHoodBasisLocalView<GV> LocalView;
+  using LocalView = TaylorHoodBasisLocalView<GV>;
+
+  using GlobalIndexSet = DefaultGlobalIndexSet<LocalView, NodeFactory>;
+
 
   /** \brief Constructor for a given grid view object */
   TaylorHoodBasis(const GridView& gv) :
@@ -326,9 +272,9 @@ public:
     return nodeFactory_.gridView();
   }
 
-  TaylorHoodIndexSet<GV> indexSet() const
+  GlobalIndexSet indexSet() const
   {
-    return TaylorHoodIndexSet<GV>(nodeFactory_);
+    return GlobalIndexSet(nodeFactory_);
   }
 
   /**
