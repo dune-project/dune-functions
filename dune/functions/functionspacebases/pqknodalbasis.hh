@@ -76,6 +76,8 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
+  using SizePrefix = Dune::ReservedVector<size_type, 2>;
+
   /** \brief Constructor for a given grid view object */
   PQkNodeFactory(const GridView& gv) :
     gridView_(gv)
@@ -160,6 +162,20 @@ public:
       }
     }
     DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
+  }
+
+  //! Return number possible values for next position in multi index
+  size_type size(const SizePrefix prefix) const
+  {
+    if (prefix.size() == 0)
+      return size();
+    assert(false);
+  }
+
+  /** \todo This method has been added to the interface without prior discussion. */
+  size_type dimension() const
+  {
+    return size();
   }
 
   size_type maxNodeSize() const
