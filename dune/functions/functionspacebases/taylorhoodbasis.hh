@@ -22,9 +22,6 @@ namespace Functions {
 template<typename GV, class ST = std::size_t>
 class TaylorHoodBasis;
 
-template<typename GV>
-class TaylorHoodBasisLocalView;
-
 template<typename GV, typename TP>
 class TaylorHoodVelocityTree;
 
@@ -228,8 +225,8 @@ private:
 template<typename GV, class ST>
 class TaylorHoodBasis
   : public GridViewFunctionSpaceBasis<GV,
-                                      TaylorHoodBasisLocalView<GV>,
-                                      DefaultGlobalIndexSet<TaylorHoodBasisLocalView<GV>, TaylorHoodNodeFactory<GV, std::array<ST, 2>, ST> >,
+                                      DefaultLocalView<TaylorHoodBasis<GV,ST>>,
+                                      DefaultGlobalIndexSet<DefaultLocalView<TaylorHoodBasis<GV,ST>>, TaylorHoodNodeFactory<GV, std::array<ST, 2>, ST> >,
                                       std::array<std::size_t, 2> >
 {
 public:
@@ -253,7 +250,7 @@ public:
   using NodeFactory = TaylorHoodNodeFactory<GV, MultiIndex, size_type>;
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
-  using LocalView = TaylorHoodBasisLocalView<GV>;
+  using LocalView = DefaultLocalView<TaylorHoodBasis<GV,ST>>;
 
   using GlobalIndexSet = DefaultGlobalIndexSet<LocalView, NodeFactory>;
 
@@ -283,131 +280,19 @@ public:
    */
   LocalView localView() const
   {
-    return LocalView(this);
+    return LocalView(*this);
   }
 
-//private:
-//protected:
-  friend TaylorHoodBasisLocalView<GV>;
-
-  NodeFactory nodeFactory_;
-};
-
-
-/** \brief The restriction of a finite element basis to a single element */
-template<typename GV>
-class TaylorHoodBasisLocalView
-{
-  static const int dim = GV::dimension;
-
-public:
-  /** \brief The global FE basis that this is a view on */
-  typedef TaylorHoodBasis<GV> GlobalBasis;
-  typedef typename GlobalBasis::GridView GridView;
-
-  /** \brief The type used for sizes */
-  typedef typename GlobalBasis::size_type size_type;
-
-  /** \brief Type used to number the degrees of freedom
-   *
-   * In the case of mixed finite elements this really can be a multi-index, but for a standard
-   * P2 space this is only a single-digit multi-index, i.e., it is an integer.
-   */
-  typedef typename GlobalBasis::MultiIndex MultiIndex;
-
-  /** \brief Type of the grid element we are bound to */
-  typedef typename GridView::template Codim<0>::Entity Element;
-
-  using TreePath = std::tuple<>;
-
-  /** \brief Tree of local finite elements / local shape function sets
-   *
-   * In the case of a P2 space this tree consists of a single leaf only,
-   * i.e., Tree is basically the type of the LocalFiniteElement
-   */
-  typedef TaylorHoodBasisTree<GV,TreePath> Tree;
-
-  /** \brief Construct local view for a given global finite element basis */
-  TaylorHoodBasisLocalView(const GlobalBasis* globalBasis) :
-    globalBasis_(globalBasis),
-    tree_(TreePath())
+  const NodeFactory& nodeFactory() const
   {
-  }
-
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
-   */
-  void bind(const Element& e)
-  {
-    element_ = e;
-    bindTree(tree_, element_, 0);
-  }
-
-  /** \brief Return the grid element that the view is bound to
-   *
-   * \throws Dune::Exception if the view is not bound to anything
-   */
-  const Element& element() const
-  {
-    return element_;
-  }
-
-  /** \brief Unbind from the current element
-   *
-   * Calling this method should only be a hint that the view can be unbound.
-   * And indeed, in the TaylorHoodBasisView implementation this method does nothing.
-   */
-  void unbind()
-  {}
-
-  /** \brief Return the local ansatz tree associated to the bound entity
-   *
-   * \returns Tree // This is tree
-   */
-  const Tree& tree() const
-  {
-    return tree_;
-  }
-
-  Tree& tree()
-  {
-    return tree_;
-  }
-
-  /** \brief Number of degrees of freedom on this element
-   */
-  size_type size() const
-  {
-    return tree_.size();
-  }
-
-  /**
-   * \brief Maximum local size for any element on the GridView
-   *
-   * This is the maximal size needed for local matrices
-   * and local vectors, i.e., the result is
-   *
-   */
-  size_type maxSize() const
-  {
-    return dim*globalBasis_->p.nodeFactory_.q2Factory_.maxNodeSize() + globalBasis_->nodeFactory_.pq1Factory_.maxNodeSize();
-  }
-
-  /** \brief Return the global basis that we are a view on
-   */
-  const GlobalBasis& globalBasis() const
-  {
-    return *globalBasis_;
+    return nodeFactory_;
   }
 
 protected:
 
-  const GlobalBasis* globalBasis_;
-  Element element_;
-  Tree tree_;
+  NodeFactory nodeFactory_;
 };
+
 
 template<typename GV, typename TP>
 class TaylorHoodVelocityTree :
