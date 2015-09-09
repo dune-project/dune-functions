@@ -298,7 +298,7 @@ public:
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  const MultiIndex index(size_type i) const
+  MultiIndex index(size_type i) const
   {
     Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
     const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
