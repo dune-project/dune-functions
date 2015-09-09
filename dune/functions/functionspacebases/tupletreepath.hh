@@ -138,9 +138,9 @@ auto makeTreePath(I&&... i)
 
 // Extend TreePath by static index given by integer i
 template<int i, class... H>
-std::tuple<H..., std::integral_constant<int, i>> extendTreePath(const std::tuple<H...>&head)
+std::tuple<H..., std::integral_constant<int, i>> extendTreePath(const std::tuple<H...>&head, typename std::integral_constant<int,i> I ={})
 {
-  return std::tuple_cat(head, std::make_tuple(std::integral_constant<int, i>()));
+  return std::tuple_cat(head, std::make_tuple(I));
 }
 
 // Extend TreePath by dynamic index given by integer i
