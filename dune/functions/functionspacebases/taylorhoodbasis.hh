@@ -36,61 +36,47 @@ template<typename GV, typename TP>
 class TaylorHoodBasisTree;
 
 
-#if 0
-template<typename GV, class MI>
+template<typename GV, class MI, class ST>
 class TaylorHoodNodeFactory
 {
   static const int dim = GV::dimension;
 
 public:
 
-  template<class LocalIndexFunctor>
-  using Node = TaylorHoodBasisTree<GV>;
-
-  template<class LocalIndexFunctor>
-  using IndexSet = PQkNodeIndexSet<GV, k, MI, LocalIndexFunctor>;
-
   /** \brief The grid view that the FE space is defined on */
-  typedef GV GridView;
-  typedef std::size_t size_type;
+  using GridView = GV;
+  using size_type = ST;
+
+
+  template<class TP>
+  using Node = TaylorHoodBasisTree<GV, TP>;
+
+//  template<class TP>
+//  using IndexSet = PQkNodeIndexSet<GV, k, MI, TP, ST>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
+private:
+
+  using PQMultiIndex = std::array<size_type, 1>;
+  using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex,ST>;
+  using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex,ST>;
+
+public:
+
   /** \brief Constructor for a given grid view object */
   TaylorHoodNodeFactory(const GridView& gv) :
-    gridView_(gv)
-  {
-  }
+    gridView_(gv),
+    pq1Factory_(gv),
+    pq2Factory_(gv)
+  {}
 
 
   void initializeIndices()
   {
-    vertexOffset_        = 0;
-    edgeOffset_          = vertexOffset_          + gridView_.size(dim);
-    triangleOffset_      = edgeOffset_            + dofsPerEdge * gridView_.size(dim-1);
-
-    GeometryType triangle;
-    triangle.makeTriangle();
-    quadrilateralOffset_ = triangleOffset_        + dofsPerTriangle * gridView_.size(triangle);
-
-    Dune::GeometryType quadrilateral;
-    quadrilateral.makeQuadrilateral();
-    if (dim==3) {
-      tetrahedronOffset_   = quadrilateralOffset_ + dofsPerQuad * gridView_.size(quadrilateral);
-
-      GeometryType tetrahedron;
-      tetrahedron.makeSimplex(3);
-      prismOffset_         = tetrahedronOffset_   +   dofsPerTetrahedron * gridView_.size(tetrahedron);
-
-      GeometryType prism;
-      prism.makePrism();
-      hexahedronOffset_    = prismOffset_         +   dofsPerPrism * gridView_.size(prism);
-
-      GeometryType hexahedron;
-      hexahedron.makeCube(3);
-      pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * gridView_.size(hexahedron);
-    }
+    pq1Factory_.initializeIndices();
+    pq2Factory_.initializeIndices();
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -100,69 +86,33 @@ public:
     return gridView_;
   }
 
-  template<class LocalIndexFunctor>
-  Node<LocalIndexFunctor> node(const LocalIndexFunctor& localIndexFunctor) const
+  template<class TP>
+  Node<TP> node(const TP& tp) const
   {
-    return Node<LocalIndexFunctor>{localIndexFunctor};
+    return Node<TP>{tp};
   }
 
-  template<class LocalIndexFunctor>
-  IndexSet<LocalIndexFunctor> indexSet() const
-  {
-    return IndexSet<LocalIndexFunctor>{*this};
-  }
+//  template<class TP>
+//  IndexSet<TP> indexSet() const
+//  {
+//    return IndexSet<TP>{*this};
+//  }
 
-  std::size_t size() const
+  size_type size() const
   {
-    switch (dim)
-    {
-      case 1:
-        return gridView_.size(1) + dofsPerEdge*gridView_.size(0);
-      case 2:
-      {
-        GeometryType triangle, quad;
-        triangle.makeTriangle();
-        quad.makeQuadrilateral();
-        return gridView_.size(dim) + dofsPerEdge*gridView_.size(1)
-             + dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad);
-      }
-      case 3:
-      {
-        GeometryType triangle, quad, tetrahedron, pyramid, prism, hexahedron;
-        triangle.makeTriangle();
-        quad.makeQuadrilateral();
-        tetrahedron.makeTetrahedron();
-        pyramid.makePyramid();
-        prism.makePrism();
-        hexahedron.makeCube(3);
-        return gridView_.size(dim) + dofsPerEdge*gridView_.size(2)
-             + dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad)
-             + dofsPerTetrahedron*gridView_.size(tetrahedron) + dofsPerPyramid*gridView_.size(pyramid)
-             + dofsPerPrism*gridView_.size(prism) + dofsPerHexahedron*gridView_.size(hexahedron);
-      }
-    }
-    DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
   }
 
   size_type maxNodeSize() const
   {
-    return StaticPower<(k+1),GV::dimension>::power;
   }
 
 //protected:
   const GridView gridView_;
 
-  size_t vertexOffset_;
-  size_t edgeOffset_;
-  size_t triangleOffset_;
-  size_t quadrilateralOffset_;
-  size_t tetrahedronOffset_;
-  size_t pyramidOffset_;
-  size_t prismOffset_;
-  size_t hexahedronOffset_;
-
+  PQ1Factory pq1Factory_;
+  PQ2Factory pq2Factory_;
 };
-#endif
+
 
 
 template<typename GV>
@@ -194,8 +144,8 @@ public:
   using PQ2NodeIndexSet = typename PQ2Factory::template IndexSet<PQ2TreePath>;
 
   TaylorHoodLocalIndexSet(const TaylorHoodIndexSet<GV> & indexSet) :
-    pq1NodeIndexSet_(indexSet.basis_->pq1Factory_.template indexSet<PQ1TreePath>()),
-    pq2NodeIndexSet_(indexSet.basis_->pq2Factory_.template indexSet<PQ2TreePath>())
+    pq1NodeIndexSet_(indexSet.basis_->nodeFactory_.pq1Factory_.template indexSet<PQ1TreePath>()),
+    pq2NodeIndexSet_(indexSet.basis_->nodeFactory_.pq2Factory_.template indexSet<PQ2TreePath>())
   {}
 
   void bind(const TaylorHoodBasisLocalView<GV>& localView)
@@ -275,8 +225,8 @@ public:
   /** \todo This method has been added to the interface without prior discussion. */
   size_type dimension() const
   {
-    return dim * basis_->pq2Factory_.size()
-      + basis_->pq1Factory_.size();
+    return dim * basis_->nodeFactory_.pq2Factory_.size()
+      + basis_->nodeFactory_.pq1Factory_.size();
   }
 
   //! Return number of possible values for next position in empty multi index
@@ -293,9 +243,9 @@ public:
     if (prefix.size() == 1)
     {
       if (prefix[0] == 0)
-        return dim * basis_->pq2Factory_.size();
+        return dim * basis_->nodeFactory_.pq2Factory_.size();
       if (prefix[0] == 1)
-        return basis_->pq2Factory_.size();
+        return basis_->nodeFactory_.pq2Factory_.size();
     }
     assert(false);
   }
@@ -341,6 +291,9 @@ protected:
   using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex,ST>;
   using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex,ST>;
 
+  using MultiIndex = std::array<size_type, 2>;
+  using NodeFactory = TaylorHoodNodeFactory<GV, MultiIndex, size_type>;
+
 public:
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
@@ -348,18 +301,16 @@ public:
 
   /** \brief Constructor for a given grid view object */
   TaylorHoodBasis(const GridView& gv) :
-    pq1Factory_(gv),
-    pq2Factory_(gv)
+    nodeFactory_(gv)
   {
-    pq1Factory_.initializeIndices();
-    pq2Factory_.initializeIndices();
+    nodeFactory_.initializeIndices();
   }
 
   /** \brief Obtain the grid view that the basis is defined on
    */
   const GridView& gridView() const DUNE_FINAL
   {
-    return pq1Factory_.gridView();
+    return nodeFactory_.gridView();
   }
 
   TaylorHoodIndexSet<GV> indexSet() const
@@ -377,11 +328,11 @@ public:
   }
 
 //private:
+//protected:
   friend TaylorHoodIndexSet<GV>;
   friend TaylorHoodBasisLocalView<GV>;
 
-  PQ1Factory pq1Factory_;
-  PQ2Factory pq2Factory_;
+  NodeFactory nodeFactory_;
 };
 
 
@@ -483,7 +434,7 @@ public:
    */
   size_type maxSize() const
   {
-    return dim*globalBasis_->pq2Factory_.maxNodeSize() + globalBasis_->pq1Factory_.maxNodeSize();
+    return dim*globalBasis_->p.nodeFactory_.q2Factory_.maxNodeSize() + globalBasis_->nodeFactory_.pq1Factory_.maxNodeSize();
   }
 
   /** \brief Return the global basis that we are a view on
