@@ -13,13 +13,13 @@
 template<class LV, class NF>
 class DefaultGlobalIndexSet
 {
+  using RootTreePath = std::tuple<>;
+
 public:
   using LocalView = LV;
   using NodeFactory = NF;
 
-  using TreePath = std::tuple<>;
-
-  using NodeIndexSet = typename NodeFactory::template IndexSet<TreePath>;
+  using NodeIndexSet = typename NodeFactory::template IndexSet<RootTreePath>;
   using SizePrefix = typename NodeFactory::SizePrefix;
   using LocalIndexSet = DefaultLocalIndexSet<LocalView, NodeIndexSet>;
 
@@ -48,7 +48,7 @@ public:
 
   LocalIndexSet localIndexSet() const
   {
-    return LocalIndexSet(nodeFactory_->template indexSet<TreePath>());
+    return LocalIndexSet(nodeFactory_->template indexSet<RootTreePath>());
   }
 
 private:
