@@ -12,30 +12,48 @@
 #include <dune/typetree/leafnode.hh>
 
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
+#include <dune/functions/functionspacebases/nodes.hh>
+#include <dune/functions/functionspacebases/tupletreepath.hh>
 
 
 namespace Dune {
 namespace Functions {
 
-template<typename GV, int k>
-class PQkNodalBasisLocalView;
 
-template<typename GV, int k, class LocalIndexFunctor>
+
+// *****************************************************************************
+// This is the reusable part of the basis. It contains
+//
+//   PQkNodeFactory
+//   PQkNodeIndexSet
+//   PQkNodalBasisLeafNode
+//
+// The factory allows to create the others and is the owner of possible shared
+// state. These three components do _not_ depend on the global basis or index
+// set and can be used without a global basis.
+// *****************************************************************************
+
+template<typename GV, int k, typename ST, typename TP>
 class PQkNodalBasisLeafNode;
 
-template<typename GV, int k, class MI>
-class PQkIndexSet;
-
-template<typename GV, int k, class MI, class LocalIndexFunctor>
+template<typename GV, int k, class MI, class TP, class ST>
 class PQkNodeIndexSet;
 
-template<typename GV, int k, class MI>
+template<typename GV, int k, class MI, class ST>
+class PQkNodeFactory;
+
+
+
+template<typename GV, int k, class MI, class ST>
 class PQkNodeFactory
 {
   static const int dim = GV::dimension;
 
 public:
 
+  /** \brief The grid view that the FE space is defined on */
+  using GridView = GV;
+  using size_type = ST;
 
 
   // Precompute the number of dofs per entity type
@@ -48,16 +66,11 @@ public:
   const static int dofsPerPyramid     = ((k-2)*(k-1)*(2*k-3))/6;
 
 
+  template<class TP>
+  using Node = PQkNodalBasisLeafNode<GV, k, size_type, TP>;
 
-  template<class LocalIndexFunctor>
-  using Node = PQkNodalBasisLeafNode<GV, k, LocalIndexFunctor>;
-
-  template<class LocalIndexFunctor>
-  using IndexSet = PQkNodeIndexSet<GV, k, MI, LocalIndexFunctor>;
-
-  /** \brief The grid view that the FE space is defined on */
-  typedef GV GridView;
-  typedef std::size_t size_type;
+  template<class TP>
+  using IndexSet = PQkNodeIndexSet<GV, k, MI, TP, ST>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -65,8 +78,7 @@ public:
   /** \brief Constructor for a given grid view object */
   PQkNodeFactory(const GridView& gv) :
     gridView_(gv)
-  {
-  }
+  {}
 
 
   void initializeIndices()
@@ -105,19 +117,19 @@ public:
     return gridView_;
   }
 
-  template<class LocalIndexFunctor>
-  Node<LocalIndexFunctor> node(const LocalIndexFunctor& localIndexFunctor) const
+  template<class TP>
+  Node<TP> node(const TP& tp) const
   {
-    return Node<LocalIndexFunctor>{localIndexFunctor};
+    return Node<TP>{tp};
   }
 
-  template<class LocalIndexFunctor>
-  IndexSet<LocalIndexFunctor> indexSet() const
+  template<class TP>
+  IndexSet<TP> indexSet() const
   {
-    return IndexSet<LocalIndexFunctor>{*this};
+    return IndexSet<TP>{*this};
   }
 
-  std::size_t size() const
+  size_type size() const
   {
     switch (dim)
     {
@@ -169,23 +181,92 @@ public:
 };
 
 
-template<typename GV, int k, class MI, class LocalIndexFunctor>
+
+template<typename GV, int k, typename ST, typename TP>
+class PQkNodalBasisLeafNode :
+  public GridFunctionSpaceBasisLeafNodeInterface<
+    typename GV::template Codim<0>::Entity,
+    typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, GV::dimension, k>::FiniteElementType,
+    ST,
+    TP>
+{
+  static const int dim = GV::dimension;
+  static const int maxSize = StaticPower<(k+1),GV::dimension>::power;
+
+  typedef typename GV::template Codim<0>::Entity E;
+  typedef typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k> FiniteElementCache;
+  typedef typename FiniteElementCache::FiniteElementType FE;
+
+public:
+  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST,TP> Interface;
+  typedef typename Interface::size_type size_type;
+  typedef typename Interface::Element Element;
+  typedef typename Interface::FiniteElement FiniteElement;
+  typedef typename Interface::TreePath TreePath;
+
+  PQkNodalBasisLeafNode(const TreePath& treePath) :
+    Interface(treePath),
+    finiteElement_(nullptr),
+    element_(nullptr)
+  {}
+
+  //! Return current element, throw if unbound
+  const Element& element() const DUNE_FINAL
+  {
+    return *element_;
+  }
+
+  /** \brief Return the LocalFiniteElement for the element we are bound to
+   *
+   * The LocalFiniteElement implements the corresponding interfaces of the dune-localfunctions module
+   */
+  const FiniteElement& finiteElement() const DUNE_FINAL
+  {
+    return *finiteElement_;
+  }
+
+  /** \brief Size of subtree rooted in this node (element-local)
+   */
+  size_type size() const DUNE_FINAL
+  {
+    // We have subTreeSize==lfe.size() because we're in a leaf node.
+    return size_;
+  }
+
+  //! Bind to element.
+  void bind(const Element& e)
+  {
+    element_ = &e;
+    finiteElement_ = &(cache_.get(element_->type()));
+    size_ = finiteElement_->size();
+  }
+
+protected:
+
+  size_type size_;
+
+  FiniteElementCache cache_;
+  const FiniteElement* finiteElement_;
+  const Element* element_;
+};
+
+
+
+template<typename GV, int k, class MI, class TP, class ST>
 class PQkNodeIndexSet
 {
   enum {dim = GV::dimension};
 
 public:
-  typedef std::size_t size_type;
 
-  /** \brief Type of the local view on the restriction of the basis to a single element */
-//  typedef PQkNodalBasisLocalView<GV,k> LocalView;
+  using size_type = ST;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = PQkNodeFactory<GV, k, MI>;
+  using NodeFactory = PQkNodeFactory<GV, k, MI, ST>;
 
-  using Node = typename NodeFactory::template Node<LocalIndexFunctor>;
+  using Node = typename NodeFactory::template Node<TP>;
 
   PQkNodeIndexSet(const NodeFactory& nodeFactory) :
     nodeFactory_(&nodeFactory)
@@ -307,23 +388,48 @@ public:
 
 
 
+// *****************************************************************************
+// This is the actual global basis implementation based on the reusable parts
+// above. It contains
+//
+//   PQkLocalIndexSet
+//   PQkIndexSet
+//   PQkNodalBasis
+//   PQkNodalBasisLocalView
+//
+// *****************************************************************************
 
-template<typename GV, int k, class MI>
+template<typename GV, int k, class ST>
+class PQkNodalBasisLocalView;
+
+template<typename GV, int k, class MI, class ST>
+class PQkIndexSet;
+
+template<typename GV, int k, class MI, class ST>
+class PQkLocalIndexSet;
+
+template<typename GV, int k, class ST = std::size_t>
+class PQkNodalBasis;
+
+
+
+template<typename GV, int k, class MI, class ST>
 class PQkLocalIndexSet
 {
   enum {dim = GV::dimension};
 
 public:
-  typedef std::size_t size_type;
+  using size_type = ST;
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
-  typedef PQkNodalBasisLocalView<GV,k> LocalView;
+  using LocalView = PQkNodalBasisLocalView<GV, k, ST>;
+  using NodeFactory = typename LocalView::GlobalBasis::NodeFactory;
+  using TreePath = typename LocalView::TreePath;
+  using NodeIndexSet = typename NodeFactory::template IndexSet<TreePath>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-
-  using NodeIndexSet = PQkNodeIndexSet<GV,k,MultiIndex,ShiftedIdentity<size_type>>;
 
   template<class NI>
   PQkLocalIndexSet(NI&& nodeIndexSet) :
@@ -339,7 +445,7 @@ public:
    * Having to bind the view to an element before being able to actually access any of its data members
    * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
    */
-  void bind(const PQkNodalBasisLocalView<GV,k>& localView)
+  void bind(const LocalView& localView)
   {
     localView_ = &localView;
     nodeIndexSet_.bind(localView_->tree());
@@ -375,117 +481,41 @@ public:
 
 protected:
 
-  const PQkNodalBasisLocalView<GV,k>* localView_;
+  const LocalView* localView_;
 
   NodeIndexSet nodeIndexSet_;
 };
 
-template<typename GV, int k, class MI>
+template<typename GV, int k, class MI, class ST>
 class PQkIndexSet
 {
-  static const int dim = GV::dimension;
-
-  // Needs the mapper
-  friend class PQkLocalIndexSet<GV,k,MI>;
-
-  // Precompute the number of dofs per entity type
-  const static int dofsPerEdge        = k-1;
-  const static int dofsPerTriangle    = (k-1)*(k-2)/2;
-  const static int dofsPerQuad        = (k-1)*(k-1);
-  const static int dofsPerTetrahedron = ((k-3)*(k-2)*(k-1)/6 > 0) ? (k-3)*(k-2)*(k-1)/6  : 0;
-  const static int dofsPerPrism       = (k-1)*(k-1)*(k-2)/2;
-  const static int dofsPerHexahedron  = (k-1)*(k-1)*(k-1);
-  const static int dofsPerPyramid     = ((k-2)*(k-1)*(2*k-3))/6;
 public:
 
-  typedef PQkLocalIndexSet<GV,k,MI> LocalIndexSet;
+  using size_type = ST;
+  using TreePath = std::tuple<>;
 
-  using size_type = std::size_t;
-  using LocalIndexFunctor = ShiftedIdentity<size_type>;
+  using LocalView = PQkNodalBasisLocalView<GV, k, ST>;
+  using NodeFactory = PQkNodeFactory<GV,k,MI,ST>;
+  using NodeIndexSet = typename NodeFactory::template IndexSet<TreePath>;
 
-  using NodeFactory = PQkNodeFactory<GV,k,MI>;
+  typedef PQkLocalIndexSet<GV,k,MI,ST> LocalIndexSet;
 
   PQkIndexSet(const NodeFactory& nodeFactory) :
     nodeFactory_(&nodeFactory),
     gridView_(nodeFactory_->gridView())
+  {}
+
+  size_type size() const
   {
-    vertexOffset_        = 0;
-    edgeOffset_          = vertexOffset_          + gridView_.size(dim);
-    triangleOffset_      = edgeOffset_            + dofsPerEdge * gridView_.size(dim-1);
-
-    GeometryType triangle;
-    triangle.makeTriangle();
-    quadrilateralOffset_ = triangleOffset_        + dofsPerTriangle * gridView_.size(triangle);
-
-    Dune::GeometryType quadrilateral;
-    quadrilateral.makeQuadrilateral();
-    if (dim==3) {
-      tetrahedronOffset_   = quadrilateralOffset_ + dofsPerQuad * gridView_.size(quadrilateral);
-
-      GeometryType tetrahedron;
-      tetrahedron.makeSimplex(3);
-      prismOffset_         = tetrahedronOffset_   +   dofsPerTetrahedron * gridView_.size(tetrahedron);
-
-      GeometryType prism;
-      prism.makePrism();
-      hexahedronOffset_    = prismOffset_         +   dofsPerPrism * gridView_.size(prism);
-
-      GeometryType hexahedron;
-      hexahedron.makeCube(3);
-      pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * gridView_.size(hexahedron);
-    }
-
-  }
-
-  std::size_t size() const
-  {
-    switch (dim)
-    {
-      case 1:
-        return gridView_.size(1) + dofsPerEdge*gridView_.size(0);
-      case 2:
-      {
-        GeometryType triangle, quad;
-        triangle.makeTriangle();
-        quad.makeQuadrilateral();
-        return gridView_.size(dim) + dofsPerEdge*gridView_.size(1)
-             + dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad);
-      }
-      case 3:
-      {
-        GeometryType triangle, quad, tetrahedron, pyramid, prism, hexahedron;
-        triangle.makeTriangle();
-        quad.makeQuadrilateral();
-        tetrahedron.makeTetrahedron();
-        pyramid.makePyramid();
-        prism.makePrism();
-        hexahedron.makeCube(3);
-        return gridView_.size(dim) + dofsPerEdge*gridView_.size(2)
-             + dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad)
-             + dofsPerTetrahedron*gridView_.size(tetrahedron) + dofsPerPyramid*gridView_.size(pyramid)
-             + dofsPerPrism*gridView_.size(prism) + dofsPerHexahedron*gridView_.size(hexahedron);
-      }
-
-    }
-
-    DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
+    return nodeFactory_->size();
   }
 
   LocalIndexSet localIndexSet() const
   {
-    return LocalIndexSet(nodeFactory_->template indexSet<LocalIndexFunctor>());
+    return LocalIndexSet(nodeFactory_->template indexSet<TreePath>());
   }
 
 private:
-
-  size_t vertexOffset_;
-  size_t edgeOffset_;
-  size_t triangleOffset_;
-  size_t quadrilateralOffset_;
-  size_t tetrahedronOffset_;
-  size_t pyramidOffset_;
-  size_t prismOffset_;
-  size_t hexahedronOffset_;
 
   const NodeFactory* nodeFactory_;
   const GV gridView_;
@@ -500,12 +530,12 @@ private:
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
-template<typename GV, int k>
+template<typename GV, int k, class ST>
 class PQkNodalBasis
 : public GridViewFunctionSpaceBasis<GV,
-                                    PQkNodalBasisLocalView<GV,k>,
-                                    PQkIndexSet<GV,k,std::array<std::size_t, 1> >,
-                                    std::array<std::size_t, 1> >
+                                    PQkNodalBasisLocalView<GV, k, ST>,
+                                    PQkIndexSet<GV, k, std::array<ST, 1>, ST >,
+                                    std::array<ST, 1> >
 {
   static const int dim = GV::dimension;
 
@@ -513,11 +543,12 @@ class PQkNodalBasis
 public:
 
   /** \brief The grid view that the FE space is defined on */
-  typedef GV GridView;
-  typedef std::size_t size_type;
+  using GridView = GV;
+  using size_type = ST;
+
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
-  typedef PQkNodalBasisLocalView<GV,k> LocalView;
+  typedef PQkNodalBasisLocalView<GV, k, ST> LocalView;
 
   friend LocalView;
 
@@ -525,7 +556,7 @@ public:
   typedef std::array<size_type, 1> MultiIndex;
 
 
-  using NodeFactory = PQkNodeFactory<GV, k, MultiIndex >;
+  using NodeFactory = PQkNodeFactory<GV, k, MultiIndex, ST>;
 
   /** \brief Constructor for a given grid view object */
   PQkNodalBasis(const GridView& gv) :
@@ -543,12 +574,12 @@ public:
     return gridView_;
   }
 
-  PQkIndexSet<GV,k, MultiIndex> indexSet() const
+  PQkIndexSet<GV,k, MultiIndex, ST> indexSet() const
   {
     return indexSet_;
   }
 
-  std::size_t size() const
+  size_type size() const
   {
     return nodeFactory_.size();
   }
@@ -570,17 +601,18 @@ protected:
   const GridView gridView_;
 
   NodeFactory nodeFactory_;
-  PQkIndexSet<GV,k, MultiIndex> indexSet_;
+  PQkIndexSet<GV, k, MultiIndex, ST> indexSet_;
 };
 
 
 /** \brief The restriction of a finite element basis to a single element */
-template<typename GV, int k>
+template<typename GV, int k, class ST>
 class PQkNodalBasisLocalView
 {
 public:
+
   /** \brief The global FE basis that this is a view on */
-  typedef PQkNodalBasis<GV,k> GlobalBasis;
+  typedef PQkNodalBasis<GV,k, ST> GlobalBasis;
 
   typedef typename GlobalBasis::GridView GridView;
 
@@ -597,17 +629,19 @@ public:
   /** \brief Type of the grid element we are bound to */
   typedef typename GridView::template Codim<0>::Entity Element;
 
+  using TreePath = std::tuple<>;
+
   /** \brief Tree of local finite elements / local shape function sets
    *
    * In the case of a P3 space this tree consists of a single leaf only,
    * i.e., Tree is basically the type of the LocalFiniteElement
    */
-  typedef PQkNodalBasisLeafNode<GV,k,ShiftedIdentity<size_type> > Tree;
+  using Tree = typename GlobalBasis::NodeFactory::template Node<TreePath>;
 
   /** \brief Construct local view for a given global finite element basis */
   PQkNodalBasisLocalView(const GlobalBasis* globalBasis) :
     globalBasis_(globalBasis),
-    tree_(globalBasis->nodeFactory().node(ShiftedIdentity<size_type>(0)))
+    tree_(globalBasis->nodeFactory().node(TreePath()))
   {}
 
   /** \brief Bind the view to a grid element
@@ -618,7 +652,9 @@ public:
   void bind(const Element& e)
   {
     element_ = &e;
-    tree_.bind(e);
+//    tree_.bind(e);
+//    tree_.setOffset(0);
+    bindTree(tree_, e);
   }
 
   /** \brief Return the grid element that the view is bound to
@@ -685,93 +721,6 @@ protected:
 };
 
 
-template<typename GV, int k, class LocalIndexFunctor>
-class PQkNodalBasisLeafNode :
-  public GridFunctionSpaceBasisLeafNodeInterface<
-    typename GV::template Codim<0>::Entity,
-    typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, GV::dimension, k>::FiniteElementType,
-    typename std::result_of<LocalIndexFunctor(int)>::type>
-{
-  typedef PQkNodalBasis<GV,k> GlobalBasis;
-  static const int dim = GV::dimension;
-  static const int maxSize = StaticPower<(k+1),GV::dimension>::power;
-
-  typedef typename GV::template Codim<0>::Entity E;
-  typedef typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k> FiniteElementCache;
-  typedef typename FiniteElementCache::FiniteElementType FE;
-  typedef typename std::result_of<LocalIndexFunctor(int)>::type ST;
-  typedef typename GlobalBasis::MultiIndex MI;
-
-  typedef typename GlobalBasis::LocalView LocalView;
-
-  friend LocalView;
-  friend class PQkLocalIndexSet<GV,k,MI>;
-
-public:
-  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST> Interface;
-  typedef typename Interface::size_type size_type;
-  typedef typename Interface::Element Element;
-  typedef typename Interface::FiniteElement FiniteElement;
-
-  PQkNodalBasisLeafNode(const LocalIndexFunctor& indexFunctor) :
-    finiteElement_(nullptr),
-    element_(nullptr),
-    indexFunctor_(indexFunctor)
-  {}
-
-  //! Return current element, throw if unbound
-  const Element& element() const DUNE_FINAL
-  {
-    return *element_;
-  }
-
-  /** \brief Return the LocalFiniteElement for the element we are bound to
-   *
-   * The LocalFiniteElement implements the corresponding interfaces of the dune-localfunctions module
-   */
-  const FiniteElement& finiteElement() const DUNE_FINAL
-  {
-    return *finiteElement_;
-  }
-
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const DUNE_FINAL
-  {
-    // We have subTreeSize==lfe.size() because we're in a leaf node.
-    return finiteElement_->size();
-  }
-
-  //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
-  size_type localIndex(size_type i) const DUNE_FINAL
-  {
-    return indexFunctor_(i);
-  }
-
-  //! Bind to element.
-  void bind(const Element& e)
-  {
-    element_ = &e;
-    finiteElement_ = &(cache_.get(element_->type()));
-  }
-
-  const LocalIndexFunctor& localIndexFunctor() const
-  {
-    return indexFunctor_;
-  }
-
-  LocalIndexFunctor& localIndexFunctor()
-  {
-    return indexFunctor_;
-  }
-
-protected:
-
-  FiniteElementCache cache_;
-  const FiniteElement* finiteElement_;
-  const Element* element_;
-  LocalIndexFunctor indexFunctor_;
-};
 
 } // end namespace Functions
 } // end namespace Dune
