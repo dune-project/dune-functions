@@ -27,7 +27,7 @@ namespace Functions {
 //
 //   PQkNodeFactory
 //   PQkNodeIndexSet
-//   PQkNodalBasisLeafNode
+//   PQkNode
 //
 // The factory allows to create the others and is the owner of possible shared
 // state. These three components do _not_ depend on the global basis or index
@@ -35,7 +35,7 @@ namespace Functions {
 // *****************************************************************************
 
 template<typename GV, int k, typename ST, typename TP>
-class PQkNodalBasisLeafNode;
+class PQkNode;
 
 template<typename GV, int k, class MI, class TP, class ST>
 class PQkNodeIndexSet;
@@ -68,7 +68,7 @@ public:
 
 
   template<class TP>
-  using Node = PQkNodalBasisLeafNode<GV, k, size_type, TP>;
+  using Node = PQkNode<GV, k, size_type, TP>;
 
   template<class TP>
   using IndexSet = PQkNodeIndexSet<GV, k, MI, TP, ST>;
@@ -184,7 +184,7 @@ public:
 
 
 template<typename GV, int k, typename ST, typename TP>
-class PQkNodalBasisLeafNode :
+class PQkNode :
   public GridFunctionSpaceBasisLeafNodeInterface<
     typename GV::template Codim<0>::Entity,
     typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, GV::dimension, k>::FiniteElementType,
@@ -205,7 +205,7 @@ public:
   typedef typename Interface::FiniteElement FiniteElement;
   typedef typename Interface::TreePath TreePath;
 
-  PQkNodalBasisLeafNode(const TreePath& treePath) :
+  PQkNode(const TreePath& treePath) :
     Interface(treePath),
     finiteElement_(nullptr),
     element_(nullptr)
