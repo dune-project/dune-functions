@@ -64,6 +64,8 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
+  using SizePrefix = Dune::ReservedVector<size_type, 2>;
+
 private:
 
   using PQMultiIndex = std::array<size_type, 1>;
@@ -105,8 +107,31 @@ public:
     return IndexSet<TP>{*this};
   }
 
+  //! Same as size(prefix) with empty prefix
   size_type size() const
   {
+    return 2;
+  }
+
+  //! Return number possible values for next position in multi index
+  size_type size(const SizePrefix prefix) const
+  {
+    if (prefix.size() == 0)
+      return 2;
+    if (prefix.size() == 1)
+    {
+      if (prefix[0] == 0)
+        return dim * pq2Factory_.size();
+      if (prefix[0] == 1)
+        return pq2Factory_.size();
+    }
+    assert(false);
+  }
+
+  /** \todo This method has been added to the interface without prior discussion. */
+  size_type dimension() const
+  {
+    return dim * pq2Factory_.size() + pq1Factory_.size();
   }
 
   size_type maxNodeSize() const
@@ -202,11 +227,6 @@ private:
 template<typename GV>
 class TaylorHoodIndexSet
 {
-  static const int dim = GV::dimension;
-
-  /** \brief The global FE basis that this is a view on */
-  typedef TaylorHoodBasis<GV> GlobalBasis;
-
 public:
 
   using ST = std::size_t;
@@ -218,8 +238,8 @@ public:
   using LocalView = TaylorHoodBasisLocalView<GV>;
   using NodeFactory = TaylorHoodNodeFactory<GV, MI, ST>;
   using NodeIndexSet = typename NodeFactory::template IndexSet<TreePath>;
+  using SizePrefix = typename NodeFactory::SizePrefix;
 
-//  typedef TaylorHoodLocalIndexSet<GV> LocalIndexSet;
   using LocalIndexSet = DefaultLocalIndexSet<LocalView, NodeIndexSet>;
 
   TaylorHoodIndexSet(const NodeFactory& nodeFactory) :
@@ -228,36 +248,21 @@ public:
   {}
 
 
-  /** \todo This enum has been added to the interface without prior discussion. */
-  enum { multiIndexMaxSize = 2 };
-//  typedef std::array<size_type,2> MultiIndex;
-
-  /** \todo This method has been added to the interface without prior discussion. */
   size_type dimension() const
   {
-    return dim * nodeFactory_->pq2Factory_.size()
-      + nodeFactory_->pq1Factory_.size();
+    return nodeFactory_->dimension();
   }
 
   //! Return number of possible values for next position in empty multi index
   size_type size() const
   {
-    return 2;
+    return nodeFactory_->size();
   }
 
   //! Return number possible values for next position in multi index
-  size_type size(Dune::ReservedVector<std::size_t, multiIndexMaxSize> prefix) const
+  size_type size(const SizePrefix& prefix) const
   {
-    if (prefix.size() == 0)
-      return 2;
-    if (prefix.size() == 1)
-    {
-      if (prefix[0] == 0)
-        return dim * nodeFactory_->pq2Factory_.size();
-      if (prefix[0] == 1)
-        return nodeFactory_->pq2Factory_.size();
-    }
-    assert(false);
+    return nodeFactory_->size(prefix);
   }
 
   LocalIndexSet localIndexSet() const
@@ -453,7 +458,6 @@ public:
   }
 
 protected:
-//  friend TaylorHoodLocalIndexSet<GV>;
 
   const GlobalBasis* globalBasis_;
   Element element_;
