@@ -10,6 +10,11 @@
 
 
 
+namespace Dune {
+namespace Functions {
+
+
+
 template<class LV, class NF>
 class DefaultGlobalIndexSet
 {
@@ -55,6 +60,11 @@ private:
 
   const NodeFactory* nodeFactory_;
 };
+
+
+
+} // end namespace Functions
+} // end namespace Dune
 
 
 

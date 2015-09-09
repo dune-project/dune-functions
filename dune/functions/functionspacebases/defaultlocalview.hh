@@ -8,6 +8,11 @@
 
 
 
+namespace Dune {
+namespace Functions {
+
+
+
 /** \brief The restriction of a finite element basis to a single element */
 template<class GB>
 class DefaultLocalView
@@ -109,6 +114,12 @@ protected:
   const Element* element_;
   Tree tree_;
 };
+
+
+
+} // end namespace Functions
+} // end namespace Dune
+
 
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTLOCALVIEW_HH

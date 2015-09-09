@@ -5,6 +5,11 @@
 
 
 
+namespace Dune {
+namespace Functions {
+
+
+
 template<class LV, class NIS>
 class DefaultLocalIndexSet
 {
@@ -70,6 +75,11 @@ protected:
 
   NodeIndexSet nodeIndexSet_;
 };
+
+
+
+} // end namespace Functions
+} // end namespace Dune
 
 
 
