@@ -12,9 +12,6 @@ class DefaultLocalIndexSet
 public:
   using LocalView = LV;
   using NodeIndexSet = NIS;
-//  using NodeFactory = NF;
-//  using TreePath = typename LocalView::TreePath;
-//  using NodeIndexSet = typename NodeFactory::template IndexSet<TreePath>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = typename NodeIndexSet::MultiIndex;
@@ -61,7 +58,7 @@ public:
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  const MultiIndex index(size_type i) const
+  MultiIndex index(size_type i) const
   {
     return nodeIndexSet_.index(i);
   }
