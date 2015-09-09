@@ -488,7 +488,7 @@ public:
    */
   LocalView localView() const
   {
-    return LocalView(this);
+    return LocalView(*this);
   }
 
   const NodeFactory& nodeFactory() const

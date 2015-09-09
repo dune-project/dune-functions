@@ -35,9 +35,9 @@ public:
   using Tree = typename GlobalBasis::NodeFactory::template Node<RootTreePath>;
 
   /** \brief Construct local view for a given global finite element basis */
-  DefaultLocalView(const GlobalBasis* globalBasis) :
-    globalBasis_(globalBasis),
-    tree_(globalBasis->nodeFactory().node(RootTreePath()))
+  DefaultLocalView(const GlobalBasis& globalBasis) :
+    globalBasis_(&globalBasis),
+    tree_(globalBasis_->nodeFactory().node(RootTreePath()))
   {}
 
   /** \brief Bind the view to a grid element
