@@ -5,7 +5,6 @@
 
 
 
-//template<typename GV, int k, class MI, class ST>
 template<class LV, class NIS>
 class DefaultLocalIndexSet
 {
@@ -17,11 +16,6 @@ public:
   using MultiIndex = typename NodeIndexSet::MultiIndex;
   using size_type = typename NodeIndexSet::size_type;
 
-
-//  template<class NI>
-//  DefaultLocalIndexSet(NI&& nodeIndexSet) :
-//    nodeIndexSet_(std::forward<NI>(nodeIndexSet))
-//  {}
 
   DefaultLocalIndexSet(const NodeIndexSet& nodeIndexSet) :
     nodeIndexSet_(nodeIndexSet)
