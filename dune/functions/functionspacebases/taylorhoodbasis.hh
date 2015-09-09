@@ -301,10 +301,6 @@ protected:
 
   static const int dim = GV::dimension;
 
-  using PQMultiIndex = std::array<size_type, 1>;
-  using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex,ST>;
-  using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex,ST>;
-
 public:
 
   using MultiIndex = std::array<size_type, 2>;
