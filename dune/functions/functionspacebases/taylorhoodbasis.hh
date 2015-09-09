@@ -12,9 +12,8 @@
 
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 
-//#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
-//#include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/defaultlocalindexset.hh>
 
 namespace Dune {
 namespace Functions {
