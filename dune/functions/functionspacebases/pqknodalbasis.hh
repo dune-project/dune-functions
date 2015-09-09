@@ -398,6 +398,7 @@ public:
     DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the PQkNodalBasis");
   }
 
+protected:
   const NodeFactory* nodeFactory_;
 
   const Node* node_;
@@ -449,8 +450,6 @@ public:
 
   /** \brief Type of the local view on the restriction of the basis to a single element */
   typedef PQkNodalBasisLocalView<GV, k, ST> LocalView;
-
-  friend LocalView;
 
   /** \brief Type used for global numbering of the basis vectors */
   typedef std::array<size_type, 1> MultiIndex;
@@ -555,8 +554,6 @@ public:
   void bind(const Element& e)
   {
     element_ = &e;
-//    tree_.bind(e);
-//    tree_.setOffset(0);
     bindTree(tree_, e);
   }
 
@@ -594,7 +591,7 @@ public:
   size_type size() const
   {
     // We have subTreeSize==lfe.size() because we're in a leaf node.
-    return tree_.finiteElement_->size();
+    return tree_.size();
   }
 
   /**
@@ -607,7 +604,7 @@ public:
    */
   size_type maxSize() const
   {
-  return globalBasis_->nodeFactory_.maxNodeSize();
+  return globalBasis_->nodeFactory().maxNodeSize();
   }
 
   /** \brief Return the global basis that we are a view on
