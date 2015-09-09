@@ -129,6 +129,7 @@ public:
 
   size_type maxNodeSize() const
   {
+    return dim * pq2Factory_.maxNodeSize() + pq1Factory_.maxNodeSize();
   }
 
 protected:
