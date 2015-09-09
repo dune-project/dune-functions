@@ -14,7 +14,7 @@
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/tupletreepath.hh>
-#include <dune/functions/functionspacebases/defaultlocalindexset.hh>
+#include <dune/functions/functionspacebases/defaultglobalindexset.hh>
 
 
 namespace Dune {
@@ -409,7 +409,6 @@ public:
 // This is the actual global basis implementation based on the reusable parts
 // above. It contains
 //
-//   PQkIndexSet
 //   PQkNodalBasis
 //   PQkNodalBasisLocalView
 //
@@ -418,48 +417,9 @@ public:
 template<typename GV, int k, class ST>
 class PQkNodalBasisLocalView;
 
-template<typename GV, int k, class MI, class ST>
-class PQkIndexSet;
-
 template<typename GV, int k, class ST = std::size_t>
 class PQkNodalBasis;
 
-
-
-template<typename GV, int k, class MI, class ST>
-class PQkIndexSet
-{
-public:
-
-  using size_type = ST;
-  using TreePath = std::tuple<>;
-
-  using LocalView = PQkNodalBasisLocalView<GV, k, ST>;
-  using NodeFactory = PQkNodeFactory<GV,k,MI,ST>;
-  using NodeIndexSet = typename NodeFactory::template IndexSet<TreePath>;
-
-  using LocalIndexSet = DefaultLocalIndexSet<LocalView, NodeIndexSet>;
-
-  PQkIndexSet(const NodeFactory& nodeFactory) :
-    nodeFactory_(&nodeFactory),
-    gridView_(nodeFactory_->gridView())
-  {}
-
-  size_type size() const
-  {
-    return nodeFactory_->size();
-  }
-
-  LocalIndexSet localIndexSet() const
-  {
-    return LocalIndexSet(nodeFactory_->template indexSet<TreePath>());
-  }
-
-private:
-
-  const NodeFactory* nodeFactory_;
-  const GV gridView_;
-};
 
 /** \brief Nodal basis of a scalar third-order Lagrangean finite element space
  *
@@ -474,7 +434,7 @@ template<typename GV, int k, class ST>
 class PQkNodalBasis
 : public GridViewFunctionSpaceBasis<GV,
                                     PQkNodalBasisLocalView<GV, k, ST>,
-                                    PQkIndexSet<GV, k, std::array<ST, 1>, ST >,
+                                    DefaultGlobalIndexSet<PQkNodalBasisLocalView<GV, k, ST>, PQkNodeFactory<GV, k, std::array<ST, 1>, ST>>,
                                     std::array<ST, 1> >
 {
   static const int dim = GV::dimension;
@@ -498,6 +458,9 @@ public:
 
   using NodeFactory = PQkNodeFactory<GV, k, MultiIndex, ST>;
 
+  using GlobalIndexSet = DefaultGlobalIndexSet<LocalView, NodeFactory>;
+
+
   /** \brief Constructor for a given grid view object */
   PQkNodalBasis(const GridView& gv) :
     gridView_(gv),
@@ -514,7 +477,7 @@ public:
     return gridView_;
   }
 
-  PQkIndexSet<GV,k, MultiIndex, ST> indexSet() const
+  GlobalIndexSet indexSet() const
   {
     return indexSet_;
   }
@@ -541,7 +504,7 @@ protected:
   const GridView gridView_;
 
   NodeFactory nodeFactory_;
-  PQkIndexSet<GV, k, MultiIndex, ST> indexSet_;
+  GlobalIndexSet indexSet_;
 };
 
 
