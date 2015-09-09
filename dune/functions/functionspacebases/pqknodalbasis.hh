@@ -408,16 +408,8 @@ protected:
 
 
 // *****************************************************************************
-// This is the actual global basis implementation based on the reusable parts
-// above. It contains
-//
-//   PQkNodalBasis
-//
+// This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************
-
-template<typename GV, int k, class ST = std::size_t>
-class PQkNodalBasis;
-
 
 /** \brief Nodal basis of a scalar third-order Lagrangean finite element space
  *
@@ -428,7 +420,7 @@ class PQkNodalBasis;
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
-template<typename GV, int k, class ST>
+template<typename GV, int k, class ST = std::size_t>
 class PQkNodalBasis
 : public GridViewFunctionSpaceBasis<GV,
                                     DefaultLocalView<PQkNodalBasis<GV,k,ST>>,
