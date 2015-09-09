@@ -196,6 +196,31 @@ auto getChild(Tree&& tree, const std::tuple<I...>& tp)
 
 
 
+namespace Imp {
+
+template<class Node, int... Path>
+struct ChildTypeHelper{};
+
+template<class Node, int FirstChild, int... Path>
+struct ChildTypeHelper<Node, FirstChild, Path...>
+{
+  using Type = typename ChildTypeHelper<typename Node::template Child<FirstChild>::Type, Path...>::Type;
+};
+
+template<class Node>
+struct ChildTypeHelper<Node>
+{
+  using Type = Node;
+};
+
+
+}
+
+// Simplify access to type of child
+template<class Node, int... Path>
+using ChildType = typename Imp::ChildTypeHelper<Node, Path...>::Type;
+
+
 } // namespace Functions
 } // namespace Dune
 
