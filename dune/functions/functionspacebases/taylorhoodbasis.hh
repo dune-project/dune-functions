@@ -131,7 +131,7 @@ public:
   {
   }
 
-//protected:
+protected:
   const GridView gridView_;
 
   PQ1Factory pq1Factory_;
