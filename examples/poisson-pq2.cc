@@ -136,7 +136,7 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
   nb.resize(n, n);
 
   // A view on the FE basis on a single element
-  typename FEBasis::LocalView localView(&feBasis);
+  typename FEBasis::LocalView localView(feBasis);
   auto localIndexSet = basisIndexSet.localIndexSet();
 
   // Loop over all leaf elements
