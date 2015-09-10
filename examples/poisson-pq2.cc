@@ -392,15 +392,13 @@ int main (int argc, char *argv[]) try
   ////////////////////////////////////////////////////////////////////////////
 
   Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> xFunction(feBasis,x);
-  auto localXFunction = localFunction(xFunction);
-
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
   //  We need to subsample, because VTK cannot natively display real second-order functions
   //////////////////////////////////////////////////////////////////////////////////////////////
   SubsamplingVTKWriter<GridView> vtkWriter(gridView,2);
-  vtkWriter.addVertexData(localXFunction, VTK::FieldInfo("x", VTK::FieldInfo::Type::scalar, 1));
+  vtkWriter.addVertexData(xFunction, VTK::FieldInfo("x", VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.write("poisson-pq2");
 
  }
