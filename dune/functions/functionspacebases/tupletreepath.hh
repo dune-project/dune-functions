@@ -12,16 +12,26 @@ namespace Dune {
 namespace Functions {
 
 namespace StaticIndices {
-  static const std::integral_constant<int, 0> _0;
-  static const std::integral_constant<int, 1> _1;
-  static const std::integral_constant<int, 2> _2;
-  static const std::integral_constant<int, 3> _3;
-  static const std::integral_constant<int, 4> _4;
-  static const std::integral_constant<int, 5> _5;
-  static const std::integral_constant<int, 6> _6;
-  static const std::integral_constant<int, 7> _7;
-  static const std::integral_constant<int, 8> _8;
-  static const std::integral_constant<int, 9> _9;
+  static const std::integral_constant<int, 0> _0 =
+    std::integral_constant<int, 0>();
+  static const std::integral_constant<int, 1> _1 =
+    std::integral_constant<int, 1>();
+  static const std::integral_constant<int, 2> _2 =
+    std::integral_constant<int, 2>();
+  static const std::integral_constant<int, 3> _3 =
+    std::integral_constant<int, 3>();
+  static const std::integral_constant<int, 4> _4 =
+    std::integral_constant<int, 4>();
+  static const std::integral_constant<int, 5> _5 =
+    std::integral_constant<int, 5>();
+  static const std::integral_constant<int, 6> _6 =
+    std::integral_constant<int, 6>();
+  static const std::integral_constant<int, 7> _7 =
+    std::integral_constant<int, 7>();
+  static const std::integral_constant<int, 8> _8 =
+    std::integral_constant<int, 8>();
+  static const std::integral_constant<int, 9> _9 =
+    std::integral_constant<int, 9>();
 }
 
 
