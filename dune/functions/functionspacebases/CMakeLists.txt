@@ -2,9 +2,10 @@ add_subdirectory("test"  EXCLUDE_FROM_ALL)
 
 install(FILES
         bsplinebasis.hh
+        defaultglobalbasis.hh
+        defaultglobalindexset.hh
         defaultlocalindexset.hh
         defaultlocalview.hh
-        defaultglobalindexset.hh
         gridviewfunctionspacebasis.hh
         interpolate.hh
         lagrangedgbasis.hh
