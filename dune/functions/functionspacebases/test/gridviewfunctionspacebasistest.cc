@@ -45,7 +45,7 @@ void testScalarBasis(const Basis& feBasis,
   typedef typename Basis::GridView GridView;
   GridView gridView = feBasis.gridView();
 
-  typename Basis::LocalView localView(&feBasis);
+  typename Basis::LocalView localView(feBasis);
 
 
   // Test the LocalFiniteElement
