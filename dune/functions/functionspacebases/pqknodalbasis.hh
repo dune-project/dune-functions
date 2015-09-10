@@ -410,11 +410,12 @@ protected:
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************
 
-/** \brief Nodal basis of a scalar third-order Lagrangean finite element space
+/** \brief Nodal basis of a scalar k-th-order Lagrangean finite element space
  *
  * \note This only works for certain grids.  The following restrictions hold
- * - Grids must be 1d, 2d, or 3d
- * - 3d grids must be simplex grids
+ * - If k is no larger than 2, then the grids can have any dimension
+ * - If k is larger than 3 then the grid must be two-dimensional
+ * - If k is 3, then the grid can be 3d *if* it is a simplex grid
  *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
