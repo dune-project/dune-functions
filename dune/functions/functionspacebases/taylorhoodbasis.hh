@@ -228,9 +228,10 @@ public:
 
   void bind(const Node& node)
   {
+    using namespace StaticIndices;
     node_ = &node;
-    pq1NodeIndexSet_.bind(node_->template child<1>());
-    pq2NodeIndexSet_.bind(node_->template child<0>().child(0));
+    pq1NodeIndexSet_.bind(getChild(node, _1));
+    pq2NodeIndexSet_.bind(getChild(node, _0, 0));
   }
 
   void unbind()
@@ -243,7 +244,6 @@ public:
   size_type size() const
   {
     return node_->size();
-//    return dim*pq2NodeIndexSet_.size() + pq1NodeIndexSet_.size();
   }
 
   MultiIndex index(size_type localIndex) const
