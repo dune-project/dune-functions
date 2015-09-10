@@ -5,6 +5,8 @@
 
 
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
+#include <dune/functions/functionspacebases/defaultglobalindexset.hh>
+#include <dune/functions/functionspacebases/defaultlocalview.hh>
 
 
 
