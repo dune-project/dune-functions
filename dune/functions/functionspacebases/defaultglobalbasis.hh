@@ -22,6 +22,7 @@ class DefaultGlobalBasis
                                     DefaultGlobalIndexSet<DefaultLocalView<DefaultGlobalBasis<NF>>, NF>,
                                     typename NF::MultiIndex >
 {
+  using RootTreePath = std::tuple<>;
 
 public:
 
@@ -38,6 +39,9 @@ public:
   //! Type of the local view on the restriction of the basis to a single element
   using LocalView = DefaultLocalView<DefaultGlobalBasis<NodeFactory>>;
 
+  using NodeIndexSet = typename NodeFactory::template IndexSet<RootTreePath>;
+  using SizePrefix = typename NodeFactory::SizePrefix;
+  using LocalIndexSet = DefaultLocalIndexSet<LocalView, NodeIndexSet>;
   using GlobalIndexSet = DefaultGlobalIndexSet<LocalView, NodeFactory>;
 
 
@@ -56,14 +60,29 @@ public:
     return nodeFactory_.gridView();
   }
 
-  GlobalIndexSet indexSet() const
+  const NodeFactory& nodeFactory() const
   {
-    return GlobalIndexSet(nodeFactory_);
+    return nodeFactory_;
   }
 
+  /**
+   * \todo This method has been added to the interface without prior discussion.
+   */
+  size_type dimension() const
+  {
+    return nodeFactory_.dimension();
+  }
+
+  //! Return number of possible values for next position in empty multi index
   size_type size() const
   {
     return nodeFactory_.size();
+  }
+
+  //! Return number possible values for next position in multi index
+  size_type size(const SizePrefix& prefix) const
+  {
+    return nodeFactory_.size(prefix);
   }
 
   /** \brief Return local view for basis
@@ -74,9 +93,14 @@ public:
     return LocalView(*this);
   }
 
-  const NodeFactory& nodeFactory() const
+  LocalIndexSet localIndexSet() const
   {
-    return nodeFactory_;
+    return LocalIndexSet(nodeFactory_.template indexSet<RootTreePath>());
+  }
+
+  GlobalIndexSet indexSet() const
+  {
+    return GlobalIndexSet(nodeFactory_);
   }
 
 protected:
