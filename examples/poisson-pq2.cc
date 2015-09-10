@@ -20,7 +20,7 @@
 #include <dune/istl/solvers.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/pq2nodalbasis.hh>
+#include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
@@ -304,7 +304,7 @@ int main (int argc, char *argv[]) try
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
-  typedef Functions::PQ2NodalBasis<GridView> FEBasis;
+  typedef Functions::PQkNodalBasis<GridView,2> FEBasis;
   FEBasis feBasis(gridView);
 
   /////////////////////////////////////////////////////////
