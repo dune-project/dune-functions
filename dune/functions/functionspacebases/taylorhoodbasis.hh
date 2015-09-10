@@ -13,7 +13,7 @@
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
-#include <dune/functions/functionspacebases/defaultglobalindexset.hh>
+#include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 namespace Dune {
 namespace Functions {
@@ -284,71 +284,7 @@ private:
  * \tparam GV The GridView that the space is defined on.
  */
 template<typename GV, class ST = std::size_t>
-class TaylorHoodBasis
-  : public GridViewFunctionSpaceBasis<GV,
-                                      DefaultLocalView<TaylorHoodBasis<GV,ST>>,
-                                      DefaultGlobalIndexSet<DefaultLocalView<TaylorHoodBasis<GV,ST>>, TaylorHoodNodeFactory<GV, std::array<ST, 2>, ST> >,
-                                      std::array<ST, 2> >
-{
-public:
-
-  /** \brief The grid view that the FE space is defined on */
-  typedef GV GridView;
-
-  using size_type = ST;
-
-protected:
-
-  static const int dim = GV::dimension;
-
-public:
-
-  using MultiIndex = std::array<size_type, 2>;
-  using NodeFactory = TaylorHoodNodeFactory<GV, MultiIndex, size_type>;
-
-  /** \brief Type of the local view on the restriction of the basis to a single element */
-  using LocalView = DefaultLocalView<TaylorHoodBasis<GV,ST>>;
-
-  using GlobalIndexSet = DefaultGlobalIndexSet<LocalView, NodeFactory>;
-
-
-  /** \brief Constructor for a given grid view object */
-  TaylorHoodBasis(const GridView& gv) :
-    nodeFactory_(gv)
-  {
-    nodeFactory_.initializeIndices();
-  }
-
-  /** \brief Obtain the grid view that the basis is defined on
-   */
-  const GridView& gridView() const DUNE_FINAL
-  {
-    return nodeFactory_.gridView();
-  }
-
-  GlobalIndexSet indexSet() const
-  {
-    return GlobalIndexSet(nodeFactory_);
-  }
-
-  /**
-   * \brief Return local view for basis
-   *
-   */
-  LocalView localView() const
-  {
-    return LocalView(*this);
-  }
-
-  const NodeFactory& nodeFactory() const
-  {
-    return nodeFactory_;
-  }
-
-protected:
-
-  NodeFactory nodeFactory_;
-};
+using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodNodeFactory<GV, std::array<ST, 2>, ST> >;
 
 
 

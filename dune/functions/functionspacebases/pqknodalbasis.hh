@@ -14,8 +14,7 @@
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/tupletreepath.hh>
-#include <dune/functions/functionspacebases/defaultglobalindexset.hh>
-#include <dune/functions/functionspacebases/defaultlocalview.hh>
+#include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 
 namespace Dune {
@@ -421,79 +420,7 @@ protected:
  * \tparam k The order of the basis
  */
 template<typename GV, int k, class ST = std::size_t>
-class PQkNodalBasis
-: public GridViewFunctionSpaceBasis<GV,
-                                    DefaultLocalView<PQkNodalBasis<GV,k,ST>>,
-                                    DefaultGlobalIndexSet<DefaultLocalView<PQkNodalBasis<GV,k,ST>>, PQkNodeFactory<GV, k, std::array<ST, 1>, ST>>,
-                                    std::array<ST, 1> >
-{
-  static const int dim = GV::dimension;
-
-
-public:
-
-  /** \brief The grid view that the FE space is defined on */
-  using GridView = GV;
-  using size_type = ST;
-
-
-  /** \brief Type of the local view on the restriction of the basis to a single element */
-  using LocalView = DefaultLocalView<PQkNodalBasis<GV,k,ST>>;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  typedef std::array<size_type, 1> MultiIndex;
-
-
-  using NodeFactory = PQkNodeFactory<GV, k, MultiIndex, ST>;
-
-  using GlobalIndexSet = DefaultGlobalIndexSet<LocalView, NodeFactory>;
-
-
-  /** \brief Constructor for a given grid view object */
-  PQkNodalBasis(const GridView& gv) :
-    gridView_(gv),
-    nodeFactory_(gridView_),
-    indexSet_(nodeFactory_)
-  {
-    nodeFactory_.initializeIndices();
-  }
-
-  /** \brief Obtain the grid view that the basis is defined on
-   */
-  const GridView& gridView() const DUNE_FINAL
-  {
-    return gridView_;
-  }
-
-  GlobalIndexSet indexSet() const
-  {
-    return indexSet_;
-  }
-
-  size_type size() const
-  {
-    return nodeFactory_.size();
-  }
-
-  /** \brief Return local view for basis
-   *
-   */
-  LocalView localView() const
-  {
-    return LocalView(*this);
-  }
-
-  const NodeFactory& nodeFactory() const
-  {
-    return nodeFactory_;
-  }
-
-protected:
-  const GridView gridView_;
-
-  NodeFactory nodeFactory_;
-  GlobalIndexSet indexSet_;
-};
+using PQkNodalBasis = DefaultGlobalBasis<PQkNodeFactory<GV, k, std::array<ST, 1>, ST> >;
 
 
 
