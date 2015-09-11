@@ -21,6 +21,8 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
+#include <dune/functions/functionspacebases/hierarchicvectorbackend.hh>
+
 #include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
@@ -221,46 +223,6 @@ void assembleStokesProblem(const Basis& basis,
 }
 
 
-// This method marks all vertices on the boundary of the grid.
-// In our problem these are precisely the Dirichlet nodes.
-// The result can be found in the 'dirichletNodes' variable.  There, a bit
-// is set precisely when the corresponding vertex is on the grid boundary.
-template <class VelocityBasis>
-void boundaryTreatment (const VelocityBasis& velocityBasis,
-                        const FieldVector<double,VelocityBasis::GridView::dimension>& bbox,
-                        std::vector<int>& dirichletNodes)
-{
-  static const int dim = VelocityBasis::GridView::dimension;
-
-  // Interpolating the identity function wrt to a Lagrange basis
-  // yields the positions of the Lagrange nodes
-  BlockVector<FieldVector<double,dim> > lagrangeNodes;
-  interpolate(velocityBasis, lagrangeNodes, [](FieldVector<double,dim> x){ return x; });
-
-  dirichletNodes.resize(dim*velocityBasis.indexSet().size(), 0);
-//  for(auto && d: dirichletNodes)
-//    d = 0;
-  for (size_t i=0; i<dirichletNodes.size(); i++)
-    dirichletNodes[i] = 0;
-
-  // Mark all Lagrange nodes on the bounding box as Dirichlet
-  for (size_t i=0; i<lagrangeNodes.size(); i++)
-  {
-    bool isBoundary = false;
-    for (int j=0; j<dim; j++)
-      isBoundary = isBoundary || lagrangeNodes[i][j] < 1e-8 || lagrangeNodes[i][j] > bbox[j]-1e-8;
-
-    if (isBoundary)
-    {
-      for (int j=0; j<dim; j++)
-        dirichletNodes[dim*i+j] = 1;
-
-      if (lagrangeNodes[i][0] < 1e-8)
-        dirichletNodes[dim*i+1] = 2;
-    }
-
-  }
-}
 
 
 
@@ -296,12 +258,14 @@ int main (int argc, char *argv[]) try
 
   typedef BlockVector<BlockVector<FieldVector<double,1> > > VectorType;
   typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
+  typedef Dune::Functions::HierarchicVectorBackend Backend;
+  typedef std::vector<std::vector<char> > BitVectorType;
 
-  VectorType rhs(2);
-  rhs[0].resize(taylorHoodBasis.indexSet().size({0}));
-  rhs[1].resize(taylorHoodBasis.indexSet().size({1}));
-  rhs[0] = 0;
-  rhs[1] = 0;
+  VectorType rhs;
+
+  Backend::resize(rhs, taylorHoodBasis);
+  rhs = 0;
+
   MatrixType stiffnessMatrix;
 
   /////////////////////////////////////////////////////////
@@ -317,19 +281,28 @@ int main (int argc, char *argv[]) try
   typedef Functions::PQkNodalBasis<GridView,1> PressureBasis;
   PressureBasis pressureBasis(gridView);
 
-  std::vector<int> dirichletNodes;
-  boundaryTreatment(velocityBasis, l, dirichletNodes);
-
   // Set Dirichlet values
   // Only velocity components have Dirichlet boundary values
-  for (size_t i=0; i<rhs[0].size(); i++)
+  using Coordinate = GridView::Codim<0> ::Geometry::GlobalCoordinate;
+  using namespace Dune::Functions::StaticIndices;
+
+  BitVectorType isBoundary;
+  Backend::resize(isBoundary, taylorHoodBasis);
+
+  auto boundaryIndicator = [&l](Coordinate x) {
+    bool isBoundary = false;
+    for (int j=0; j<x.size(); j++)
+      isBoundary = isBoundary || x[j] < 1e-8 || x[j] > l[j] - 1e-8;
+    return isBoundary;
+  };
+
+  for(int i=0; i<dim; ++i)
   {
-    if (dirichletNodes[i]==1)
-      // The zero is the value of the Dirichlet boundary condition
-      rhs[0][i] = 0;
-    else if (dirichletNodes[i]==2)
-      rhs[0][i] = 1;
+    interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0, i), isBoundary, boundaryIndicator);
+    interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0, i), rhs, [](Coordinate x) { return 0.0;}, isBoundary);
   }
+  interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0,_1), isBoundary, boundaryIndicator);
+  interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0,_1), rhs, [](Coordinate x) { return x[0] < 1e-8;}, isBoundary);
 
   ////////////////////////////////////////////
   //   Modify Dirichlet rows
@@ -338,7 +311,7 @@ int main (int argc, char *argv[]) try
   // loop over the matrix rows
   for (size_t i=0; i<stiffnessMatrix[0][0].N(); i++) {
 
-    if (dirichletNodes[i]) {
+    if (isBoundary[0][i]) {
 
       // Upper left matrix block
       auto cIt    = stiffnessMatrix[0][0][i].begin();
