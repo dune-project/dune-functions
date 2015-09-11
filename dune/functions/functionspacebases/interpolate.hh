@@ -130,9 +130,9 @@ void interpolate(const B& basis, TP&& treePath, C& coeff, F&& f, BV&& bitVector)
     auto&& node = getChild(localView.tree(), treePath);
     auto&& fe = node.finiteElement();
 
+#if 0
     // check if all components have already been processed
     bool allProcessed = true;
-#if 0
     for (size_t i=0; i<fe.localBasis().size(); ++i)
     {
       // if index was already processed we don't need to do further checks
