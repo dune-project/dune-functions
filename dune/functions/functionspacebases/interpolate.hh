@@ -15,6 +15,9 @@
 #include <dune/functions/common/functionfromcallable.hh>
 #include <dune/functions/common/functionconcepts.hh>
 
+#include <dune/functions/functionspacebases/hierarchicvectorbackend.hh>
+#include <dune/functions/functionspacebases/flatvectorbackend.hh>
+
 namespace Dune {
 namespace Functions {
 
@@ -27,143 +30,17 @@ struct AllTrueBitSetVector
     bool test(int i) const { return true; }
   } allTrue_;
 
-  const AllTrueBitSet& operator[](int i) const
-  {
-    return allTrue_;
-  }
-};
-
-
-
-template<class C>
-struct FlatIndexContainerAccess
-{
-  template<class T>
-  static void setEntry(C& x, int i, const T& xi)
-  {
-    x = xi;
-  }
-
-  static auto getEntry(const C& x, int i) -> decltype(x)
-  {
-    return x;
-  }
-
-  static int size(const C& x)
-  {
-    return 1;
-  }
-};
-
-template<class K, int n>
-struct FlatIndexContainerAccess<typename Dune::FieldVector<K, n> >
-{
-  typedef typename Dune::FieldVector<K, n> RT;
-
-  template<class RFT>
-  static void setEntry(RT& x, int i, const RFT& xi)
-  {
-    x[i] = xi;
-  }
-
-  static auto getEntry(const RT& x, int i) -> decltype(x[i])
-  {
-    return x[i];
-  }
-
-  static int size(const RT& x)
-  {
-    return n;
-  }
-};
-
-template<class K, int n, int m>
-struct FlatIndexContainerAccess<typename Dune::FieldMatrix<K, n, m> >
-{
-  typedef typename Dune::FieldMatrix<K, n, m> RT;
-
-  template<class RFT>
-  static void setEntry(RT& x, int i, const RFT& xi)
-  {
-    x[i/m][i%m] = xi;
-  }
-
-  static auto getEntry(const RT& x, int i) -> decltype(x[i/m][i%m])
-  {
-    return x[i/m][i%m];
-  }
-
-  static int size(const RT& x)
-  {
-    return n*m;
-  }
-};
-
-template<class K>
-struct FlatIndexContainerAccess<typename std::vector<K> >
-{
-  typedef typename std::vector<K> RT;
-
-  template<class RFT>
-  static void setEntry(RT& x, int i, const RFT& xi)
-  {
-    x[i] = xi;
-  }
-
-  static auto getEntry(const RT& x, int i) -> decltype(x[i])
-  {
-    return x[i];
-  }
-
-  static int size(const RT& x)
-  {
-      return x.size();
-  }
-};
-
-template<int k, class Alloc>
-struct FlatIndexContainerAccess<Dune::BitSetVectorConstReference<k, Alloc> >
-{
-  typedef typename Dune::BitSetVectorConstReference<k, Alloc> RT;
-
-  template<class RFT>
-  static void setEntry(RT& x, int i, const RFT& xi)
-  {
-    DUNE_THROW(Dune::Exception, "Can't modify Dune::BitSetVector<k>::const_reference");
-  }
-
-  static bool getEntry(const RT& x, int i)
-  {
-    return x.test(i);
-  }
-
-  static int size(const RT& x)
-  {
-    return x.size();
-  }
-};
-
-template<>
-struct FlatIndexContainerAccess<AllTrueBitSetVector::AllTrueBitSet>
-{
-  template<class RFT>
-  static void setEntry(AllTrueBitSetVector::AllTrueBitSet& x, int i, const RFT& xi)
-  {
-    DUNE_THROW(Dune::Exception, "Can't modify AllTrueBitSet");
-  }
-
-  static bool getEntry(const AllTrueBitSetVector::AllTrueBitSet& x, int i)
+  operator bool() const
   {
     return true;
   }
 
-  static int size(const AllTrueBitSetVector::AllTrueBitSet& x)
+  const AllTrueBitSetVector& operator[](int i) const
   {
-    DUNE_THROW(Dune::NotImplemented, "AllTrueBitSet has no size");
+    return *this;
   }
+
 };
-
-
 
 
 } // namespace Imp
@@ -174,22 +51,27 @@ struct FlatIndexContainerAccess<AllTrueBitSetVector::AllTrueBitSet>
 /**
  * \brief Interpolate given function in discrete function space
  *
+ * Interpolation is done wrt the leaf node of the ansatz tree
+ * corresponding to the given tree path.
+ *
  * Notice that this will only work if the range type of f and
  * the block type of coeff are compatible and supported by
- * FlatIndexContainerAccess.
+ * FlatVectorBackend.
  *
  * \param basis Global function space basis of discrete function space
+ * \param treePath Tree path specifying the part of the ansatz tree to use
  * \param coeff Coefficient vector to represent the interpolation
  * \param f Function to interpolate
  * \param bitVector A vector with flags marking ald DOFs that should be interpolated
  */
-template <class B, class C, class F, class BV>
-void interpolate(const B& basis, C& coeff, F&& f, BV&& bitVector)
+template <class B, class TP, class C, class F, class BV>
+void interpolate(const B& basis, TP&& treePath, C& coeff, F&& f, BV&& bitVector)
 {
   using GridView = typename B::GridView;
   using Element = typename GridView::template Codim<0>::Entity;
 
-  using FiniteElement = typename B::LocalView::Tree::FiniteElement;
+  using Tree = typename std::decay<decltype(getChild(basis.localView().tree(), treePath))>::type;
+  using FiniteElement = typename Tree::FiniteElement;
   using FunctionBaseClass = typename Dune::LocalFiniteElementFunctionBase<FiniteElement>::type;
 
   using LocalBasisRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
@@ -197,8 +79,14 @@ void interpolate(const B& basis, C& coeff, F&& f, BV&& bitVector)
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
-  using CoefficientBlock = typename std::decay<decltype(coeff[0])>::type;
-  using BitVectorBlock = typename std::decay<decltype(bitVector[0])>::type;
+  using Backend = Dune::Functions::HierarchicVectorBackend;
+
+  using CoefficientBlock = typename std::decay<decltype(
+                                                        Backend::getEntry(coeff, basis.indexSet().localIndexSet().index(0))
+                                                        )>::type;
+  using BitVectorBlock = typename std::decay<decltype(
+                                                        Backend::getEntry(bitVector, basis.indexSet().localIndexSet().index(0))
+                                                        )>::type;
 
   static_assert(Dune::Functions::Concept::isCallable<F, GlobalDomain>(), "Function passed to interpolate does not model the Callable<GlobalCoordinate> concept");
 
@@ -217,7 +105,7 @@ void interpolate(const B& basis, C& coeff, F&& f, BV&& bitVector)
   int j=0;
   auto localFj = [&](const LocalDomain& x){
     using FunctionRange = typename std::decay<decltype(localF(LocalDomain(0)))>::type;
-    return Imp::FlatIndexContainerAccess<FunctionRange>::getEntry(localF(x), j);
+    return FlatVectorBackend<FunctionRange>::getEntry(localF(x), j);
   };
 
   using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<LocalBasisRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
@@ -225,13 +113,13 @@ void interpolate(const B& basis, C& coeff, F&& f, BV&& bitVector)
   auto basisIndexSet = basis.indexSet();
   coeff.resize(basisIndexSet.size());
 
-  auto processed = Dune::BitSetVector<1>(basisIndexSet.size(), false);
+//  auto processed = Dune::BitSetVector<1>(basisIndexSet.size(), false);
   auto interpolationValues = std::vector<LocalBasisRange>();
 
   auto localView = basis.localView();
   auto localIndexSet = basisIndexSet.localIndexSet();
 
-  auto blockSize = Imp::FlatIndexContainerAccess<CoefficientBlock>::size(coeff[0]);
+//  auto blockSize = Imp::FlatIndexContainerAccess<CoefficientBlock>::size(coeff[0]);
 
   for (const auto& e : elements(gridView))
   {
@@ -239,10 +127,12 @@ void interpolate(const B& basis, C& coeff, F&& f, BV&& bitVector)
     localIndexSet.bind(localView);
     localF.bind(e);
 
-    const auto& fe = localView.tree().finiteElement();
+    auto&& node = getChild(localView.tree(), treePath);
+    auto&& fe = node.finiteElement();
 
     // check if all components have already been processed
     bool allProcessed = true;
+#if 0
     for (size_t i=0; i<fe.localBasis().size(); ++i)
     {
       // if index was already processed we don't need to do further checks
@@ -263,9 +153,13 @@ void interpolate(const B& basis, C& coeff, F&& f, BV&& bitVector)
     }
 
     if (not(allProcessed))
+#endif
     {
       // We loop over j defined above and thus over the components of the
       // range type of localF.
+
+      auto blockSize = FlatVectorBackend<CoefficientBlock>::size(Backend::getEntry(coeff, localIndexSet.index(0)));
+
       for(j=0; j<blockSize; ++j)
       {
 
@@ -273,15 +167,20 @@ void interpolate(const B& basis, C& coeff, F&& f, BV&& bitVector)
         fe.localInterpolation().interpolate(FunctionFromCallable(localFj), interpolationValues);
         for (size_t i=0; i<fe.localBasis().size(); ++i)
         {
-          size_t index = localIndexSet.index(i)[0];
-          auto interpolateHere = Imp::FlatIndexContainerAccess<BitVectorBlock>::getEntry(bitVector[index],j);
+          auto multiIndex = localIndexSet.index(node.localIndex(i));
+          const auto& bitVectorBlock = Backend::getEntry(bitVector, multiIndex);
+          const auto& interpolateHere = FlatVectorBackend<BitVectorBlock>::getEntry(bitVectorBlock,j);
 
-          if (not(processed[index][0]) and interpolateHere)
-            Imp::FlatIndexContainerAccess<CoefficientBlock>::setEntry(coeff[index], j, interpolationValues[i]);
+//          if (not(processed[index][0]) and interpolateHere)
+          if (interpolateHere)
+          {
+            auto&& vectorBlock = Backend::getEntry(coeff, multiIndex);
+            FlatVectorBackend<CoefficientBlock>::getEntry(vectorBlock, j) = interpolationValues[i];
+          }
         }
       }
-      for (size_t i=0; i<fe.localBasis().size(); ++i)
-        processed[localIndexSet.index(i)[0]][0] = true;
+//      for (size_t i=0; i<fe.localBasis().size(); ++i)
+//        processed[localIndexSet.index(i)[0]][0] = true;
     }
   }
 }
@@ -293,7 +192,10 @@ void interpolate(const B& basis, C& coeff, F&& f, BV&& bitVector)
  *
  * Notice that this will only work if the range type of f and
  * the block type of coeff are compatible and supported by
- * FlatIndexContainerAccess.
+ * FlatVectorBackend.
+ *
+ * This function will only work, if the local ansatz tree of
+ * the basis is trivial, i.e., a single leaf node.
  *
  * \param basis Global function space basis of discrete function space
  * \param coeff Coefficient vector to represent the interpolation
@@ -302,9 +204,29 @@ void interpolate(const B& basis, C& coeff, F&& f, BV&& bitVector)
 template <class B, class C, class F>
 void interpolate(const B& basis, C& coeff, F&& f)
 {
-  interpolate (basis, coeff, f, Imp::AllTrueBitSetVector());
+  interpolate (basis, std::make_tuple(), coeff, f, Imp::AllTrueBitSetVector());
 }
 
+/**
+ * \brief Interpolate given function in discrete function space
+ *
+ * Interpolation is done wrt the leaf node of the ansatz tree
+ * corresponding to the given tree path.
+ *
+ * Notice that this will only work if the range type of f and
+ * the block type of corresponding coeff entries are compatible
+ * and supported by FlatVectorBackend.
+ *
+ * \param basis Global function space basis of discrete function space
+ * \param treePath Tree path specifying the part of the ansatz tree to use
+ * \param coeff Coefficient vector to represent the interpolation
+ * \param f Function to interpolate
+ */
+template <class B, class TreePath, class C, class F>
+void interpolate(const B& basis, TreePath&& treePath, C& coeff, F&& f)
+{
+  interpolate (basis, treePath, coeff, f, Imp::AllTrueBitSetVector());
+}
 
 } // namespace Functions
 } // namespace Dune
