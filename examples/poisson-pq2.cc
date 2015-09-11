@@ -253,30 +253,25 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
 // In our problem these are precisely the Dirichlet nodes.
 // The result can be found in the 'dirichletNodes' variable.  There, a bit
 // is set precisely when the corresponding vertex is on the grid boundary.
+// Since interpolating into a vector<bool> is currently not supported,
+// we use a vector<char> which, in contrast to vector<bool>
+// is a real container.
 template <class FEBasis>
 void boundaryTreatment (const FEBasis& feBasis,
                         const FieldVector<double,FEBasis::GridView::dimension>& bbox,
-                        std::vector<bool>& dirichletNodes )
+                        std::vector<char>& dirichletNodes )
 {
-  static const int dim = FEBasis::GridView::dimension;
+  using Coordinate = typename FEBasis::GridView::template Codim<0>::Geometry::GlobalCoordinate;
 
-  // Interpolating the identity function wrt to a Lagrange basis
-  // yields the positions of the Lagrange nodes
-  BlockVector<FieldVector<double,dim> > lagrangeNodes;
-  interpolate(feBasis, lagrangeNodes, [](FieldVector<double,dim> x){ return x; });
-
-  dirichletNodes.resize(lagrangeNodes.size());
-
-  // Mark all Lagrange nodes on the bounding box as Dirichlet
-  for (size_t i=0; i<lagrangeNodes.size(); i++)
-  {
-    bool isBoundary = false;
-    for (int j=0; j<dim; j++)
-      isBoundary = isBoundary || lagrangeNodes[i][j] < 1e-8 || lagrangeNodes[i][j] > bbox[j]-1e-8;
-
-    if (isBoundary)
-      dirichletNodes[i] = true;
-  }
+  // Interpolating the indicator function of the boundary will
+  // mark all boundary dofs.
+  interpolate(feBasis, std::make_tuple(), dirichletNodes,
+      [&bbox](Coordinate x){
+        bool isBoundary = false;
+        for (int j=0; j<x.size(); j++)
+          isBoundary = isBoundary || x[j] < 1e-8 || x[j] > bbox[j]-1e-8;
+        return isBoundary;
+      });
 }
 
 
@@ -333,7 +328,7 @@ int main (int argc, char *argv[]) try
   x = 0;
 
   // Determine Dirichlet dofs
-  std::vector<bool> dirichletNodes;
+  std::vector<char> dirichletNodes;
   boundaryTreatment(feBasis, l, dirichletNodes);
 
 
@@ -343,7 +338,7 @@ int main (int argc, char *argv[]) try
   auto dirichletValueFunction = [pi](FieldVector<double,dim> x){ return std::sin(2*pi*x[0]); };
 
   // Interpolate dirichlet values at the boundary nodes
-  interpolate(feBasis, rhs, dirichletValueFunction, dirichletNodes);
+  interpolate(feBasis, std::make_tuple(), rhs, dirichletValueFunction, dirichletNodes);
 
   ////////////////////////////////////////////
   //   Modify Dirichlet rows
