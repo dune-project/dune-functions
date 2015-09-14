@@ -21,7 +21,8 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
-#include <dune/functions/functionspacebases/hierarchicvectorbackend.hh>
+#include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+//#include <dune/functions/functionspacebases/hierarchicvectorbackend.hh>
 
 #include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
@@ -256,14 +257,15 @@ int main (int argc, char *argv[]) try
 
   typedef BlockVector<BlockVector<FieldVector<double,1> > > VectorType;
   typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
-  typedef Dune::Functions::HierarchicVectorBackend Backend;
   typedef std::vector<std::vector<char> > BitVectorType;
+  typedef Dune::Functions::HierarchicVectorWrapper<VectorType> HierarchicVectorView;
 
   typedef Dune::FieldVector<double,dim> VelocityRange;
 
   VectorType rhs;
 
-  Backend::resize(rhs, taylorHoodBasis);
+  HierarchicVectorView(rhs).resize(taylorHoodBasis);
+
   rhs = 0;
 
   MatrixType stiffnessMatrix;
@@ -287,7 +289,6 @@ int main (int argc, char *argv[]) try
   using namespace Dune::Functions::StaticIndices;
 
   BitVectorType isBoundary;
-  Backend::resize(isBoundary, taylorHoodBasis);
 
   auto boundaryIndicator = [&l](Coordinate x) {
     bool isBoundary = false;
@@ -307,7 +308,6 @@ int main (int argc, char *argv[]) try
 
   typedef BlockVector<BlockVector<FieldVector<double,dim> > > DimVectorType;
   DimVectorType lagrangeNodes;
-  Backend::resize(lagrangeNodes, taylorHoodBasis);
 
   for(int i=0; i<dim; ++i)
     interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0, i), lagrangeNodes, [](Coordinate x) {return x;});

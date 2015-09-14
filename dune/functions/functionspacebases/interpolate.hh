@@ -15,7 +15,7 @@
 #include <dune/functions/common/functionfromcallable.hh>
 #include <dune/functions/common/functionconcepts.hh>
 
-#include <dune/functions/functionspacebases/hierarchicvectorbackend.hh>
+#include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 #include <dune/functions/functionspacebases/flatvectorbackend.hh>
 
 #include <dune/typetree/traversal.hh>
@@ -47,7 +47,7 @@ struct AllTrueBitSetVector
 
 
 
-template <class B, class T, class NTRE, class C, class LF, class BV>
+template <class B, class T, class NTRE, class HV, class LF, class HBV>
 class LocalInterpolateVisitor
   : public TypeTree::TreeVisitor
   , public TypeTree::DynamicTraversal
@@ -57,12 +57,14 @@ public:
 
   using Basis = B;
   using LocalIndexSet = typename B::LocalIndexSet;
+  using MultiIndex = typename LocalIndexSet::MultiIndex;
 
   using LocalFunction = LF;
 
   using Tree = T;
-  using Vector = C;
-  using BitVector = BV;
+
+  using HierarchicVector = HV;
+  using HierarchicBitVector = HBV;
 
   using NodeToRangeEntry = NTRE;
 
@@ -73,18 +75,11 @@ public:
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
-  using Backend = Dune::Functions::HierarchicVectorBackend;
+  using CoefficientBlock = typename std::decay<decltype(std::declval<HierarchicVector>()[std::declval<MultiIndex>()])>::type;
+  using BitVectorBlock = typename std::decay<decltype(std::declval<HierarchicBitVector>()[std::declval<MultiIndex>()])>::type;
 
-  using CoefficientBlock = typename std::decay<decltype(
-                                                        Backend::getEntry(std::declval<Vector>(), std::declval<Basis>().indexSet().localIndexSet().index(0))
-                                                        )>::type;
-  using BitVectorBlock = typename std::decay<decltype(
-                                                        Backend::getEntry(std::declval<BitVector>(), std::declval<Basis>().indexSet().localIndexSet().index(0))
-                                                        )>::type;
-
-  LocalInterpolateVisitor(const B& basis, Vector& coeff, const BV& bitVector, const LF& localF, const LocalIndexSet& localIndexSet, const NodeToRangeEntry& nodeToRangeEntry) :
-    basis_(basis),
-    coeff_(coeff),
+  LocalInterpolateVisitor(const B& basis, HV& coeff, const HBV& bitVector, const LF& localF, const LocalIndexSet& localIndexSet, const NodeToRangeEntry& nodeToRangeEntry) :
+    vector_(coeff),
     localF_(localF),
     bitVector_(bitVector),
     localIndexSet_(localIndexSet),
@@ -104,7 +99,6 @@ public:
   template<typename Node, typename TreePath>
   void leaf(Node& node, TreePath treePath)
   {
-
     using FiniteElement = typename Node::FiniteElement;
     using FiniteElementRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
     using FunctionBaseClass = typename Dune::LocalFiniteElementFunctionBase<FiniteElement>::type;
@@ -129,7 +123,7 @@ public:
     // We loop over j defined above and thus over the components of the
     // range type of localF_.
 
-    auto blockSize = FlatVectorBackend<CoefficientBlock>::size(Backend::getEntry(coeff_, localIndexSet_.index(0)));
+    auto blockSize = FlatVectorBackend<CoefficientBlock>::size(vector_[localIndexSet_.index(0)]);
 
     for(j=0; j<blockSize; ++j)
     {
@@ -139,12 +133,12 @@ public:
       for (size_t i=0; i<fe.localBasis().size(); ++i)
       {
         auto multiIndex = localIndexSet_.index(node.localIndex(i));
-        const auto& bitVectorBlock = Backend::getEntry(bitVector_, multiIndex);
+        const auto& bitVectorBlock = bitVector_[multiIndex];
         const auto& interpolateHere = FlatVectorBackend<BitVectorBlock>::getEntry(bitVectorBlock,j);
 
         if (interpolateHere)
         {
-          auto&& vectorBlock = Backend::getEntry(coeff_, multiIndex);
+          auto&& vectorBlock = vector_[multiIndex];
           FlatVectorBackend<CoefficientBlock>::getEntry(vectorBlock, j) = interpolationValues[i];
         }
       }
@@ -154,10 +148,9 @@ public:
 
 protected:
 
-  const Basis& basis_;
-  Vector& coeff_;
+  HierarchicVector& vector_;
   const LocalFunction& localF_;
-  const BitVector& bitVector_;
+  const HierarchicBitVector& bitVector_;
   const LocalIndexSet& localIndexSet_;
   const NodeToRangeEntry& nodeToRangeEntry_;
 };
@@ -186,7 +179,7 @@ protected:
  * \param bitVector A vector with flags marking ald DOFs that should be interpolated
  */
 template <class B, class TP, class NTRE, class C, class F, class BV>
-void interpolateTreeSubset(const B& basis, TP&& treePath, C& coeff, F&& f, NTRE&& nodeToRangeEntry, BV&& bitVector)
+void interpolateTreeSubset(const B& basis, TP&& treePath, C& coeff, F&& f, NTRE&& nodeToRangeEntry, BV&& bv)
 {
   using GridView = typename B::GridView;
   using Element = typename GridView::template Codim<0>::Entity;
@@ -195,13 +188,15 @@ void interpolateTreeSubset(const B& basis, TP&& treePath, C& coeff, F&& f, NTRE&
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
-  using Backend = Dune::Functions::HierarchicVectorBackend;
-
   static_assert(Dune::Functions::Concept::isCallable<F, GlobalDomain>(), "Function passed to interpolate does not model the Callable<GlobalCoordinate> concept");
 
   auto&& gridView = basis.gridView();
 
-  Backend::resize(coeff, basis);
+  auto bitVector = hierarchicVector(bv);
+  auto vector = hierarchicVector(coeff);
+  vector.resize(basis);
+
+
 
   // Make a grid function supporting local evaluation out of f
   auto gf = makeGridViewFunction(std::forward<F>(f), gridView);
@@ -222,7 +217,7 @@ void interpolateTreeSubset(const B& basis, TP&& treePath, C& coeff, F&& f, NTRE&
 
     auto&& subTree = getChild(localView.tree(), treePath);
 
-    Imp::LocalInterpolateVisitor<B, Tree, NTRE, C, decltype(localF), BV> localInterpolateVisitor(basis, coeff, bitVector, localF, localIndexSet, nodeToRangeEntry);
+    Imp::LocalInterpolateVisitor<B, Tree, NTRE, decltype(vector), decltype(localF), decltype(bitVector)> localInterpolateVisitor(basis, vector, bitVector, localF, localIndexSet, nodeToRangeEntry);
     TypeTree::applyToTree(subTree,localInterpolateVisitor);
   }
 }
