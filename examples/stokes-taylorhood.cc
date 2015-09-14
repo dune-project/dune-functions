@@ -225,24 +225,6 @@ void assembleStokesProblem(const Basis& basis,
 
 
 
-// ToDo: Will be replaced by defualt implementation
-// using lexicographic order.
-struct THVelocityNodeToRange
-{
-  template<class Node, class Range>
-  auto operator()(const Node& node, Range&& y) const
-    -> decltype(y[0])
-  {
-    static const int depth = std::tuple_size<typename Node::TreePath>::value;
-    auto&& indexComponent = std::get<depth-1>(node.treePath());
-    return y[indexComponent];
-  }
-};
-
-
-
-
-
 int main (int argc, char *argv[]) try
 {
   // Set up MPI, if available
@@ -321,7 +303,6 @@ int main (int argc, char *argv[]) try
 
   interpolateTreeSubset(taylorHoodBasis, Dune::Functions::makeTreePath(_0), rhs,
       velocityDirichletData,
-      THVelocityNodeToRange(),
       isBoundary);
 
   typedef BlockVector<BlockVector<FieldVector<double,dim> > > DimVectorType;
