@@ -52,6 +52,8 @@ namespace Dune {
         void pre(Node& node, TreePath treePath)
         {
           node.setOffset(offset_);
+          node.setTreeIndex(treeIndex_);
+          ++treeIndex_;
         }
 
         template<typename Node, typename TreePath>
@@ -66,15 +68,19 @@ namespace Dune {
           node.setOffset(offset_);
           node.bind(entity_);
           offset_ += node.size();
+          node.setTreeIndex(treeIndex_);
+          ++treeIndex_;
         }
 
-        BindVisitor(const Entity& entity, size_type offset = 0)
+        BindVisitor(const Entity& entity, size_type offset = 0, size_type treeIndex = 0)
           : entity_(entity)
           , offset_(offset)
+          , treeIndex_(treeIndex)
         {}
 
         const Entity& entity_;
         size_type offset_;
+        size_type treeIndex_;
 
       };
 
@@ -99,7 +105,8 @@ namespace Dune {
 
       LeafBasisNode(TreePath treePath = TreePath()) :
         offset_(0),
-        treePath_(treePath)
+        treePath_(treePath),
+        treeIndex_(0)
       {}
 
       size_type localIndex(size_type i) const
@@ -112,6 +119,11 @@ namespace Dune {
         return treePath_;
       }
 
+      const size_type treeIndex() const
+      {
+        return treeIndex_;
+      }
+
     protected:
 
       void setOffset(const size_type offset)
@@ -119,10 +131,16 @@ namespace Dune {
         offset_ = offset;
       }
 
+      void setTreeIndex(const size_type treeIndex)
+      {
+        treeIndex_ = treeIndex;
+      }
+
     private:
 
       size_type offset_;
       const TreePath treePath_;
+      size_type treeIndex_;
 
     };
 
@@ -145,7 +163,8 @@ namespace Dune {
       InternalBasisNodeMixin(const TreePath& treePath) :
         offset_(0),
         size_(0),
-        treePath_(treePath)
+        treePath_(treePath),
+        treeIndex_(0)
       {}
 
       size_type localIndex(size_type i) const
@@ -161,6 +180,11 @@ namespace Dune {
       const TreePath& treePath() const
       {
         return treePath_;
+      }
+
+      const size_type treeIndex() const
+      {
+        return treeIndex_;
       }
 
       size_type offset() const
@@ -180,11 +204,17 @@ namespace Dune {
         size_ = size;
       }
 
+      void setTreeIndex(const size_type treeIndex)
+      {
+        treeIndex_ = treeIndex;
+      }
+
     private:
 
       size_type offset_;
       size_type size_;
       const TreePath treePath_;
+      size_type treeIndex_;
 
     };
 
