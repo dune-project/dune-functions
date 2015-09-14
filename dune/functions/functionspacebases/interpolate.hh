@@ -195,9 +195,13 @@ void interpolateTreeSubset(const B& basis, TP&& treePath, C& coeff, F&& f, NTRE&
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
+  using Backend = Dune::Functions::HierarchicVectorBackend;
+
   static_assert(Dune::Functions::Concept::isCallable<F, GlobalDomain>(), "Function passed to interpolate does not model the Callable<GlobalCoordinate> concept");
 
   auto&& gridView = basis.gridView();
+
+  Backend::resize(coeff, basis);
 
   // Make a grid function supporting local evaluation out of f
   auto gf = makeGridViewFunction(std::forward<F>(f), gridView);

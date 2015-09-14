@@ -263,7 +263,6 @@ void boundaryTreatment (const FEBasis& feBasis,
 
   // Interpolating the indicator function of the boundary will
   // mark all boundary dofs.
-  Dune::Functions::HierarchicVectorBackend::resize(dirichletNodes, feBasis);
   interpolate(feBasis, std::make_tuple(), dirichletNodes,
       [&bbox](Coordinate x){
         bool isBoundary = false;
