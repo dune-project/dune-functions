@@ -225,6 +225,22 @@ void assembleStokesProblem(const Basis& basis,
 
 
 
+// ToDo: Will be replaced by defualt implementation
+// using lexicographic order.
+struct THVelocityNodeToRange
+{
+  template<class Node, class Range>
+  auto operator()(const Node& node, Range&& y) const
+    -> decltype(y[0])
+  {
+    static const int depth = std::tuple_size<typename Node::TreePath>::value;
+    auto&& indexComponent = std::get<depth-1>(node.treePath());
+    return y[indexComponent];
+  }
+};
+
+
+
 
 
 int main (int argc, char *argv[]) try
@@ -260,6 +276,8 @@ int main (int argc, char *argv[]) try
   typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
   typedef Dune::Functions::HierarchicVectorBackend Backend;
   typedef std::vector<std::vector<char> > BitVectorType;
+
+  typedef Dune::FieldVector<double,dim> VelocityRange;
 
   VectorType rhs;
 
@@ -297,12 +315,24 @@ int main (int argc, char *argv[]) try
   };
 
   for(int i=0; i<dim; ++i)
-  {
     interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0, i), isBoundary, boundaryIndicator);
-    interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0, i), rhs, [](Coordinate x) { return 0.0;}, isBoundary);
-  }
-  interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0,_1), isBoundary, boundaryIndicator);
-  interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0,_1), rhs, [](Coordinate x) { return x[0] < 1e-8;}, isBoundary);
+
+  auto&& velocityDirichletData = [](Coordinate x) { return VelocityRange{{0.0, double(x[0] < 1e-8)}};};
+
+  interpolateTreeSubset(taylorHoodBasis, Dune::Functions::makeTreePath(_0), rhs,
+      velocityDirichletData,
+      THVelocityNodeToRange(),
+      isBoundary);
+
+  typedef BlockVector<BlockVector<FieldVector<double,dim> > > DimVectorType;
+  DimVectorType lagrangeNodes;
+  Backend::resize(lagrangeNodes, taylorHoodBasis);
+
+  for(int i=0; i<dim; ++i)
+    interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0, i), lagrangeNodes, [](Coordinate x) {return x;});
+  interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_1), lagrangeNodes, [](Coordinate x) {return x;});
+
+
 
   ////////////////////////////////////////////
   //   Modify Dirichlet rows
