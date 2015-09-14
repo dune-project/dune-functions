@@ -47,7 +47,7 @@ struct AllTrueBitSetVector
 
 
 
-template <class B, class T, class C, class LF, class BV>
+template <class B, class T, class NTRE, class C, class LF, class BV>
 class LocalInterpolateVisitor
   : public TypeTree::TreeVisitor
   , public TypeTree::DynamicTraversal
@@ -63,6 +63,8 @@ public:
   using Tree = T;
   using Vector = C;
   using BitVector = BV;
+
+  using NodeToRangeEntry = NTRE;
 
   using GridView = typename Basis::GridView;
   using Element = typename GridView::template Codim<0>::Entity;
@@ -80,12 +82,13 @@ public:
                                                         Backend::getEntry(std::declval<BitVector>(), std::declval<Basis>().indexSet().localIndexSet().index(0))
                                                         )>::type;
 
-  LocalInterpolateVisitor(const B& basis, Vector& coeff, const BV& bitVector, const LF& localF, const LocalIndexSet& localIndexSet) :
+  LocalInterpolateVisitor(const B& basis, Vector& coeff, const BV& bitVector, const LF& localF, const LocalIndexSet& localIndexSet, const NodeToRangeEntry& nodeToRangeEntry) :
     basis_(basis),
     coeff_(coeff),
     localF_(localF),
     bitVector_(bitVector),
-    localIndexSet_(localIndexSet)
+    localIndexSet_(localIndexSet),
+    nodeToRangeEntry_(nodeToRangeEntry)
   {
     static_assert(Dune::Functions::Concept::isCallable<LocalFunction, LocalDomain>(), "Function passed to LocalInterpolateVisitor does not model the Callable<LocalCoordinate> concept");
   }
@@ -112,8 +115,9 @@ public:
     // of a separate helper class.
     int j=0;
     auto localFj = [&](const LocalDomain& x){
-      using FunctionRange = typename std::decay<decltype(localF_(LocalDomain(0)))>::type;
-      return FlatVectorBackend<FunctionRange>::getEntry(localF_(x), j);
+      auto&& result = nodeToRangeEntry_(node, localF_(x));
+      using FunctionRange = typename std::decay<decltype(result)>::type;
+      return FlatVectorBackend<FunctionRange>::getEntry(result, j);
     };
 
     using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<FiniteElementRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
@@ -155,6 +159,7 @@ protected:
   const LocalFunction& localF_;
   const BitVector& bitVector_;
   const LocalIndexSet& localIndexSet_;
+  const NodeToRangeEntry& nodeToRangeEntry_;
 };
 
 
@@ -177,10 +182,11 @@ protected:
  * \param treePath Tree path specifying the part of the ansatz tree to use
  * \param coeff Coefficient vector to represent the interpolation
  * \param f Function to interpolate
+ * \param nodeToRangeEntry Polymorphic functor mapping local ansatz nodes to range-indices of given function
  * \param bitVector A vector with flags marking ald DOFs that should be interpolated
  */
-template <class B, class TP, class C, class F, class BV>
-void interpolate(const B& basis, TP&& treePath, C& coeff, F&& f, BV&& bitVector)
+template <class B, class TP, class NTRE, class C, class F, class BV>
+void interpolateTreeSubset(const B& basis, TP&& treePath, C& coeff, F&& f, NTRE&& nodeToRangeEntry, BV&& bitVector)
 {
   using GridView = typename B::GridView;
   using Element = typename GridView::template Codim<0>::Entity;
@@ -212,10 +218,58 @@ void interpolate(const B& basis, TP&& treePath, C& coeff, F&& f, BV&& bitVector)
 
     auto&& subTree = getChild(localView.tree(), treePath);
 
-    Imp::LocalInterpolateVisitor<B, Tree, C, decltype(localF), BV> localInterpolateVisitor(basis, coeff, bitVector, localF, localIndexSet);
+    Imp::LocalInterpolateVisitor<B, Tree, NTRE, C, decltype(localF), BV> localInterpolateVisitor(basis, coeff, bitVector, localF, localIndexSet, nodeToRangeEntry);
     TypeTree::applyToTree(subTree,localInterpolateVisitor);
   }
 }
+
+
+
+template <class B, class TP, class NTRE, class C, class F>
+void interpolateTree(const B& basis, TP&& treePath, C& coeff, F&& f, NTRE&& nodeToRangeEntry)
+{
+  interpolateTreeSubset(basis, treePath, coeff, f, nodeToRangeEntry, Imp::AllTrueBitSetVector());
+}
+
+
+
+
+struct LeafNodeToRangeMap
+{
+  template<class Node, class Range>
+  auto operator()(Node&& node, Range&& y) const
+    -> decltype(std::forward<Range>(y))
+  {
+    return std::forward<Range>(y);
+  }
+};
+
+
+
+/**
+ * \brief Interpolate given function in discrete function space
+ *
+ * Interpolation is done wrt the leaf node of the ansatz tree
+ * corresponding to the given tree path.
+ *
+ * Notice that this will only work if the range type of f and
+ * the block type of coeff are compatible and supported by
+ * FlatVectorBackend.
+ *
+ * \param basis Global function space basis of discrete function space
+ * \param treePath Tree path specifying the part of the ansatz tree to use
+ * \param coeff Coefficient vector to represent the interpolation
+ * \param f Function to interpolate
+ * \param bitVector A vector with flags marking ald DOFs that should be interpolated
+ */
+template <class B, class TP, class C, class F, class BV>
+void interpolate(const B& basis, TP&& treePath, C& coeff, F&& f, BV&& bitVector)
+{
+
+  interpolateTreeSubset(basis, treePath, coeff, f, LeafNodeToRangeMap(), bitVector);
+}
+
+
 
 
 
