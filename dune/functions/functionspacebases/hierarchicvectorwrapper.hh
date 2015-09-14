@@ -122,6 +122,22 @@ private:
 
 
 
+template<class V>
+HierarchicVectorWrapper<const V> hierarchicVector(const V& v)
+{
+  return HierarchicVectorWrapper<const V>(v);
+}
+
+
+
+template<class V>
+HierarchicVectorWrapper<V> hierarchicVector(V& v)
+{
+  return HierarchicVectorWrapper<V>(v);
+}
+
+
+
 } // namespace Dune::Functions
 } // namespace Dune
 
