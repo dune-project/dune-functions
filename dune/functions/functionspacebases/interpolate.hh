@@ -43,6 +43,118 @@ struct AllTrueBitSetVector
 };
 
 
+
+template <class B, class T, class C, class LF, class BV>
+class LocalInterpolateVisitor
+  : public TypeTree::TreeVisitor
+  , public TypeTree::DynamicTraversal
+{
+
+public:
+
+  using Basis = B;
+  using LocalIndexSet = typename B::LocalIndexSet;
+
+  using LocalFunction = LF;
+
+  using Tree = T;
+  using Vector = C;
+  using BitVector = BV;
+
+  using GridView = typename Basis::GridView;
+  using Element = typename GridView::template Codim<0>::Entity;
+
+  using LocalDomain = typename Element::Geometry::LocalCoordinate;
+
+  using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
+
+  using Backend = Dune::Functions::HierarchicVectorBackend;
+
+  using CoefficientBlock = typename std::decay<decltype(
+                                                        Backend::getEntry(std::declval<Vector>(), std::declval<Basis>().indexSet().localIndexSet().index(0))
+                                                        )>::type;
+  using BitVectorBlock = typename std::decay<decltype(
+                                                        Backend::getEntry(std::declval<BitVector>(), std::declval<Basis>().indexSet().localIndexSet().index(0))
+                                                        )>::type;
+
+  LocalInterpolateVisitor(const B& basis, Vector& coeff, const BV& bitVector, const LF& localF, const LocalIndexSet& localIndexSet) :
+    basis_(basis),
+    coeff_(coeff),
+    localF_(localF),
+    bitVector_(bitVector),
+    localIndexSet_(localIndexSet)
+  {
+    static_assert(Dune::Functions::Concept::isCallable<LocalFunction, LocalDomain>(), "Function passed to LocalInterpolateVisitor does not model the Callable<LocalCoordinate> concept");
+  }
+
+  template<typename Node, typename TreePath>
+  void pre(Node& node, TreePath treePath)
+  {}
+
+  template<typename Node, typename TreePath>
+  void post(Node& node, TreePath treePath)
+  {}
+
+  template<typename Node, typename TreePath>
+  void leaf(Node& node, TreePath treePath)
+  {
+
+    using FiniteElement = typename Node::FiniteElement;
+    using FiniteElementRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+    using FunctionBaseClass = typename Dune::LocalFiniteElementFunctionBase<FiniteElement>::type;
+
+    // Note that we capture j by reference. Hence we can switch
+    // the selected component later on by modifying j. Maybe we
+    // should avoid this naughty statefull lambda hack in favor
+    // of a separate helper class.
+    int j=0;
+    auto localFj = [&](const LocalDomain& x){
+      using FunctionRange = typename std::decay<decltype(localF_(LocalDomain(0)))>::type;
+      return FlatVectorBackend<FunctionRange>::getEntry(localF_(x), j);
+    };
+
+    using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<FiniteElementRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
+
+    auto interpolationValues = std::vector<FiniteElementRange>();
+
+    auto&& fe = node.finiteElement();
+
+    // We loop over j defined above and thus over the components of the
+    // range type of localF_.
+
+    auto blockSize = FlatVectorBackend<CoefficientBlock>::size(Backend::getEntry(coeff_, localIndexSet_.index(0)));
+
+    for(j=0; j<blockSize; ++j)
+    {
+
+      // We cannot use localFj directly because interpolate requires a Dune::VirtualFunction like interface
+      fe.localInterpolation().interpolate(FunctionFromCallable(localFj), interpolationValues);
+      for (size_t i=0; i<fe.localBasis().size(); ++i)
+      {
+        auto multiIndex = localIndexSet_.index(node.localIndex(i));
+        const auto& bitVectorBlock = Backend::getEntry(bitVector_, multiIndex);
+        const auto& interpolateHere = FlatVectorBackend<BitVectorBlock>::getEntry(bitVectorBlock,j);
+
+        if (interpolateHere)
+        {
+          auto&& vectorBlock = Backend::getEntry(coeff_, multiIndex);
+          FlatVectorBackend<CoefficientBlock>::getEntry(vectorBlock, j) = interpolationValues[i];
+        }
+      }
+    }
+  }
+
+
+protected:
+
+  const Basis& basis_;
+  Vector& coeff_;
+  const LocalFunction& localF_;
+  const BitVector& bitVector_;
+  const LocalIndexSet& localIndexSet_;
+};
+
+
 } // namespace Imp
 
 
@@ -71,22 +183,8 @@ void interpolate(const B& basis, TP&& treePath, C& coeff, F&& f, BV&& bitVector)
   using Element = typename GridView::template Codim<0>::Entity;
 
   using Tree = typename std::decay<decltype(getChild(basis.localView().tree(), treePath))>::type;
-  using FiniteElement = typename Tree::FiniteElement;
-  using FunctionBaseClass = typename Dune::LocalFiniteElementFunctionBase<FiniteElement>::type;
-
-  using LocalBasisRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
-  using LocalDomain = typename Element::Geometry::LocalCoordinate;
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
-
-  using Backend = Dune::Functions::HierarchicVectorBackend;
-
-  using CoefficientBlock = typename std::decay<decltype(
-                                                        Backend::getEntry(coeff, basis.indexSet().localIndexSet().index(0))
-                                                        )>::type;
-  using BitVectorBlock = typename std::decay<decltype(
-                                                        Backend::getEntry(bitVector, basis.indexSet().localIndexSet().index(0))
-                                                        )>::type;
 
   static_assert(Dune::Functions::Concept::isCallable<F, GlobalDomain>(), "Function passed to interpolate does not model the Callable<GlobalCoordinate> concept");
 
@@ -98,28 +196,11 @@ void interpolate(const B& basis, TP&& treePath, C& coeff, F&& f, BV&& bitVector)
   // Obtain a local view of f
   auto localF = localFunction(gf);
 
-  // Note that we capture j by reference. Hence we can switch
-  // the selected component later on by modifying j. Maybe we
-  // should avoid this naughty statefull lambda hack in favor
-  // of a separate helper class.
-  int j=0;
-  auto localFj = [&](const LocalDomain& x){
-    using FunctionRange = typename std::decay<decltype(localF(LocalDomain(0)))>::type;
-    return FlatVectorBackend<FunctionRange>::getEntry(localF(x), j);
-  };
-
-  using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<LocalBasisRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
-
   auto basisIndexSet = basis.indexSet();
   coeff.resize(basisIndexSet.size());
 
-//  auto processed = Dune::BitSetVector<1>(basisIndexSet.size(), false);
-  auto interpolationValues = std::vector<LocalBasisRange>();
-
   auto localView = basis.localView();
   auto localIndexSet = basisIndexSet.localIndexSet();
-
-//  auto blockSize = Imp::FlatIndexContainerAccess<CoefficientBlock>::size(coeff[0]);
 
   for (const auto& e : elements(gridView))
   {
@@ -127,61 +208,10 @@ void interpolate(const B& basis, TP&& treePath, C& coeff, F&& f, BV&& bitVector)
     localIndexSet.bind(localView);
     localF.bind(e);
 
-    auto&& node = getChild(localView.tree(), treePath);
-    auto&& fe = node.finiteElement();
+    auto&& subTree = getChild(localView.tree(), treePath);
 
-#if 0
-    // check if all components have already been processed
-    bool allProcessed = true;
-    for (size_t i=0; i<fe.localBasis().size(); ++i)
-    {
-      // if index was already processed we don't need to do further checks
-      auto index = localIndexSet.index(i)[0];
-      if (processed[index][0])
-        continue;
-
-      // if index was not processed, check if any entry is marked for interpolation
-      auto&& bitVectorBlock = bitVector[index];
-      for(int k=0; k<blockSize; ++k)
-      {
-        if (Imp::FlatIndexContainerAccess<BitVectorBlock>::getEntry(bitVectorBlock,k))
-        {
-          allProcessed = false;
-          break;
-        }
-      }
-    }
-
-    if (not(allProcessed))
-#endif
-    {
-      // We loop over j defined above and thus over the components of the
-      // range type of localF.
-
-      auto blockSize = FlatVectorBackend<CoefficientBlock>::size(Backend::getEntry(coeff, localIndexSet.index(0)));
-
-      for(j=0; j<blockSize; ++j)
-      {
-
-        // We cannot use localFj directly because interpolate requires a Dune::VirtualFunction like interface
-        fe.localInterpolation().interpolate(FunctionFromCallable(localFj), interpolationValues);
-        for (size_t i=0; i<fe.localBasis().size(); ++i)
-        {
-          auto multiIndex = localIndexSet.index(node.localIndex(i));
-          const auto& bitVectorBlock = Backend::getEntry(bitVector, multiIndex);
-          const auto& interpolateHere = FlatVectorBackend<BitVectorBlock>::getEntry(bitVectorBlock,j);
-
-//          if (not(processed[index][0]) and interpolateHere)
-          if (interpolateHere)
-          {
-            auto&& vectorBlock = Backend::getEntry(coeff, multiIndex);
-            FlatVectorBackend<CoefficientBlock>::getEntry(vectorBlock, j) = interpolationValues[i];
-          }
-        }
-      }
-//      for (size_t i=0; i<fe.localBasis().size(); ++i)
-//        processed[localIndexSet.index(i)[0]][0] = true;
-    }
+    Imp::LocalInterpolateVisitor<B, Tree, C, decltype(localF), BV> localInterpolateVisitor(basis, coeff, bitVector, localF, localIndexSet);
+    TypeTree::applyToTree(subTree,localInterpolateVisitor);
   }
 }
 
