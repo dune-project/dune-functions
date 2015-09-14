@@ -130,14 +130,13 @@ template <class FEBasis>
 void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
 {
   // Total number of grid vertices
-  auto basisIndexSet = feBasis.indexSet();
-  auto n = basisIndexSet.size();
+  auto n = feBasis.size();
 
   nb.resize(n, n);
 
   // A view on the FE basis on a single element
   typename FEBasis::LocalView localView(feBasis);
-  auto localIndexSet = basisIndexSet.localIndexSet();
+  auto localIndexSet = feBasis.localIndexSet();
 
   // Loop over all leaf elements
   for(const auto& e : elements(feBasis.gridView()))
@@ -191,8 +190,7 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
   occupationPattern.exportIdx(matrix);
 
   // set rhs to correct length -- the total number of basis vectors in the basis
-  auto basisIndexSet = feBasis.indexSet();
-  rhs.resize(basisIndexSet.size());
+  rhs.resize(feBasis.size());
 
   // Set all entries to zero
   matrix = 0;
@@ -200,7 +198,7 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
 
   // A view on the FE basis on a single element
   auto localView = feBasis.localView();
-  auto localIndexSet = basisIndexSet.localIndexSet();
+  auto localIndexSet = feBasis.localIndexSet();
 
   // A loop over all elements of the grid
   for(const auto& e : elements(gridView))
@@ -324,7 +322,7 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////
   //   Choose an initial iterate
   /////////////////////////////////////////////////
-  VectorType x(feBasis.indexSet().size());
+  VectorType x(feBasis.size());
   x = 0;
 
   // Determine Dirichlet dofs
