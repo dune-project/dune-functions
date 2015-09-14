@@ -197,7 +197,6 @@ void interpolate(const B& basis, TP&& treePath, C& coeff, F&& f, BV&& bitVector)
   auto localF = localFunction(gf);
 
   auto basisIndexSet = basis.indexSet();
-  coeff.resize(basisIndexSet.size());
 
   auto localView = basis.localView();
   auto localIndexSet = basisIndexSet.localIndexSet();
