@@ -5,35 +5,13 @@
 
 
 #include <dune/functions/common/concept.hh>
+#include <dune/functions/functionspacebases/concepts.hh>
 
 
 
 
 namespace Dune {
 namespace Functions {
-
-
-
-namespace Concept {
-
-struct HasIndexAcces
-{
-  template<class C, class I>
-  auto require(C&& c, I&& i) -> decltype(
-    c[i]
-  );
-};
-
-struct HasSizeMethod
-{
-  template<class C>
-  auto require(C&& c) -> decltype(
-    c.size()
-  );
-};
-
-} // namespace Dune::Functions::Concept
-
 
 
 

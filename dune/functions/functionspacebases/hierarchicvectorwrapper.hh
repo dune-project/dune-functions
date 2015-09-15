@@ -5,34 +5,11 @@
 
 
 #include <dune/functions/common/concept.hh>
+#include <dune/functions/functionspacebases/concepts.hh>
 
 
 namespace Dune {
 namespace Functions {
-
-
-
-namespace Concept {
-
-struct HasResize
-{
-  template<class C>
-  auto require(C&& c) -> decltype(
-    c.resize(0)
-  );
-};
-
-struct HasConstExprSize
-{
-  template<class T>
-  auto require(T&& t) -> decltype(
-    std::integral_constant<
-      typename std::decay<decltype(t.size())>::type,
-      ((const typename std::decay<T>::type*)(nullptr))->size()>()
-  );
-};
-
-} // namespace Dune::Functions::Concept
 
 
 
