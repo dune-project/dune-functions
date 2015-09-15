@@ -12,7 +12,6 @@
 #include <dune/typetree/leafnode.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
-#include <dune/functions/functionspacebases/tupletreepath.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 
