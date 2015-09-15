@@ -45,7 +45,7 @@ struct HasConstExprSize
 
 
 
-struct HasIndexAcces
+struct HasIndexAccess
 {
   template<class C, class I>
   auto require(C&& c, I&& i) -> decltype(

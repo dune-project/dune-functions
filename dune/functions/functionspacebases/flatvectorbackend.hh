@@ -20,7 +20,7 @@ struct FlatVectorBackend
 {
 
   template<class VV, class Index,
-    typename std::enable_if< Concept::models<Concept::HasIndexAcces, VV, Index>(), int>::type = 0>
+    typename std::enable_if< Concept::models<Concept::HasIndexAccess, VV, Index>(), int>::type = 0>
   static auto getEntry(VV&& v, const Index& i)
     ->decltype(v[i])
   {
@@ -28,7 +28,7 @@ struct FlatVectorBackend
   }
 
   template<class VV, class Index,
-    typename std::enable_if< not Concept::models<Concept::HasIndexAcces, VV, Index>(), int>::type = 0>
+    typename std::enable_if< not Concept::models<Concept::HasIndexAccess, VV, Index>(), int>::type = 0>
   static auto getEntry(VV&& v, const Index& i)
     ->decltype(v)
   {

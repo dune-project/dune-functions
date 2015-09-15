@@ -127,7 +127,7 @@ HierarchicVectorWrapper< V > hierarchicVector(V& v)
 
 
 template<class MultiIndex, class V,
-    typename std::enable_if< Concept::models<Concept::HasIndexAcces, V, MultiIndex>(), int>::type = 0>
+    typename std::enable_if< Concept::models<Concept::HasIndexAccess, V, MultiIndex>(), int>::type = 0>
 V& makeHierarchicVectorForMultiIndex(V& v)
 {
   return v;
@@ -136,7 +136,7 @@ V& makeHierarchicVectorForMultiIndex(V& v)
 
 
 template<class MultiIndex, class V,
-    typename std::enable_if< not Concept::models<Concept::HasIndexAcces, V, MultiIndex>(), int>::type = 0>
+    typename std::enable_if< not Concept::models<Concept::HasIndexAccess, V, MultiIndex>(), int>::type = 0>
 HierarchicVectorWrapper< V > makeHierarchicVectorForMultiIndex(V& v)
 {
   return HierarchicVectorWrapper<V>(v);
