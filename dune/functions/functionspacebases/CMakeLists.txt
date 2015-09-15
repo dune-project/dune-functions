@@ -7,6 +7,7 @@ install(FILES
         defaultglobalindexset.hh
         defaultlocalindexset.hh
         defaultlocalview.hh
+        defaultnodetorangemap.hh
         flatmultiindex.hh
         flatvectorbackend.hh
         gridviewfunctionspacebasis.hh

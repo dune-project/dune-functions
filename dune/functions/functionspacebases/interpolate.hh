@@ -17,6 +17,7 @@
 
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 #include <dune/functions/functionspacebases/flatvectorbackend.hh>
+#include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
 
 #include <dune/typetree/traversal.hh>
 #include <dune/typetree/visitor.hh>
@@ -241,76 +242,6 @@ template <class B, class TP, class C, class F>
 void interpolateTree(const B& basis, TP&& treePath, C& coeff, F&& f)
 {
   interpolateTreeSubset(basis, treePath, coeff, f, makeDefaultNodeToRangeMap(basis, treePath), Imp::AllTrueBitSetVector());
-}
-
-
-
-template<class Tree>
-struct DefaultNodeToRangeMap
-{
-
-  struct Visitor
-    : public TypeTree::TreeVisitor
-    , public TypeTree::DynamicTraversal
-  {
-    Visitor(std::vector<std::size_t>& indices) :
-      indices_(indices),
-      counter_(0)
-    {}
-
-    template<typename Node, typename TreePath>
-    void leaf(Node& node, TreePath treePath)
-    {
-      if (indices_.size() < node.treeIndex()+1)
-        indices_.resize(node.treeIndex()+1);
-      indices_[node.treeIndex()] = counter_;
-      ++counter_;
-    }
-
-    std::vector<std::size_t>& indices_;
-    std::size_t counter_;
-  };
-
-  DefaultNodeToRangeMap(const Tree& tree)
-  {
-    TypeTree::applyToTree(tree, Visitor(indices_));
-  }
-
-  template<class Node, class Range,
-    typename std::enable_if<
-      Concept::models<Concept::HasIndexAcces, Range, decltype(std::declval<Node>().treeIndex())>() and not Tree::isLeaf, int>::type = 0>
-  auto operator()(const Node& node, Range&& y) const
-    -> decltype(y[0])
-  {
-    return y[indices_[node.treeIndex()]];
-  }
-
-  template<class Node, class Range,
-    typename std::enable_if< not Concept::models<Concept::HasIndexAcces, Range, decltype(std::declval<Node>().treeIndex())>() or Tree::isLeaf, int>::type = 0>
-  auto operator()(const Node& node, Range&& y) const
-    -> decltype(std::forward<Range>(y))
-  {
-    return std::forward<Range>(y);
-  }
-
-  std::vector<std::size_t> indices_;
-  std::size_t counter_;
-};
-
-template<class Tree>
-DefaultNodeToRangeMap<Tree> makeDefaultNodeToRangeMap(const Tree& tree)
-{
-  return DefaultNodeToRangeMap<Tree>(tree);
-}
-
-template<class Basis, class TreePath>
-auto makeDefaultNodeToRangeMap(const Basis& basis, TreePath&& treePath)
-  -> decltype(makeDefaultNodeToRangeMap(getChild(basis.localView().tree(), treePath)))
-{
-  auto&& localView = basis.localView();
-  localView.bind(*basis.gridView().template begin<0>());
-  auto&& tree = getChild(localView.tree(), treePath);
-  return makeDefaultNodeToRangeMap(tree);
 }
 
 
