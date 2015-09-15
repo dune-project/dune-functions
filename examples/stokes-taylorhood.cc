@@ -306,15 +306,6 @@ int main (int argc, char *argv[]) try
       velocityDirichletData,
       isBoundary);
 
-  typedef BlockVector<BlockVector<FieldVector<double,dim> > > DimVectorType;
-  DimVectorType lagrangeNodes;
-
-  for(int i=0; i<dim; ++i)
-    interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0, i), lagrangeNodes, [](Coordinate x) {return x;});
-  interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_1), lagrangeNodes, [](Coordinate x) {return x;});
-
-
-
   ////////////////////////////////////////////
   //   Modify Dirichlet rows
   ////////////////////////////////////////////
