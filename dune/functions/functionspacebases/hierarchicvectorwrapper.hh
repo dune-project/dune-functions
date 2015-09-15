@@ -71,7 +71,7 @@ class HierarchicVectorWrapper
 
 public:
 
-  using Vector = typename std::decay<V>::type;
+  using Vector = V;
 
   HierarchicVectorWrapper(Vector& vector) :
     vector_(&vector)
@@ -119,15 +119,25 @@ private:
 
 
 template<class V>
-HierarchicVectorWrapper<const V> hierarchicVector(const V& v)
+HierarchicVectorWrapper< V > hierarchicVector(V& v)
 {
-  return HierarchicVectorWrapper<const V>(v);
+  return HierarchicVectorWrapper<V>(v);
 }
 
 
 
-template<class V>
-HierarchicVectorWrapper<V> hierarchicVector(V& v)
+template<class MultiIndex, class V,
+    typename std::enable_if< Concept::models<Concept::HasIndexAcces, V, MultiIndex>(), int>::type = 0>
+V& makeHierarchicVectorForMultiIndex(V& v)
+{
+  return v;
+}
+
+
+
+template<class MultiIndex, class V,
+    typename std::enable_if< not Concept::models<Concept::HasIndexAcces, V, MultiIndex>(), int>::type = 0>
+HierarchicVectorWrapper< V > makeHierarchicVectorForMultiIndex(V& v)
 {
   return HierarchicVectorWrapper<V>(v);
 }
