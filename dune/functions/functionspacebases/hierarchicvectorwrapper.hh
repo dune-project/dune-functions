@@ -22,6 +22,16 @@ struct HasResize
   );
 };
 
+struct HasConstExprSize
+{
+  template<class T>
+  auto require(T&& t) -> decltype(
+    std::integral_constant<
+      typename std::decay<decltype(t.size())>::type,
+      ((const typename std::decay<T>::type*)(nullptr))->size()>()
+  );
+};
+
 } // namespace Dune::Functions::Concept
 
 
@@ -74,6 +84,14 @@ class HierarchicVectorWrapper
     }
   };
 
+  template<class T,
+    typename std::enable_if< Concept::models<Concept::HasConstExprSize, T>(), int>::type = 0>
+  struct ConstExprSize
+  {
+    static const int value = ((const typename std::decay<T>::type*)(nullptr))->size();
+  };
+
+
 public:
 
   using Vector = typename std::decay<V>::type;
@@ -90,19 +108,20 @@ public:
     resizeHelper(*vector_, sizeProvider, prefix);
   }
 
-
-  template<class MultiIndex>
+  template<class MultiIndex,
+    typename std::enable_if< Concept::models<Concept::HasConstExprSize, MultiIndex>(), int>::type = 0>
   auto operator[](MultiIndex&& index) const
-      ->decltype(GetEntryHelper<0, std::tuple_size<typename std::decay<MultiIndex>::type>::value>::getEntry(std::declval<Vector>(), index))
+      ->decltype(GetEntryHelper<0, ConstExprSize<MultiIndex>::value>::getEntry(std::declval<Vector>(), index))
   {
-      return GetEntryHelper<0, std::tuple_size<typename std::decay<MultiIndex>::type>::value>::getEntry(*vector_, index);
+    return GetEntryHelper<0, ConstExprSize<MultiIndex>::value>::getEntry(*vector_, index);
   }
 
-  template<class MultiIndex>
+  template<class MultiIndex,
+    typename std::enable_if< Concept::models<Concept::HasConstExprSize, MultiIndex>(), int>::type = 0>
   auto operator[](MultiIndex&& index)
-      ->decltype(GetEntryHelper<0, std::tuple_size<typename std::decay<MultiIndex>::type>::value>::getEntry(std::declval<Vector>(), index))
+      ->decltype(GetEntryHelper<0, ConstExprSize<MultiIndex>::value>::getEntry(std::declval<Vector>(), index))
   {
-    return GetEntryHelper<0, std::tuple_size<typename std::decay<MultiIndex>::type>::value>::getEntry(*vector_, index);
+    return GetEntryHelper<0, ConstExprSize<MultiIndex>::value>::getEntry(*vector_, index);
   }
 
   const Vector& vector() const
