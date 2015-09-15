@@ -150,8 +150,8 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
 
       for (size_t j=0; j<localView.tree().size(); j++) {
 
-        auto iIdx = localIndexSet.index(i)[0];
-        auto jIdx = localIndexSet.index(j)[0];
+        auto iIdx = localIndexSet.index(i);
+        auto jIdx = localIndexSet.index(j);
 
         // Add a nonzero entry to the matrix
         nb.add(iIdx, jIdx);
@@ -217,12 +217,12 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
     for (size_t i=0; i<elementMatrix.N(); i++) {
 
       // The global index of the i-th local degree of freedom of the element 'e'
-      auto row = localIndexSet.index(i)[0];
+      auto row = localIndexSet.index(i);
 
       for (size_t j=0; j<elementMatrix.M(); j++ ) {
 
         // The global index of the j-th local degree of freedom of the element 'e'
-        auto col = localIndexSet.index(j)[0];
+        auto col = localIndexSet.index(j);
         matrix[row][col] += elementMatrix[i][j];
 
       }
@@ -237,7 +237,7 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
     for (size_t i=0; i<localRhs.size(); i++) {
 
       // The global index of the i-th vertex of the element 'e'
-      auto row = localIndexSet.index(i)[0];
+      auto row = localIndexSet.index(i);
       rhs[row] += localRhs[i];
 
     }
