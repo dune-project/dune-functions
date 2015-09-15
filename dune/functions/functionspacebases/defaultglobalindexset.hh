@@ -18,7 +18,7 @@ namespace Functions {
 template<class LV, class NF>
 class DefaultGlobalIndexSet
 {
-  using RootTreePath = std::tuple<>;
+  using RootTreePath = TypeTree::HybridTreePath<>;
 
 public:
   using LocalView = LV;

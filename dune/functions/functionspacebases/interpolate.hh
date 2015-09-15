@@ -9,6 +9,8 @@
 #include <dune/common/exceptions.hh>
 #include <dune/common/bitsetvector.hh>
 
+#include <dune/typetree/childextraction.hh>
+
 #include <dune/localfunctions/common/virtualinterface.hh>
 
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
@@ -186,7 +188,7 @@ void interpolateTreeSubset(const B& basis, TP&& treePath, C&& coeff, F&& f, NTRE
   using GridView = typename B::GridView;
   using Element = typename GridView::template Codim<0>::Entity;
 
-  using Tree = typename std::decay<decltype(getChild(basis.localView().tree(), treePath))>::type;
+  using Tree = typename std::decay<decltype(TypeTree::child(basis.localView().tree(),treePath))>::type;
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
@@ -217,7 +219,7 @@ void interpolateTreeSubset(const B& basis, TP&& treePath, C&& coeff, F&& f, NTRE
     localIndexSet.bind(localView);
     localF.bind(e);
 
-    auto&& subTree = getChild(localView.tree(), treePath);
+    auto&& subTree = TypeTree::child(localView.tree(),treePath);
 
     Imp::LocalInterpolateVisitor<B, Tree, NTRE, decltype(vector), decltype(localF), decltype(bitVector)> localInterpolateVisitor(basis, vector, bitVector, localF, localIndexSet, nodeToRangeEntry);
     TypeTree::applyToTree(subTree,localInterpolateVisitor);
@@ -290,7 +292,7 @@ void interpolate(const B& basis, TP&& treePath, C&& coeff, F&& f, const BV& bitV
 template <class B, class C, class F>
 void interpolate(const B& basis, C&& coeff, F&& f)
 {
-  interpolate (basis, std::make_tuple(), coeff, f, Imp::AllTrueBitSetVector());
+  interpolate (basis, Dune::TypeTree::hybridTreePath(), coeff, f, Imp::AllTrueBitSetVector());
 }
 
 /**

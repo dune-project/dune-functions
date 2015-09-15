@@ -17,7 +17,7 @@ namespace Functions {
 template<class GB>
 class DefaultLocalView
 {
-  using RootTreePath = std::tuple<>;
+  using RootTreePath = TypeTree::HybridTreePath<>;
 
 public:
 

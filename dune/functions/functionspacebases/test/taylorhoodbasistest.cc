@@ -80,9 +80,10 @@ int main (int argc, char* argv[]) try
     }
 
     // get access to the finite element
+    using namespace Dune::TypeTree::Indices;
     typedef Basis::LocalView::Tree Tree;
-    auto& p_leaf = localView.tree().child<1>();
-    auto& v_leaf = localView.tree().child<0>().child(1);
+    auto& p_leaf = TypeTree::child(localView.tree(),_1);
+    auto& v_leaf = TypeTree::child(localView.tree(),_0,1);
     auto& localFiniteElement = p_leaf.finiteElement();
 
     // A quadrature rule

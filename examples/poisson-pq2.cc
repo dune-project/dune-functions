@@ -263,7 +263,7 @@ void boundaryTreatment (const FEBasis& feBasis,
 
   // Interpolating the indicator function of the boundary will
   // mark all boundary dofs.
-  interpolate(feBasis, std::make_tuple(), dirichletNodes,
+  interpolate(feBasis, Dune::TypeTree::hybridTreePath(), dirichletNodes,
       [&bbox](Coordinate x){
         bool isBoundary = false;
         for (int j=0; j<x.size(); j++)
@@ -336,7 +336,7 @@ int main (int argc, char *argv[]) try
   auto dirichletValueFunction = [pi](FieldVector<double,dim> x){ return std::sin(2*pi*x[0]); };
 
   // Interpolate dirichlet values at the boundary nodes
-  interpolate(feBasis, std::make_tuple(), rhs, dirichletValueFunction, dirichletNodes);
+  interpolate(feBasis, Dune::TypeTree::hybridTreePath(), rhs, dirichletValueFunction, dirichletNodes);
 
   ////////////////////////////////////////////
   //   Modify Dirichlet rows

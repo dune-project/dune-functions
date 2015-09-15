@@ -22,7 +22,7 @@ class DefaultGlobalBasis
                                     DefaultGlobalIndexSet<DefaultLocalView<DefaultGlobalBasis<NF>>, NF>,
                                     typename NF::MultiIndex >
 {
-  using RootTreePath = std::tuple<>;
+  using RootTreePath = TypeTree::HybridTreePath<>;
 
 public:
 

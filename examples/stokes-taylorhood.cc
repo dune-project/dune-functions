@@ -44,8 +44,9 @@ void getLocalMatrix(const LocalView& localView,
   // Get set of shape functions for this element
 //  const auto&& velocityLocalFiniteElement = localView.tree().template child<0>().child(0).finiteElement();
 //  const auto&& pressureLocalFiniteElement = localView.tree().template child<1>().finiteElement();
-  auto&& velocityLocalFiniteElement = localView.tree().template child<0>().child(0).finiteElement();
-  auto&& pressureLocalFiniteElement = localView.tree().template child<1>().finiteElement();
+  using namespace Dune::TypeTree::Indices;
+  auto& velocityLocalFiniteElement = localView.tree().child(_0,0).finiteElement();
+  auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();
 
   // Set all matrix entries to zero
   elementMatrix.setSize(dim*velocityLocalFiniteElement.size() + pressureLocalFiniteElement.size(),
@@ -86,8 +87,8 @@ void getLocalMatrix(const LocalView& localView,
       for (size_t j=0; j<velocityLocalFiniteElement.size(); j++ )
         for (size_t k=0; k<dim; k++)
         {
-          size_t row = localView.tree().template child<0>().child(k).localIndex(i);
-          size_t col = localView.tree().template child<0>().child(k).localIndex(j);
+          size_t row = localView.tree().child(_0,k).localIndex(i);
+          size_t col = localView.tree().child(_0,k).localIndex(j);
           elementMatrix[row][col] += ( gradients[i] * gradients[j] ) * quad[pt].weight() * integrationElement;
         }
 
@@ -104,8 +105,8 @@ void getLocalMatrix(const LocalView& localView,
       for (size_t j=0; j<pressureLocalFiniteElement.size(); j++ )
         for (size_t k=0; k<dim; k++)
         {
-          size_t vIndex = localView.tree().template child<0>().child(k).localIndex(i);
-          size_t pIndex = localView.tree().template child<1>().localIndex(j);
+          size_t vIndex = localView.tree().child(_0,k).localIndex(i);
+          size_t pIndex = localView.tree().child(_1).localIndex(j);
 
           elementMatrix[vIndex][pIndex] += gradients[i][k] * pressureValues[j] * quad[pt].weight() * integrationElement;
           elementMatrix[pIndex][vIndex] += gradients[i][k] * pressureValues[j] * quad[pt].weight() * integrationElement;
@@ -286,7 +287,7 @@ int main (int argc, char *argv[]) try
   // Set Dirichlet values
   // Only velocity components have Dirichlet boundary values
   using Coordinate = GridView::Codim<0> ::Geometry::GlobalCoordinate;
-  using namespace Dune::Functions::StaticIndices;
+  using namespace Dune::TypeTree::Indices;
 
   BitVectorType isBoundary;
 
@@ -298,11 +299,11 @@ int main (int argc, char *argv[]) try
   };
 
   for(int i=0; i<dim; ++i)
-    interpolate(taylorHoodBasis, Dune::Functions::makeTreePath(_0, i), isBoundary, boundaryIndicator);
+    interpolate(taylorHoodBasis, Dune::TypeTree::hybridTreePath(_0, i), isBoundary, boundaryIndicator);
 
   auto&& velocityDirichletData = [](Coordinate x) { return VelocityRange{{0.0, double(x[0] < 1e-8)}};};
 
-  interpolateTreeSubset(taylorHoodBasis, Dune::Functions::makeTreePath(_0), rhs,
+  interpolateTreeSubset(taylorHoodBasis, Dune::TypeTree::hybridTreePath(_0), rhs,
       velocityDirichletData,
       isBoundary);
 

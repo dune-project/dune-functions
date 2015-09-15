@@ -102,11 +102,11 @@ DefaultNodeToRangeMap<Tree> makeDefaultNodeToRangeMap(const Tree& tree)
 
 template<class Basis, class TreePath>
 auto makeDefaultNodeToRangeMap(const Basis& basis, TreePath&& treePath)
-  -> decltype(makeDefaultNodeToRangeMap(getChild(basis.localView().tree(), treePath)))
+  -> decltype(makeDefaultNodeToRangeMap(TypeTree::child(basis.localView().tree(),treePath)))
 {
   auto&& localView = basis.localView();
   localView.bind(*basis.gridView().template begin<0>());
-  auto&& tree = getChild(localView.tree(), treePath);
+  auto&& tree = TypeTree::child(localView.tree(),treePath);
   return makeDefaultNodeToRangeMap(tree);
 }
 

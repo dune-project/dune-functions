@@ -153,9 +153,9 @@ protected:
 
 template<typename GV, class ST, typename TP>
 class TaylorHoodVelocityTree :
-    public PowerBasisNode<ST, TP ,PQkNode<GV,2, ST, decltype(extendTreePath(TP(), int())) >, GV::dimension>
+    public PowerBasisNode<ST, TP ,PQkNode<GV,2, ST, decltype(TypeTree::push_back(TP(), 0)) >, GV::dimension>
 {
-  using ComponentTreePath = decltype(extendTreePath(TP(), int()));
+  using ComponentTreePath = decltype(TypeTree::push_back(TP(), 0));
 
   using PQ2Node = PQkNode<GV,2, ST, ComponentTreePath >;
   using Base = PowerBasisNode<ST, TP ,PQ2Node, GV::dimension>;
@@ -165,20 +165,19 @@ public:
     Base(tp)
   {
     for(int i=0; i<GV::dimension; ++i)
-      this->setChild(i, std::make_shared<PQ2Node>(extendTreePath(tp, i)));
+      this->setChild(i, std::make_shared<PQ2Node>(TypeTree::push_back(tp, i)));
   }
 };
 
 template<typename GV, class ST, typename TP>
 class TaylorHoodBasisTree :
     public CompositeBasisNode<ST, TP,
-      TaylorHoodVelocityTree<GV, ST, decltype(extendTreePath<0>(TP()))>,
-      PQkNode<GV,1,ST, decltype(extendTreePath<1>(TP()))>
+      TaylorHoodVelocityTree<GV, ST, decltype(TypeTree::push_back<0>(TP()))>,
+      PQkNode<GV,1,ST, decltype(TypeTree::push_back<1ul>(TP()))>
     >
 {
-  using VelocityTreePath = decltype(extendTreePath<0>(TP()));
-  using PressureTreePath = decltype(extendTreePath<1>(TP()));
-
+  using VelocityTreePath = decltype(TypeTree::push_back<0ul>(TP()));
+  using PressureTreePath = decltype(TypeTree::push_back<1ul>(TP()));
 
   using VelocityNode=TaylorHoodVelocityTree<GV, ST, VelocityTreePath>;
   using PressureNode=PQkNode<GV,1,ST, PressureTreePath>;
@@ -189,10 +188,9 @@ public:
   TaylorHoodBasisTree(const TP& tp):
     Base(tp)
   {
-    using namespace StaticIndices;
-
-    this->template setChild<0>(std::make_shared<VelocityNode>(extendTreePath(tp, _0)));
-    this->template setChild<1>(std::make_shared<PressureNode>(extendTreePath(tp, _1)));
+    using namespace Dune::TypeTree::Indices;
+    this->template setChild<0>(std::make_shared<VelocityNode>(push_back(tp, _0)));
+    this->template setChild<1>(std::make_shared<PressureNode>(push_back(tp, _1)));
   }
 };
 
@@ -214,8 +212,8 @@ public:
 
   using Node = typename NodeFactory::template Node<TP>;
 
-  using PQ1TreePath = typename ChildType<Node,1>::TreePath;
-  using PQ2TreePath = typename ChildType<Node,0,0>::TreePath;
+  using PQ1TreePath = typename TypeTree::Child<Node,1>::TreePath;
+  using PQ2TreePath = typename TypeTree::Child<Node,0,0>::TreePath;
 
   using PQ1NodeIndexSet = typename NodeFactory::PQ1Factory::template IndexSet<PQ1TreePath>;
   using PQ2NodeIndexSet = typename NodeFactory::PQ2Factory::template IndexSet<PQ2TreePath>;
@@ -228,10 +226,10 @@ public:
 
   void bind(const Node& node)
   {
-    using namespace StaticIndices;
+    using namespace TypeTree::Indices;
     node_ = &node;
-    pq1NodeIndexSet_.bind(getChild(node, _1));
-    pq2NodeIndexSet_.bind(getChild(node, _0, 0));
+    pq1NodeIndexSet_.bind(node.child(_1));
+    pq2NodeIndexSet_.bind(node.child(_0, 0));
   }
 
   void unbind()
