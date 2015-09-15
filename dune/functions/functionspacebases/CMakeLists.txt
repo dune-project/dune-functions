@@ -6,6 +6,7 @@ install(FILES
         defaultglobalindexset.hh
         defaultlocalindexset.hh
         defaultlocalview.hh
+        flatmultiindex.hh
         flatvectorbackend.hh
         gridviewfunctionspacebasis.hh
         hierarchicvectorbackend.hh
