@@ -16,6 +16,7 @@
 #include <dune/functions/common/functionconcepts.hh>
 
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+#include <dune/functions/functionspacebases/sizeinfo.hh>
 #include <dune/functions/functionspacebases/flatvectorbackend.hh>
 #include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
 
@@ -193,9 +194,9 @@ void interpolateTreeSubset(const B& basis, TP&& treePath, C&& coeff, F&& f, NTRE
 
   auto&& gridView = basis.gridView();
 
-  auto bitVector = hierarchicVector(bv);
-  auto vector = hierarchicVector(coeff);
-  vector.resize(basis);
+  auto&& bitVector = makeHierarchicVectorForMultiIndex<typename B::MultiIndex>(bv);
+  auto&& vector = makeHierarchicVectorForMultiIndex<typename B::MultiIndex>(coeff);
+  vector.resize(sizeInfo(basis));
 
 
 
