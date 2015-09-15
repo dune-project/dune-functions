@@ -9,7 +9,6 @@ install(FILES
         flatmultiindex.hh
         flatvectorbackend.hh
         gridviewfunctionspacebasis.hh
-        hierarchicvectorbackend.hh
         hierarchicvectorwrapper.hh
         interpolate.hh
         lagrangedgbasis.hh
