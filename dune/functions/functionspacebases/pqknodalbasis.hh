@@ -15,6 +15,7 @@
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/tupletreepath.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+#include <dune/functions/functionspacebases/flatmultiindex.hh>
 
 
 namespace Dune {
@@ -421,7 +422,7 @@ protected:
  * \tparam k The order of the basis
  */
 template<typename GV, int k, class ST = std::size_t>
-using PQkNodalBasis = DefaultGlobalBasis<PQkNodeFactory<GV, k, std::array<ST, 1>, ST> >;
+using PQkNodalBasis = DefaultGlobalBasis<PQkNodeFactory<GV, k, FlatMultiIndex<ST>, ST> >;
 
 
 
