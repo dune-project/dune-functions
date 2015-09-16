@@ -21,7 +21,7 @@
 
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
-#include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
+#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 using namespace Dune;
@@ -384,7 +384,7 @@ int main (int argc, char *argv[]) try
   //  Make a discrete function from the FE basis and the coefficient vector
   ////////////////////////////////////////////////////////////////////////////
 
-  Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> xFunction(feBasis,x);
+  auto xFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(feBasis, Dune::TypeTree::hybridTreePath(), x);
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
