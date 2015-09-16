@@ -22,9 +22,8 @@
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
-//#include <dune/functions/functionspacebases/hierarchicvectorbackend.hh>
 
-#include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
+#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 using namespace Dune;
@@ -367,32 +366,19 @@ int main (int argc, char *argv[]) try
   //  Make a discrete function from the FE basis and the coefficient vector
   ////////////////////////////////////////////////////////////////////////////
 
-  typedef BlockVector<FieldVector<double,dim> > VelocityVectorType;
-  typedef BlockVector<FieldVector<double,1> >   PressureVectorType;
+  using VelocityRange = Dune::FieldVector<double,dim>;
+  using PressureRange = double;
 
-  VelocityVectorType velocity(velocityBasis.size());
-  for (size_t i=0; i<velocity.size(); i++)
-    for (int j=0; j<dim; j++)
-      velocity[i][j] = x[0][dim*i+j];
-
-  PressureVectorType pressure(pressureBasis.size());
-  for (size_t i=0; i<pressure.size(); i++)
-    pressure[i] = x[1][i];
-
-
-  Dune::Functions::DiscreteScalarGlobalBasisFunction<VelocityBasis,VelocityVectorType> velocityFunction(velocityBasis,velocity);
-  auto localVelocityFunction = localFunction(velocityFunction);
-
-  Dune::Functions::DiscreteScalarGlobalBasisFunction<PressureBasis,PressureVectorType> pressureFunction(pressureBasis,pressure);
-  auto localPressureFunction = localFunction(pressureFunction);
+  auto velocityFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(taylorHoodBasis, Dune::TypeTree::hybridTreePath(_0), Dune::Functions::hierarchicVector(x));
+  auto pressureFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<PressureRange>(taylorHoodBasis, Dune::TypeTree::hybridTreePath(_1), Dune::Functions::hierarchicVector(x));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
   //  We need to subsample, because VTK cannot natively display real second-order functions
   //////////////////////////////////////////////////////////////////////////////////////////////
   SubsamplingVTKWriter<GridView> vtkWriter(gridView,2);
-  vtkWriter.addVertexData(localVelocityFunction, VTK::FieldInfo("velocity", VTK::FieldInfo::Type::vector, dim));
-  vtkWriter.addVertexData(localPressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
+  vtkWriter.addVertexData(velocityFunction, VTK::FieldInfo("velocity", VTK::FieldInfo::Type::vector, dim));
+  vtkWriter.addVertexData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.write("functions-stokes");
 
  }
