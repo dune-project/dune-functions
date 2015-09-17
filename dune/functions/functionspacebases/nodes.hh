@@ -52,8 +52,6 @@ namespace Dune {
         void pre(Node& node, TreePath treePath)
         {
           node.setOffset(offset_);
-          node.setTreeIndex(treeIndex_);
-          ++treeIndex_;
         }
 
         template<typename Node, typename TreePath>
@@ -68,20 +66,43 @@ namespace Dune {
           node.setOffset(offset_);
           node.bind(entity_);
           offset_ += node.size();
-          node.setTreeIndex(treeIndex_);
-          ++treeIndex_;
         }
 
-        BindVisitor(const Entity& entity, size_type offset = 0, size_type treeIndex = 0)
+        BindVisitor(const Entity& entity, size_type offset = 0)
           : entity_(entity)
           , offset_(offset)
-          , treeIndex_(treeIndex)
         {}
 
         const Entity& entity_;
         size_type offset_;
-        size_type treeIndex_;
 
+      };
+
+
+      template<typename size_type>
+      struct InitializeTreeVisitor :
+        public TypeTree::TreeVisitor,
+        public TypeTree::DynamicTraversal
+      {
+        template<typename Node, typename TreePath>
+        void pre(Node& node, TreePath treePath)
+        {
+          node.setTreeIndex(treeIndex_);
+          ++treeIndex_;
+        }
+
+        template<typename Node, typename TreePath>
+        void leaf(Node& node, TreePath treePath)
+        {
+          node.setTreeIndex(treeIndex_);
+          ++treeIndex_;
+        }
+
+        InitializeTreeVisitor(size_type treeIndexOffset = 0) :
+          treeIndex_(treeIndexOffset)
+        {}
+
+        size_type treeIndex_;
       };
 
     }
@@ -97,6 +118,9 @@ namespace Dune {
 
       template<typename,typename>
       friend struct BindVisitor;
+
+      template<typename>
+      friend struct InitializeTreeVisitor;
 
     public:
 
@@ -154,6 +178,9 @@ namespace Dune {
 
       template<typename,typename>
       friend struct BindVisitor;
+
+      template<typename>
+      friend struct InitializeTreeVisitor;
 
     public:
 
@@ -281,6 +308,13 @@ namespace Dune {
     void bindTree(Tree& tree, const Entity& entity, size_type offset = 0)
     {
       BindVisitor<Entity,size_type> visitor(entity,offset);
+      TypeTree::applyToTree(tree,visitor);
+    }
+
+    template<typename Tree, typename size_type = std::size_t>
+    void initilizeTree(Tree& tree, size_type treeIndexOffset = 0)
+    {
+      InitializeTreeVisitor<size_type> visitor(treeIndexOffset);
       TypeTree::applyToTree(tree,visitor);
     }
 

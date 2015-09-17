@@ -43,7 +43,9 @@ public:
   DefaultLocalView(const GlobalBasis& globalBasis) :
     globalBasis_(&globalBasis),
     tree_(globalBasis_->nodeFactory().node(RootTreePath()))
-  {}
+  {
+    initilizeTree(tree_);
+  }
 
   /** \brief Bind the view to a grid element
    *
