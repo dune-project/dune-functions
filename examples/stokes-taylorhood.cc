@@ -290,7 +290,6 @@ int main (int argc, char *argv[]) try
   using namespace Dune::TypeTree::Indices;
 
   BitVectorType isBoundary;
-  isBoundary = 0;
 
   auto boundaryIndicator = [&l](Coordinate x) {
     bool isBoundary = false;
