@@ -62,10 +62,11 @@ class HierarchicVectorWrapper
   };
 
   template<class T,
-    typename std::enable_if< Concept::models<Concept::HasConstExprSize, T>(), int>::type = 0>
-  struct ConstExprSize
+           typename std::enable_if< Concept::models<Concept::HasConstExprSize, T>(), int>::type = 0>
+  static constexpr std::size_t constexpr_size()
   {
-    static const int value = ((const typename std::decay<T>::type*)(nullptr))->size();
+    using type = typename std::decay<T>::type;
+    return type().size();
   };
 
 
@@ -86,19 +87,19 @@ public:
   }
 
   template<class MultiIndex,
-    typename std::enable_if< Concept::models<Concept::HasConstExprSize, MultiIndex>(), int>::type = 0>
+           typename std::enable_if< Concept::models<Concept::HasConstExprSize, MultiIndex>(), int>::type = 0>
   auto operator[](MultiIndex&& index) const
-      ->decltype(GetEntryHelper<0, ConstExprSize<MultiIndex>::value>::getEntry(std::declval<Vector>(), index))
+      ->decltype(GetEntryHelper<0, constexpr_size<MultiIndex>()>::getEntry(std::declval<Vector>(), index))
   {
-    return GetEntryHelper<0, ConstExprSize<MultiIndex>::value>::getEntry(*vector_, index);
+    return GetEntryHelper<0, constexpr_size<MultiIndex>()>::getEntry(*vector_, index);
   }
 
   template<class MultiIndex,
-    typename std::enable_if< Concept::models<Concept::HasConstExprSize, MultiIndex>(), int>::type = 0>
+           typename std::enable_if< Concept::models<Concept::HasConstExprSize, MultiIndex>(), int>::type = 0>
   auto operator[](MultiIndex&& index)
-      ->decltype(GetEntryHelper<0, ConstExprSize<MultiIndex>::value>::getEntry(std::declval<Vector>(), index))
+      ->decltype(GetEntryHelper<0, constexpr_size<MultiIndex>()>::getEntry(std::declval<Vector>(), index))
   {
-    return GetEntryHelper<0, ConstExprSize<MultiIndex>::value>::getEntry(*vector_, index);
+    return GetEntryHelper<0, constexpr_size<MultiIndex>()>::getEntry(*vector_, index);
   }
 
   const Vector& vector() const

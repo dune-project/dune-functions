@@ -39,7 +39,7 @@ struct HasConstExprSize
   auto require(T&& t) -> decltype(
     std::integral_constant<
       typename std::decay<decltype(t.size())>::type,
-      ((const typename std::decay<T>::type*)(nullptr))->size()>()
+      (typename std::decay<T>::type()).size()>()
   );
 };
 
