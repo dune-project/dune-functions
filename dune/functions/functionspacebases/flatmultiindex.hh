@@ -27,7 +27,7 @@ public:
    * \brief Forward constructor arguments to std::array
    */
   template<class... T>
-  FlatMultiIndex(T&&... t) :
+  constexpr FlatMultiIndex(T&&... t) :
     std::array<size_type,1>(t...)
   {}
 
