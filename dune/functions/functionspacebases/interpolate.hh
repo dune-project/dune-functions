@@ -113,9 +113,10 @@ public:
     // of a separate helper class.
     std::size_t j=0;
     auto localFj = [&](const LocalDomain& x){
-      auto&& result = nodeToRangeEntry_(node, localF_(x));
-      using FunctionRange = typename std::decay<decltype(result)>::type;
-      return FlatVectorBackend<FunctionRange>::getEntry(result, j);
+      const auto& y = localF_(x);
+      const auto& y_node = nodeToRangeEntry_(node, y);
+      using FunctionRange = typename std::decay<decltype(y_node)>::type;
+      return FlatVectorBackend<FunctionRange>::getEntry(y_node, j);
     };
 
     using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<FiniteElementRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
