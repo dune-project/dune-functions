@@ -294,7 +294,7 @@ int main (int argc, char *argv[]) try
 
   auto boundaryIndicator = [&l](Coordinate x) {
     bool isBoundary = false;
-    for (int j=0; j<x.size(); j++)
+    for (std::size_t j=0; j<x.size(); j++)
       isBoundary = isBoundary || x[j] < 1e-8 || x[j] > l[j] - 1e-8;
     return isBoundary;
   };

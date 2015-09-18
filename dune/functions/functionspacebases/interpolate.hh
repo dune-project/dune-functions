@@ -111,7 +111,7 @@ public:
     // the selected component later on by modifying j. Maybe we
     // should avoid this naughty statefull lambda hack in favor
     // of a separate helper class.
-    int j=0;
+    std::size_t j=0;
     auto localFj = [&](const LocalDomain& x){
       auto&& result = nodeToRangeEntry_(node, localF_(x));
       using FunctionRange = typename std::decay<decltype(result)>::type;

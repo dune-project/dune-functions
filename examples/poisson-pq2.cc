@@ -266,7 +266,7 @@ void boundaryTreatment (const FEBasis& feBasis,
   interpolate(feBasis, Dune::TypeTree::hybridTreePath(), dirichletNodes,
       [&bbox](Coordinate x){
         bool isBoundary = false;
-        for (int j=0; j<x.size(); j++)
+        for (std::size_t j=0; j<x.size(); j++)
           isBoundary = isBoundary || x[j] < 1e-8 || x[j] > bbox[j]-1e-8;
         return isBoundary;
       });
