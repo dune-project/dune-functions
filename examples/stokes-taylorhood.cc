@@ -257,7 +257,8 @@ int main (int argc, char *argv[]) try
 
   typedef BlockVector<BlockVector<FieldVector<double,1> > > VectorType;
   typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
-  typedef std::vector<std::vector<char> > BitVectorType;
+//  typedef std::vector<std::vector<char> > BitVectorType;
+  typedef BlockVector<BlockVector<FieldVector<char,1> > > BitVectorType;
   typedef Dune::Functions::HierarchicVectorWrapper<VectorType> HierarchicVectorView;
 
   typedef Dune::FieldVector<double,dim> VelocityRange;
@@ -289,6 +290,7 @@ int main (int argc, char *argv[]) try
   using namespace Dune::TypeTree::Indices;
 
   BitVectorType isBoundary;
+  isBoundary = 0;
 
   auto boundaryIndicator = [&l](Coordinate x) {
     bool isBoundary = false;
