@@ -7,6 +7,7 @@
 #include <dune/functions/common/concept.hh>
 #include <dune/functions/common/signature.hh>
 #include <dune/functions/gridfunctions/localderivativetraits.hh>
+#include <dune/functions/gridfunctions/gridviewentityset.hh>
 
 namespace Dune {
 namespace Functions {
@@ -162,6 +163,27 @@ struct GridFunction<Range(Domain), EntitySet, DerivativeTraits> :
 template<class F, class Signature, class EntitySet, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 static constexpr bool isGridFunction()
 { return Concept::models<Concept::GridFunction<Signature, EntitySet, DerivativeTraits>, F>(); }
+
+
+
+// GridViewFunction concept ##############################################
+template<class Signature, class GridView, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+struct GridViewFunction;
+
+template<class Range, class Domain, class GridView, template<class> class DerivativeTraits>
+struct GridViewFunction<Range(Domain), GridView, DerivativeTraits> :
+    Refines<Dune::Functions::Concept::GridFunction<Range(Domain), GridViewEntitySet<GridView,0>, DerivativeTraits>>
+{
+  template<class F>
+  auto require(F&& f) -> decltype(
+    0 // We don't need to check any further expressions, because a GridViewFunction is just a GridFunction with a special EntitySet
+  );
+};
+
+/// Check if F models the GridViewFunction concept with given signature
+template<class F, class Signature, class GridView, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+static constexpr bool isGridViewFunction()
+{ return Concept::models<Concept::GridViewFunction<Signature, GridView, DerivativeTraits>, F>(); }
 
 
 
