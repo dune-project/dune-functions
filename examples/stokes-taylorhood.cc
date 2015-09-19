@@ -19,7 +19,6 @@
 #include <dune/istl/preconditioners.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 
@@ -276,13 +275,6 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   assembleStokesProblem(taylorHoodBasis, stiffnessMatrix);
-
-  // Determine Dirichlet dofs
-  typedef Functions::PQkNodalBasis<GridView,2> VelocityBasis;
-  VelocityBasis velocityBasis(gridView);
-
-  typedef Functions::PQkNodalBasis<GridView,1> PressureBasis;
-  PressureBasis pressureBasis(gridView);
 
   // Set Dirichlet values
   // Only velocity components have Dirichlet boundary values
