@@ -1,5 +1,5 @@
 # tests that should build and run successfully
-set(TESTS differentiablefunctiontest functionfromcallabletest)
+set(TESTS differentiablefunctiontest)
 
 set(TESTPROGS ${TESTS})
 
@@ -11,10 +11,6 @@ add_dependencies(${_test_target} ${TESTPROGS})
 add_executable("differentiablefunctiontest"
                differentiablefunctiontest.cc)
 target_link_libraries("differentiablefunctiontest" "dunecommon")
-
-add_executable("functionfromcallabletest"
-               functionfromcallabletest.cc)
-target_link_libraries("functionfromcallabletest" "dunecommon")
 
 # Add the tests to be executed
 foreach(_TEST ${TESTPROGS})
