@@ -40,8 +40,6 @@ void getLocalMatrix(const LocalView& localView,
   auto geometry = element.geometry();
 
   // Get set of shape functions for this element
-//  const auto&& velocityLocalFiniteElement = localView.tree().template child<0>().child(0).finiteElement();
-//  const auto&& pressureLocalFiniteElement = localView.tree().template child<1>().finiteElement();
   using namespace Dune::TypeTree::Indices;
   auto& velocityLocalFiniteElement = localView.tree().child(_0,0).finiteElement();
   auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();
@@ -122,17 +120,14 @@ void getOccupationPattern(const Basis& basis,
 {
   enum {dim = Basis::GridView::dimension};
 
-  // Total number of grid vertices
-  auto basisIndexSet = basis.indexSet();
-
+  // Set sizes of the 2x2 submatrices
   for (size_t i=0; i<2; i++)
     for (size_t j=0; j<2; j++)
-      nb[i][j].resize(basisIndexSet.size({i}), basisIndexSet.size({j}));
+      nb[i][j].resize(basis.size({i}), basis.size({j}));
 
   // A view on the FE basis on a single element
-//  typename Basis::LocalView localView(&basis);
   auto localView = basis.localView();
-  auto localIndexSet = basisIndexSet.localIndexSet();
+  auto localIndexSet = basis.localIndexSet();
 
   // Loop over all leaf elements
   for(const auto& e : elements(basis.gridView()))
@@ -168,10 +163,6 @@ template <class Basis>
 void assembleStokesProblem(const Basis& basis,
                            Matrix<BCRSMatrix<FieldMatrix<double,1,1> > >& matrix)
 {
-  // Get the grid view from the finite element basis
-  typedef typename Basis::GridView GridView;
-  GridView gridView = basis.gridView();
-
   // MatrixIndexSets store the occupation pattern of a sparse matrix.
   // They are not particularly efficient, but simple to use.
   array<array<MatrixIndexSet, 2>, 2> occupationPattern;
@@ -188,13 +179,14 @@ void assembleStokesProblem(const Basis& basis,
 
   // A view on the FE basis on a single element
   auto localView     = basis.localView();
-  auto localIndexSet = basis.indexSet().localIndexSet();
+  auto localIndexSet = basis.localIndexSet();
 
   // A loop over all elements of the grid
-  for(const auto& e : elements(gridView))
+  auto gridView = basis.gridView();
+  for (const auto& element : elements(gridView))
   {
     // Bind the local FE basis view to the current element
-    localView.bind(e);
+    localView.bind(element);
     localIndexSet.bind(localView);
 
     // Now let's get the element stiffness matrix
@@ -203,13 +195,13 @@ void assembleStokesProblem(const Basis& basis,
     getLocalMatrix(localView, elementMatrix);
 
     // Add element stiffness matrix onto the global stiffness matrix
-    for (size_t i=0; i<elementMatrix.N(); i++) {
-
+    for (size_t i=0; i<elementMatrix.N(); i++)
+    {
       // The global index of the i-th local degree of freedom of the element 'e'
       auto row = localIndexSet.index(i);
 
-      for (size_t j=0; j<elementMatrix.M(); j++ ) {
-
+      for (size_t j=0; j<elementMatrix.M(); j++ )
+      {
         // The global index of the j-th local degree of freedom of the element 'e'
         auto col = localIndexSet.index(j);
         matrix[row[0]][col[0]][row[1]][col[1]] += elementMatrix[i][j];
@@ -236,7 +228,7 @@ int main (int argc, char *argv[]) try
 
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
-  FieldVector<double,dim> l(1);
+  FieldVector<double,dim> l = {1, 1};
   std::array<int,dim> elements = {4, 4};
   GridType grid(l,elements);
 
@@ -286,7 +278,7 @@ int main (int argc, char *argv[]) try
   auto boundaryIndicator = [&l](Coordinate x) {
     bool isBoundary = false;
     for (std::size_t j=0; j<x.size(); j++)
-      isBoundary = isBoundary || x[j] < 1e-8 || x[j] > l[j] - 1e-8;
+      isBoundary |= x[j] < 1e-8 || x[j] > l[j] - 1e-8;
     return isBoundary;
   };
 
@@ -316,7 +308,6 @@ int main (int argc, char *argv[]) try
         *cIt = (i==cIt.index()) ? 1 : 0;
 
       // Upper right matrix block
-//      stiffnessMatrix[0][1][i] = 0;
       for(auto&& entry: stiffnessMatrix[0][1][i])
         entry = 0.0;
 
@@ -372,7 +363,7 @@ int main (int argc, char *argv[]) try
   SubsamplingVTKWriter<GridView> vtkWriter(gridView,2);
   vtkWriter.addVertexData(velocityFunction, VTK::FieldInfo("velocity", VTK::FieldInfo::Type::vector, dim));
   vtkWriter.addVertexData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
-  vtkWriter.write("functions-stokes");
+  vtkWriter.write("stokes-taylorhood-result");
 
  }
 // Error handling
