@@ -126,7 +126,7 @@ public:
       if (prefix[0] == 0)
         return dim * pq2Factory_.size();
       if (prefix[0] == 1)
-        return pq2Factory_.size();
+        return pq1Factory_.size();
     }
     assert(false);
   }
