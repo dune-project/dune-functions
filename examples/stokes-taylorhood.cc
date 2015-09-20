@@ -45,8 +45,7 @@ void getLocalMatrix(const LocalView& localView,
   auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();
 
   // Set all matrix entries to zero
-  elementMatrix.setSize(dim*velocityLocalFiniteElement.size() + pressureLocalFiniteElement.size(),
-                        dim*velocityLocalFiniteElement.size() + pressureLocalFiniteElement.size());
+  elementMatrix.setSize(localView.size(), localView.size());
   elementMatrix = 0;      // fills the entire matrix with zeroes
 
   // Get a quadrature rule
