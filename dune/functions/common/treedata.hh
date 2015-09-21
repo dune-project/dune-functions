@@ -164,6 +164,8 @@ public:
 
   void init(const Tree& tree)
   {
+    if (tree_)
+      destroy();
     tree_ = &tree;
     TypeTree::applyToTree(*tree_, InitVisitor(data_));
   }
@@ -182,6 +184,13 @@ public:
     tree_ = other.tree_;
     TypeTree::applyToTree(*tree_, CopyVisitor(*this, other));
     return *this;
+  }
+
+  void destroy()
+  {
+    if (tree_)
+      TypeTree::applyToTree(*tree_, DestroyVisitor(data_));
+    tree_ = nullptr;
   }
 
   ~TreeData()
