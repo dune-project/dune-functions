@@ -5,7 +5,6 @@
 
 #include <array>
 #include <dune/common/exceptions.hh>
-#include <dune/common/version.hh>
 #include <dune/common/std/final.hh>
 
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
@@ -54,13 +53,13 @@ public:
 
 
   // Precompute the number of dofs per entity type
-  const static int dofsPerEdge        = k-1;
-  const static int dofsPerTriangle    = (k-1)*(k-2)/2;
-  const static int dofsPerQuad        = (k-1)*(k-1);
-  const static int dofsPerTetrahedron = ((k-3)*(k-2)*(k-1)/6 > 0) ? (k-3)*(k-2)*(k-1)/6  : 0;
-  const static int dofsPerPrism       = (k-1)*(k-1)*(k-2)/2;
-  const static int dofsPerHexahedron  = (k-1)*(k-1)*(k-1);
-  const static int dofsPerPyramid     = ((k-2)*(k-1)*(2*k-3))/6;
+  const static int dofsPerEdge        = k+1;
+  const static int dofsPerTriangle    = (k+1)*(k+2)/2;
+  const static int dofsPerQuad        = (k+1)*(k+1);
+  const static int dofsPerTetrahedron = (k+1)*(k+2)*(k+3)/6;
+  const static int dofsPerPrism       = (k+1)*(k+1)*(k+2)/2;
+  const static int dofsPerHexahedron  = (k+1)*(k+1)*(k+1);
+  const static int dofsPerPyramid     = (k+1)*(k+2)*(2*k+3)/6;
 
 
   template<class TP>
