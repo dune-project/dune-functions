@@ -113,7 +113,7 @@ public:
 
 protected:
   const GlobalBasis* globalBasis_;
-  const Element* element_;
+  const Element* element_;                    // \TODO Should we store a copy of the element?
   Tree tree_;
 };
 
