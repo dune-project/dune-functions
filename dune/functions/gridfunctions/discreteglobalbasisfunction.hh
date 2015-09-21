@@ -118,7 +118,8 @@ public:
         using CoefficientBlock = typename std::decay<decltype(std::declval<Vector>()[std::declval<MultiIndex>()])>::type;
         using RangeBlock = typename std::decay<decltype(nodeToRangeEntry_(node, y_))>::type;
 
-        auto&& localBasis = node.finiteElement().localBasis();
+        auto&& fe = node.finiteElement();
+        auto&& localBasis = fe.localBasis();
 
         auto&& shapeFunctionValues = shapeFunctionValueContainer_[node];
         localBasis.evaluateFunction(x_, shapeFunctionValues);
@@ -183,6 +184,29 @@ public:
       subTree_ = &TypeTree::child(localBasisView_.tree(), globalFunction_->treePath());
       shapeFunctionValueContainer_.init(*subTree_);
 //      localDoFs_.reserve(localBasisView_.maxSize());
+    }
+
+    LocalFunction(const LocalFunction& other)
+      : globalFunction_(other.globalFunction_)
+      , localBasisView_(globalFunction_->basis().localView())
+      , localIndexSet_(globalFunction_->indexSet_.localIndexSet())
+    {
+      // Here we assume that the tree can be accessed, traversed,
+      // and queried for tree indices even in unbound state.
+      subTree_ = &TypeTree::child(localBasisView_.tree(), globalFunction_->treePath());
+      shapeFunctionValueContainer_.init(*subTree_);
+    }
+
+    LocalFunction operator=(const LocalFunction& other)
+    {
+      globalFunction_ = other.globalFunction_;
+      localBasisView_ = other.localBasisView_;
+      localIndexSet_ = other.localIndexSet_;
+      subTree_ = &TypeTree::child(localBasisView_.tree(), globalFunction_->treePath());
+
+      // Here we assume that the tree can be accessed, traversed,
+      // and queried for tree indices even in unbound state.
+      shapeFunctionValueContainer_.init(*subTree_);
     }
 
     /**
