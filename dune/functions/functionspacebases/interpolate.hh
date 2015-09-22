@@ -184,7 +184,7 @@ protected:
  * \param bitVector A vector with flags marking ald DOFs that should be interpolated
  */
 template <class B, class TP, class NTRE, class C, class F, class BV>
-void interpolateTreeSubset(const B& basis, TP&& treePath, C&& coeff, F&& f, NTRE&& nodeToRangeEntry, const BV& bv)
+void interpolateTreeSubset(const B& basis, const TP& treePath, C&& coeff, const F& f, const NTRE& nodeToRangeEntry, const BV& bv)
 {
   using GridView = typename B::GridView;
   using Element = typename GridView::template Codim<0>::Entity;
@@ -204,7 +204,7 @@ void interpolateTreeSubset(const B& basis, TP&& treePath, C&& coeff, F&& f, NTRE
 
 
   // Make a grid function supporting local evaluation out of f
-  auto gf = makeGridViewFunction(std::forward<F>(f), gridView);
+  auto gf = makeGridViewFunction(f, gridView);
 
   // Obtain a local view of f
   auto localF = localFunction(gf);
@@ -229,21 +229,21 @@ void interpolateTreeSubset(const B& basis, TP&& treePath, C&& coeff, F&& f, NTRE
 
 
 template <class B, class TP, class C, class F, class BV>
-void interpolateTreeSubset(const B& basis, TP&& treePath, C&& coeff, F&& f, const BV& bitVector)
+void interpolateTreeSubset(const B& basis, const TP& treePath, C&& coeff, const F& f, const BV& bitVector)
 {
   interpolateTreeSubset(basis, treePath, coeff, f, makeDefaultNodeToRangeMap(basis, treePath), bitVector);
 }
 
 
 template <class B, class TP, class NTRE, class C, class F>
-void interpolateTree(const B& basis, TP&& treePath, C&& coeff, F&& f, NTRE&& nodeToRangeEntry)
+void interpolateTree(const B& basis, const TP& treePath, C&& coeff, const F& f, const NTRE& nodeToRangeEntry)
 {
   interpolateTreeSubset(basis, treePath, coeff, f, nodeToRangeEntry, Imp::AllTrueBitSetVector());
 }
 
 
 template <class B, class TP, class C, class F>
-void interpolateTree(const B& basis, TP&& treePath, C&& coeff, F&& f)
+void interpolateTree(const B& basis, const TP& treePath, C&& coeff, const F& f)
 {
   interpolateTreeSubset(basis, treePath, coeff, f, makeDefaultNodeToRangeMap(basis, treePath), Imp::AllTrueBitSetVector());
 }
@@ -267,7 +267,7 @@ void interpolateTree(const B& basis, TP&& treePath, C&& coeff, F&& f)
  * \param bitVector A vector with flags marking ald DOFs that should be interpolated
  */
 template <class B, class TP, class C, class F, class BV>
-void interpolate(const B& basis, TP&& treePath, C&& coeff, F&& f, const BV& bitVector)
+void interpolate(const B& basis, const TP& treePath, C&& coeff, const F& f, const BV& bitVector)
 {
   interpolateTreeSubset(basis, treePath, coeff, f, makeDefaultNodeToRangeMap(basis, treePath), bitVector);
 }
@@ -291,7 +291,7 @@ void interpolate(const B& basis, TP&& treePath, C&& coeff, F&& f, const BV& bitV
  * \param f Function to interpolate
  */
 template <class B, class C, class F>
-void interpolate(const B& basis, C&& coeff, F&& f)
+void interpolate(const B& basis, C&& coeff, const F& f)
 {
   interpolate (basis, Dune::TypeTree::hybridTreePath(), coeff, f, Imp::AllTrueBitSetVector());
 }
@@ -312,7 +312,7 @@ void interpolate(const B& basis, C&& coeff, F&& f)
  * \param f Function to interpolate
  */
 template <class B, class TreePath, class C, class F>
-void interpolate(const B& basis, TreePath&& treePath, C&& coeff, F&& f)
+void interpolate(const B& basis, const TreePath& treePath, C&& coeff, const F& f)
 {
   interpolate (basis, treePath, coeff, f, Imp::AllTrueBitSetVector());
 }
