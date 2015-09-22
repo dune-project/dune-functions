@@ -36,8 +36,18 @@ class HierarchicVectorWrapper
   static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
-    if (c.size() < size)
+    if (size == 0)
+      return;
+
+    if (c.size() != size)
       DUNE_THROW(RangeError, "Can't resize statically sized vector entry v[" << prefix << "] of size " << c.size() << " to size(" << prefix << ")=" << size);
+
+    prefix.push_back(0);
+    for(std::size_t i=0; i<size; ++i)
+    {
+      prefix.back() = i;
+      resizeHelper(c[i], sizeProvider, prefix);
+    }
   }
 
   template<class C, class SizeProvider,
