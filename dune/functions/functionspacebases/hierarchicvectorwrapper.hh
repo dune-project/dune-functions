@@ -21,9 +21,24 @@ class HierarchicVectorWrapper
 {
 
   template<class C, class SizeProvider,
-    typename std::enable_if< not Concept::models<Concept::HasResize, C>(), int>::type = 0>
+    typename std::enable_if< not Concept::models<Concept::HasResize, C>(), int>::type = 0,
+    typename std::enable_if< not Concept::models<Concept::HasSizeMethod, C>(), int>::type = 0>
   static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
-  {}
+  {
+    auto size = sizeProvider.size(prefix);
+    if (size != 0)
+      DUNE_THROW(RangeError, "Can't resize scalar vector entry v[" << prefix << "] to size(" << prefix << ")=" << size);
+  }
+
+  template<class C, class SizeProvider,
+    typename std::enable_if< not Concept::models<Concept::HasResize, C>(), int>::type = 0,
+    typename std::enable_if< Concept::models<Concept::HasSizeMethod, C>(), int>::type = 0>
+  static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
+  {
+    auto size = sizeProvider.size(prefix);
+    if (c.size() < size)
+      DUNE_THROW(RangeError, "Can't resize statically sized vector entry v[" << prefix << "] of size " << c.size() << " to size(" << prefix << ")=" << size);
+  }
 
   template<class C, class SizeProvider,
     typename std::enable_if< Concept::models<Concept::HasResize, C>(), int>::type = 0>
