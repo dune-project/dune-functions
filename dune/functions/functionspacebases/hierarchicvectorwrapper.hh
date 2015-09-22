@@ -30,6 +30,14 @@ class HierarchicVectorWrapper
   static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
+    if (size==0)
+    {
+      if (c.size()==0)
+        DUNE_THROW(RangeError, "Can't resize dynamically sized vector entry v[" << prefix << "]. It's size is 0 but the target size is unknown due to size(" << prefix << ")=0.");
+      else
+        return;
+    }
+
     c.resize(size);
     prefix.push_back(0);
     for(std::size_t i=0; i<size; ++i)
