@@ -191,7 +191,8 @@ public:
 template<typename GV, int k, class MI, class TP, class ST>
 class LagrangeDGNodeIndexSet
 {
-  enum {dim = GV::dimension};
+  // Cannot be an enum -- otherwise the switch statement below produces compiler warnings
+  static const int dim = GV::dimension;
 
 public:
 
