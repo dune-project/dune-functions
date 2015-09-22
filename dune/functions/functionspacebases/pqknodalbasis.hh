@@ -76,7 +76,7 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using SizePrefix = Dune::ReservedVector<size_type, 2>;
+  using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
   /** \brief Constructor for a given grid view object */
   PQkNodeFactory(const GridView& gv) :
@@ -169,6 +169,8 @@ public:
   {
     if (prefix.size() == 0)
       return size();
+    if (prefix.size() == 1)
+      return 0;
     assert(false);
   }
 

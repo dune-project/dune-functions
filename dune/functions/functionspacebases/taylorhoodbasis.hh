@@ -128,6 +128,8 @@ public:
       if (prefix[0] == 1)
         return pq1Factory_.size();
     }
+    if (prefix.size() == 1)
+      return 0;
     assert(false);
   }
 
