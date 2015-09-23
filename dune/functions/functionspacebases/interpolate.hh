@@ -184,7 +184,7 @@ protected:
  * \param coeff Coefficient vector to represent the interpolation
  * \param f Function to interpolate
  * \param nodeToRangeEntry Polymorphic functor mapping local ansatz nodes to range-indices of given function
- * \param bitVector A vector with flags marking ald DOFs that should be interpolated
+ * \param bitVector A vector with flags marking all DOFs that should be interpolated
  */
 template <class B, class TP, class NTRE, class C, class F, class BV>
 void interpolateTreeSubset(const B& basis, const TP& treePath, C&& coeff, const F& f, const NTRE& nodeToRangeEntry, const BV& bv)
