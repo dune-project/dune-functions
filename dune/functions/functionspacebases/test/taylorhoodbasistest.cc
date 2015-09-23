@@ -24,11 +24,8 @@ int main (int argc, char* argv[]) try
   std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
-  // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
   typedef TaylorHoodBasis<GridView> Basis;
-//  typedef PQ1NodalBasis<GridView> Basis;
-//  typedef PQ2NodalBasis<GridView> Basis;
 
   const GridView& gridView = grid.leafGridView();
   Basis feBasis(gridView);
