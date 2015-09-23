@@ -24,341 +24,8 @@ namespace Functions {
 template<typename GV, typename R>
 class BSplineLocalFiniteElement;
 
-template<typename GV>
-class BSplineBasisLocalView;
-
-template<typename GV>
-class BSplineBasisLeafNode;
-
-template<typename GV>
-class BSplineIndexSet;
-
-template <class GV, class R>
-class BSplineLocalBasis;
-
-template<typename GV>
-class BSplineBasis;
-
-/** \brief Maps local shape functions to global indices */
-template<typename GV>
-class BSplineLocalIndexSet
-{
-  static const int dim = GV::dimension;
-public:
-  /** \brief Type used for sizes and local indices */
-  typedef std::size_t size_type;
-
-  /** \brief Type of the local view on the restriction of the basis to a single element */
-  typedef BSplineBasisLocalView<GV> LocalView;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  typedef std::array<size_type, 1> MultiIndex;
-
-  BSplineLocalIndexSet(const BSplineIndexSet<GV> & indexSet)
-  : indexSet_(indexSet)
-  {}
-
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
-   */
-  void bind(const BSplineBasisLocalView<GV>& localView)
-  {
-    localView_ = &localView;
-
-    // Local degrees of freedom are arranged in a lattice.
-    // We need the lattice dimensions to be able to compute lattice coordinates from a local index
-    for (int i=0; i<dim; i++)
-      localSizes_[i] = localView_->tree().finiteElement().size(i);
-  }
-
-  /** \brief Unbind the index set
-   */
-  void unbind()
-  {
-    localView_ = nullptr;
-  }
-
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const
-  {
-    return localView_->size();
-  }
-
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis (pair of multi-indices)
-  MultiIndex index(size_type i) const
-  {
-    std::array<unsigned int,dim> localIJK = localView_->globalBasis_->getIJK(i, localSizes_);
-
-    const auto currentKnotSpan = localView_->tree().finiteElement().currentKnotSpan_;
-    const auto order = localView_->globalBasis_->order_;
-
-    std::array<unsigned int,dim> globalIJK;
-    for (int i=0; i<dim; i++)
-      globalIJK[i] = std::max((int)currentKnotSpan[i] - (int)order[i], 0) + localIJK[i];  // needs to be a signed type!
-
-    // Make one global flat index from the globalIJK tuple
-    size_type globalIdx = globalIJK[dim-1];
-
-    for (int i=dim-2; i>=0; i--)
-      globalIdx = globalIdx * localView_->globalBasis_->size(i) + globalIJK[i];
-
-    return { globalIdx };
-  }
-
-  /** \brief Return the local view that we are attached to
-   */
-  const LocalView& localView() const
-  {
-    return *localView_;
-  }
-
-private:
-  const BSplineBasisLocalView<GV>* localView_;
-
-  const BSplineIndexSet<GV> indexSet_;
-
-  std::array<unsigned int, dim> localSizes_;
-};
-
-/** \brief Provides the size of the global basis, and hands out the local index sets */
-template<typename GV>
-class BSplineIndexSet
-{
-public:
-
-  typedef BSplineLocalIndexSet<GV> LocalIndexSet;
-
-  BSplineIndexSet(const BSplineBasis<GV>* globalBasis)
-  : globalBasis_(globalBasis)
-  {}
-
-  /** \brief Total number of basis vectors in the basis */
-  std::size_t size() const
-  {
-    return globalBasis_->size();
-  }
-
-  /** \brief Provide a local index set, which hands out global indices for all shape functions of an element */
-  LocalIndexSet localIndexSet() const
-  {
-    return LocalIndexSet(*this);
-  }
-
-private:
-  const BSplineBasis<GV>* globalBasis_;
-};
-
-
-
-/** \brief The restriction of a finite element basis to a single element */
-template<typename GV>
-class BSplineBasisLocalView
-{
-  // Grid dimension
-  enum {dim = GV::dimension};
-
-  // Needs the grid element
-  friend class BSplineLocalIndexSet<GV>;
-
-public:
-  /** \brief The global FE basis that this is a view on */
-  typedef BSplineBasis<GV> GlobalBasis;
-
-  /** \brief The grid view of the global basis */
-  typedef typename GlobalBasis::GridView GridView;
-
-  /** \brief The type used for sizes */
-  typedef typename GlobalBasis::size_type size_type;
-
-  /** \brief Type used to number the global basis vectors
-   *
-   * In the case of mixed finite elements this really can be a multi-index, but for a standard
-   * B-spline space this is only a single-digit multi-index, i.e., it is an integer.
-   */
-  typedef typename GlobalBasis::MultiIndex MultiIndex;
-
-  /** \brief Type of the grid element we are bound to */
-  typedef typename GridView::template Codim<0>::Entity Element;
-
-  /** \brief Tree of local finite elements / local shape function sets
-   *
-   * In the case of a P2 space this tree consists of a single leaf only,
-   * i.e., Tree is basically the type of the LocalFiniteElement
-   */
-  typedef BSplineBasisLeafNode<GV> Tree;
-
-  /** \brief Construct local view for a given global finite element basis */
-  BSplineBasisLocalView(const GlobalBasis* globalBasis) :
-    globalBasis_(globalBasis),
-    tree_(globalBasis)
-  {}
-
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
-   */
-  void bind(const Element& e)
-  {
-    element_ = &e;
-    tree_.bind(e);
-  }
-
-  /** \brief Return the grid element that the view is bound to
-   *
-   * \throws Dune::Exception if the view is not bound to anything
-   */
-  const Element& element() const
-  {
-    if (element_)
-      return *element_;
-    else
-      DUNE_THROW(Dune::Exception, "Can't query element of unbound local view");
-  }
-
-  /** \brief Unbind from the current element
-   *
-   * Calling this method should only be a hint that the view can be unbound.
-   * And indeed, in the BSplineBasisView implementation this method does nothing.
-   */
-  void unbind()
-  {}
-
-  /** \brief Return the local ansatz tree associated to the bound entity
-   */
-  const Tree& tree() const
-  {
-    return tree_;
-  }
-
-  /** \brief Number of degrees of freedom on this element
-   */
-  size_type size() const
-  {
-    return tree_.size();
-  }
-
-  /**
-   * \brief Maximum local size for any element on the GridView
-   *
-   * This is the maximal size needed for local matrices
-   * and local vectors, i.e., the result is
-   */
-  size_type maxSize() const
-  {
-    size_type result = 1;
-    for (int i=0; i<dim; i++)
-      result *= globalBasis_->order_[i]+1;
-    return result;
-  }
-
-  /** \brief Return the global basis that we are a view on
-   */
-  const GlobalBasis& globalBasis() const
-  {
-    return *globalBasis_;
-  }
-
-protected:
-  const GlobalBasis* globalBasis_;
-  const Element* element_;
-  Tree tree_;
-};
-
-
-/** \brief The finite element tree of this basis consists of a single node, and this is it */
-template<typename GV>
-class BSplineBasisLeafNode :
-  public GridFunctionSpaceBasisLeafNodeInterface<
-    typename GV::template Codim<0>::Entity,
-    BSplineLocalFiniteElement<GV,double>,
-    typename BSplineBasis<GV>::size_type>
-{
-  typedef BSplineBasis<GV> GlobalBasis;
-  static const int dim = GV::dimension;
-
-  typedef typename GV::template Codim<0>::Entity E;
-  typedef BSplineLocalFiniteElement<GV,double> FE;
-  typedef typename GlobalBasis::size_type ST;
-  typedef typename GlobalBasis::MultiIndex MI;
-
-  typedef typename GlobalBasis::LocalView LocalView;
-
-  friend LocalView;
-  friend class BSplineLocalIndexSet<GV>;
-
-public:
-  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST> Interface;
-  typedef typename Interface::size_type size_type;
-  typedef typename Interface::Element Element;
-  typedef typename Interface::FiniteElement FiniteElement;
-
-  /** \brief Construct a leaf node for a given global B-spline basis */
-  BSplineBasisLeafNode(const GlobalBasis* globalBasis) :
-    globalBasis_(globalBasis),
-    finiteElement_(*globalBasis),
-    element_(nullptr)
-  {}
-
-  //! Return current element, throw if unbound
-  const Element& element() const DUNE_FINAL
-  {
-    if (element_)
-      return *element_;
-    else
-      DUNE_THROW(Dune::Exception, "Can't query element of unbound local view");
-  }
-
-  /** \brief Return the LocalFiniteElement for the element we are bound to
-   *
-   * The LocalFiniteElement implements the corresponding interfaces of the dune-localfunctions module
-   */
-  const FiniteElement& finiteElement() const DUNE_FINAL
-  {
-    return finiteElement_;
-  }
-
-  //! maximum size of subtree rooted in this node for any element of the global basis
-  size_type size() const DUNE_FINAL
-  {
-    // We have subTreeSize==lfe.size() because we're in a leaf node.
-    return finiteElement_.size();
-  }
-
-  //! Maps from subtree index set [0..subTreeSize-1] into root index set (element-local) [0..localSize-1]
-  size_type localIndex(size_type i) const DUNE_FINAL
-  {
-    return i;
-  }
-
-  void setLocalIndex(size_type leafindex, size_type localindex) DUNE_FINAL
-  {
-    DUNE_THROW(Dune::NotImplemented, "BSplineBasisLeafNode does not support setLocalIndex() yet");
-  }
-
-private:
-  /** \brief Bind to an element
-   *
-   * This involves in particular computing integer indices in a structured grid from the single
-   * element index that dune-grid gives us.  Hence we have to make a few assumptions about the
-   * grid itself, which is dangerous but cannot be helped.
-   */
-  void bind(const Element& e)
-  {
-    element_ = &e;
-
-    auto elementIndex = globalBasis_->gridView().indexSet().index(e);
-    finiteElement_.bind(globalBasis_->getIJK(elementIndex,globalBasis_->elements_));
-  }
-
-  const GlobalBasis* globalBasis_;
-  FiniteElement finiteElement_;
-  const Element* element_;
-};
-
+template<typename GV, class MI, class ST>
+class BSplineNodeFactory;
 
 
 /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
@@ -384,9 +51,9 @@ public:
    *
    * The patch object does all the work.
    */
-  BSplineLocalBasis(const BSplineBasis<GV>& globalBasis,
+  BSplineLocalBasis(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory,
                     const BSplineLocalFiniteElement<GV,R>& lFE)
-  : globalBasis_(globalBasis),
+  : nodeFactory_(nodeFactory),
     lFE_(lFE)
   {}
 
@@ -399,7 +66,7 @@ public:
     FieldVector<D,dim> globalIn = offset_;
     scaling_.umv(in,globalIn);
 
-    globalBasis_.evaluateFunction(globalIn, out, lFE_.currentKnotSpan_);
+    nodeFactory_.evaluateFunction(globalIn, out, lFE_.currentKnotSpan_);
   }
 
   /** \brief Evaluate Jacobian of all shape functions
@@ -411,7 +78,7 @@ public:
     FieldVector<D,dim> globalIn = offset_;
     scaling_.umv(in,globalIn);
 
-    globalBasis_.evaluateJacobian(globalIn, out, lFE_.currentKnotSpan_);
+    nodeFactory_.evaluateJacobian(globalIn, out, lFE_.currentKnotSpan_);
 
     for (size_t i=0; i<out.size(); i++)
       for (int j=0; j<dim; j++)
@@ -434,7 +101,7 @@ public:
       FieldVector<D,dim> globalIn = offset_;
       scaling_.umv(in,globalIn);
 
-      globalBasis_.evaluate(directions, globalIn, out, lFE_.currentKnotSpan_);
+      nodeFactory_.evaluate(directions, globalIn, out, lFE_.currentKnotSpan_);
 
       for (size_t i=0; i<out.size(); i++)
         out[i][0] *= scaling_[directions[0]][directions[0]];
@@ -445,7 +112,7 @@ public:
       FieldVector<D,dim> globalIn = offset_;
       scaling_.umv(in,globalIn);
 
-      globalBasis_.evaluate(directions, globalIn, out, lFE_.currentKnotSpan_);
+      nodeFactory_.evaluate(directions, globalIn, out, lFE_.currentKnotSpan_);
 
       for (size_t i=0; i<out.size(); i++)
         out[i][0] *= scaling_[directions[0]][directions[0]]*scaling_[directions[1]][directions[1]];
@@ -465,7 +132,7 @@ public:
    */
   unsigned int order () const
   {
-    return *std::max_element(globalBasis_.order_.begin(), globalBasis_.order_.end());
+    return *std::max_element(nodeFactory_.order_.begin(), nodeFactory_.order_.end());
   }
 
   /** \brief Return the number of basis functions on the current knot span
@@ -476,7 +143,7 @@ public:
   }
 
 private:
-  const BSplineBasis<GV>& globalBasis_;
+  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory_;
 
   const BSplineLocalFiniteElement<GV,R>& lFE_;
 
@@ -683,7 +350,6 @@ class BSplineLocalFiniteElement
 {
   typedef typename GV::ctype D;
   enum {dim = GV::dimension};
-  friend class BSplineLocalIndexSet<GV>;
   friend class BSplineLocalBasis<GV,R>;
 public:
 
@@ -695,9 +361,9 @@ public:
 
   /** \brief Constructor with a given B-spline basis
    */
-  BSplineLocalFiniteElement(const BSplineBasis<GV>& globalBasis)
-  : globalBasis_(globalBasis),
-    localBasis_(globalBasis,*this)
+  BSplineLocalFiniteElement(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory)
+  : nodeFactory_(nodeFactory),
+    localBasis_(nodeFactory,*this)
   {}
 
   /** \brief Bind LocalFiniteElement to a specific knot span of the spline patch
@@ -714,7 +380,7 @@ public:
       currentKnotSpan_[i] = 0;
 
       // Skip over degenerate knot spans
-      while (globalBasis_.knotVectors_[i][currentKnotSpan_[i]+1] < globalBasis_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
+      while (nodeFactory_.knotVectors_[i][currentKnotSpan_[i]+1] < nodeFactory_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
         currentKnotSpan_[i]++;
 
       for (size_t j=0; j<elementIdx[i]; j++)
@@ -722,13 +388,13 @@ public:
         currentKnotSpan_[i]++;
 
         // Skip over degenerate knot spans
-        while (globalBasis_.knotVectors_[i][currentKnotSpan_[i]+1] < globalBasis_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
+        while (nodeFactory_.knotVectors_[i][currentKnotSpan_[i]+1] < nodeFactory_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
           currentKnotSpan_[i]++;
       }
 
       // Compute the geometric transformation from knotspan-local to global coordinates
-      localBasis_.offset_[i] = globalBasis_.knotVectors_[i][currentKnotSpan_[i]];
-      localBasis_.scaling_[i][i] = globalBasis_.knotVectors_[i][currentKnotSpan_[i]+1] - globalBasis_.knotVectors_[i][currentKnotSpan_[i]];
+      localBasis_.offset_[i] = nodeFactory_.knotVectors_[i][currentKnotSpan_[i]];
+      localBasis_.scaling_[i][i] = nodeFactory_.knotVectors_[i][currentKnotSpan_[i]+1] - nodeFactory_.knotVectors_[i][currentKnotSpan_[i]];
     }
 
     // Set up the LocalCoefficients object
@@ -772,21 +438,22 @@ public:
     return GeometryType(GeometryType::cube,dim);
   }
 
-private:
+//private:
 
   /** \brief Number of degrees of freedom for one coordinate direction */
   unsigned int size(int i) const
   {
-    const auto& order = globalBasis_.order_;
+    const auto& order = nodeFactory_.order_;
     unsigned int r = order[i]+1;   // The 'normal' value
     if (currentKnotSpan_[i]<order[i])   // Less near the left end of the knot vector
       r -= (order[i] - currentKnotSpan_[i]);
-    if ( order[i] > (globalBasis_.knotVectors_[i].size() - currentKnotSpan_[i] - 2) )
-      r -= order[i] - (globalBasis_.knotVectors_[i].size() - currentKnotSpan_[i] - 2);
+    if ( order[i] > (nodeFactory_.knotVectors_[i].size() - currentKnotSpan_[i] - 2) )
+      r -= order[i] - (nodeFactory_.knotVectors_[i].size() - currentKnotSpan_[i] - 2);
     return r;
   }
 
-  const BSplineBasis<GV>& globalBasis_;
+  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory_;
+
   BSplineLocalBasis<GV,R> localBasis_;
   BSplineLocalCoefficients<dim> localCoefficients_;
   BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R> > localInterpolation_;
@@ -795,35 +462,17 @@ private:
   std::array<uint,dim> currentKnotSpan_;
 };
 
-/** \brief A B-spline function space basis on a tensor-product grid
- *
- * \tparam GV GridView, this must match the knot vectors describing the B-spline basis
- * \tparam RT Number type used for function values
- *
- * \todo Various features are not implemented yet:
- *  - No multiple knots in a knot vector
- *  - No sparsity; currently the implementation pretends that the support of any B-spline basis
- *    function covers the entire patch.
- */
-template <class GV>
-class BSplineBasis
-: public GridViewFunctionSpaceBasis<GV,
-                                    BSplineBasisLocalView<GV>,
-                                    BSplineIndexSet<GV>,
-                                    std::array<std::size_t, 1> >
+
+template<typename GV, typename ST, typename TP>
+class BSplineNode;
+
+template<typename GV, class MI, class TP, class ST>
+class BSplineNodeIndexSet;
+
+template<typename GV, class MI, class ST>
+class BSplineNodeFactory
 {
-
-  enum {dim = GV::dimension};
-
-  friend class BSplineBasisLeafNode<GV>;
-  friend class BSplineLocalIndexSet<GV>;
-  friend class BSplineBasisLocalView<GV>;
-  friend class BSplineLocalFiniteElement<GV,double>;
-  friend class BSplineLocalBasis<GV,double>;
-  friend class BSplineIndexSet<GV>;
-
-  // Type used for basis function values
-  typedef double R;
+  static const int dim = GV::dimension;
 
   /** \brief Simple dim-dimensional multi-index class */
   class MultiDigitCounter
@@ -883,16 +532,22 @@ class BSplineBasis
 public:
 
   /** \brief The grid view that the FE space is defined on */
-  typedef GV GridView;
+  using GridView = GV;
+  using size_type = ST;
 
-  /** \todo Do we really have to export this here? */
-  typedef std::size_t size_type;
+  template<class TP>
+  using Node = BSplineNode<GV, size_type, TP>;
 
-  /** \brief Type of the local view on the restriction of the basis to a single element */
-  typedef BSplineBasisLocalView<GV> LocalView;
+  template<class TP>
+  using IndexSet = BSplineNodeIndexSet<GV, MI, TP, ST>;
 
   /** \brief Type used for global numbering of the basis vectors */
-  typedef std::array<size_type, 1> MultiIndex;
+  using MultiIndex = MI;
+
+  using SizePrefix = Dune::ReservedVector<size_type, 1>;
+
+  // Type used for function values
+  using R = double;
 
   /** \brief Construct a B-spline basis for a given grid view and set of knot vectors
    *
@@ -912,12 +567,11 @@ public:
    *        i.e., start and end with 'order+1' identical knots.  Basis functions from such knot vectors are interpolatory at
    *        the end of the parameter interval.
    */
-  BSplineBasis(const GridView& gridView,
-               const std::vector<double>& knotVector,
-               unsigned int order,
-               bool makeOpen = true)
-  : gridView_(gridView),
-    indexSet_(this)
+  BSplineNodeFactory(const GridView& gridView,
+                     const std::vector<double>& knotVector,
+                     unsigned int order,
+                     bool makeOpen = true)
+  : gridView_(gridView)
   {
     // \todo Detection of duplicate knots
     std::fill(elements_.begin(), elements_.end(), knotVector.size()-1);
@@ -965,15 +619,14 @@ public:
    *        i.e., start and end with 'order+1' identical knots.  Basis functions from such knot vectors are interpolatory at
    *        the end of the parameter interval.
    */
-  BSplineBasis(const GridView& gridView,
-               const FieldVector<double,dim>& lowerLeft,
-               const FieldVector<double,dim>& upperRight,
-               const array<unsigned int,dim>& elements,
-               unsigned int order,
-               bool makeOpen = true)
+  BSplineNodeFactory(const GridView& gridView,
+                     const FieldVector<double,dim>& lowerLeft,
+                     const FieldVector<double,dim>& upperRight,
+                     const array<unsigned int,dim>& elements,
+                     unsigned int order,
+                     bool makeOpen = true)
   : elements_(elements),
-    gridView_(gridView),
-    indexSet_(this)
+    gridView_(gridView)
   {
     // Mediocre sanity check: we don't know the number of grid elements in each direction.
     // but at least we know the total number of elements.
@@ -999,27 +652,48 @@ public:
     std::fill(order_.begin(), order_.end(), order);
   }
 
+  void initializeIndices()
+  {}
+
   /** \brief Obtain the grid view that the basis is defined on
    */
-  const GridView& gridView() const DUNE_FINAL
+  const GridView& gridView() const
   {
     return gridView_;
   }
 
-  BSplineIndexSet<GV> indexSet() const
+  template<class TP>
+  Node<TP> node(const TP& tp) const
   {
-    return indexSet_;
+    return Node<TP>{tp,this};
   }
 
-  /** \brief Return local view for basis
-   *
-   */
-  LocalView localView() const
+  template<class TP>
+  IndexSet<TP> indexSet() const
   {
-    return LocalView(this);
+    return IndexSet<TP>{*this};
   }
 
-protected:
+  //! Return number possible values for next position in multi index
+  size_type size(const SizePrefix prefix) const
+  {
+    if (prefix.size() == 0)
+      return size();
+    assert(false);
+  }
+
+  size_type dimension() const
+  {
+    return size();
+  }
+
+  size_type maxNodeSize() const
+  {
+    size_type result = 1;
+    for (int i=0; i<dim; i++)
+      result *= order_[i]+1;
+    return result;
+  }
 
   //! \brief Total number of B-spline basis functions
   unsigned int size () const
@@ -1028,6 +702,12 @@ protected:
     for (size_t i=0; i<dim; i++)
       result *= size(i);
     return result;
+  }
+
+  //! \brief Number of shape functions in one direction
+  unsigned int size (size_t d) const
+  {
+    return knotVectors_[d].size() - order_[d] - 1;
   }
 
   /** \brief Evaluate all B-spline basis functions at a given point
@@ -1271,13 +951,6 @@ protected:
     return result;
   }
 
-    //! \brief Number of shape functions in one direction
-  unsigned int size (size_t d) const
-  {
-    return knotVectors_[d].size() - order_[d] - 1;
-  }
-
-
   /** \brief Evaluate all one-dimensional B-spline functions for a given coordinate direction
    *
    * This implementations was based on the explanations in the book of
@@ -1501,9 +1174,167 @@ protected:
   std::array<uint,dim> elements_;
 
   const GridView gridView_;
-
-  BSplineIndexSet<GV> indexSet_;
 };
+
+
+
+template<typename GV, typename ST, typename TP>
+class BSplineNode :
+  public GridFunctionSpaceBasisLeafNodeInterface<
+    typename GV::template Codim<0>::Entity,
+    BSplineLocalFiniteElement<GV,double>,
+    ST,
+    TP>
+{
+  static const int dim = GV::dimension;
+
+  typedef typename GV::template Codim<0>::Entity E;
+  typedef BSplineLocalFiniteElement<GV,double> FE;
+
+public:
+  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST,TP> Interface;
+  typedef typename Interface::size_type size_type;
+  typedef typename Interface::Element Element;
+  typedef typename Interface::FiniteElement FiniteElement;
+  typedef typename Interface::TreePath TreePath;
+
+  BSplineNode(const TreePath& treePath, const BSplineNodeFactory<GV, FlatMultiIndex<ST>, ST>* nodeFactory) :
+    Interface(treePath),
+    nodeFactory_(nodeFactory),
+    finiteElement_(*nodeFactory)
+  {}
+
+  //! Return current element, throw if unbound
+  const Element& element() const DUNE_FINAL
+  {
+    return element_;
+  }
+
+  /** \brief Return the LocalFiniteElement for the element we are bound to
+   *
+   * The LocalFiniteElement implements the corresponding interfaces of the dune-localfunctions module
+   */
+  const FiniteElement& finiteElement() const DUNE_FINAL
+  {
+    return finiteElement_;
+  }
+
+  /** \brief Size of subtree rooted in this node (element-local)
+   */
+  size_type size() const DUNE_FINAL
+  {
+    // We have subTreeSize==lfe.size() because we're in a leaf node.
+    return finiteElement_.size();
+  }
+
+  //! Bind to element.
+  void bind(const Element& e)
+  {
+    element_ = e;
+    auto elementIndex = nodeFactory_->gridView().indexSet().index(e);
+    finiteElement_.bind(nodeFactory_->getIJK(elementIndex,nodeFactory_->elements_));
+  }
+
+protected:
+
+  const BSplineNodeFactory<GV, FlatMultiIndex<ST>, ST>* nodeFactory_;
+
+  FiniteElement finiteElement_;
+  Element element_;
+};
+
+
+
+template<typename GV, class MI, class TP, class ST>
+class BSplineNodeIndexSet
+{
+  enum {dim = GV::dimension};
+
+public:
+
+  using size_type = ST;
+
+  /** \brief Type used for global numbering of the basis vectors */
+  using MultiIndex = MI;
+
+  using NodeFactory = BSplineNodeFactory<GV, MI, ST>;
+
+  using Node = typename NodeFactory::template Node<TP>;
+
+  BSplineNodeIndexSet(const NodeFactory& nodeFactory) :
+    nodeFactory_(&nodeFactory)
+  {}
+
+  /** \brief Bind the view to a grid element
+   *
+   * Having to bind the view to an element before being able to actually access any of its data members
+   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
+   */
+  void bind(const Node& node)
+  {
+    node_ = &node;
+    // Local degrees of freedom are arranged in a lattice.
+    // We need the lattice dimensions to be able to compute lattice coordinates from a local index
+    for (int i=0; i<dim; i++)
+      localSizes_[i] = node_->finiteElement().size(i);
+  }
+
+  /** \brief Unbind the view
+   */
+  void unbind()
+  {
+    node_ = nullptr;
+  }
+
+  /** \brief Size of subtree rooted in this node (element-local)
+   */
+  size_type size() const
+  {
+    return node_->finiteElement().size();
+  }
+
+  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+  MultiIndex index(size_type i) const
+  {
+    std::array<unsigned int,dim> localIJK = nodeFactory_->getIJK(i, localSizes_);
+
+    const auto currentKnotSpan = node_->finiteElement().currentKnotSpan_;
+    const auto order = nodeFactory_->order_;
+
+    std::array<unsigned int,dim> globalIJK;
+    for (int i=0; i<dim; i++)
+      globalIJK[i] = std::max((int)currentKnotSpan[i] - (int)order[i], 0) + localIJK[i];  // needs to be a signed type!
+
+    // Make one global flat index from the globalIJK tuple
+    size_type globalIdx = globalIJK[dim-1];
+
+    for (int i=dim-2; i>=0; i--)
+      globalIdx = globalIdx * nodeFactory_->size(i) + globalIJK[i];
+
+    return { globalIdx };
+  }
+
+protected:
+  const NodeFactory* nodeFactory_;
+
+  const Node* node_;
+
+  std::array<unsigned int, dim> localSizes_;
+};
+
+
+
+// *****************************************************************************
+// This is the actual global basis implementation based on the reusable parts.
+// *****************************************************************************
+
+/** \brief Nodal basis of a scalar k-th-order Lagrangean finite element space
+ *
+ * \tparam GV The GridView that the space is defined on
+ */
+template<typename GV>
+using BSplineBasis = DefaultGlobalBasis<BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>, std::size_t> >;
+
 
 }   // namespace Functions
 
