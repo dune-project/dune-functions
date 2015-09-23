@@ -326,6 +326,18 @@ int main (int argc, char *argv[]) try
       << "Test with " << Dune::className<Vector>() << " failed";
   }
 
+  {
+    static const std::size_t dim = 3;
+    using VelocityVector = std::vector<Dune::MultiTypeBlockVector<Dune::FieldVector<double,1>, double, Dune::FieldVector<double,1>>>;
+    using PressureVector = Dune::BlockVector<Dune::FieldVector<double,1>>;
+    using Coefficient = double;
+    using Vector = Dune::MultiTypeBlockVector<VelocityVector, PressureVector>;
+    using MultiIndex = ReservedVector<std::size_t, 3>;
+    result.check(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>())
+      << "Test with " << Dune::className<Vector>() << " failed";
+  }
+
+
   if (not result)
     std::cout << "Test failed" << std::endl;
 
