@@ -47,6 +47,9 @@ struct AllTrueBitSetVector
     return *this;
   }
 
+  void resize(const std::size_t&) const
+  {}
+
 };
 
 
