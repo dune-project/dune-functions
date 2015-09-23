@@ -5,6 +5,8 @@
 
 
 #include <dune/functions/common/concept.hh>
+#include <dune/functions/common/type_traits.hh>
+#include <dune/functions/common/staticforloop.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
 
@@ -30,6 +32,16 @@ class HierarchicVectorWrapper
       DUNE_THROW(RangeError, "Can't resize scalar vector entry v[" << prefix << "] to size(" << prefix << ")=" << size);
   }
 
+  struct StaticResizeHelper
+  {
+    template<class I, class C, class SizeProvider>
+    void operator()(I&& i, C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
+    {
+      prefix.back() = i;
+      resizeHelper(c[i], sizeProvider, prefix);
+    }
+  };
+
   template<class C, class SizeProvider,
     typename std::enable_if< not Concept::models<Concept::HasResize, C>(), int>::type = 0,
     typename std::enable_if< Concept::models<Concept::HasSizeMethod, C>(), int>::type = 0>
@@ -43,11 +55,7 @@ class HierarchicVectorWrapper
       DUNE_THROW(RangeError, "Can't resize statically sized vector entry v[" << prefix << "] of size " << c.size() << " to size(" << prefix << ")=" << size);
 
     prefix.push_back(0);
-    for(std::size_t i=0; i<size; ++i)
-    {
-      prefix.back() = i;
-      resizeHelper(c[i], sizeProvider, prefix);
-    }
+    staticForLoop<0, StaticSize<C>::value>(StaticResizeHelper(), c, sizeProvider, prefix);
   }
 
   template<class C, class SizeProvider,
@@ -75,12 +83,41 @@ class HierarchicVectorWrapper
   template<int start, int end>
   struct GetEntryHelper
   {
-    template<class T, class MultiIndex>
+    template<class T, class MultiIndex,
+      typename std::enable_if< Concept::models<Concept::HasResize, typename std::decay<T>::type>(), int>::type = 0>
     static auto getEntry(T&& t, MultiIndex&& index)
       -> decltype(GetEntryHelper<start+1,end>::getEntry(t[index[start]], index))
     {
       return GetEntryHelper<start+1,end>::getEntry(t[index[start]], index);
     }
+
+    template<class T, class MultiIndex,
+      typename std::enable_if< not Concept::models<Concept::HasResize, typename std::decay<T>::type>(), int>::type = 0>
+    static auto getEntry(T&& t, MultiIndex&& index)
+      -> decltype(GetEntryHelper<start+1,end>::getEntry(t[Dune::TypeTree::Indices::_0], index))
+    {
+      using namespace Dune::TypeTree::Indices;
+      static const int size = StaticSize<typename std::decay<T>::type>::value;
+      return getEntry(std::forward<T>(t), index, Dune::TypeTree::index_constant<size-1>());
+    }
+
+    template<class T, class MultiIndex, std::size_t i,
+      typename std::enable_if< (i>0), int>::type = 0>
+    static auto getEntry(T&& t, MultiIndex&& index, const Dune::TypeTree::index_constant<i>& static_i)
+      -> decltype(GetEntryHelper<start+1,end>::getEntry(t[Dune::TypeTree::Indices::_0], index))
+    {
+      if (index[start]==i)
+        return GetEntryHelper<start+1,end>::getEntry(t[static_i], index);
+      return GetEntryHelper<start,end>::getEntry(std::forward<T>(t), index, Dune::TypeTree::index_constant<i-1>());
+    }
+
+    template<class T, class MultiIndex>
+    static auto getEntry(T&& t, MultiIndex&& index, const Dune::TypeTree::index_constant<0>& static_i)
+      -> decltype(GetEntryHelper<start+1,end>::getEntry(t[static_i], index))
+    {
+      return GetEntryHelper<start+1,end>::getEntry(t[static_i], index);
+    }
+
   };
 
   template<int start>
@@ -93,15 +130,6 @@ class HierarchicVectorWrapper
       return std::forward<T>(t);
     }
   };
-
-  template<class T,
-           typename std::enable_if< Concept::models<Concept::HasConstExprSize, T>(), int>::type = 0>
-  static constexpr std::size_t constexpr_size()
-  {
-    using type = typename std::decay<T>::type;
-    return type().size();
-  };
-
 
 public:
 
@@ -120,19 +148,19 @@ public:
   }
 
   template<class MultiIndex,
-           typename std::enable_if< Concept::models<Concept::HasConstExprSize, MultiIndex>(), int>::type = 0>
+           typename std::enable_if< HasStaticSize<MultiIndex>::value, int>::type = 0>
   auto operator[](MultiIndex&& index) const
-      ->decltype(GetEntryHelper<0, constexpr_size<MultiIndex>()>::getEntry(std::declval<Vector>(), index))
+      ->decltype(GetEntryHelper<0, StaticSize<MultiIndex>::value>::getEntry(std::declval<Vector>(), index))
   {
-    return GetEntryHelper<0, constexpr_size<MultiIndex>()>::getEntry(*vector_, index);
+    return GetEntryHelper<0, StaticSize<MultiIndex>::value>::getEntry(*vector_, index);
   }
 
   template<class MultiIndex,
-           typename std::enable_if< Concept::models<Concept::HasConstExprSize, MultiIndex>(), int>::type = 0>
+           typename std::enable_if< HasStaticSize<MultiIndex>::value, int>::type = 0>
   auto operator[](MultiIndex&& index)
-      ->decltype(GetEntryHelper<0, constexpr_size<MultiIndex>()>::getEntry(std::declval<Vector>(), index))
+      ->decltype(GetEntryHelper<0, StaticSize<MultiIndex>::value>::getEntry(std::declval<Vector>(), index))
   {
-    return GetEntryHelper<0, constexpr_size<MultiIndex>()>::getEntry(*vector_, index);
+    return GetEntryHelper<0, StaticSize<MultiIndex>::value>::getEntry(*vector_, index);
   }
 
   const Vector& vector() const
