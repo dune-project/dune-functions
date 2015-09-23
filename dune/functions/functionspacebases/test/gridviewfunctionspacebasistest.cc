@@ -17,7 +17,6 @@
 
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
-#include <dune/functions/functionspacebases/pq2nodalbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/functions/functionspacebases/bsplinebasis.hh>
@@ -259,10 +258,6 @@ void testOnStructuredGrid()
   PQ1NodalBasis<GridView> pq1Basis(gridView);
   testScalarBasis(pq1Basis, true);
 
-  // Test PQ2NodalBasis
-  PQ2NodalBasis<GridView> pq2Basis(gridView);
-  testScalarBasis(pq2Basis, true);
-
   // Test PQkNodalBasis for k==3
   PQkNodalBasis<GridView, 3> pq3Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
@@ -350,10 +345,6 @@ void testOnHybridGrid()
   // Test PQ1NodalBasis -- generic basis
   PQkNodalBasis<GridView, 1> pq1Basis(gridView);
   testScalarBasis(pq1Basis, true, disableInterpolate);
-
-  // Test PQ2NodalBasis
-  PQ2NodalBasis<GridView> pq2Basis(gridView);
-  testScalarBasis(pq2Basis, true, disableInterpolate);
 
   // Test PQkNodalBasis for k==3
   PQkNodalBasis<GridView, 3> pq3Basis(gridView);

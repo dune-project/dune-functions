@@ -15,7 +15,6 @@ install(FILES
         interpolate.hh
         lagrangedgbasis.hh
         pq1nodalbasis.hh
-        pq2nodalbasis.hh
         pqknodalbasis.hh
         nodes.hh
         sizeinfo.hh
