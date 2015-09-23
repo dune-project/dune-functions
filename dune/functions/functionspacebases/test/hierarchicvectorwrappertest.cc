@@ -249,15 +249,15 @@ bool checkHierarchicVector()
   for (std::size_t i=0; i<x_raw[_0].size(); ++i)
     for (std::size_t j=0; j<x_raw[_0][i].size(); ++j)
     {
-      std::cout << "x[{0," << i << "," << j << "}] = " << x_const[MultiIndex{{0, i, j}}] << std::endl;
-//      result.check(x[MultiIndex{{0, i, j}}] == 0.0+i+j)
-//        << "x[{0," << i << "," << j << "}] contains wrong value";
+//      std::cout << "x[{0," << i << "," << j << "}] = " << x_const[MultiIndex{{0, i, j}}] << std::endl;
+      result.check(x_const[MultiIndex{{0, i, j}}] == Coefficient(0+i+j))
+        << "x[{0," << i << "," << j << "}] contains wrong value";
     }
   for (std::size_t i=0; i<x_raw[_1].size(); ++i)
   {
-    std::cout << "x[{1," << i << "}] = " << x_const[MultiIndex{{1, i}}] << std::endl;
-//    result.check(x[MultiIndex{{1, i}}] == 1.0+i)
-//      << "x[{1," << i << "}] contains wrong value";
+//    std::cout << "x[{1," << i << "}] = " << x_const[MultiIndex{{1, i}}] << std::endl;
+    result.check(x_const[MultiIndex{{1, i}}] == Coefficient(1+i))
+      << "x[{1," << i << "}] contains wrong value";
   }
   return result;
 }
