@@ -62,11 +62,6 @@ public:
    */
   virtual LocalView localView() const = 0;
 
-  /**
-   * \brief Return index set for global indices
-   */
-  virtual IndexSet indexSet() const = 0;
-
 };
 
 #if 0
