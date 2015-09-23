@@ -33,18 +33,6 @@ struct HasSizeMethod
 
 
 
-struct HasConstExprSize
-{
-  template<class T>
-  auto require(T&& t) -> decltype(
-    std::integral_constant<
-      typename std::decay<decltype(t.size())>::type,
-      (typename std::decay<T>::type()).size()>()
-  );
-};
-
-
-
 struct HasIndexAccess
 {
   template<class C, class I>
