@@ -11,6 +11,7 @@
 #include <dune/common/fvector.hh>
 
 #include <dune/istl/bvector.hh>
+#include <dune/istl/multitypeblockvector.hh>
 
 #include <dune/typetree/utility.hh>
 
@@ -258,8 +259,6 @@ bool checkHierarchicVector()
 //    result.check(x[MultiIndex{{1, i}}] == 1.0+i)
 //      << "x[{1," << i << "}] contains wrong value";
   }
-    result.check(false)
-      << "x[{1," << 1 << "}] contains wrong value";
   return result;
 }
 
@@ -311,6 +310,17 @@ int main (int argc, char *argv[]) try
     using PressureVector = std::vector<double>;
     using Coefficient = double;
     using Vector = TupleVector<VelocityVector, PressureVector>;
+    using MultiIndex = ReservedVector<std::size_t, 3>;
+    result.check(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>())
+      << "Test with " << Dune::className<Vector>() << " failed";
+  }
+
+  {
+    static const std::size_t dim = 5;
+    using VelocityVector = Dune::BlockVector<Dune::FieldVector<double,dim>>;
+    using PressureVector = Dune::BlockVector<Dune::FieldVector<double,1>>;
+    using Coefficient = double;
+    using Vector = Dune::MultiTypeBlockVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
     result.check(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>())
       << "Test with " << Dune::className<Vector>() << " failed";
