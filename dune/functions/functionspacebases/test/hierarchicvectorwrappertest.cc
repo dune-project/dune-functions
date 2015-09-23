@@ -3,27 +3,18 @@
 #include <config.h>
 
 #include <vector>
+#include <array>
 
-#include <dune/common/function.hh>
-#include <dune/common/bitsetvector.hh>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/reservedvector.hh>
+#include <dune/common/classname.hh>
+#include <dune/common/fvector.hh>
 
-#include <dune/geometry/quadraturerules.hh>
+#include <dune/istl/bvector.hh>
 
-#include <dune/grid/yaspgrid.hh>
-#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+#include <dune/typetree/utility.hh>
 
-#include <dune/istl/matrix.hh>
-#include <dune/istl/bcrsmatrix.hh>
-#include <dune/istl/matrixindexset.hh>
-#include <dune/istl/solvers.hh>
-#include <dune/istl/preconditioners.hh>
-
-#include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/taylorhoodbasis.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
-
-#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
-#include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 using namespace Dune;
 
