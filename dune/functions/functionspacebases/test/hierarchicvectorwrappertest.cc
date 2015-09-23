@@ -136,6 +136,142 @@ public:
 };
 
 
+class TestResult
+{
+
+  class TestStream : public std::ostringstream
+  {
+  public:
+
+    TestStream(bool condition, bool required) :
+      condition_(condition),
+      required_(required)
+    {}
+
+    TestStream(const TestStream& other) :
+      condition_(other.condition_),
+      required_(other.required_)
+    {
+      (*this) << other.str();
+      other.condition_ = true;
+    }
+
+    ~TestStream()
+    {
+      if (not condition_)
+      {
+        if (required_)
+        {
+          std::cout << "Required check failed : " << this->str() << std::endl;
+          DUNE_THROW(Dune::Exception, "Required check failed : " << this->str());
+        }
+        else
+          std::cout << "Check failed : " << this->str() << std::endl;
+      }
+    }
+
+  private:
+    mutable bool condition_;
+    bool required_;
+  };
+
+public:
+
+  TestResult() :
+    result_(true)
+  {}
+
+  TestStream check(bool condition)
+  {
+    result_ &= condition;
+    return TestStream(condition, false);
+  }
+
+  TestStream require(bool condition)
+  {
+    result_ &= condition;
+    return TestStream(condition, true);
+  }
+
+  operator const bool& () const
+  {
+    return result_;
+  }
+
+  operator bool& ()
+  {
+    return result_;
+  }
+
+private:
+  bool result_;
+};
+
+
+
+template<class Vector, class Coefficient, std::size_t dim, class MultiIndex>
+bool checkHierarchicVector()
+{
+  TestResult result;
+
+  using namespace Dune::TypeTree::Indices;
+  using SizeInfo = HybridSizeInfoDummy<dim>;
+  using SizePrefix = typename SizeInfo::SizePrefix;
+
+  SizeInfo sizeInfo;
+
+  // Create raw vector
+  Vector x_raw;
+
+  // Create wrapped vector
+  Dune::Functions::HierarchicVectorWrapper<Vector, Coefficient> x(x_raw);
+
+  // Resize wrapped vector using sizeInfo
+  x.resize(sizeInfo);
+
+  // Derive size information from vector
+  result.require(x_raw.size() == sizeInfo(SizePrefix{}))
+    << "x_raw.size() is " << x_raw.size() << " but should be " << sizeInfo(SizePrefix{});
+
+  result.require(x_raw[_0].size() == sizeInfo(SizePrefix{0}))
+    << "x_raw[_0].size() is " << x_raw[_0].size() << " but should be " << sizeInfo(SizePrefix{0});
+
+  for (std::size_t i=0; i<sizeInfo({0}); ++i)
+    result.require(x_raw[_0][i].size() == sizeInfo(SizePrefix{0,i}))
+      << "x_raw[_0][" << i << "].size() is " << x_raw[_0][i].size() << " but should be " << sizeInfo(SizePrefix{0,i});
+
+  result.require(x_raw[_1].size() == sizeInfo(SizePrefix{1}))
+    << "x_raw[_1].size() is " << x_raw[_0].size() << " but should be " << sizeInfo(SizePrefix{1});
+
+
+  // Assign values to each vector entry
+  for (std::size_t i=0; i<x_raw[_0].size(); ++i)
+    for (std::size_t j=0; j<x_raw[_0][i].size(); ++j)
+      x[MultiIndex{{0, i, j}}] = 0+i+j;
+  for (std::size_t i=0; i<x_raw[_1].size(); ++i)
+    x[MultiIndex{{1, i}}] = 1+i;
+
+
+  // Access vector entries via const reference
+  const auto& x_const = x;
+  for (std::size_t i=0; i<x_raw[_0].size(); ++i)
+    for (std::size_t j=0; j<x_raw[_0][i].size(); ++j)
+    {
+      std::cout << "x[{0," << i << "," << j << "}] = " << x_const[MultiIndex{{0, i, j}}] << std::endl;
+//      result.check(x[MultiIndex{{0, i, j}}] == 0.0+i+j)
+//        << "x[{0," << i << "," << j << "}] contains wrong value";
+    }
+  for (std::size_t i=0; i<x_raw[_1].size(); ++i)
+  {
+    std::cout << "x[{1," << i << "}] = " << x_const[MultiIndex{{1, i}}] << std::endl;
+//    result.check(x[MultiIndex{{1, i}}] == 1.0+i)
+//      << "x[{1," << i << "}] contains wrong value";
+  }
+    result.check(false)
+      << "x[{1," << 1 << "}] contains wrong value";
+  return result;
+}
+
 
 int main (int argc, char *argv[]) try
 {
@@ -146,55 +282,53 @@ int main (int argc, char *argv[]) try
   //   Generate the grid
   ///////////////////////////////////
 
-  static const int dim = 2;
 
-  using namespace Dune::TypeTree::Indices;
+  TestResult result;
+  {
+    using VelocityVector = std::vector<std::vector<double>>;
+    using PressureVector = std::vector<double>;
+    using Coefficient = double;
+    using Vector = TupleVector<VelocityVector, PressureVector>;
+    using MultiIndex = ReservedVector<std::size_t, 3>;
+    result.check(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>())
+      << "Test with " << Dune::className<Vector>() << " failed";
+  }
 
-//  using VelocityVector = std::vector<std::array<double,dim>>;
-//  using PressureVector = std::vector<double>;
+  {
+    using VelocityVector = std::vector<Dune::BlockVector<Dune::FieldVector<double,1>>>;
+    using PressureVector = std::vector<Dune::FieldVector<double,1>>;
+    using Coefficient = double;
+    using Vector = TupleVector<VelocityVector, PressureVector>;
+    using MultiIndex = ReservedVector<std::size_t, 3>;
+    result.check(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>())
+      << "Test with " << Dune::className<Vector>() << " failed";
+  }
 
-  using VelocityVector = std::vector<std::vector<double>>;
-  using PressureVector = std::vector<double>;
+  {
+    using VelocityVector = std::vector<std::vector<Dune::FieldVector<double,3>>>;
+    using PressureVector = std::vector<Dune::FieldVector<double,3>>;
+    using Coefficient = Dune::FieldVector<double,3>;
+    using Vector = TupleVector<VelocityVector, PressureVector>;
+    using MultiIndex = ReservedVector<std::size_t, 3>;
+    result.check(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>())
+      << "Test with " << Dune::className<Vector>() << " failed";
+  }
 
-  using Vector = TupleVector<VelocityVector, PressureVector>;
+  {
+    static const std::size_t dim = 5;
+    using VelocityVector = std::vector<std::array<Dune::FieldVector<double,1>,dim>>;
+    using PressureVector = std::vector<double>;
+    using Coefficient = double;
+    using Vector = TupleVector<VelocityVector, PressureVector>;
+    using MultiIndex = ReservedVector<std::size_t, 3>;
+    result.check(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>())
+      << "Test with " << Dune::className<Vector>() << " failed";
+  }
 
-  Vector x_raw;
+  if (not result)
+    std::cout << "Test failed" << std::endl;
 
-  auto x = Dune::Functions::HierarchicVectorWrapper<decltype(x_raw),double>(x_raw);
-//  auto x = Dune::Functions::hierarchicVector(x_raw);
-
-  HybridSizeInfoDummy<dim> sizeInfo;
-
-  x.resize(sizeInfo);
-
-  using MultiIndex = ReservedVector<std::size_t, 3>;
-//  using MultiIndex = std::array<std::size_t, 3>;
-
-
-  std::cout << "size()       " << x_raw.size() << std::endl;
-  std::cout << "size({0})    " << x_raw[_0].size() << std::endl;
-  for (std::size_t i=0; i<sizeInfo({0}); ++i)
-    std::cout << "size({0," << i << "})  " << x_raw[_0][i].size() << std::endl;
-  std::cout << "size({1})    " << x_raw[_1].size() << std::endl;
-
-
-  for (std::size_t i=0; i<x_raw[_0].size(); ++i)
-    for (std::size_t j=0; j<x_raw[_0][i].size(); ++j)
-      x[MultiIndex{{0, i, j}}] = 0+i+j;
-
-  for (std::size_t i=0; i<x_raw[_1].size(); ++i)
-    x[MultiIndex{{1, i}}] = 1+i;
-
-
-
-  const auto& x_const = x;
-
-  for (std::size_t i=0; i<x_raw[_0].size(); ++i)
-    for (std::size_t j=0; j<x_raw[_0][i].size(); ++j)
-      std::cout << "x[{0," << i << "," << j << "}] = " << x_const[MultiIndex{{0, i, j}}] << std::endl;
-
-  for (std::size_t i=0; i<x_raw[_1].size(); ++i)
-      std::cout << "x[{1," << i << "}] = " << x_const[MultiIndex{{1, i}}] << std::endl;
+  return result ? 0 : 1;
 
 }
 // Error handling
