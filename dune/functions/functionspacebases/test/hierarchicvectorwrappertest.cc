@@ -29,6 +29,13 @@ using namespace Dune;
 
 
 
+/**
+ * \brief A Dummy size provider
+ *
+ * This is a mock class providing non-uniform size information.
+ * It's non-uniform in the sense, that not all multi-indices are
+ * do not always have the same size.
+ */
 template<std::size_t dim>
 class HybridSizeInfoDummy
 {
@@ -89,6 +96,9 @@ public:
 
 
 
+/**
+ * \brief A simple multi-type container
+ */
 template<class... T>
 class TupleVector : public std::tuple<T...>
 {
