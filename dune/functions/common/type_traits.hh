@@ -25,7 +25,7 @@ namespace Imp {
 
   // Helper class for multi-stage SFINAE based overload
   // resolution. You can tag overloads by priority.
-  // The matchinh overload with the highest prioriry
+  // The matching overload with the highest prioriry
   // will be selected. Be carefull to always use
   // a large enough priority value when trying to call
   // the overloaded function.
