@@ -15,7 +15,10 @@
 
 #include <dune/typetree/utility.hh>
 
+#include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+
+#include <dune/functions/common/test/testsuite.hh>
 
 using namespace Dune;
 
@@ -128,83 +131,47 @@ public:
 };
 
 
-class TestResult
+
+
+#if 0
+template<class Vector, class SizeInfo, class SizePrefix,
+  typename std::enable_if< not HasStaticSize<Vector>::value, int>::type = 0>
+bool checkHierarchicVectorSize(const Vector& v, const SizeInfo& sizeInfo, SizePrefix prefix)
 {
+  TestSuite test;;
 
-  class TestStream : public std::ostringstream
+  test.require(v.size() == sizeInfo(SizePrefix{}))
+  prefix.push_back(0);
+  for (std::size_t i=0; i< v.size(); ++i)
   {
-  public:
-
-    TestStream(bool condition, bool required) :
-      condition_(condition),
-      required_(required)
-    {}
-
-    TestStream(const TestStream& other) :
-      condition_(other.condition_),
-      required_(other.required_)
-    {
-      (*this) << other.str();
-      other.condition_ = true;
-    }
-
-    ~TestStream()
-    {
-      if (not condition_)
-      {
-        if (required_)
-        {
-          std::cout << "Required check failed : " << this->str() << std::endl;
-          DUNE_THROW(Dune::Exception, "Required check failed : " << this->str());
-        }
-        else
-          std::cout << "Check failed : " << this->str() << std::endl;
-      }
-    }
-
-  private:
-    mutable bool condition_;
-    bool required_;
-  };
-
-public:
-
-  TestResult() :
-    result_(true)
-  {}
-
-  TestStream check(bool condition)
-  {
-    result_ &= condition;
-    return TestStream(condition, false);
+    prefix.back() = i;
+    test.check(checkHierarchicVectorSize(v[i], sizeInfo, prefix)) << "Size check for entry with prefix " << prefix << " failed";
   }
+  return test;
+}
 
-  TestStream require(bool condition)
+
+template<class Vector, class SizeInfo, class SizePrefix>
+bool checkHierarchicVectorSize(const Vector& v, const SizeInfo& sizeInfo, SizePrefix prefix)
+{
+  TestSuite test;;
+
+  test.require(v.size() == sizeInfo(SizePrefix{}))
+  prefix.push_back(0);
+  for (std::size_t i=0; i< v.size(); ++i)
   {
-    result_ &= condition;
-    return TestStream(condition, true);
+    prefix.back() = i;
+    test.check(checkHierarchicVectorSize(v[i], sizeInfo, prefix)) << "Size check for entry with prefix " << prefix << " failed";
   }
-
-  operator const bool& () const
-  {
-    return result_;
-  }
-
-  operator bool& ()
-  {
-    return result_;
-  }
-
-private:
-  bool result_;
-};
-
+  return test;
+}
+#endif
 
 
 template<class Vector, class Coefficient, std::size_t dim, class MultiIndex>
-bool checkHierarchicVector()
+Dune::Functions::TestSuite checkHierarchicVector(std::string shortName="")
 {
-  TestResult result;
+  Dune::Functions::TestSuite test(shortName);
 
   using namespace Dune::TypeTree::Indices;
   using SizeInfo = HybridSizeInfoDummy<dim>;
@@ -222,17 +189,17 @@ bool checkHierarchicVector()
   x.resize(sizeInfo);
 
   // Derive size information from vector
-  result.require(x_raw.size() == sizeInfo(SizePrefix{}))
+  test.require(x_raw.size() == sizeInfo(SizePrefix{}), "resize check")
     << "x_raw.size() is " << x_raw.size() << " but should be " << sizeInfo(SizePrefix{});
 
-  result.require(x_raw[_0].size() == sizeInfo(SizePrefix{0}))
+  test.require(x_raw[_0].size() == sizeInfo(SizePrefix{0}), "resize check")
     << "x_raw[_0].size() is " << x_raw[_0].size() << " but should be " << sizeInfo(SizePrefix{0});
 
   for (std::size_t i=0; i<sizeInfo({0}); ++i)
-    result.require(x_raw[_0][i].size() == sizeInfo(SizePrefix{0,i}))
+    test.require(x_raw[_0][i].size() == sizeInfo(SizePrefix{0,i}), "resize check")
       << "x_raw[_0][" << i << "].size() is " << x_raw[_0][i].size() << " but should be " << sizeInfo(SizePrefix{0,i});
 
-  result.require(x_raw[_1].size() == sizeInfo(SizePrefix{1}))
+  test.require(x_raw[_1].size() == sizeInfo(SizePrefix{1}), "resize check")
     << "x_raw[_1].size() is " << x_raw[_0].size() << " but should be " << sizeInfo(SizePrefix{1});
 
 
@@ -249,17 +216,16 @@ bool checkHierarchicVector()
   for (std::size_t i=0; i<x_raw[_0].size(); ++i)
     for (std::size_t j=0; j<x_raw[_0][i].size(); ++j)
     {
-//      std::cout << "x[{0," << i << "," << j << "}] = " << x_const[MultiIndex{{0, i, j}}] << std::endl;
-      result.check(x_const[MultiIndex{{0, i, j}}] == Coefficient(0+i+j))
+      test.check(x_const[MultiIndex{{0, i, j}}] == Coefficient(0+i+j))
         << "x[{0," << i << "," << j << "}] contains wrong value";
     }
   for (std::size_t i=0; i<x_raw[_1].size(); ++i)
   {
-//    std::cout << "x[{1," << i << "}] = " << x_const[MultiIndex{{1, i}}] << std::endl;
-    result.check(x_const[MultiIndex{{1, i}}] == Coefficient(1+i))
+    test.check(x_const[MultiIndex{{1, i}}] == Coefficient(1+i))
       << "x[{1," << i << "}] contains wrong value";
   }
-  return result;
+
+  return test;
 }
 
 
@@ -273,15 +239,14 @@ int main (int argc, char *argv[]) try
   ///////////////////////////////////
 
 
-  TestResult result;
+  Dune::Functions::TestSuite test;
   {
     using VelocityVector = std::vector<std::vector<double>>;
     using PressureVector = std::vector<double>;
     using Coefficient = double;
     using Vector = TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    result.check(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>())
-      << "Test with " << Dune::className<Vector>() << " failed";
+    test.subTest(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>("TV<V<V<double>>, V<double>>"));
   }
 
   {
@@ -290,8 +255,7 @@ int main (int argc, char *argv[]) try
     using Coefficient = double;
     using Vector = TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    result.check(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>())
-      << "Test with " << Dune::className<Vector>() << " failed";
+    test.subTest(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>("TV<V<BV<FV<double,1>>>, V<FV<doule,1>>>"));
   }
 
   {
@@ -300,8 +264,7 @@ int main (int argc, char *argv[]) try
     using Coefficient = Dune::FieldVector<double,3>;
     using Vector = TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    result.check(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>())
-      << "Test with " << Dune::className<Vector>() << " failed";
+    test.subTest(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>("TV<V<V<FV<double,3>>>, V<FV<double,3>>>"));
   }
 
   {
@@ -311,8 +274,7 @@ int main (int argc, char *argv[]) try
     using Coefficient = double;
     using Vector = TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    result.check(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>())
-      << "Test with " << Dune::className<Vector>() << " failed";
+    test.subTest(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>("TV<V<A<FV<double,1>,5>>, V<double>>"));
   }
 
   {
@@ -322,8 +284,7 @@ int main (int argc, char *argv[]) try
     using Coefficient = double;
     using Vector = Dune::MultiTypeBlockVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    result.check(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>())
-      << "Test with " << Dune::className<Vector>() << " failed";
+    test.subTest(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>("MTBV<BV<FV<double,5>>, BV<FV<double,1>>>"));
   }
 
   {
@@ -333,16 +294,11 @@ int main (int argc, char *argv[]) try
     using Coefficient = double;
     using Vector = Dune::MultiTypeBlockVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    result.check(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>())
-      << "Test with " << Dune::className<Vector>() << " failed";
+    test.subTest(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>("MTBV<V<MTBV<FV<double,1>, double, FV<double,1>>>, BV<FV<double,1>>"));
   }
 
 
-  if (not result)
-    std::cout << "Test failed" << std::endl;
-
-  return result ? 0 : 1;
-
+  return test.exit();
 }
 // Error handling
 catch (Exception e) {
