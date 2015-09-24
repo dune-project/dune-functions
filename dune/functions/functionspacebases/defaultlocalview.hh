@@ -54,8 +54,8 @@ public:
    */
   void bind(const Element& e)
   {
-    element_ = &e;
-    bindTree(tree_, e);
+    element_ = e;
+    bindTree(tree_, element_);
   }
 
   /** \brief Return the grid element that the view is bound to
@@ -64,10 +64,11 @@ public:
    */
   const Element& element() const
   {
-    if (element_)
-      return *element_;
-    else
-      DUNE_THROW(Dune::Exception, "Can't query element of unbound local view");
+    // \TODO Once we have a way to check if entites are valid, we should re-add this.
+//    if (element_)
+      return element_;
+//    else
+//      DUNE_THROW(Dune::Exception, "Can't query element of unbound local view");
   }
 
   /** \brief Unbind from the current element
@@ -113,7 +114,7 @@ public:
 
 protected:
   const GlobalBasis* globalBasis_;
-  const Element* element_;                    // \TODO Should we store a copy of the element?
+  Element element_;
   Tree tree_;
 };
 
