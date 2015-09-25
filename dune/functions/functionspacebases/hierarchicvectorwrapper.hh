@@ -4,6 +4,9 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_HIERARCHICVECTORWRAPPER_HH
 
 
+#include <dune/typetree/utility.hh>
+
+#include <dune/functions/common/utility.hh>
 #include <dune/functions/common/concept.hh>
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/common/staticforloop.hh>
@@ -102,24 +105,6 @@ class HierarchicVectorWrapper
 
 
 
-  template<size_type i, class E, class MultiIndex, size_type ti,
-      typename std::enable_if< (ti < StaticSize<E>::value), int>::type = 0>
-  static auto dynamicToStaticIndexAccess(E&& e, const MultiIndex& multiIndex, const Dune::TypeTree::index_constant<ti>& tryIndex)
-    -> Coefficient&
-  {
-    if (multiIndex[i] == tryIndex)
-      return getEntry<i+1>(e[tryIndex], multiIndex);
-    return dynamicToStaticIndexAccess<i>(std::forward<E>(e), multiIndex, Dune::TypeTree::index_constant<ti+1>());
-  }
-
-  template<size_type i, class E, class MultiIndex>
-  static auto dynamicToStaticIndexAccess(E&& e, const MultiIndex& multiIndex, const Dune::TypeTree::index_constant<StaticSize<E>::value>& tryIndex)
-    -> Coefficient&
-  {
-    DUNE_THROW(RangeError, "Can't access e[" << StaticSize<E>::value << "] for statically sized container of size " << StaticSize<E>::value);
-    return getEntry<i+1>(e[Dune::TypeTree::Indices::_0], multiIndex);
-  }
-
   // The getEntry functions recursively apply operator[] to the given object e.
   // Each call of getEntry<i>(e, multiIndex) computes the multiIndex[i]-th entry
   // of e, calls getEntry<i+1>(e[multiIndex[i]], multiIndex) and returns the result.
@@ -134,17 +119,32 @@ class HierarchicVectorWrapper
     return getEntry<i+1>(e[multiIndex[i]], multiIndex);
   }
 
+  // This should be a generic lambda
+  struct Lambda_getEntry
+  {
+    template<class Index, size_type i, class E, class MultiIndex>
+    Coefficient& operator()(const Index& multiIndex_i, std::integral_constant<size_type, i>, E&& e, const MultiIndex& multiIndex)
+    {
+      return getEntry<i+1>(e[multiIndex_i], multiIndex);
+    }
+  };
+
   // This is the overload for statically sized e. Since e may be a multi-type container,
   // we can in general not use e[multiIndex[i]]. Instead we have to do a dynamic->static
-  // mapping of multiIndex[i] which is achieved by dynamicToStaticIndexAccess.
+  // mapping of multiIndex[i] which is achieved by forwardAsStaticIndex.
   template<size_type i, class E, class MultiIndex,
       typename std::enable_if< not std::is_convertible<typename std::decay<E>::type, Coefficient>::value, int>::type = 0,
       typename std::enable_if< HasStaticSize<E>::value, int>::type = 0>
   static auto getEntry(E&& e, const MultiIndex& multiIndex)
     -> Coefficient&
   {
-    using namespace Dune::TypeTree::Indices;
-    return dynamicToStaticIndexAccess<i>(std::forward<E>(e), multiIndex, Dune::TypeTree::Indices::_0);
+    // With generic lambdas the following line would become:
+    //
+    //    return forwardAsStaticIndex<StaticSize<E>::value>(multiIndex[i], [&](auto&& multiIndex_i)-> Coefficient& {
+    //      return getEntry<i+1>(e[multiIndex_i], multiIndex);
+    //    };)
+    //
+    return forwardAsStaticIndex<StaticSize<E>::value>(multiIndex[i], Lambda_getEntry(), std::integral_constant<size_type, i>(), std::forward<E>(e), multiIndex);
   }
 
   // This is the overload for the coefficient type. If e can be cast to the Coefficient type
