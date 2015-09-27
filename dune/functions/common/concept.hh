@@ -154,10 +154,27 @@ static constexpr bool requireConcept()
 }
 
 // Helper function for use in concept definitions.
+// This allows to avoid using decltype
+template<class C, class... T, typename std::enable_if<models<C, T...>(), int>::type = 0>
+static constexpr bool requireConcept(T&&... t)
+{
+  return true;
+}
+
+// Helper function for use in concept definitions.
 // If the first passed type is not convertible to the secand, the concept will to be satisfied.
 template<class From, class To,
   typename std::enable_if< std::is_convertible<From, To>::value, int>::type = 0>
 static constexpr bool requireConvertible()
+{
+  return true;
+}
+
+// Helper function for use in concept definitions.
+// If passed argument is not convertible to the first passed type, the concept will to be satisfied.
+template<class To, class From,
+  typename std::enable_if< std::is_convertible<From, To>::value, int>::type = 0>
+static constexpr bool requireConvertible(const From&)
 {
   return true;
 }
