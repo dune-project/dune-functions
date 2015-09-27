@@ -47,8 +47,7 @@ struct Function<Range(Domain)> : Refines<Callable<Domain> >
   template<class F>
   auto require(F&& f) -> decltype(
     // F models Function<Range(Domain)> if the result of F(Domain) is implicitly convertible to Range
-//    requireTrue< std::is_convertible<typename std::result_of<F(Domain)>::type, Range>::value >()
-    requireConvertible<typename std::result_of<F(Domain)>::type, Range>()
+    requireConvertible<Range>(f(std::declval<Domain>()))
   );
 };
 
@@ -76,7 +75,7 @@ struct DifferentiableFunction<Range(Domain), DerivativeTraits> : Refines<Dune::F
   template<class F>
   auto require(F&& f) -> decltype(
     derivative(f),
-    requireTrue<isFunction<decltype(derivative(f)), DerivativeSignature>()>()
+    requireConcept<Function<DerivativeSignature>>(derivative(f))
   );
 };
 
@@ -105,7 +104,7 @@ struct LocalFunction<Range(Domain), LocalContext, DerivativeTraits> :
     f.bind(std::declval<LocalContext>()),
     f.unbind(),
     f.localContext(),
-    requireConvertible<decltype(f.localContext()), LocalContext>()
+    requireConvertible<LocalContext>(f.localContext())
   );
 };
 
@@ -152,9 +151,9 @@ struct GridFunction<Range(Domain), EntitySet, DerivativeTraits> :
   auto require(F&& f) -> decltype(
     localFunction(f),
     f.entitySet(),
-    requireTrue<isLocalFunction<decltype(localFunction(f)), LocalSignature, LocalContext, LocalDerivativeTraits>()> (),
-    requireTrue<isEntitySet<EntitySet>()>(),
-    requireConvertible<decltype(f.entitySet()), EntitySet>(),
+    requireConcept<LocalFunction<LocalSignature, LocalContext, LocalDerivativeTraits>>(localFunction(f)),
+    requireConcept<Concept::EntitySet, EntitySet>(),
+    requireConvertible<EntitySet>(f.entitySet()),
     requireConvertible<typename EntitySet::GlobalCoordinate, Domain>()
   );
 };
