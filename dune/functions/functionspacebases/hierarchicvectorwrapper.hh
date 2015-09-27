@@ -18,6 +18,48 @@ namespace Functions {
 
 
 
+namespace Imp {
+
+  // Construct default coefficent type from vector and multiindex type
+  // This requires that MultiIndex has a static size. Otherwise the
+  // vector type itself is returned.
+  template<class V, class MultiIndex>
+  struct CoefficientType
+  {
+    template<class E, std::size_t size>
+    struct DefaultCoefficientTypeHelper
+    {
+      using E0 = decltype(std::declval<E>()[Dune::TypeTree::Indices::_0]);
+      using type = typename DefaultCoefficientTypeHelper<E0, size-1>::type;
+    };
+
+    template<class E>
+    struct DefaultCoefficientTypeHelper<E, 0>
+    {
+      using type = E;
+    };
+
+    template<class MI,
+      typename std::enable_if<HasStaticSize<MI>::value, int>::type = 0>
+    static constexpr std::size_t getStaticSizeOrZero()
+    {
+      return StaticSize<MI>::value;
+    }
+
+    template<class MI,
+      typename std::enable_if<not HasStaticSize<MI>::value, int>::type = 0>
+    static constexpr std::size_t getStaticSizeOrZero()
+    {
+      return 0;
+    }
+
+    using type = typename DefaultCoefficientTypeHelper<V, getStaticSizeOrZero<MultiIndex>()>::type;
+  };
+
+} // namespace Imp
+
+
+
 /**
  * \brief A wrapper providing multiindex acces to vector entries
  *
@@ -41,7 +83,13 @@ namespace Functions {
 template<class V, class CO=void>
 class HierarchicVectorWrapper
 {
-  using Coefficient = CO;
+  template<class MultiIndex>
+  using Coefficient = typename std::conditional< std::is_same<void,CO>::value and HasStaticSize<MultiIndex>::value,
+            typename Imp::CoefficientType<V, MultiIndex>::type,
+            CO
+            >::type;
+
+
   using size_type = std::size_t;
 
   template<class C, class SizeProvider,
@@ -110,30 +158,31 @@ class HierarchicVectorWrapper
   // of e, calls getEntry<i+1>(e[multiIndex[i]], multiIndex) and returns the result.
 
   // This is the overload for dynamically sized e.
-  template<size_type i, class E, class MultiIndex,
-      typename std::enable_if< not std::is_convertible<typename std::decay<E>::type, Coefficient>::value, int>::type = 0,
+  template<class Coefficient, size_type i, class E, class MultiIndex,
+      typename std::enable_if< not std::is_convertible<E&, Coefficient&>::value, int>::type = 0,
       typename std::enable_if< not HasStaticSize<E>::value, int>::type = 0>
   static auto getEntry(E&& e, const MultiIndex& multiIndex)
     -> Coefficient&
   {
-    return getEntry<i+1>(e[multiIndex[i]], multiIndex);
+    return getEntry<Coefficient, i+1>(e[multiIndex[i]], multiIndex);
   }
 
   // This should be a generic lambda
+  template<class Coefficient>
   struct Lambda_getEntry
   {
     template<class Index, size_type i, class E, class MultiIndex>
     Coefficient& operator()(const Index& multiIndex_i, std::integral_constant<size_type, i>, E&& e, const MultiIndex& multiIndex)
     {
-      return getEntry<i+1>(e[multiIndex_i], multiIndex);
+      return getEntry<Coefficient, i+1>(e[multiIndex_i], multiIndex);
     }
   };
 
   // This is the overload for statically sized e. Since e may be a multi-type container,
   // we can in general not use e[multiIndex[i]]. Instead we have to do a dynamic->static
   // mapping of multiIndex[i] which is achieved by forwardAsStaticIndex.
-  template<size_type i, class E, class MultiIndex,
-      typename std::enable_if< not std::is_convertible<typename std::decay<E>::type, Coefficient>::value, int>::type = 0,
+  template<class Coefficient, size_type i, class E, class MultiIndex,
+      typename std::enable_if< not std::is_convertible<E&, Coefficient&>::value, int>::type = 0,
       typename std::enable_if< HasStaticSize<E>::value, int>::type = 0>
   static auto getEntry(E&& e, const MultiIndex& multiIndex)
     -> Coefficient&
@@ -144,7 +193,7 @@ class HierarchicVectorWrapper
     //      return getEntry<i+1>(e[multiIndex_i], multiIndex);
     //    };)
     //
-    return forwardAsStaticIndex<StaticSize<E>::value>(multiIndex[i], Lambda_getEntry(), std::integral_constant<size_type, i>(), std::forward<E>(e), multiIndex);
+    return forwardAsStaticIndex<StaticSize<E>::value>(multiIndex[i], Lambda_getEntry<Coefficient>(), std::integral_constant<size_type, i>(), std::forward<E>(e), multiIndex);
   }
 
   // This is the overload for the coefficient type. If e can be cast to the Coefficient type
@@ -152,8 +201,8 @@ class HierarchicVectorWrapper
   // recursion. Notice that a check if i has reached the size of multiIndex cannot be used
   // as termination criterion in general, because multiIndex can be dynamically sized. This
   // is especially true, if the multi-indices are non-uniform.
-  template<size_type i, class E, class MultiIndex,
-      typename std::enable_if< std::is_convertible<typename std::decay<E>::type, Coefficient>::value, int>::type = 0>
+  template<class Coefficient, size_type i, class E, class MultiIndex,
+      typename std::enable_if< std::is_convertible<E&, Coefficient&>::value, int>::type = 0>
   static auto getEntry(E&& e, const MultiIndex& multiIndex)
     -> Coefficient&
   {
@@ -178,16 +227,16 @@ public:
 
   template<class MultiIndex>
   auto operator[](const MultiIndex& index) const
-      ->decltype(getEntry<0>(std::declval<Vector>(), index))
+      ->decltype(getEntry<Coefficient<MultiIndex>,0>(std::declval<Vector>(), index))
   {
-    return getEntry<0>(*vector_, index);
+    return getEntry<Coefficient<MultiIndex>, 0>(*vector_, index);
   }
 
   template<class MultiIndex>
   auto operator[](const MultiIndex& index)
-      ->decltype(getEntry<0>(std::declval<Vector>(), index))
+      ->decltype(getEntry<Coefficient<MultiIndex>, 0>(std::declval<Vector>(), index))
   {
-    return getEntry<0>(*vector_, index);
+    return getEntry<Coefficient<MultiIndex>, 0>(*vector_, index);
   }
 
   const Vector& vector() const
@@ -205,167 +254,6 @@ private:
   Vector* vector_;
 };
 
-
-
-template<class V>
-class HierarchicVectorWrapper<V, void>
-{
-
-  template<class C, class SizeProvider,
-    typename std::enable_if< not Concept::models<Concept::HasResize, C>(), int>::type = 0,
-    typename std::enable_if< not Concept::models<Concept::HasSizeMethod, C>(), int>::type = 0>
-  static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
-  {
-    auto size = sizeProvider.size(prefix);
-    if (size != 0)
-      DUNE_THROW(RangeError, "Can't resize scalar vector entry v[" << prefix << "] to size(" << prefix << ")=" << size);
-  }
-
-  struct StaticResizeHelper
-  {
-    template<class I, class C, class SizeProvider>
-    void operator()(I&& i, C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
-    {
-      prefix.back() = i;
-      resizeHelper(c[i], sizeProvider, prefix);
-    }
-  };
-
-  template<class C, class SizeProvider,
-    typename std::enable_if< not Concept::models<Concept::HasResize, C>(), int>::type = 0,
-    typename std::enable_if< Concept::models<Concept::HasSizeMethod, C>(), int>::type = 0>
-  static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
-  {
-    auto size = sizeProvider.size(prefix);
-    if (size == 0)
-      return;
-
-    if (c.size() != size)
-      DUNE_THROW(RangeError, "Can't resize statically sized vector entry v[" << prefix << "] of size " << c.size() << " to size(" << prefix << ")=" << size);
-
-    prefix.push_back(0);
-    staticForLoop<0, StaticSize<C>::value>(StaticResizeHelper(), c, sizeProvider, prefix);
-  }
-
-  template<class C, class SizeProvider,
-    typename std::enable_if< Concept::models<Concept::HasResize, C>(), int>::type = 0>
-  static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
-  {
-    auto size = sizeProvider.size(prefix);
-    if (size==0)
-    {
-      if (c.size()==0)
-        DUNE_THROW(RangeError, "Can't resize dynamically sized vector entry v[" << prefix << "]. It's size is 0 but the target size is unknown due to size(" << prefix << ")=0.");
-      else
-        return;
-    }
-
-    c.resize(size);
-    prefix.push_back(0);
-    for(std::size_t i=0; i<size; ++i)
-    {
-      prefix.back() = i;
-      resizeHelper(c[i], sizeProvider, prefix);
-    }
-  }
-
-  template<int start, int end>
-  struct GetEntryHelper
-  {
-    template<class T, class MultiIndex,
-      typename std::enable_if< Concept::models<Concept::HasResize, typename std::decay<T>::type>(), int>::type = 0>
-    static auto getEntry(T&& t, MultiIndex&& index)
-      -> decltype(GetEntryHelper<start+1,end>::getEntry(t[index[start]], index))
-    {
-      return GetEntryHelper<start+1,end>::getEntry(t[index[start]], index);
-    }
-
-    template<class T, class MultiIndex,
-      typename std::enable_if< not Concept::models<Concept::HasResize, typename std::decay<T>::type>(), int>::type = 0>
-    static auto getEntry(T&& t, MultiIndex&& index)
-      -> decltype(GetEntryHelper<start+1,end>::getEntry(t[Dune::TypeTree::Indices::_0], index))
-    {
-      using namespace Dune::TypeTree::Indices;
-      static const int size = StaticSize<typename std::decay<T>::type>::value;
-      return getEntry(std::forward<T>(t), index, Dune::TypeTree::index_constant<size-1>());
-    }
-
-    template<class T, class MultiIndex, std::size_t i,
-      typename std::enable_if< (i>0), int>::type = 0>
-    static auto getEntry(T&& t, MultiIndex&& index, const Dune::TypeTree::index_constant<i>& static_i)
-      -> decltype(GetEntryHelper<start+1,end>::getEntry(t[Dune::TypeTree::Indices::_0], index))
-    {
-      if (index[start]==i)
-        return GetEntryHelper<start+1,end>::getEntry(t[static_i], index);
-      return GetEntryHelper<start,end>::getEntry(std::forward<T>(t), index, Dune::TypeTree::index_constant<i-1>());
-    }
-
-    template<class T, class MultiIndex>
-    static auto getEntry(T&& t, MultiIndex&& index, const Dune::TypeTree::index_constant<0>& static_i)
-      -> decltype(GetEntryHelper<start+1,end>::getEntry(t[static_i], index))
-    {
-      return GetEntryHelper<start+1,end>::getEntry(t[static_i], index);
-    }
-
-  };
-
-  template<int start>
-  struct GetEntryHelper<start, start>
-  {
-    template<class T, class MultiIndex>
-    static auto getEntry(T&& t, MultiIndex&& index)
-      ->decltype(std::forward<T>(t))
-    {
-      return std::forward<T>(t);
-    }
-  };
-
-public:
-
-  using Vector = V;
-
-  HierarchicVectorWrapper(Vector& vector) :
-    vector_(&vector)
-  {}
-
-  template<class SizeProvider>
-  void resize(const SizeProvider& sizeProvider)
-  {
-    typename SizeProvider::SizePrefix prefix;
-    prefix.resize(0);
-    resizeHelper(*vector_, sizeProvider, prefix);
-  }
-
-  template<class MultiIndex,
-           typename std::enable_if< HasStaticSize<MultiIndex>::value, int>::type = 0>
-  auto operator[](MultiIndex&& index) const
-      ->decltype(GetEntryHelper<0, StaticSize<MultiIndex>::value>::getEntry(std::declval<Vector>(), index))
-  {
-    return GetEntryHelper<0, StaticSize<MultiIndex>::value>::getEntry(*vector_, index);
-  }
-
-  template<class MultiIndex,
-           typename std::enable_if< HasStaticSize<MultiIndex>::value, int>::type = 0>
-  auto operator[](MultiIndex&& index)
-      ->decltype(GetEntryHelper<0, StaticSize<MultiIndex>::value>::getEntry(std::declval<Vector>(), index))
-  {
-    return GetEntryHelper<0, StaticSize<MultiIndex>::value>::getEntry(*vector_, index);
-  }
-
-  const Vector& vector() const
-  {
-    return *vector_;
-  }
-
-  Vector& vector()
-  {
-    return *vector_;
-  }
-
-private:
-
-  Vector* vector_;
-};
 
 
 
