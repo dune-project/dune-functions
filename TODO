@@ -63,18 +63,6 @@ or one more letter if needed.
 
 
 
-# LocalFunction concept
-* CaG: What's the precise definition of a local function?
-  Currently it represents a GridFunction locally in
-  terms of local coordinates. However its derivatives
-  (not the values!) are still returned wrt the global
-  coordinate system, exactly like GlobalFiniteElement does.
-  Although the LocalFunctions implements the DifferentiableFunction
-  concept, this  makes its derivatives somehow inconsistent.
-  Done.
-
-
-
 # GridViewFunction concept
 * CaG: Should GridViewFunction default-implement the global evaluate() method?
   This would be as simple as
