@@ -4,10 +4,6 @@ Feel free to put your wishes and questions into this file.
 It would be nice to prefix your statements with your initials
 or one more letter if needed.
 
-# IO
-* OS: Make SubsamplingVTKWriter accept a DiscreteScalarGlobalBasisFunction
-  directly, rather than a local function
-
 # Development
 * CaG: Should we discuss the further development using a bug tracker?
   And put everythig below into requests?
