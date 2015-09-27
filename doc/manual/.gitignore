@@ -1,0 +1,10 @@
+*.atfi
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.tdo
+*.toc
+
+dune-functions-manual.pdf
