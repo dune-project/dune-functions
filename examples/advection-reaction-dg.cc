@@ -459,20 +459,23 @@ int main (int argc, char *argv[]) try
   MatrixAdapter<MatrixType,VectorType,VectorType> op(stiffnessMatrix);
 
   // Sequential incomplete LU decomposition as the preconditioner
-  SeqILU0<MatrixType,VectorType,VectorType> ilu0(stiffnessMatrix,1.0);
+  SeqILU0<MatrixType,VectorType,VectorType> preconditioner(stiffnessMatrix,1.0);
+
+//  Richardson<VectorType,VectorType> preconditioner(1.0);
 
   // Preconditioned conjugate-gradient solver
-  CGSolver<VectorType> cg(op,
-                          ilu0, // preconditioner
-                          1e-4, // desired residual reduction factor
-                          50,   // maximum number of iterations
-                          2);   // verbosity of the solver
+  RestartedGMResSolver<VectorType> solver(op,
+                                          preconditioner,
+                                          1e-10,  // desired residual reduction factor
+                                          500,     // number of iterations between restarts
+                                          500,   // maximum number of iterations
+                                          2);    // verbosity of the solver
 
   // Object storing some statistics about the solving process
   InverseOperatorResult statistics;
 
   // Solve!
-  cg.apply(x, rhs, statistics);
+  solver.apply(x, rhs, statistics);
 
   ////////////////////////////////////////////////////////////////////////////
   //  Make a discrete function from the FE basis and the coefficient vector
