@@ -42,12 +42,14 @@ struct AllTrueBitSetVector
     return true;
   }
 
-  const AllTrueBitSetVector& operator[](int i) const
+  template<class I>
+  const AllTrueBitSetVector& operator[](const I&) const
   {
     return *this;
   }
 
-  void resize(const std::size_t&) const
+  template<class SP>
+  void resize(const SP&) const
   {}
 
 };
