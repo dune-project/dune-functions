@@ -38,17 +38,19 @@ class TaylorHoodVelocityTree;
 template<typename GV, class ST, typename TP>
 class TaylorHoodBasisTree;
 
-template<typename GV, class MI, class TP, class ST>
+template<typename GV, class MI, class TP, class ST, bool HI>
 class TaylorHoodNodeIndexSet;
 
 
 
-template<typename GV, class MI, class ST>
+template<typename GV, class MI, class ST, bool HI=false>
 class TaylorHoodNodeFactory
 {
+  static const bool useHybridIndices = HI;
+
   static const int dim = GV::dimension;
 
-  template<class, class, class, class>
+  template<class, class, class, class, bool>
   friend class TaylorHoodNodeIndexSet;
 
 public:
@@ -62,12 +64,12 @@ public:
   using Node = TaylorHoodBasisTree<GV, ST, TP>;
 
   template<class TP>
-  using IndexSet = TaylorHoodNodeIndexSet<GV, MI, TP, ST>;
+  using IndexSet = TaylorHoodNodeIndexSet<GV, MI, TP, ST, HI>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using SizePrefix = Dune::ReservedVector<size_type, 2>;
+  using SizePrefix = Dune::ReservedVector<size_type, 3>;
 
 private:
 
@@ -119,6 +121,13 @@ public:
   //! Return number possible values for next position in multi index
   size_type size(const SizePrefix prefix) const
   {
+    return sizeImp<useHybridIndices>(prefix);
+  }
+
+  template<bool hi,
+    typename std::enable_if<not hi,int>::type = 0>
+  size_type sizeImp(const SizePrefix prefix) const
+  {
     if (prefix.size() == 0)
       return 2;
     if (prefix.size() == 1)
@@ -129,6 +138,31 @@ public:
         return pq1Factory_.size();
     }
     if (prefix.size() == 2)
+      return 0;
+    assert(false);
+  }
+
+  template<bool hi,
+    typename std::enable_if<hi,int>::type = 0>
+  size_type sizeImp(const SizePrefix prefix) const
+  {
+    if (prefix.size() == 0)
+      return 2;
+    if (prefix.size() == 1)
+    {
+      if (prefix[0] == 0)
+        return pq2Factory_.size();
+      if (prefix[0] == 1)
+        return pq1Factory_.size();
+    }
+    if (prefix.size() == 2)
+    {
+      if (prefix[0] == 0)
+        return dim;
+      if (prefix[0] == 1)
+        return 0;
+    }
+    if (prefix.size() == 3)
       return 0;
     assert(false);
   }
@@ -198,9 +232,11 @@ public:
 
 
 
-template<typename GV, class MI, class TP, class ST>
+template<typename GV, class MI, class TP, class ST, bool HI>
 class TaylorHoodNodeIndexSet
 {
+  static const bool useHybridIndices = HI;
+
   static const int dim = GV::dimension;
 
 public:
@@ -210,7 +246,7 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = TaylorHoodNodeFactory<GV, MI, ST>;
+  using NodeFactory = TaylorHoodNodeFactory<GV, MI, ST, HI>;
 
   using Node = typename NodeFactory::template Node<TP>;
 
@@ -248,6 +284,13 @@ public:
 
   MultiIndex index(size_type localIndex) const
   {
+    return indexImp<useHybridIndices>(localIndex);
+  }
+
+  template<bool hi,
+    typename std::enable_if<not hi,int>::type = 0>
+  MultiIndex indexImp(size_type localIndex) const
+  {
     MultiIndex mi;
 
     size_type velocityComponentSize = pq2NodeIndexSet_.size();
@@ -262,6 +305,28 @@ public:
     }
     if (mi[0] == 1)
       mi[1] = pq1NodeIndexSet_.index(localIndex-pressureOffset)[0];
+    return mi;
+  }
+
+  template<bool hi,
+    typename std::enable_if<hi,int>::type = 0>
+  MultiIndex indexImp(size_type localIndex) const
+  {
+    MultiIndex mi;
+
+    size_type velocityComponentSize = pq2NodeIndexSet_.size();
+    size_type pressureOffset = velocityComponentSize * dim;
+
+    mi.push_back(localIndex / pressureOffset);
+    if (mi[0] == 0)
+    {
+      size_type v_comp = localIndex / velocityComponentSize;
+      size_type v_localIndex = localIndex % velocityComponentSize;
+      mi.push_back(pq2NodeIndexSet_.index(v_localIndex)[0]);
+      mi.push_back(v_comp);
+    }
+    if (mi[0] == 1)
+      mi.push_back(pq1NodeIndexSet_.index(localIndex-pressureOffset)[0]);
     return mi;
   }
 
