@@ -1,6 +1,7 @@
 add_subdirectory("test"  EXCLUDE_FROM_ALL)
 
 install(FILES
+        basistags.hh
         bsplinebasis.hh
         compositebasis.hh
         concepts.hh
