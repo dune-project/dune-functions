@@ -2,6 +2,7 @@ add_subdirectory("test"  EXCLUDE_FROM_ALL)
 
 install(FILES
         bsplinebasis.hh
+        compositebasis.hh
         concepts.hh
         defaultglobalbasis.hh
         defaultglobalindexset.hh
@@ -14,6 +15,7 @@ install(FILES
         hierarchicvectorwrapper.hh
         interpolate.hh
         lagrangedgbasis.hh
+        powerbasis.hh
         pq1nodalbasis.hh
         pqknodalbasis.hh
         nodes.hh
