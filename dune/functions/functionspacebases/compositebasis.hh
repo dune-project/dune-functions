@@ -359,9 +359,25 @@ namespace BasisBuilder {
 
 namespace Imp {
 
+template<class ST0>
+constexpr std::size_t maxHelper(ST0&& i0)
+{
+  return i0;
+}
+
+template<class ST0, class... ST>
+constexpr std::size_t maxHelper(ST0&& i0, ST&&... i)
+{
+  return (i0 > maxHelper(i...)) ? i0 : maxHelper(i...);
+}
+
 template<class IndexTag, class... SubFactoryTags>
 struct CompositeNodeFactoryBuilder
 {
+  static const bool isBlocked = std::is_same<IndexTag,BasisTags::BlockedIndex>::value or std::is_same<IndexTag,BasisTags::LeafBlockedIndex>::value;
+
+  static const std::size_t requiredMultiIndexSize=maxHelper(SubFactoryTags::requiredMultiIndexSize...) + (std::size_t)(isBlocked);
+
   template<class MultiIndex, class GridView, class size_type=std::size_t>
   auto build(const GridView& gridView)
     -> CompositeNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTags().template build<MultiIndex, GridView, size_type>(gridView))...>

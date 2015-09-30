@@ -415,6 +415,8 @@ namespace Imp {
 template<std::size_t k>
 struct PQkNodeFactoryBuilder
 {
+  static const std::size_t requiredMultiIndexSize=1;
+
   template<class MultiIndex, class GridView, class size_type=std::size_t>
   auto build(const GridView& gridView)
     -> PQkNodeFactory<GridView, k, MultiIndex, size_type>

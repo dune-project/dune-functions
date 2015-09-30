@@ -331,6 +331,10 @@ namespace Imp {
 template<std::size_t k, class IndexTag, class SubFactoryTag>
 struct PowerNodeFactoryBuilder
 {
+  static const bool isBlocked = std::is_same<IndexTag,BasisTags::BlockedIndex>::value or std::is_same<IndexTag,BasisTags::LeafBlockedIndex>::value;
+
+  static const std::size_t requiredMultiIndexSize=SubFactoryTag::requiredMultiIndexSize + (std::size_t)(isBlocked);
+
   template<class MultiIndex, class GridView, class size_type=std::size_t>
   auto build(const GridView& gridView)
     -> PowerNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTag().template build<MultiIndex, GridView, size_type>(std::declval<GridView>())), k>
