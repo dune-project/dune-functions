@@ -3,17 +3,16 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_POWERBASIS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_POWERBASIS_HH
 
-#include <dune/common/exceptions.hh>
 #include <dune/common/reservedvector.hh>
-#include <dune/common/std/final.hh>
 
 #include <dune/typetree/powernode.hh>
-#include <dune/typetree/compositenode.hh>
+#include <dune/typetree/utility.hh>
 
-#include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
+#include <dune/functions/common/utility.hh>
+#include <dune/functions/common/staticforloop.hh>
+#include <dune/functions/functionspacebases/basistags.hh>
 
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
-#include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+
 
 namespace Dune {
 namespace Functions {
@@ -29,10 +28,6 @@ namespace Functions {
 // state. These components do _not_ depend on the global basis or index
 // set and can be used without a global basis.
 // *****************************************************************************
-
-struct BlockBackTag {};
-struct BlockFrontTag {};
-struct FlatTag {};
 
 template<class MI, class TP, class IT, class SF, std::size_t C>
 class PowerNodeIndexSet;
@@ -137,7 +132,7 @@ public:
     return size(prefix, IndexTag());
   }
 
-  size_type size(const SizePrefix& prefix, BlockFrontTag) const
+  size_type size(const SizePrefix& prefix, BasisTags::BlockFrontTag) const
   {
     if (prefix.size() == 0)
       return children;
@@ -147,7 +142,7 @@ public:
     return subFactory_.size(subPrefix);
   }
 
-  size_type size(const SizePrefix& prefix, BlockBackTag) const
+  size_type size(const SizePrefix& prefix, BasisTags::BlockBackTag) const
   {
     if (prefix.size() == 0)
       return subFactory_.size();
@@ -237,7 +232,7 @@ public:
   }
 
 
-  MultiIndex index(const size_type& localIndex, BlockFrontTag) const
+  MultiIndex index(const size_type& localIndex, BasisTags::BlockFrontTag) const
   {
     using namespace Dune::TypeTree::Indices;
     std::size_t subLocalIndex = localIndex % node_->child(_0).size();
@@ -252,7 +247,7 @@ public:
     return mi;
   }
 
-  MultiIndex index(const size_type& localIndex, BlockBackTag) const
+  MultiIndex index(const size_type& localIndex, BasisTags::BlockBackTag) const
   {
     using namespace Dune::TypeTree::Indices;
     std::size_t subLocalIndex = localIndex % node_->child(_0).size();
@@ -272,19 +267,6 @@ private:
   SubNodeIndexSet subNodeIndexSet_;
   const Node* node_;
 };
-
-
-
-// *****************************************************************************
-// This is the actual global basis implementation based on the reusable parts.
-// *****************************************************************************
-
-/** \brief Nodal basis of a scalar second-order Lagrangean finite element space
- *
- * \tparam GV The GridView that the space is defined on.
- */
-//template<typename GV, class ST = std::size_t>
-//using PowerBasis = DefaultGlobalBasis<PowerNodeFactory<GV, std::array<ST, 2>, ST> >;
 
 
 
