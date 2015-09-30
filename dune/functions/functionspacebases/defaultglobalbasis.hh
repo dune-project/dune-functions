@@ -109,6 +109,19 @@ protected:
 
 
 
+namespace BasisBuilder {
+
+template<class MultiIndex, class GridView, class FactoryTag, class size_type=std::size_t>
+auto makeBasis(const GridView& gridView, FactoryTag&& factoryTag)
+  -> DefaultGlobalBasis<decltype(factoryTag.template build<MultiIndex>(gridView))>
+{
+  return {factoryTag.template build<MultiIndex>(gridView)};
+}
+
+} // end namespace BasisBuilder
+
+
+
 } // end namespace Functions
 } // end namespace Dune
 

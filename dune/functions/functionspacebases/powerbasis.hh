@@ -270,6 +270,42 @@ private:
 
 
 
+namespace BasisBuilder {
+
+namespace Imp {
+
+template<std::size_t k, class IndexTag, class SubFactoryTag>
+struct PowerNodeFactoryBuilder
+{
+  template<class GridView, class MultiIndex, class size_type>
+  using SubFactory = typename std::decay<decltype(SubFactoryTag().template build<MultiIndex, GridView, size_type>(std::declval<GridView>()))>::type;
+
+  template<class MultiIndex, class GridView, class size_type=std::size_t>
+  auto build(const GridView& gridView)
+    -> PowerNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTag().template build<MultiIndex, GridView, size_type>(std::declval<GridView>())), k>
+  {
+    return {SubFactoryTag().build<MultiIndex, GridView, size_type>(gridView)};
+  }
+};
+
+} // end namespace BasisBuilder::Imp
+
+template<std::size_t k, class SubFactoryTag, class IndexTag>
+Imp::PowerNodeFactoryBuilder<k, IndexTag, SubFactoryTag> power(SubFactoryTag&& tag, const IndexTag&)
+{
+  return{};
+}
+
+template<std::size_t k, class SubFactoryTag>
+Imp::PowerNodeFactoryBuilder<k, BasisTags::BlockBackTag, SubFactoryTag> power(SubFactoryTag&& tag)
+{
+  return{};
+}
+
+} // end namespace BasisBuilder
+
+
+
 } // end namespace Functions
 } // end namespace Dune
 

@@ -345,6 +345,39 @@ private:
 
 
 
+namespace BasisBuilder {
+
+namespace Imp {
+
+template<class IndexTag, class... SubFactoryTags>
+struct CompositeNodeFactoryBuilder
+{
+  template<class MultiIndex, class GridView, class size_type=std::size_t>
+  auto build(const GridView& gridView)
+    -> CompositeNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTags().template build<MultiIndex, GridView, size_type>(gridView))...>
+  {
+    return {SubFactoryTags().build<MultiIndex, GridView, size_type>(gridView)...};
+  }
+};
+
+} // end namespace BasisBuilder::Imp
+
+template<class IndexTag, class... SubFactoryTags>
+Imp::CompositeNodeFactoryBuilder<IndexTag, SubFactoryTags...> composite(SubFactoryTags&&... tags, const IndexTag&)
+{
+  return{};
+}
+
+template<class... SubFactoryTags>
+Imp::CompositeNodeFactoryBuilder<BasisTags::BlockFrontTag, SubFactoryTags...> composite(SubFactoryTags&&... tags)
+{
+  return{};
+}
+
+} // end namespace BasisBuilder
+
+
+
 } // end namespace Functions
 } // end namespace Dune
 

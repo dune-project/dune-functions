@@ -408,6 +408,33 @@ protected:
 
 
 
+namespace BasisBuilder {
+
+namespace Imp {
+
+template<std::size_t k>
+struct PQkNodeFactoryBuilder
+{
+  template<class MultiIndex, class GridView, class size_type=std::size_t>
+  auto build(const GridView& gridView)
+    -> PQkNodeFactory<GridView, k, MultiIndex, size_type>
+  {
+    return {gridView};
+  }
+};
+
+} // end namespace BasisBuilder::Imp
+
+template<std::size_t k>
+Imp::PQkNodeFactoryBuilder<k> pq()
+{
+  return{};
+}
+
+} // end namespace BasisBuilder
+
+
+
 // *****************************************************************************
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************
