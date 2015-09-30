@@ -255,7 +255,7 @@ namespace Dune {
       using Mixin = InternalBasisNodeMixin<size_t,TP>;
       using Node = TypeTree::PowerNode<T,n>;
 
-    protected:
+    public:
 
       PowerBasisNode(const TP& tp) :
         Mixin(tp)
@@ -278,7 +278,7 @@ namespace Dune {
       using Mixin = InternalBasisNodeMixin<size_t,TP>;
       using Node = TypeTree::CompositeNode<T...>;
 
-    protected:
+    public:
 
       CompositeBasisNode(const TP& tp)
         : Mixin(tp)
