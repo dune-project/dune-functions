@@ -169,7 +169,12 @@ public:
   };
 
   //! Return number possible values for next position in multi index
-  size_type size(const SizePrefix prefix) const
+  size_type size(const SizePrefix& prefix) const
+  {
+    return size(prefix, IndexTag());
+  }
+
+  size_type size(const SizePrefix& prefix, BasisTags::BlockedIndex) const
   {
     if (prefix.size() == 0)
       return children;
@@ -324,6 +329,11 @@ public:
   };
 
   MultiIndex index(size_type localIndex) const
+  {
+    return index(localIndex, IndexTag());
+  }
+
+  MultiIndex index(const size_type& localIndex, BasisTags::BlockedIndex) const
   {
     size_type offset = 0;
     size_type component = 0;
