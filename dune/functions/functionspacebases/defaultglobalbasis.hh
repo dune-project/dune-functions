@@ -111,6 +111,14 @@ protected:
 
 namespace BasisBuilder {
 
+template<class GridView, class FactoryTag, class size_type=std::size_t>
+auto makeBasis(const GridView& gridView, FactoryTag&& factoryTag)
+  -> DefaultGlobalBasis<decltype(factoryTag.template build<typename Dune::ReservedVector<size_type, FactoryTag::requiredMultiIndexSize> >(gridView))>
+{
+  using MultiIndex = typename Dune::ReservedVector<size_type, FactoryTag::requiredMultiIndexSize>;
+  return {factoryTag.template build<MultiIndex>(gridView)};
+}
+
 template<class MultiIndex, class GridView, class FactoryTag, class size_type=std::size_t>
 auto makeBasis(const GridView& gridView, FactoryTag&& factoryTag)
   -> DefaultGlobalBasis<decltype(factoryTag.template build<MultiIndex>(gridView))>
