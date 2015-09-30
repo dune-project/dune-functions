@@ -259,9 +259,9 @@ public:
   MultiIndex index(const size_type& localIndex, BasisTags::InterleafedIndex) const
   {
     using namespace Dune::TypeTree::Indices;
-    std::size_t subTreeSize = node_->child(_0).size();
-    std::size_t subLocalIndex = localIndex % subTreeSize;
-    std::size_t component = localIndex / subTreeSize;
+    size_type subTreeSize = node_->child(_0).size();
+    size_type subLocalIndex = localIndex % subTreeSize;
+    size_type component = localIndex / subTreeSize;
 
     MultiIndex mi = subNodeIndexSet_.index(subLocalIndex);
     mi[0] = mi[0]*children+component;
@@ -272,11 +272,11 @@ public:
   MultiIndex index(const size_type& localIndex, BasisTags::FlatIndex) const
   {
     using namespace Dune::TypeTree::Indices;
-    std::size_t subTreeSize = node_->child(_0).size();
-    std::size_t subLocalIndex = localIndex % subTreeSize;
-    std::size_t component = localIndex / subTreeSize;
+    size_type subTreeSize = node_->child(_0).size();
+    size_type subLocalIndex = localIndex % subTreeSize;
+    size_type component = localIndex / subTreeSize;
 
-    std::size_t firstLevelSize = nodeFactory_->subFactory_.size({});
+    size_type firstLevelSize = nodeFactory_->subFactory_.size({});
 
     MultiIndex mi = subNodeIndexSet_.index(subLocalIndex);
     mi[0] += component*firstLevelSize;
@@ -287,9 +287,9 @@ public:
   MultiIndex index(const size_type& localIndex, BasisTags::BlockedIndex) const
   {
     using namespace Dune::TypeTree::Indices;
-    std::size_t subTreeSize = node_->child(_0).size();
-    std::size_t subLocalIndex = localIndex % subTreeSize;
-    std::size_t component = localIndex / subTreeSize;
+    size_type subTreeSize = node_->child(_0).size();
+    size_type subLocalIndex = localIndex % subTreeSize;
+    size_type component = localIndex / subTreeSize;
 
     auto subTreeMi = subNodeIndexSet_.index(subLocalIndex);
 
@@ -303,9 +303,9 @@ public:
   MultiIndex index(const size_type& localIndex, BasisTags::LeafBlockedIndex) const
   {
     using namespace Dune::TypeTree::Indices;
-    std::size_t subTreeSize = node_->child(_0).size();
-    std::size_t subLocalIndex = localIndex % subTreeSize;
-    std::size_t component = localIndex / subTreeSize;
+    size_type subTreeSize = node_->child(_0).size();
+    size_type subLocalIndex = localIndex % subTreeSize;
+    size_type component = localIndex / subTreeSize;
 
     auto subTreeMi = subNodeIndexSet_.index(subLocalIndex);
 
