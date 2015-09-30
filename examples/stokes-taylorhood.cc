@@ -21,6 +21,8 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+#include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
 
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
@@ -269,8 +271,22 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   // { function_space_basis_begin }
-  typedef Functions::TaylorHoodBasis<GridView> TaylorHoodBasis;        /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
-  TaylorHoodBasis taylorHoodBasis(gridView);
+//  typedef Functions::TaylorHoodBasis<GridView> TaylorHoodBasis;        /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
+//  TaylorHoodBasis taylorHoodBasis(gridView);
+
+  using namespace Functions::BasisTags;
+  using namespace Functions::BasisBuilder;
+
+  auto taylorHoodBasis = makeBasis(
+    gridView,
+    composite(
+      power<dim>(
+        pq<2>(),
+        InterleafedIndex()),
+      pq<1>()
+    ));
+
+
   // { function_space_basis_end }
 
   /////////////////////////////////////////////////////////
@@ -285,7 +301,7 @@ int main (int argc, char *argv[]) try
   // { rhs_assembly_begin }
   VectorType rhs;
 
-  typedef Dune::Functions::HierarchicVectorWrapper<VectorType> HierarchicVectorView;
+  typedef Dune::Functions::HierarchicVectorWrapper<VectorType, double> HierarchicVectorView;
   HierarchicVectorView(rhs).resize(taylorHoodBasis);
 
   rhs = 0;                                 /*@\label{li:stokes_taylorhood_set_rhs_to_zero}@*/
@@ -315,11 +331,13 @@ int main (int argc, char *argv[]) try
   // { interpolate_boundary_predicate_begin }
   using namespace TypeTree::Indices;
 
-  typedef BlockVector<BlockVector<FieldVector<char,1> > > BitVectorType;
+  using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
+  using HierarchicBitVectorView = Functions::HierarchicVectorWrapper<BitVectorType, char>;
+
   BitVectorType isBoundary;
 
   for(int i=0; i<dim; ++i)
-    interpolate(taylorHoodBasis, TypeTree::hybridTreePath(_0, i), isBoundary, boundaryIndicator);
+    interpolate(taylorHoodBasis, TypeTree::hybridTreePath(_0, i), HierarchicBitVectorView(isBoundary), boundaryIndicator);
   // { interpolate_boundary_predicate_end }
 
   // { interpolate_dirichlet_values_begin }
@@ -328,9 +346,9 @@ int main (int argc, char *argv[]) try
 
   interpolateTreeSubset(taylorHoodBasis,
                         TypeTree::hybridTreePath(_0),
-                        rhs,
+                        HierarchicVectorView(rhs),
                         velocityDirichletData,
-                        isBoundary);
+                        HierarchicBitVectorView(isBoundary));
   // { interpolate_dirichlet_values_end }
 
   ////////////////////////////////////////////
@@ -396,10 +414,10 @@ int main (int argc, char *argv[]) try
 
   auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(taylorHoodBasis,
                                                                                     TypeTree::hybridTreePath(_0),
-                                                                                    Functions::hierarchicVector(x));
+                                                                                    HierarchicVectorView(x));
   auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(taylorHoodBasis,
                                                                                     TypeTree::hybridTreePath(_1),
-                                                                                    Functions::hierarchicVector(x));
+                                                                                    HierarchicVectorView(x));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
