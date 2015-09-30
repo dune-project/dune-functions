@@ -132,7 +132,31 @@ public:
     return size(prefix, IndexTag());
   }
 
-  size_type size(const SizePrefix& prefix, BasisTags::BlockFrontTag) const
+  size_type size(const SizePrefix& prefix, BasisTags::InterleafedIndex) const
+  {
+    if (prefix.size() == 0)
+      return children*subFactory_.size({});
+
+    typename SubFactory::SizePrefix subPrefix;
+    subPrefix.push_back(prefix[0] / children);
+    for(std::size_t i=1; i<prefix.size(); ++i)
+      subPrefix.push_back(prefix[i]);
+    return subFactory_.size(subPrefix);
+  }
+
+  size_type size(const SizePrefix& prefix, BasisTags::FlatIndex) const
+  {
+    if (prefix.size() == 0)
+      return children*subFactory_.size({});
+
+    typename SubFactory::SizePrefix subPrefix;
+    subPrefix.push_back(prefix[0] % children);
+    for(std::size_t i=1; i<prefix.size(); ++i)
+      subPrefix.push_back(prefix[i]);
+    return subFactory_.size(subPrefix);
+  }
+
+  size_type size(const SizePrefix& prefix, BasisTags::BlockedIndex) const
   {
     if (prefix.size() == 0)
       return children;
@@ -142,7 +166,7 @@ public:
     return subFactory_.size(subPrefix);
   }
 
-  size_type size(const SizePrefix& prefix, BasisTags::BlockBackTag) const
+  size_type size(const SizePrefix& prefix, BasisTags::LeafBlockedIndex) const
   {
     if (prefix.size() == 0)
       return subFactory_.size();
@@ -154,7 +178,7 @@ public:
     size_type r = subFactory_.size(subPrefix);
     if (r==0)
       return 0;
-    subPrefix.push_back(prefix[prefix.size()-1]);
+    subPrefix.push_back(prefix.back());
     r = subFactory_.size(subPrefix);
     if (r==0)
       return children;
@@ -232,11 +256,40 @@ public:
   }
 
 
-  MultiIndex index(const size_type& localIndex, BasisTags::BlockFrontTag) const
+  MultiIndex index(const size_type& localIndex, BasisTags::InterleafedIndex) const
   {
     using namespace Dune::TypeTree::Indices;
-    std::size_t subLocalIndex = localIndex % node_->child(_0).size();
-    std::size_t component = localIndex / node_->child(_0).size();
+    std::size_t subTreeSize = node_->child(_0).size();
+    std::size_t subLocalIndex = localIndex % subTreeSize;
+    std::size_t component = localIndex / subTreeSize;
+
+    MultiIndex mi = subNodeIndexSet_.index(subLocalIndex);
+    mi[0] = mi[0]*children+component;
+
+    return mi;
+  }
+
+  MultiIndex index(const size_type& localIndex, BasisTags::FlatIndex) const
+  {
+    using namespace Dune::TypeTree::Indices;
+    std::size_t subTreeSize = node_->child(_0).size();
+    std::size_t subLocalIndex = localIndex % subTreeSize;
+    std::size_t component = localIndex / subTreeSize;
+
+    std::size_t firstLevelSize = nodeFactory_->subFactory_.size({});
+
+    MultiIndex mi = subNodeIndexSet_.index(subLocalIndex);
+    mi[0] += component*firstLevelSize;
+
+    return mi;
+  }
+
+  MultiIndex index(const size_type& localIndex, BasisTags::BlockedIndex) const
+  {
+    using namespace Dune::TypeTree::Indices;
+    std::size_t subTreeSize = node_->child(_0).size();
+    std::size_t subLocalIndex = localIndex % subTreeSize;
+    std::size_t component = localIndex / subTreeSize;
 
     auto subTreeMi = subNodeIndexSet_.index(subLocalIndex);
 
@@ -247,11 +300,12 @@ public:
     return mi;
   }
 
-  MultiIndex index(const size_type& localIndex, BasisTags::BlockBackTag) const
+  MultiIndex index(const size_type& localIndex, BasisTags::LeafBlockedIndex) const
   {
     using namespace Dune::TypeTree::Indices;
-    std::size_t subLocalIndex = localIndex % node_->child(_0).size();
-    std::size_t component = localIndex / node_->child(_0).size();
+    std::size_t subTreeSize = node_->child(_0).size();
+    std::size_t subLocalIndex = localIndex % subTreeSize;
+    std::size_t component = localIndex / subTreeSize;
 
     auto subTreeMi = subNodeIndexSet_.index(subLocalIndex);
 
@@ -297,7 +351,7 @@ Imp::PowerNodeFactoryBuilder<k, IndexTag, SubFactoryTag> power(SubFactoryTag&& t
 }
 
 template<std::size_t k, class SubFactoryTag>
-Imp::PowerNodeFactoryBuilder<k, BasisTags::BlockBackTag, SubFactoryTag> power(SubFactoryTag&& tag)
+Imp::PowerNodeFactoryBuilder<k, BasisTags::LeafBlockedIndex, SubFactoryTag> power(SubFactoryTag&& tag)
 {
   return{};
 }

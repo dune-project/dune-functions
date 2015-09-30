@@ -11,9 +11,10 @@ namespace BasisTags {
 
 
 
-struct BlockBackTag {};
-struct BlockFrontTag {};
-struct FlatTag {};
+struct FlatIndex {};
+struct InterleafedIndex {};
+struct BlockedIndex {};
+struct LeafBlockedIndex {};
 
 
 

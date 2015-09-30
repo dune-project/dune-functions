@@ -369,7 +369,7 @@ Imp::CompositeNodeFactoryBuilder<IndexTag, SubFactoryTags...> composite(SubFacto
 }
 
 template<class... SubFactoryTags>
-Imp::CompositeNodeFactoryBuilder<BasisTags::BlockFrontTag, SubFactoryTags...> composite(SubFactoryTags&&... tags)
+Imp::CompositeNodeFactoryBuilder<BasisTags::BlockedIndex, SubFactoryTags...> composite(SubFactoryTags&&... tags)
 {
   return{};
 }
