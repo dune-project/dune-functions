@@ -3,18 +3,18 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_COMPOSITEBASIS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_COMPOSITEBASIS_HH
 
-#include <dune/common/exceptions.hh>
-#include <dune/common/reservedvector.hh>
-#include <dune/common/std/final.hh>
+#include <tuple>
 
-#include <dune/typetree/powernode.hh>
+#include <dune/common/reservedvector.hh>
+
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/utility.hh>
 
-#include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
+#include <dune/functions/common/utility.hh>
+#include <dune/functions/common/staticforloop.hh>
+#include <dune/functions/functionspacebases/basistags.hh>
 
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
-#include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+
 
 namespace Dune {
 namespace Functions {
@@ -342,19 +342,6 @@ private:
   SubIndexSetTuple subNodeIndexSetTuple_;
   const Node* node_;
 };
-
-
-
-// *****************************************************************************
-// This is the actual global basis implementation based on the reusable parts.
-// *****************************************************************************
-
-/** \brief Nodal basis of a scalar second-order Lagrangean finite element space
- *
- * \tparam GV The GridView that the space is defined on.
- */
-//template<typename GV, class ST = std::size_t>
-//using PowerBasis = DefaultGlobalBasis<PowerNodeFactory<GV, std::array<ST, 2>, ST> >;
 
 
 
