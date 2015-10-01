@@ -3,6 +3,7 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTGLOBALBASIS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTGLOBALBASIS_HH
 
+#include <dune/common/reservedvector.hh>
 
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 #include <dune/functions/functionspacebases/defaultglobalindexset.hh>
