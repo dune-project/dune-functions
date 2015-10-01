@@ -42,7 +42,7 @@ class PowerNodeIndexSet;
  *
  * \tparam MI Type to be used for multi-indices
  * \tparam IT A tag describing how global indices are build
- * \tparam SF The sub-node factory
+ * \tparam SF The subnode factory
  * \tparam C The exponent of the power node
  */
 template<class MI, class IT, class SF, std::size_t C>
@@ -134,9 +134,17 @@ public:
 
   size_type size(const SizePrefix& prefix, BasisTags::InterleafedIndex) const
   {
+    // The root index size is the root index size of a single subnode
+    // multiplied by the number of subnodes because we enumerate all
+    // child indices in a row.
     if (prefix.size() == 0)
       return children*subFactory_.size({});
 
+    // The first prefix entry refers to one of the (root index size)
+    // subindex trees. Hence we have to first compute the corresponding
+    // prefix entry for a single subnode subnode. The we can append
+    // the other prefix entries unmodified, because the index tree
+    // looks the same after the first level.
     typename SubFactory::SizePrefix subPrefix;
     subPrefix.push_back(prefix[0] / children);
     for(std::size_t i=1; i<prefix.size(); ++i)
@@ -146,9 +154,17 @@ public:
 
   size_type size(const SizePrefix& prefix, BasisTags::FlatIndex) const
   {
+    // The size at the index tree root is the size of at the index tree
+    // root of a single subnode multiplied by the number of subnodes
+    // because we enumerate all child indices in a row.
     if (prefix.size() == 0)
       return children*subFactory_.size({});
 
+    // The first prefix entry refers to one of the (root index size)
+    // subindex trees. Hence we have to first compute the corresponding
+    // prefix entry for a single subnode subnode. The we can append
+    // the other prefix entries unmodified, because the index tree
+    // looks the same after the first level.
     typename SubFactory::SizePrefix subPrefix;
     subPrefix.push_back(prefix[0] % children);
     for(std::size_t i=1; i<prefix.size(); ++i)
