@@ -277,13 +277,15 @@ int main (int argc, char *argv[]) try
   using namespace Functions::BasisTags;
   using namespace Functions::BasisBuilder;
 
+  static unsigned std::size_t K = 1; // pressure order for Taylor-Hood
+
   auto taylorHoodBasis = makeBasis(
     gridView,
     composite(
       power<dim>(
-        pq<2>(),
+        pq<K+1>(),
         InterleafedIndex()),
-      pq<1>()
+      pq<K>()
     ));
 
 
