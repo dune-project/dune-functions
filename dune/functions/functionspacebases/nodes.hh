@@ -312,7 +312,7 @@ namespace Dune {
     }
 
     template<typename Tree, typename size_type = std::size_t>
-    void initilizeTree(Tree& tree, size_type treeIndexOffset = 0)
+    void initializeTree(Tree& tree, size_type treeIndexOffset = 0)
     {
       InitializeTreeVisitor<size_type> visitor(treeIndexOffset);
       TypeTree::applyToTree(tree,visitor);

@@ -44,7 +44,7 @@ public:
     globalBasis_(&globalBasis),
     tree_(globalBasis_->nodeFactory().node(RootTreePath()))
   {
-    initilizeTree(tree_);
+    initializeTree(tree_);
   }
 
   /** \brief Bind the view to a grid element
@@ -64,7 +64,7 @@ public:
    */
   const Element& element() const
   {
-    // \TODO Once we have a way to check if entites are valid, we should re-add this.
+    // \TODO Once we have a way to check if entities are valid, we should re-add this.
 //    if (element_)
       return element_;
 //    else
