@@ -382,7 +382,7 @@ struct CompositeNodeFactoryBuilder
   auto build(const GridView& gridView)
     -> CompositeNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTags().template build<MultiIndex, GridView, size_type>(gridView))...>
   {
-    return {SubFactoryTags().build<MultiIndex, GridView, size_type>(gridView)...};
+    return {SubFactoryTags().template build<MultiIndex, GridView, size_type>(gridView)...};
   }
 };
 

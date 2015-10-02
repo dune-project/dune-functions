@@ -355,7 +355,7 @@ struct PowerNodeFactoryBuilder
   auto build(const GridView& gridView)
     -> PowerNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTag().template build<MultiIndex, GridView, size_type>(std::declval<GridView>())), k>
   {
-    return {SubFactoryTag().build<MultiIndex, GridView, size_type>(gridView)};
+    return {SubFactoryTag().template build<MultiIndex, GridView, size_type>(gridView)};
   }
 };
 
