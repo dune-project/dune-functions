@@ -20,8 +20,9 @@
 #define CHECKSIZE(X) {}
 #endif
 
-namespace Dune
-{
+namespace Dune {
+namespace Functions {
+
   /**
      \brief A Vector class with statically reserved memory.
 
@@ -235,7 +236,8 @@ namespace Dune
     size_type size_;
   };
 
-}
+} // end namespace Functions
+} // end namespace Dune
 
 #undef CHECKSIZE
 
