@@ -98,7 +98,9 @@ public:
   {
     if (prefix.size() == 0)
       return size();
-    DUNE_THROW(RangeError, "Method size() can only be called for prefixes of length zero");
+    if (prefix.size() == 1)
+      return 0;
+    DUNE_THROW(RangeError, "Method size() can only be called for prefixes of length up to one");
   }
 
   /** \todo This method has been added to the interface without prior discussion. */
