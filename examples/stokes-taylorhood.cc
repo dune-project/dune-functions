@@ -277,7 +277,7 @@ int main (int argc, char *argv[]) try
   using namespace Functions::BasisTags;
   using namespace Functions::BasisBuilder;
 
-  static unsigned std::size_t K = 1; // pressure order for Taylor-Hood
+  static std::size_t K = 1; // pressure order for Taylor-Hood
 
   auto taylorHoodBasis = makeBasis(
     gridView,
