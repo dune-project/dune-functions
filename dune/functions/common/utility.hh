@@ -59,6 +59,43 @@ auto forwardAsStaticIndex(const size_type& i, F&& f, Args&&... args)
 }
 
 
+
+/**
+ * \brief Get last entry of type list
+ */
+template<class... T>
+struct LastType
+{
+  using type = typename std::tuple_element<sizeof...(T)-1, std::tuple<T...>>::type;
+};
+
+
+
+namespace Imp {
+
+template<class T, class I>
+struct RotateHelper;
+
+template<class... T, std::size_t... I>
+struct RotateHelper<std::tuple<T...>, TypeTree::Std::index_sequence<I...> >
+{
+  using type = typename std::tuple<typename LastType<T...>::type, typename std::tuple_element<I,std::tuple<T...>>::type...>;
+};
+
+} // end namespace Imp
+
+
+/**
+ * \brief Rotate type list by one, such that last entry is moved to first position
+ *
+ * The rotated type list is exported as tuple
+ */
+template<class... T>
+struct RotateTuple
+{
+  using type = typename RotateHelper<std::tuple<T...>, Dune::TypeTree::Std::make_index_sequence<sizeof...(T)-1>>::type;
+};
+
 } // namespace Dune::Functions
 } // namespace Dune
 
