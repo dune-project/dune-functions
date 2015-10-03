@@ -153,7 +153,13 @@ public:
     return size({});
   }
 
-  struct Lambda_size
+  //! Return number possible values for next position in multi index
+  size_type size(const SizePrefix& prefix) const
+  {
+    return size(prefix, IndexTag());
+  }
+
+  struct Lambda_size_blocked
   {
     template<class I, class SFT>
     size_type operator()(const I&, const SFT& subFactories, const SizePrefix& prefix)
@@ -168,17 +174,54 @@ public:
     }
   };
 
-  //! Return number possible values for next position in multi index
-  size_type size(const SizePrefix& prefix) const
-  {
-    return size(prefix, IndexTag());
-  }
-
   size_type size(const SizePrefix& prefix, BasisTags::BlockedIndex) const
   {
     if (prefix.size() == 0)
       return children;
-    return forwardAsStaticIndex<children>(prefix[0], Lambda_size(), subFactories_, prefix);
+    return forwardAsStaticIndex<children>(prefix[0], Lambda_size_blocked(), subFactories_, prefix);
+  }
+
+  struct Lambda_size_flat_rootSize
+  {
+    template<class I, class SFT>
+    void operator()(const I&, const SFT& subFactories, size_type& rootSizeSum)
+    {
+      rootSizeSum += std::get<I::value>(subFactories).size();
+    }
+  };
+
+  struct Lambda_size_flat_sizeInSubtree
+  {
+    template<class I, class SFT>
+    size_type operator()(const I&, const SFT& subFactories, const SizePrefix& prefix, size_type& shiftedFirst, size_type& r)
+    {
+      using SubFactory = typename std::tuple_element<I::value, SFT>::type;
+      const SubFactory& subFactory = std::get<I::value>(subFactories);
+      if (shiftedFirst < subFactory.size())
+      {
+        typename SubFactory::SizePrefix subPrefix;
+        subPrefix.push_back(shiftedFirst);
+        for(std::size_t i=1; i<prefix.size(); ++i)
+          subPrefix.push_back(prefix[i]);
+        r = subFactory.size(subPrefix);
+        return true;
+      }
+      shiftedFirst -= subFactory.size();
+      return false;
+    }
+  };
+
+  size_type size(const SizePrefix& prefix, BasisTags::FlatIndex) const
+  {
+    size_type r = 0;
+    if (prefix.size() == 0)
+      staticForLoop<0, sizeof...(SF)>(Lambda_size_flat_rootSize(), subFactories_, r);
+    else
+    {
+      size_type shiftedFirst = prefix[0];
+      staticFindInRange<0, sizeof...(SF)>(Lambda_size_flat_sizeInSubtree(), subFactories_, prefix, shiftedFirst, r);
+    }
+    return r;
   }
 
   struct Lambda_dimension
@@ -186,7 +229,7 @@ public:
     template<class I, class SFT>
     void operator()(const I& i, const SFT& subFactories, size_type& sum)
     {
-      sum += std::get<i>(subFactories).dimension();
+      sum += std::get<I::value>(subFactories).dimension();
     }
   };
 
@@ -309,13 +352,45 @@ public:
     return node_->size();
   }
 
+  MultiIndex index(size_type localIndex) const
+  {
+    return index(localIndex, IndexTag());
+  }
+
+  struct Lambda_index_flat
+  {
+    template<class I, class SNIT, class SFT>
+    bool operator()(const I& i, SNIT& subNodeIndexSetTuple, const SFT& subFactories, size_type localIndex, size_type& rootOffset, MultiIndex& multiIndex)
+    {
+      const auto& subNodeIndexSet = std::get<I::value>(subNodeIndexSetTuple);
+      size_type size = subNodeIndexSet.size();
+      if (localIndex < size)
+      {
+        multiIndex = subNodeIndexSet.index(localIndex);
+        multiIndex[0] += rootOffset;
+        return true;
+      }
+      localIndex -= size;
+      rootOffset += std::get<I::value>(subFactories).size();
+      return false;
+    }
+  };
+
+  MultiIndex index(const size_type& localIndex, BasisTags::FlatIndex) const
+  {
+    size_type shiftedLocalIndex = localIndex;
+    size_type rootOffset = 0;
+    MultiIndex mi;
+    staticFindInRange<0, sizeof...(SF)>(Lambda_index_flat(), subNodeIndexSetTuple_, nodeFactory_->subFactories_, shiftedLocalIndex, rootOffset, mi);
+    return mi;
+  }
+
   struct Lambda_index
   {
     template<class I, class SNIT>
-    bool operator()(const I& i, SNIT& subNodeIndexSetTuple, size_type localIndex, size_type& offset, size_type& component, MultiIndex& multiIndex)
+    bool operator()(const I& i, SNIT& subNodeIndexSetTuple, size_type& localIndex, size_type& component, MultiIndex& multiIndex)
     {
       const auto& subNodeIndexSet = std::get<I::value>(subNodeIndexSetTuple);
-      localIndex -= offset;
       size_type size = subNodeIndexSet.size();
       if (localIndex < size)
       {
@@ -323,22 +398,17 @@ public:
         component = i;
         return true;
       }
-      offset += size;
+      localIndex -= size;
       return false;
     }
   };
 
-  MultiIndex index(size_type localIndex) const
-  {
-    return index(localIndex, IndexTag());
-  }
-
   MultiIndex index(const size_type& localIndex, BasisTags::BlockedIndex) const
   {
-    size_type offset = 0;
+    size_type shiftedLocalIndex = localIndex;
     size_type component = 0;
     MultiIndex mi;
-    staticFindInRange<0, sizeof...(SF)>(Lambda_index(), subNodeIndexSetTuple_, localIndex, offset, component, mi);
+    staticFindInRange<0, sizeof...(SF)>(Lambda_index(), subNodeIndexSetTuple_, shiftedLocalIndex, component, mi);
     mi.resize(mi.size()+1);
 
     for(std::size_t i=mi.size()-1; i>0; --i)
@@ -386,16 +456,27 @@ struct CompositeNodeFactoryBuilder
   }
 };
 
+template<class... Args>
+auto compositeImp(std::tuple<Args...>)
+  -> Imp::CompositeNodeFactoryBuilder<Args...>
+{
+  return {};
+};
+
 } // end namespace BasisBuilder::Imp
 
-template<class IndexTag, class... SubFactoryTags>
-Imp::CompositeNodeFactoryBuilder<IndexTag, SubFactoryTags...> composite(SubFactoryTags&&... tags, const IndexTag&)
+template<class... Args,
+  typename std::enable_if<std::is_base_of<BasisTags::IndexTag, typename LastType<Args...>::type  >::value, int>::type = 0>
+auto composite(Args&&... args)
+  -> decltype(Imp::compositeImp(typename RotateTuple<Args...>::type()))
 {
   return{};
 }
 
-template<class... SubFactoryTags>
-Imp::CompositeNodeFactoryBuilder<BasisTags::BlockedIndex, SubFactoryTags...> composite(SubFactoryTags&&... tags)
+template<class... Args,
+  typename std::enable_if<not std::is_base_of<BasisTags::IndexTag, typename LastType<Args...>::type  >::value, int>::type = 0>
+auto composite(Args&&... args)
+  -> decltype(Imp::compositeImp(typename RotateTuple<Args..., BasisTags::BlockedIndex>::type()))
 {
   return{};
 }
