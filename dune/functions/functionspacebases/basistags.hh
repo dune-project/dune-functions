@@ -11,10 +11,11 @@ namespace BasisTags {
 
 
 
-struct FlatIndex {};
-struct InterleafedIndex {};
-struct BlockedIndex {};
-struct LeafBlockedIndex {};
+struct IndexTag {};
+struct FlatIndex : public IndexTag {};
+struct InterleafedIndex : public IndexTag {};
+struct BlockedIndex : public IndexTag {};
+struct LeafBlockedIndex : public IndexTag {};
 
 
 
