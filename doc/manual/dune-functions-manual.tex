@@ -32,8 +32,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%     Settings for the listings package
 \lstset{language={c++},
-         basicstyle=\small,
+         basicstyle=\ttfamily\small,
+%         basicstyle=\small,
          commentstyle=\textit,
+%         columns=fixed,
          columns=flexible,
          escapeinside={/*@}{@*/}
         }
@@ -97,7 +99,8 @@
 \end{abstract}
 
 
-\section{The Stokes equation}
+\section{Solving the Stokes equation with \dunemodule{dune-functions}}
+\subsection{The Stokes equation}
 
 \begin{figure}
  \begin{center}
@@ -144,7 +147,7 @@ Then the weak form of the Stokes equation is: Find $(\mathbf{u},p) \in \mathbf{H
 If $\mathbf{u}_D$ is sufficiently smooth, this variational problem has a unique solution.
 The Taylor--Hood element is the standard way to discretize this saddle point problem~\cite{braess:2013}.
 
-\section{The driven-cavity benchmark}
+\subsection{The driven-cavity benchmark}
 
 For our example we choose to simulate a two-dimensional driven cavity.  This is a standard benchmark
 for the Stokes problem in the literature.  Let $\Omega$ be the unit square $[0,1]^2$, and set the Dirichlet
@@ -167,7 +170,7 @@ In the following discussion we always use the letter $d$ to denote the space dim
 known to be $d=2$ for our specific example.  This is to avoid confusion, because the number~2 also
 appears a few times because we have two types of unknowns.
 
-\section{Discretization}
+\subsection{Discretization}
 
 \begin{figure}
   \begin{center}
@@ -227,7 +230,7 @@ and $b \in \mathbb{N}$ selects a particular basis function in either the set of 
 or the set of pressure basis functions.
 
 
-\section{Implementation}
+\subsection{Implementation}
 
 This chapter discusses an example implementation of the Stokes problem, using only \dunemodule{dune-functions}
 and no higher-level modules.  The example is contained in a single file, which comes as part of the \dunemodule{dune-functions}
@@ -240,7 +243,7 @@ the file can also be accessed by clicking on the icon in the margin.%
                        description=Complete source code of the Stokes/Taylor-Hood example]
                        {../../examples/stokes-taylorhood.cc}}
 
-\subsection{The \texorpdfstring{\cpp{main}}{main} method}
+\subsubsection{The \texorpdfstring{\cpp{main}}{main} method}
 
 We begin discussing the example code by describing its \cpp{main} method.  This method begins by setting up MPI and the grid.
 We pick \cpp{YaspGrid} for the structured $4 \times 4$ quadrilateral grid.  Note that there is the line
@@ -374,7 +377,7 @@ class natively only displays piecewise linear functions.
 When run, this program produces a file called \file{function-stokes-result.vtu}.  The file can be opened in
 \program{ParaView}, and the outcome looks like the image on the right in Figure~\ref{fig:dune_functions:driven_cavity}.
 
-\subsection{The global assembler}
+\subsubsection{The global assembler}
 
 Now that we have covered the \cpp{main} method, we can turn to the assembler for the Stokes stiffness matrix.
 As our main focus is the use of the \dunemodule{dune-functions} interfaces, the assembler
@@ -447,7 +450,7 @@ The preceding loops write in particular into the lower right matrix block, even 
 system this block contains only zeros.  A more optimized version of the code would leave out the lower right
 submatrix altogether.
 
-\subsection{The local assembler}
+\subsubsection{The local assembler}
 
 Finally, we investigate the method that assembles the element stiffness matrices.  Its signature is
 %
@@ -582,6 +585,117 @@ Line~\ref{li:stokes_taylorhood_compute_vp_element_matrix_row} computes the flat 
 and Line~\ref{li:stokes_taylorhood_compute_vp_element_matrix_column} computes the index for $\theta_j$ (remember that \cpp{_1} denotes
 the pressure basis).  Finally, Lines~\ref{li:stokes_taylorhood_update_vp_element_matrix_a}--\ref{li:stokes_taylorhood_update_vp_element_matrix_b}
 then add the resulting terms to the matrix.
+
+
+
+\section{Interfaces for global function space basis}
+
+We will now present the full interface provided by a global basis in
+\dunemodule{dune-functions}. The interface decomposes in two parts:
+The user interface and the implementors interface.
+
+The user interface is what is exposed by an actual basis for use in
+application code. Any basis satisfying this interface is a valid
+global basis in the \dunemodule{dune-functions} sense.
+The implementors interface describes the reusable part of
+a basis which is given by a \emph{node-factory} in the following.
+This interface allows to embed the node-factory into a function space
+basis of a larger space. This can be used, e.g., to compose
+ansatz bases for mixed formulations, multicomponent problems,
+or coupled multi-physic problems.
+
+In the next sections we will first describe the user interface
+of a global basis and related classes. Then we describe the implementors
+interface for node-factories and two special node-factories
+that can be used to compose nested bases.
+Finally we describe some convenience methods that simplify
+the construction of composed bases for the user.
+
+
+\subsection{User interface of global bases}
+We now describe the user interface provided by global bases and related types.
+Since there may be various implementations of those types, all class names used
+below are auxiliary names.  We will group exported type names and related methods
+to simplify the presentation.
+In general each basis implementation may require its own specific data for construction.
+Hence we do not enforce an argument list for this.
+
+\begin{lstlisting}
+  class GlobalBasis
+  {
+  public:
+    GlobalBasis(<implementation defined>);
+\end{lstlisting}
+
+As the global basis represents a function space defined on a grid view access to
+the latter is provided by the {\tt gridView()} method while its type
+is exported as {\tt GridView}. 
+
+\begin{lstlisting}
+    using GridView = <implementation defined>;
+    const GridView& gridView() const;
+\end{lstlisting}
+
+One of the main functionalities of the global basis is to provide
+access to the basis functions. The latter are available via the
+local view interface. The {\tt localView()} method returns a new
+object of type {\tt LocalView}. After binding this object to a
+grid element from the respective grid view, it provides access
+to the restriction of all basis functions whose support has a
+nontrivial intersection with this element. For details on the
+{\tt LocalView} interface see below.
+
+\begin{lstlisting}
+  using LocalView = <implementation defined>;
+  LocalView localView() const;
+\end{lstlisting}
+
+All basis functions accessible via a bound local view have a
+local index assigned to them. These local indices are zero-based,
+consecutive, and unique within the respective element.
+In order to  associate global degrees of freedom to basis functions
+the local indices can be mapped to global indices. To facilitate
+hierarchical representations of the basis these global indices
+are in general multi-indices. The {\tt localIndexSet()} method
+returns a new object of type {\tt LocalIndexSet} that, after
+binding it to a local view, allows to map the local indices
+of all basis functions appearing in this local view to those
+global multi-indices. The interface of the {\tt LocalIndexSet}
+is defined below.
+
+\begin{lstlisting}
+  using LocalIndexSet = <implementation defined>;
+  LocalIndexSet localIndexSet() const;
+\end{lstlisting}
+
+The total number of basis functions of the global basis is
+exported via the {\tt dimension()} method. However, since
+the global indices are hierarchically structured, this
+information is in general not sufficient to allocate hierarchical
+containers for storing, e.g., coefficients with respect to
+all basis functions.  Because of this the basis provides 
+access to the structural information of those multi-indices
+via the {\tt size(SizePrefix)} method.
+
+[continue here]
+
+\begin{lstlisting}
+  using size_type = <implementation defined>;
+  using SizePrefix = <implementation defined>;
+  using MultiIndex = <implementation defined>;
+  size_type dimension() const;
+  size_type size() const;
+  size_type size(const SizePrefix& prefix) const;
+\end{lstlisting}
+
+
+
+
+\begin{lstlisting}
+  const NodeFactory& nodeFactory() const;
+\end{lstlisting}
+
+
 
 \bibliographystyle{plainnat}
 \bibliography{dune-functions-manual}
