@@ -97,7 +97,9 @@ public:
 
   /** \brief Constructor for a given grid view object */
 
-  template<class... SFArgs>
+  template<class... SFArgs,
+    disableCopyMove<CompositeNodeFactory, SFArgs...> = 0,
+    enableIfConstructible<std::tuple<SF...>, SFArgs...> = 0>
   CompositeNodeFactory(SFArgs&&... sfArgs) :
     subFactories_(std::forward<SFArgs>(sfArgs)...)
   {}

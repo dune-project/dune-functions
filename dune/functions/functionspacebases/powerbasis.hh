@@ -87,7 +87,9 @@ public:
 
   /** \brief Constructor for a given grid view object */
 
-  template<class... SFArgs>
+  template<class... SFArgs,
+    disableCopyMove<PowerNodeFactory, SFArgs...> = 0,
+    enableIfConstructible<SubFactory, SFArgs...> = 0>
   PowerNodeFactory(SFArgs&&... sfArgs) :
     subFactory_(std::forward<SFArgs>(sfArgs)...)
   {}

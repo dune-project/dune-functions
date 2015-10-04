@@ -49,7 +49,8 @@ public:
 
   /** \brief Constructor for a given grid view object */
   template<class... T,
-    disableCopyMove<DefaultGlobalBasis, T...> = 0>
+    disableCopyMove<DefaultGlobalBasis, T...> = 0,
+    enableIfConstructible<NodeFactory, T...> = 0>
   DefaultGlobalBasis(T&&... t) :
     nodeFactory_(std::forward<T>(t)...)
   {
