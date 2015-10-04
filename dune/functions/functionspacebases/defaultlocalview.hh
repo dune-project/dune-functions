@@ -61,11 +61,7 @@ public:
    */
   const Element& element() const
   {
-    // \TODO Once we have a way to check if entities are valid, we should re-add this.
-//    if (element_)
-      return element_;
-//    else
-//      DUNE_THROW(Dune::Exception, "Can't query element of unbound local view");
+    return element_;
   }
 
   /** \brief Unbind from the current element
@@ -99,7 +95,7 @@ public:
    */
   size_type maxSize() const
   {
-  return globalBasis_->nodeFactory().maxNodeSize();
+    return globalBasis_->nodeFactory().maxNodeSize();
   }
 
   /** \brief Return the global basis that we are a view on
