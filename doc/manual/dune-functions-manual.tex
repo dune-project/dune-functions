@@ -670,14 +670,28 @@ is defined below.
 
 The total number of basis functions of the global basis is
 exported via the {\tt dimension()} method. However, since
-the global indices are hierarchically structured, this
-information is in general not sufficient to allocate hierarchical
-containers for storing, e.g., coefficients with respect to
-all basis functions.  Because of this the basis provides 
-access to the structural information of those multi-indices
-via the {\tt size(SizePrefix)} method.
+the global indices are hierarchically structured multi-indices
+of type {\tt MultiIndex}, this information is in general not
+sufficient to allocate hierarchical containers for storing,
+e.g., coefficients with respect to all basis functions.
 
-[continue here]
+Because of this, the basis provides access to the structural
+information of those multi-indices via the {\tt size(SizePrefix)}
+method. The given prefix takes the form of a multi-index itself.
+For a prefix $(p_1,\dots,p_k)$ the method returns the maximal value $q$ such that there
+is a global index of the form $(p_1,\dots,p_k,q-1,\dots)$.
+If there is no such $q$ the result is undefined, unless
+$(p_1,\dots,p_k)$ is itself one of the multi-indices.
+In this case the result is zero.
+In any case this corresponds to the number of direct children
+of the node $(p_1,\dots,p_k)$ in the index tree.
+For convenience there is also a method {\tt size()} returning the same
+value the method with an empty prefix, i.e., {\tt size(\{\})}.
+
+Since prefixes may have variable size, it is guaranteed that {\tt SizePrefix}
+is always a {\tt Dune::ReservedVector<size\_type,k>} where {\tt k}
+is strictly larger than the maximal length of a multi-index. The result
+type of all size-related methods is exported as {\tt size\_type}.
 
 \begin{lstlisting}
   using size_type = <implementation defined>;
@@ -688,10 +702,12 @@ via the {\tt size(SizePrefix)} method.
   size_type size(const SizePrefix& prefix) const;
 \end{lstlisting}
 
-
-
+Finally, the basis exports its node-factory of type {\tt NodeFactory}
+via the {\tt nodeFactory()} method. The concept of a node-factory
+will be discussed below.
 
 \begin{lstlisting}
+  using NodeFactory = <implementation define>;
   const NodeFactory& nodeFactory() const;
 \end{lstlisting}
 
