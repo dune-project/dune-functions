@@ -612,7 +612,8 @@ Finally we describe some convenience methods that simplify
 the construction of composed bases for the user.
 
 
-\subsection{User interface of global bases}
+
+\subsection{User interface of a {\tt GlobalBasis}}
 We now describe the user interface provided by global bases and related types.
 Since there may be various implementations of those types, all class names used
 below are auxiliary names.  We will group exported type names and related methods
@@ -621,10 +622,10 @@ In general each basis implementation may require its own specific data for const
 Hence we do not enforce an argument list for this.
 
 \begin{lstlisting}
-  class GlobalBasis
-  {
-  public:
-    GlobalBasis(<implementation defined>);
+class GlobalBasis
+{
+public:
+  GlobalBasis(<implementation defined>);
 \end{lstlisting}
 
 As the global basis represents a function space defined on a grid view access to
@@ -632,8 +633,8 @@ the latter is provided by the {\tt gridView()} method while its type
 is exported as {\tt GridView}. 
 
 \begin{lstlisting}
-    using GridView = <implementation defined>;
-    const GridView& gridView() const;
+  using GridView = <implementation defined>;
+  const GridView& gridView() const;
 \end{lstlisting}
 
 One of the main functionalities of the global basis is to provide
@@ -709,7 +710,82 @@ will be discussed below.
 \begin{lstlisting}
   using NodeFactory = <implementation define>;
   const NodeFactory& nodeFactory() const;
+};
 \end{lstlisting}
+
+
+
+\subsection{User interface of a {\tt LocalView}}
+We will now continue with the description of the interface
+of a local view as returned by {\tt GlobalBasis::localView()}.
+Since a {\tt LocalView} is not meant to be constructed
+manually, there is no interface for this. Instead, a {\tt LocalView}
+can be obtained from the global basis via the {\tt localView()}
+method. As a consequence the global basis of type {\tt GlobalBasis}
+is known and exported by the {\tt globalBasis()} method.
+
+\begin{lstlisting}
+class LocalView
+{
+public:
+  using GlobalBasis = <implementation defined>;
+  const GlobalBasis& globalBasis() const;
+\end{lstlisting}
+
+A local view is meant to provides access to all basis
+functions whose support has nontrivial intersection with
+a given element. To achieve this, the local view must
+first be bound to this element by calling {\tt bind(Element)}.
+This call may incorporate expensive computations needed to
+setup the those basis functions. The local view can be
+bound to another element by calling this method again.
+To set the local view to unbound state again, you
+can call the {\tt unbind()} method.
+Notice that the local view will store a copy of the bound
+element that is accessible via {\tt element()}.
+
+\begin{lstlisting}
+  using GridView = typename GlobalBasis::GridView;
+  using Element = typename GridView::template Codim<0>::Entity;
+  void bind(const Element& e);
+  const Element& element() const;
+  void unbind();
+\end{lstlisting}
+
+The total number of basis functions associated to the
+local view at the currently bound element is returned
+by {\tt size()}. The result of calling this method in
+unbound state is undefined.
+To allow preallocation of buffers for local functions
+the {\tt maxSize()} method returns the maximal of the
+{\tt size()} method for all elements in the grid view
+associated to the global basis. This can be called in
+unbound state.
+
+\begin{lstlisting}
+  using size_type = typename GlobalBasis::size_type;
+  size_type size() const;
+  size_type maxSize() const;
+\end{lstlisting}
+
+Finally access to the actual basis functions is provided
+by the {\tt tree()} method returning a reference to a
+{\tt Tree} object. This encapsulates the basis functions
+in a hierarchical tree structure to also represent structured
+function spaces. The interface of the tree object is discussed
+below.
+
+\begin{lstlisting}
+  using Tree = <implementation defined>;
+  const Tree& tree() const;
+};
+\end{lstlisting}
+
+
+
+\subsection{User interface of a local ansatz {\tt Tree}}
+\subsection{User interface of a {\tt LocalIndexSet}}
+
 
 
 
