@@ -93,7 +93,7 @@ struct RotateHelper<std::tuple<T...>, TypeTree::Std::index_sequence<I...> >
 template<class... T>
 struct RotateTuple
 {
-  using type = typename RotateHelper<std::tuple<T...>, Dune::TypeTree::Std::make_index_sequence<sizeof...(T)-1>>::type;
+  using type = typename Imp::RotateHelper<std::tuple<T...>, Dune::TypeTree::Std::make_index_sequence<sizeof...(T)-1>>::type;
 };
 
 } // namespace Dune::Functions
