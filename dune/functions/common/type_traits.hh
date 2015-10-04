@@ -17,7 +17,11 @@ using disableCopyMove = typename std::enable_if<
   (not(std::is_same<This, typename std::tuple_element<0, std::tuple<typename std::decay<T>::type...> >::type >::value)
   and not(std::is_base_of<This, typename std::tuple_element<0, std::tuple<typename std::decay<T>::type...> >::type >::value)), int>::type;
 
-
+// Helper typedef to remove constructor with forwarding reference from
+// overload set for type is not constructible from argument list
+template<class T, class... Args>
+using enableIfConstructible = typename std::enable_if<
+  std::is_constructible<T, Args...>::value, int>::type;
 
 
 
