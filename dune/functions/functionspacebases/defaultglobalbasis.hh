@@ -5,6 +5,7 @@
 
 #include <dune/common/reservedvector.hh>
 
+#include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 #include <dune/functions/functionspacebases/defaultglobalindexset.hh>
 #include <dune/functions/functionspacebases/defaultlocalview.hh>
@@ -47,7 +48,8 @@ public:
 
 
   /** \brief Constructor for a given grid view object */
-  template<class... T>
+  template<class... T,
+    disableCopyMove<DefaultGlobalBasis, T...> = 0>
   DefaultGlobalBasis(T&&... t) :
     nodeFactory_(std::forward<T>(t)...)
   {
