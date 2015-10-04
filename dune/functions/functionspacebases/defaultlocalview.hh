@@ -33,9 +33,6 @@ public:
   //! The type used for sizes
   using size_type = typename GlobalBasis::size_type;
 
-  //! Type used to number the global degrees of freedom
-  using MultiIndex = typename GlobalBasis::MultiIndex;
-
   //! Tree of local finite elements / local shape function sets
   using Tree = typename GlobalBasis::NodeFactory::template Node<RootTreePath>;
 
