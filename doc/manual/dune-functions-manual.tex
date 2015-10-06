@@ -630,7 +630,7 @@ public:
 
 As the global basis represents a function space defined on a grid view access to
 the latter is provided by the {\tt gridView()} method while its type
-is exported as {\tt GridView}. 
+is exported as {\tt GridView}.
 
 \begin{lstlisting}
   using GridView = <implementation defined>;
@@ -710,7 +710,7 @@ will be discussed below.
 \begin{lstlisting}
   using NodeFactory = <implementation define>;
   const NodeFactory& nodeFactory() const;
-};
+}; // end GlobalBasis
 \end{lstlisting}
 
 
@@ -734,10 +734,11 @@ public:
 
 A local view is meant to provides access to all basis
 functions whose support has nontrivial intersection with
-a given element. To achieve this, the local view must
+a given element. These will be called \emph{local basis functions}
+in the following. To achieve this, the local view must
 first be bound to this element by calling {\tt bind(Element)}.
 This call may incorporate expensive computations needed to
-setup the those basis functions. The local view can be
+setup the those local basis functions. The local view can be
 bound to another element by calling this method again.
 To set the local view to unbound state again, you
 can call the {\tt unbind()} method.
@@ -768,7 +769,7 @@ unbound state.
   size_type maxSize() const;
 \end{lstlisting}
 
-Finally access to the actual basis functions is provided
+Finally access to the actual local basis functions are provided
 by the {\tt tree()} method returning a reference to a
 {\tt Tree} object. This encapsulates the basis functions
 in a hierarchical tree structure to also represent structured
@@ -778,13 +779,201 @@ below.
 \begin{lstlisting}
   using Tree = <implementation defined>;
   const Tree& tree() const;
-};
+}; // end LocalView
+\end{lstlisting}
+
+\subsection{User interface of a local ansatz {\tt Tree}}
+The local view provides access to all local basis functions
+by exporting a {\tt Tree} object. This implements a tree
+data structure using the foundation classes of the
+\dunemodule{dune-typetree} library. Using a tree allows
+to represent basis of spaces that have a nested product
+structure. This is important in many applications, e.g.,
+in elastomechanics where a typical ansatz space is $\mathcal{S}_k^d$
+where $\mathcal{S}_k$ is a $k$-th order scalar Lagrange space,
+for the stokes equation where the classical Taylor-Hood
+space is given by $(\mathcal{S}_{2}^d) \times \mathcal{S}_1$,
+or for multi-physics problems where one uses different
+ansatz spaces for each modeled quantity.
+
+Basis for all these nested product spaces can be represented
+in a tree data structure, where the actual local basis
+functions for each factor are associated to a leaf node
+in the tree. As a consequence the interface of leaf nodes
+provides some additional features.
+Both node types are not meant to be constructed by the
+user so there is no constructor in the interface.
+First we describe the interface shared by interior
+and leaf nodes.
+
+The {\tt size()} method returns the total number of
+local basis functions within the subtree rooted at the
+present node. For each of these local basis functions the
+{\tt localIndex(size\_type)} method given a unique
+index within all local basis functions within the full
+tree. The argument to this method is the lexicographic
+index of the local basis functions within the subtree
+and the result is the lexicographic index within the full
+tree. Hence the local indices of all basis functions
+within this subtree form a consecutive range. The first
+value in this rage,i.e., the result of {\tt localIndex(0)}
+is also accessible via the {\tt offset()} method.
+The result of these methods is undefined if the
+local view containing the tree is in unbound state.
+All these indices are of type {\tt size\_type}.
+
+\begin{lstlisting}
+class BasisNode
+{
+public:
+  using size_type = <implementation defined>;
+  size_type size() const;
+  size_type offset() const;
+  size_type localIndex(size_type i) const;
+\end{lstlisting}
+
+For some computations it is important to identify
+individual nodes in the tree. To this end the node
+exports its path in the full tree via the {\tt treePath()}
+method. The result is a tree path
+as defined in the \dunemodule{dune-typetree} module.
+It is possible to retrieve the node from the full
+tree by addressing it with its tree path.
+Notice that, to allow this functionality, the
+type {\tt TreePath} will differ from node to node
+in general. If data needs to be attached to nodes,
+the {\tt treeIndex()} can be used. The latter returns
+the lexicographic index of the node within the full
+tree in a fixed type for all nodes.
+These methods can also be used if the local view containing
+the tree is in unbound state.
+
+\begin{lstlisting}
+  using TreePath = <implementation defined>;
+  const TreePath& treePath() const;
+  const size_type treeIndex() const;
+}; // end BasisNode
+\end{lstlisting}
+
+Leaf nodes share the same interface as interior
+nodes. Additionally they provide access to the
+element the local view and thus the tree is bound
+to via the {\tt element()} method. Probably most important
+is the {\tt finiteElement()} method that gives access
+to the local finite element. The finite element
+itself provides access to the local basis functions
+by the finite element interface defined in the
+\dunemodule{dune-localfunctions} module.
+It is important to node that the lexicographic
+index of a basis function in a leaf node coincides
+with its number in the local finite element.
+
+\begin{lstlisting}
+class LeafBasisNode
+{
+public:
+  // interface common with interior nodes
+  using size_type = <implementation defined>;
+  size_type size() const;
+  size_type offset() const;
+  size_type localIndex(size_type i) const;
+  using TreePath = <implementation defined>;
+  const TreePath& treePath() const;
+  const size_type treeIndex() const;
+
+  using Element = <implementation defined>;
+  using FiniteElement = <implementation defined>;
+  const Element& element() const = 0;
+  const FiniteElement& finiteElement() const = 0;
+}; // end LeafBasisNode
 \end{lstlisting}
 
 
 
-\subsection{User interface of a local ansatz {\tt Tree}}
 \subsection{User interface of a {\tt LocalIndexSet}}
+The {\tt LocalIndexSet} as returned by {\tt GlobalBasis::localIndexSet()}
+provides access to global multi-indices for the
+local basis functions reachable from a local view.
+To this end the {\tt LocalIndexSet} must
+first be bound to the {\tt LocalView} using
+the {\tt bind(LocalView)} method. Similar to the
+local view there is an {\tt unbind()} method
+and the bound on local view can be accessed
+using the {\tt localView()} method.
+
+\begin{lstlisting}
+class LocalIndexSet
+{
+public:
+  using LocalView = <implementation defined>;
+  const LocalView& localView() const;
+  void bind(const LocalView& localView);
+  void unbind();
+\end{lstlisting}
+
+If the local index set is in bound state
+the {\tt size()} method can be used to query
+the number of local basis functions in the
+bound local view. This is a simple shortcut for
+{\tt localView().size()} and {\tt localView().tree().size()}.
+For any of these local basis functions the global
+multi-index is provided by the {\tt index(size\_type)}
+method. The argument for this method is the local
+index of the basis function within the tree as
+returned by the {\tt BasisNode::localIndex(size\_type)}
+method.
+
+\begin{lstlisting}
+  using MultiIndex = <implementation defined>;
+  using size_type = <implementation defined>;
+  size_type size() const;
+  MultiIndex index(size_type i) const;
+}; // end LocalIndexSet
+\end{lstlisting}
+
+We now give a short example on how to use the interface
+to compute global indices for local basis functions
+of a given {\tt globalBasis} at a given {\tt element}.
+If we want to compute the global index of the {\tt i}-th
+local basis function in the finite element attached to
+a leaf node this can be done by the following snippet.
+
+\begin{lstlisting}
+// create a LocalView and a LocalIndexSet
+auto localView = basis.localView();
+auto localIndexSet = basis.localIndexSet();
+
+// bind the LocalView to the element and the LocalIndexSet to the LocalView
+localView.bind(element);
+localIndexSet.bind(localView);
+
+// obtain the basis tree
+const auto& node = localView.tree();
+
+// compute local index of local basis function within the tree
+auto localIndex = node.localIndex(i);
+
+// compute global index of local basis function
+auto globalIndex = localIndex.index(i);
+\end{lstlisting}
+
+Here we assumed that we do not have a nested local ansatz tree
+such that the {\tt tree()} method directly returns a {\tt LeafBasisNode}.
+In this case {\tt localIndex} coincides with {\tt i}.
+In the more general case of a nontrivial product space
+we must first retrieve the leaf node corresponding to
+the desired factor in the product space. Assuming that
+the path to this node is given as {\tt treePath},
+the line to obtain the leaf node
+has to be changed to the following.
+
+\begin{lstlisting}
+// obtain the desired leaf node in the basis tree
+const auto& node = TypeTree::child(localView.tree(), treePath);
+\end{lstlisting}
+
+\subsection{Implementors interface of a {\tt NodeFactory}}
+\subsection{Implementors interface of a {\tt NodeIndexSet}}
 
 
 
