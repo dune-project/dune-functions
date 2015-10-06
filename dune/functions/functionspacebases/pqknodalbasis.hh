@@ -244,25 +244,15 @@ public:
     return *finiteElement_;
   }
 
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const DUNE_FINAL
-  {
-    // We have subTreeSize==lfe.size() because we're in a leaf node.
-    return size_;
-  }
-
   //! Bind to element.
   void bind(const Element& e)
   {
     element_ = &e;
     finiteElement_ = &(cache_.get(element_->type()));
-    size_ = finiteElement_->size();
+    this->setSize(finiteElement_->size());
   }
 
 protected:
-
-  size_type size_;
 
   FiniteElementCache cache_;
   const FiniteElement* finiteElement_;

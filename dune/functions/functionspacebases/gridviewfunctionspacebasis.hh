@@ -33,9 +33,6 @@ public:
 
   virtual const FiniteElement& finiteElement() const = 0;
 
-  //! size of subtree rooted in this node (element-local)
-  virtual size_type size() const = 0;
-
 };
 
 template<typename GV, typename LV, typename IS, typename MI>

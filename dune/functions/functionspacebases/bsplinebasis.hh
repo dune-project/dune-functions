@@ -1219,20 +1219,13 @@ public:
     return finiteElement_;
   }
 
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const DUNE_FINAL
-  {
-    // We have subTreeSize==lfe.size() because we're in a leaf node.
-    return finiteElement_.size();
-  }
-
   //! Bind to element.
   void bind(const Element& e)
   {
     element_ = e;
     auto elementIndex = nodeFactory_->gridView().indexSet().index(e);
     finiteElement_.bind(nodeFactory_->getIJK(elementIndex,nodeFactory_->elements_));
+    this->setSize(finiteElement_.size());
   }
 
 protected:
