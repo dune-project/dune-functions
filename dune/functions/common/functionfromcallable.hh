@@ -3,7 +3,6 @@
 #ifndef DUNE_FUNCTIONS_COMMON_FUNCTION_FROM_CALLABLE_HH
 #define DUNE_FUNCTIONS_COMMON_FUNCTION_FROM_CALLABLE_HH
 
-#include <dune/common/std/final.hh>
 #include <dune/common/function.hh>
 
 #include <dune/functions/common/signature.hh>
