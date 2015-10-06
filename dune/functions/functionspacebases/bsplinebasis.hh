@@ -8,13 +8,12 @@
 /** \todo Don't use this matrix */
 #include <dune/common/dynmatrix.hh>
 
-#include <dune/common/std/final.hh>
 #include <dune/localfunctions/common/localbasis.hh>
 #include <dune/common/diagonalmatrix.hh>
 #include <dune/localfunctions/common/localkey.hh>
 #include <dune/localfunctions/common/localfiniteelementtraits.hh>
 #include <dune/geometry/type.hh>
-#include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
+#include <dune/functions/functionspacebases/nodes.hh>
 
 namespace Dune
 {
@@ -1180,32 +1179,27 @@ public:
 
 template<typename GV, typename ST, typename TP>
 class BSplineNode :
-  public GridFunctionSpaceBasisLeafNodeInterface<
-    typename GV::template Codim<0>::Entity,
-    BSplineLocalFiniteElement<GV,double>,
-    ST,
-    TP>
+  public LeafBasisNode<ST, TP>
 {
   static const int dim = GV::dimension;
 
-  typedef typename GV::template Codim<0>::Entity E;
-  typedef BSplineLocalFiniteElement<GV,double> FE;
+  using Base = LeafBasisNode<ST,TP>;
 
 public:
-  typedef GridFunctionSpaceBasisLeafNodeInterface<E,FE,ST,TP> Interface;
-  typedef typename Interface::size_type size_type;
-  typedef typename Interface::Element Element;
-  typedef typename Interface::FiniteElement FiniteElement;
-  typedef typename Interface::TreePath TreePath;
+
+  using size_type = ST;
+  using TreePath = TP;
+  using Element = typename GV::template Codim<0>::Entity;
+  using FiniteElement = BSplineLocalFiniteElement<GV,double>;
 
   BSplineNode(const TreePath& treePath, const BSplineNodeFactory<GV, FlatMultiIndex<ST>, ST>* nodeFactory) :
-    Interface(treePath),
+    Base(treePath),
     nodeFactory_(nodeFactory),
     finiteElement_(*nodeFactory)
   {}
 
   //! Return current element, throw if unbound
-  const Element& element() const DUNE_FINAL
+  const Element& element() const
   {
     return element_;
   }
@@ -1214,7 +1208,7 @@ public:
    *
    * The LocalFiniteElement implements the corresponding interfaces of the dune-localfunctions module
    */
-  const FiniteElement& finiteElement() const DUNE_FINAL
+  const FiniteElement& finiteElement() const
   {
     return finiteElement_;
   }
