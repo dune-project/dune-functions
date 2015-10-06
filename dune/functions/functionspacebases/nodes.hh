@@ -129,6 +129,7 @@ namespace Dune {
 
       LeafBasisNode(TreePath treePath = TreePath()) :
         offset_(0),
+        size_(0),
         treePath_(treePath),
         treeIndex_(0)
       {}
@@ -136,6 +137,11 @@ namespace Dune {
       size_type localIndex(size_type i) const
       {
         return offset_ + i;
+      }
+
+      size_type size() const
+      {
+        return size_;
       }
 
       const TreePath& treePath() const
@@ -148,11 +154,21 @@ namespace Dune {
         return treeIndex_;
       }
 
+      size_type offset() const
+      {
+        return offset_;
+      }
+
     protected:
 
       void setOffset(const size_type offset)
       {
         offset_ = offset;
+      }
+
+      void setSize(const size_type size)
+      {
+        size_ = size;
       }
 
       void setTreeIndex(const size_type treeIndex)
@@ -163,6 +179,7 @@ namespace Dune {
     private:
 
       size_type offset_;
+      size_type size_;
       const TreePath treePath_;
       size_type treeIndex_;
 
