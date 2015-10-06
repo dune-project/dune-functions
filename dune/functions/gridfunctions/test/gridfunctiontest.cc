@@ -56,8 +56,10 @@ int main (int argc, char* argv[]) try
 } catch ( Dune::Exception &e )
 {
   std::cerr << "Dune reported error: " << e << std::endl;
+  return 1;
 }
 catch(...)
 {
   std::cerr << "Unknown exception thrown!" << std::endl;
+  return 1;
 }
