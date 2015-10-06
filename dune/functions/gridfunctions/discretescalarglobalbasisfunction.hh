@@ -32,7 +32,7 @@ public:
   class LocalFunction
   {
     using LocalBasisView = typename Basis::LocalView;
-    using LocalIndexSet = typename Basis::IndexSet::LocalIndexSet;
+    using LocalIndexSet = typename Basis::LocalIndexSet;
     using size_type = typename LocalBasisView::Tree::size_type;
 
   public:
@@ -45,7 +45,7 @@ public:
     LocalFunction(const DiscreteScalarGlobalBasisFunction& globalFunction)
       : globalFunction_(&globalFunction)
       , localBasisView_(globalFunction.basis().localView())
-      , localIndexSet_(globalFunction.indexSet_.localIndexSet())
+      , localIndexSet_(globalFunction.basis().localIndexSet())
     {
       localDoFs_.reserve(localBasisView_.maxSize());
       shapeFunctionValues_.reserve(localBasisView_.maxSize());
@@ -131,14 +131,12 @@ public:
     : entitySet_(basis.gridView())
     , basis_(stackobject_to_shared_ptr(basis))
     , dofs_(stackobject_to_shared_ptr(dofs))
-    , indexSet_(basis.indexSet())
   {}
 
   DiscreteScalarGlobalBasisFunction(std::shared_ptr<Basis> basis, std::shared_ptr<V> dofs)
     : entitySet_(basis.gridView())
     , basis_(basis)
     , dofs_(dofs)
-    , indexSet_(basis.indexSet())
   {}
 
   const Basis& basis() const
@@ -180,7 +178,6 @@ private:
   EntitySet entitySet_;
   std::shared_ptr<const Basis> basis_;
   std::shared_ptr<const V> dofs_;
-  typename Basis::IndexSet indexSet_;
 };
 
 } // namespace Functions
