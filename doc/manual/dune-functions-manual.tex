@@ -14,7 +14,8 @@
 \usepackage{xspace}
 \usepackage[square,numbers,sort]{natbib}
 
-\usepackage[colorinlistoftodos,disable]{todonotes}
+\usepackage[colorinlistoftodos]{todonotes}
+%\usepackage[colorinlistoftodos,disable]{todonotes}
 \usepackage{environ}
 \usepackage{enumitem}
 \usepackage{listings}
@@ -706,6 +707,11 @@ type of all size-related methods is exported as {\tt size\_type}.
 Finally, the basis exports its node-factory of type {\tt NodeFactory}
 via the {\tt nodeFactory()} method. The concept of a node-factory
 will be discussed below.
+\todo[inline]{Carsten:Do we require that this method exists?}
+\todo[inline]{Carsten:Do we require that each global basis is
+  implemented using a factory?}
+\todo[inline]{Carsten:Do we require that GlobalBasis is always
+  a DefaultGlobalBasis parametrized with the node factory?}
 
 \begin{lstlisting}
   using NodeFactory = <implementation define>;
@@ -818,6 +824,8 @@ tree. Hence the local indices of all basis functions
 within this subtree form a consecutive range. The first
 value in this rage,i.e., the result of {\tt localIndex(0)}
 is also accessible via the {\tt offset()} method.
+\todo[inline]{Is the offset() method part of the interface?
+Making it protected seems to be reasonable.}
 The result of these methods is undefined if the
 local view containing the tree is in unbound state.
 All these indices are of type {\tt size\_type}.
@@ -962,15 +970,30 @@ such that the {\tt tree()} method directly returns a {\tt LeafBasisNode}.
 In this case {\tt localIndex} coincides with {\tt i}.
 In the more general case of a nontrivial product space
 we must first retrieve the leaf node corresponding to
-the desired factor in the product space. Assuming that
-the path to this node is given as {\tt treePath},
-the line to obtain the leaf node
-has to be changed to the following.
+the desired factor in the product space. This can be done
+using the tree path for this node. If, for example,
+we have a Taylor-Hood element, where the first
+child in the tree corresponds to the velocity,
+which itself has $dim$ children for the velocity
+components, the leaf node for the second velocity
+component can be obtained by the following.
 
 \begin{lstlisting}
+// import namespace with index constants
+using namespace TypeTree::Indices;
+
+// generate tree path for 2nd component of the velocity tree
+auto treePath = TypeTree::hybridTreePath(_0, 1);
+
 // obtain the desired leaf node in the basis tree
 const auto& node = TypeTree::child(localView.tree(), treePath);
 \end{lstlisting}
+
+Notice that we used the index constants {\tt \_0}
+from the namespace {\tt TypeTree::Indices}
+to address the velocity node because the
+tree root is a hybrid container whose child nodes
+for velocity and pressure are of different type.
 
 \subsection{Implementors interface of a {\tt NodeFactory}}
 \subsection{Implementors interface of a {\tt NodeIndexSet}}
