@@ -6,7 +6,6 @@
 #include <dune/common/reservedvector.hh>
 
 #include <dune/functions/common/type_traits.hh>
-#include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
 #include <dune/functions/functionspacebases/defaultglobalindexset.hh>
 #include <dune/functions/functionspacebases/defaultlocalview.hh>
 
@@ -19,10 +18,6 @@ namespace Functions {
 
 template<class NF>
 class DefaultGlobalBasis
-: public GridViewFunctionSpaceBasis<typename NF::GridView,
-                                    DefaultLocalView<DefaultGlobalBasis<NF>>,
-                                    DefaultGlobalIndexSet<DefaultLocalView<DefaultGlobalBasis<NF>>, NF>,
-                                    typename NF::MultiIndex >
 {
   using RootTreePath = TypeTree::HybridTreePath<>;
 
@@ -59,7 +54,7 @@ public:
 
   /** \brief Obtain the grid view that the basis is defined on
    */
-  const GridView& gridView() const DUNE_FINAL
+  const GridView& gridView() const
   {
     return nodeFactory_.gridView();
   }
