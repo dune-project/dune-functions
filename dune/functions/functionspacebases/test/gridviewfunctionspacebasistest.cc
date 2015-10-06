@@ -195,8 +195,7 @@ void testScalarBasis(const Basis& feBasis,
 
     // get access to the finite element
     typedef typename Basis::LocalView::Tree Tree;
-    auto& treeImp = localView.tree();
-    const typename Tree::Interface& tree = treeImp;
+    auto& tree = localView.tree();
 
     auto& localFiniteElement = tree.finiteElement();
 
