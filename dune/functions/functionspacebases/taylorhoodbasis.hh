@@ -5,12 +5,11 @@
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/reservedvector.hh>
-#include <dune/common/std/final.hh>
 
 #include <dune/typetree/powernode.hh>
 #include <dune/typetree/compositenode.hh>
 
-#include <dune/functions/functionspacebases/gridviewfunctionspacebasis.hh>
+#include <dune/functions/functionspacebases/nodes.hh>
 
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
