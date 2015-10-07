@@ -128,6 +128,53 @@ struct BasisTree : Refines<BasisNode>
 };
 
 
+// Concept for a NodeIndexSet
+template<class NodeFactory>
+struct NodeIndexSet
+{
+  template<class I>
+  auto require(const I& indexSet) -> decltype(
+    requireType<typename I::size_type>(),
+    requireType<typename I::MultiIndex>(),
+    requireType<typename I::NodeFactory>(),
+    requireType<typename I::Node>(),
+    requireSameType<typename I::NodeFactory, NodeFactory>(),
+    const_cast<I&>(indexSet).bind(std::declval<typename I::Node>()),
+    const_cast<I&>(indexSet).unbind(),
+    requireConvertible<typename I::size_type>(indexSet.size()),
+    requireConvertible<typename I::MultiIndex>(indexSet.index(std::declval<typename I::size_type>()))
+  );
+};
+
+
+// Concept for a NodeFactory
+template<class GridView>
+struct NodeFactory
+{
+  using RootTreePath = decltype(TypeTree::hybridTreePath());
+
+  template<class F>
+  auto require(const F& factory) -> decltype(
+    requireType<typename F::GridView>(),
+    requireType<typename F::size_type>(),
+    requireType<typename F::MultiIndex>(),
+    requireType<typename F::SizePrefix>(),
+    requireType<typename F::template Node<RootTreePath>>(),
+    requireType<typename F::template IndexSet<RootTreePath>>(),
+    requireSameType<typename F::GridView, GridView>(),
+    const_cast<F&>(factory).initializeIndices(),
+    requireConvertible<typename F::GridView>(factory.gridView()),
+    requireConvertible<typename F::template Node<RootTreePath>>(factory.node(RootTreePath())),
+    requireConvertible<typename F::template IndexSet<RootTreePath>>(factory.template indexSet<RootTreePath>()),
+    requireConvertible<typename F::size_type>(factory.size()),
+    requireConvertible<typename F::size_type>(factory.size(std::declval<typename F::SizePrefix>())),
+    requireConvertible<typename F::size_type>(factory.dimension()),
+    requireConvertible<typename F::size_type>(factory.maxNodeSize()),
+    requireConcept<BasisTree<typename F::GridView>>(factory.node(RootTreePath())),
+    requireConcept<NodeIndexSet<F>>(factory.template indexSet<RootTreePath>())
+  );
+};
+
 
 } // namespace Dune::Functions::Concept
 } // namespace Dune::Functions
