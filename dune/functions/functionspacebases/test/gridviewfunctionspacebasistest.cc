@@ -56,6 +56,9 @@ void testScalarBasis(const Basis& feBasis,
     // The general LocalFiniteElement unit test from dune/localfunctions/test/test-localfe.hh
     const auto& lFE = localView.tree().finiteElement();
 //    testFE(lFE, disabledLocalTests);
+
+    if (lFE.size() != localView.size())
+      DUNE_THROW(Exception, "Size of leaf node and finite element do not coincide");
   }
 
   /////////////////////////////////////////////////////////////////////////
@@ -195,7 +198,7 @@ void testScalarBasis(const Basis& feBasis,
 
     // get access to the finite element
     typedef typename Basis::LocalView::Tree Tree;
-    auto& tree = localView.tree();
+    const Tree& tree = localView.tree();
 
     auto& localFiniteElement = tree.finiteElement();
 
