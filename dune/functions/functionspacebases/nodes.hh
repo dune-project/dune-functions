@@ -109,8 +109,7 @@ namespace Dune {
 
 
     template<typename size_t, typename TP>
-    class LeafBasisNode
-      : public TypeTree::LeafNode
+    class BasisNodeMixin
     {
 
       template<typename>
@@ -127,7 +126,7 @@ namespace Dune {
       using TreePath = TP;
       using size_type = size_t;
 
-      LeafBasisNode(TreePath treePath = TreePath()) :
+      BasisNodeMixin(const TreePath& treePath) :
         offset_(0),
         size_(0),
         treePath_(treePath),
@@ -187,89 +186,32 @@ namespace Dune {
 
 
     template<typename size_t, typename TP>
-    class InternalBasisNodeMixin
+    class LeafBasisNode :
+        public BasisNodeMixin<size_t, TP>,
+        public TypeTree::LeafNode
     {
 
-      template<typename>
-      friend struct ClearSizeVisitor;
-
-      template<typename,typename>
-      friend struct BindVisitor;
-
-      template<typename>
-      friend struct InitializeTreeVisitor;
+      using Mixin = BasisNodeMixin<size_t,TP>;
 
     public:
 
       using TreePath = TP;
       using size_type = size_t;
 
-      InternalBasisNodeMixin(const TreePath& treePath) :
-        offset_(0),
-        size_(0),
-        treePath_(treePath),
-        treeIndex_(0)
+      LeafBasisNode(TreePath treePath = TreePath()) :
+        Mixin(treePath)
       {}
-
-      size_type localIndex(size_type i) const
-      {
-        return offset_ + i;
-      }
-
-      size_type size() const
-      {
-        return size_;
-      }
-
-      const TreePath& treePath() const
-      {
-        return treePath_;
-      }
-
-      const size_type treeIndex() const
-      {
-        return treeIndex_;
-      }
-
-      size_type offset() const
-      {
-        return offset_;
-      }
-
-    protected:
-
-      void setOffset(const size_type offset)
-      {
-        offset_ = offset;
-      }
-
-      void setSize(const size_type size)
-      {
-        size_ = size;
-      }
-
-      void setTreeIndex(const size_type treeIndex)
-      {
-        treeIndex_ = treeIndex;
-      }
-
-    private:
-
-      size_type offset_;
-      size_type size_;
-      const TreePath treePath_;
-      size_type treeIndex_;
 
     };
 
 
     template<typename size_t, typename TP, typename T, std::size_t n>
     class PowerBasisNode :
-      public InternalBasisNodeMixin<size_t,TP>,
+      public BasisNodeMixin<size_t,TP>,
       public TypeTree::PowerNode<T,n>
     {
 
-      using Mixin = InternalBasisNodeMixin<size_t,TP>;
+      using Mixin = BasisNodeMixin<size_t,TP>;
       using Node = TypeTree::PowerNode<T,n>;
 
     public:
@@ -288,11 +230,11 @@ namespace Dune {
 
     template<typename size_t, typename TP, typename... T>
     class CompositeBasisNode :
-      public InternalBasisNodeMixin<size_t,TP>,
+      public BasisNodeMixin<size_t,TP>,
       public TypeTree::CompositeNode<T...>
     {
 
-      using Mixin = InternalBasisNodeMixin<size_t,TP>;
+      using Mixin = BasisNodeMixin<size_t,TP>;
       using Node = TypeTree::CompositeNode<T...>;
 
     public:
