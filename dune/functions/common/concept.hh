@@ -12,7 +12,11 @@ namespace Dune {
 namespace Functions {
 namespace Concept {
 
-namespace Imp // All types and functions in this namespace are implementation details
+// #############################################################################
+// # All types and functions following here are implementation details
+// # for the models() function below.
+// #############################################################################
+namespace Imp
 {
 
   // Base class to mark refined concepts
@@ -117,11 +121,56 @@ namespace Imp // All types and functions in this namespace are implementation de
 
 
 
+// #############################################################################
+// # The method models() does the actual check if a type models a concept
+// # using the implementation details above.
+// #############################################################################
+
 // Check if T... models the concept or TypeList C
 template<class C, class... T>
 static constexpr bool models()
 {
   return Imp::modelsImp<C, T...>();
+}
+
+
+
+// #############################################################################
+// # All functions following here are implementation details for the
+// # for the tupleEntriesModel() function below.
+// #############################################################################
+namespace Imp
+{
+
+  template<class C, class First>
+  static constexpr auto allModel()
+    -> std::integral_constant<bool, Concept::models<C, First>()>
+  { return {}; }
+
+  template<class C, class First, class... Other>
+  static constexpr auto allModel()
+    -> std::integral_constant<bool, Concept::models<C, First>() and allModel<C, Other...>()>
+  { return {}; }
+
+  template<class C, class... T>
+  static constexpr auto tupleEntriesModel(const std::tuple<T...>&)
+    -> decltype(allModel<C, T...>())
+  { return {}; }
+
+}
+
+
+
+// #############################################################################
+// # The method tupleEntriesModel() does the actual check if the types in a tuple
+// # model a concept using the implementation details above.
+// #############################################################################
+
+template<class C, class Tuple>
+static constexpr auto tupleEntriesModel()
+  -> decltype(Imp::tupleEntriesModel<C>(std::declval<Tuple>()))
+{
+  return {};
 }
 
 // If you want to require
@@ -137,6 +186,12 @@ struct Refines : Imp::RefinedConcept
 };
 
 
+
+// #############################################################################
+// # The following require*() functions are just helpers that allow to
+// # propagate a failed check as substitution failure. This is usefull
+// # inside of a concept definition.
+// #############################################################################
 
 // Helper function for use in concept definitions.
 // If the passed value b is not true, the concept will to be satisfied.
@@ -157,6 +212,14 @@ static constexpr bool requireConcept()
 // This allows to avoid using decltype
 template<class C, class... T, typename std::enable_if<models<C, T...>(), int>::type = 0>
 static constexpr bool requireConcept(T&&... t)
+{
+  return true;
+}
+
+// Helper function for use in concept definitions.
+// This checks if the concept given as first type is modelled by all types in the tuple passed as argument
+template<class C, class Tuple, typename std::enable_if<tupleEntriesModel<C, Tuple>(), int>::type = 0>
+static constexpr bool requireConceptForTupleEntries()
 {
   return true;
 }
