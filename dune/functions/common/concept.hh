@@ -189,6 +189,24 @@ static constexpr bool requireType()
   return true;
 }
 
+// Helper function for use in concept definitions.
+// If first passed type is not a base class of second type, the concept will not be satisfied.
+template<class Base, class Derived,
+  typename std::enable_if< std::is_base_of<Base, Derived>::value, int>::type = 0>
+static constexpr bool requireBaseOf()
+{
+  return true;
+}
+
+// Helper function for use in concept definitions.
+// If first passed type is not a base class of first arguments type, the concept will not be satisfied.
+template<class Base, class Derived,
+  typename std::enable_if< std::is_base_of<Base, Derived>::value, int>::type = 0>
+static constexpr bool requireBaseOf(const Derived&)
+{
+  return true;
+}
+
 
 
 
