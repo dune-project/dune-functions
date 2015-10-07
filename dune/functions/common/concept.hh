@@ -270,7 +270,14 @@ static constexpr bool requireBaseOf(const Derived&)
   return true;
 }
 
-
+// Helper function for use in concept definitions.
+// If the passed types are not the same, the concept will not be satisfied.
+template<class A, class B,
+  typename std::enable_if< std::is_same<A, B>::value, int>::type = 0>
+static constexpr bool requireSameType()
+{
+  return true;
+}
 
 
 
