@@ -162,7 +162,7 @@ static constexpr bool requireConcept(T&&... t)
 }
 
 // Helper function for use in concept definitions.
-// If the first passed type is not convertible to the secand, the concept will to be satisfied.
+// If the first passed type is not convertible to the second, the concept will not be satisfied.
 template<class From, class To,
   typename std::enable_if< std::is_convertible<From, To>::value, int>::type = 0>
 static constexpr bool requireConvertible()
@@ -171,7 +171,7 @@ static constexpr bool requireConvertible()
 }
 
 // Helper function for use in concept definitions.
-// If passed argument is not convertible to the first passed type, the concept will to be satisfied.
+// If passed argument is not convertible to the first passed type, the concept will not be satisfied.
 template<class To, class From,
   typename std::enable_if< std::is_convertible<From, To>::value, int>::type = 0>
 static constexpr bool requireConvertible(const From&)
