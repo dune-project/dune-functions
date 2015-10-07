@@ -86,7 +86,7 @@ public:
   class LocalFunction
   {
     using LocalBasisView = typename Basis::LocalView;
-    using LocalIndexSet = typename Basis::IndexSet::LocalIndexSet;
+    using LocalIndexSet = typename Basis::LocalIndexSet;
     using size_type = typename SubTree::size_type;
 
     template<class Node>
@@ -177,7 +177,7 @@ public:
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
       : globalFunction_(&globalFunction)
       , localBasisView_(globalFunction.basis().localView())
-      , localIndexSet_(globalFunction.indexSet_.localIndexSet())
+      , localIndexSet_(globalFunction.basis().localIndexSet())
     {
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
@@ -189,7 +189,7 @@ public:
     LocalFunction(const LocalFunction& other)
       : globalFunction_(other.globalFunction_)
       , localBasisView_(globalFunction_->basis().localView())
-      , localIndexSet_(globalFunction_->indexSet_.localIndexSet())
+      , localIndexSet_(globalFunction_->basis().localIndexSet())
     {
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
@@ -277,7 +277,6 @@ public:
     basis_(stackobject_to_shared_ptr(basis)),
     treePath_(treePath),
     coefficients_(stackobject_to_shared_ptr(coefficients)),
-    indexSet_(basis.indexSet()),
     nodeToRangeEntry_(stackobject_to_shared_ptr(nodeToRangeEntry))
   {}
 
@@ -286,7 +285,6 @@ public:
     basis_(basis),
     treePath_(treePath),
     coefficients_(coefficients),
-    indexSet_(basis->indexSet()),
     nodeToRangeEntry_(nodeToRangeEntry)
   {}
 
@@ -340,7 +338,6 @@ private:
   std::shared_ptr<const Basis> basis_;
   const TreePath treePath_;
   std::shared_ptr<const V> coefficients_;
-  typename Basis::IndexSet indexSet_;
   std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry_;
 };
 
