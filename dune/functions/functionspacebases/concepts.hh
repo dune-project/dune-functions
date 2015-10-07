@@ -78,6 +78,48 @@ struct LeafBasisNode : Refines<BasisNode>
 };
 
 
+template<class GridView>
+struct BasisTree;
+
+// Concept for a PowerBasisNode in a local ansatz tree
+template<class GridView>
+struct PowerBasisNode : Refines<BasisNode>
+{
+  template<class N>
+  auto require(N&& node) -> decltype(
+    N::CHILDREN,
+    requireType<typename N::ChildType>(),
+    requireBaseOf<Dune::Functions::PowerBasisNode<typename N::size_type, typename N::TreePath, typename N::ChildType, N::CHILDREN>, N>(),
+    requireConcept<BasisTree<GridView>, typename N::ChildType>()
+  );
+};
+
+
+// Concept for a CompositeBasisNode in a local ansatz tree
+template<class GridView>
+struct CompositeBasisNode : Refines<BasisNode>
+{
+  template<class N>
+  auto require(const N& node) -> decltype(
+    requireType<typename N::ChildTypes>(),
+    requireConceptForTupleEntries<BasisTree<GridView>, typename N::ChildTypes>()
+  );
+};
+
+
+// Concept for a full local BasisTree
+template<class GridView>
+struct BasisTree : Refines<BasisNode>
+{
+  template<class N>
+  auto require(const N& node) -> decltype(
+    requireConcept<typename std::conditional< N::isLeaf, LeafBasisNode<GridView>, BasisNode>::type, N>(),
+    requireConcept<typename std::conditional< N::isPower, PowerBasisNode<GridView>, BasisNode>::type, N>(),
+    requireConcept<typename std::conditional< N::isComposite, CompositeBasisNode<GridView>, BasisNode>::type, N>()
+  );
+};
+
+
 
 } // namespace Dune::Functions::Concept
 } // namespace Dune::Functions
