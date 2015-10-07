@@ -87,8 +87,6 @@ struct PowerBasisNode : Refines<BasisNode>
 {
   template<class N>
   auto require(N&& node) -> decltype(
-    N::CHILDREN,
-    requireType<typename N::ChildType>(),
     requireBaseOf<Dune::Functions::PowerBasisNode<typename N::size_type, typename N::TreePath, typename N::ChildType, N::CHILDREN>, N>(),
     requireConcept<BasisTree<GridView>, typename N::ChildType>()
   );
@@ -99,9 +97,19 @@ struct PowerBasisNode : Refines<BasisNode>
 template<class GridView>
 struct CompositeBasisNode : Refines<BasisNode>
 {
+
+  template<class ST, class TP, class Tuple>
+  struct CompositeBasisNodeHelper {};
+
+  template<class ST, class TP, class... T>
+  struct CompositeBasisNodeHelper<ST, TP, std::tuple<T...>>
+  {
+    using Type = typename Dune::Functions::CompositeBasisNode<ST, TP, T...>;
+  };
+
   template<class N>
   auto require(const N& node) -> decltype(
-    requireType<typename N::ChildTypes>(),
+    requireBaseOf<typename CompositeBasisNodeHelper<typename N::size_type, typename N::TreePath, typename N::ChildTypes>::Type, N>(),
     requireConceptForTupleEntries<BasisTree<GridView>, typename N::ChildTypes>()
   );
 };
