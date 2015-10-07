@@ -41,6 +41,7 @@ public:
     globalBasis_(&globalBasis),
     tree_(globalBasis_->nodeFactory().node(RootTreePath()))
   {
+    static_assert(Concept::models<Concept::BasisNode, Tree>(), "Tree type passed to DefaultLocalView does not model the BasisNode concept.");
     initializeTree(tree_);
   }
 
