@@ -8,6 +8,7 @@
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/defaultglobalindexset.hh>
 #include <dune/functions/functionspacebases/defaultlocalview.hh>
+#include <dune/functions/functionspacebases/concepts.hh>
 
 
 
@@ -49,6 +50,7 @@ public:
   DefaultGlobalBasis(T&&... t) :
     nodeFactory_(std::forward<T>(t)...)
   {
+    static_assert(Concept::models<Concept::NodeFactory<GridView>, NodeFactory>(), "Type passed to DefaultGlobalBasis does not model the  NodeFactory concept.");
     nodeFactory_.initializeIndices();
   }
 
