@@ -3,6 +3,9 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_GRIDVIEWFUNCTIONSPACEBASIS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_GRIDVIEWFUNCTIONSPACEBASIS_HH
 
+#warning "Deprecated header, will be removed in 2015-12. Please derive your leaf basis nodes from LeafBasisNode in nodes.hh
+#warning "instead of GridFunctionSpaceBasisLeafNodeInterface and stop deriving from GridViewFunctionSpaceBasis."
+
 #include <dune/typetree/leafnode.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 
