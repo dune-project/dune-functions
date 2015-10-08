@@ -60,6 +60,34 @@ auto forwardAsStaticIndex(const size_type& i, F&& f, Args&&... args)
 
 
 
+namespace Imp {
+
+template<template<class...> class T, class Tuple>
+struct ExpandTupleHelper
+{};
+
+template<template<class...> class T, class... Args>
+struct ExpandTupleHelper<T, typename std::tuple<Args...>>
+{
+  using Type = T<Args...>;
+};
+
+} // end namespace Imp
+
+/**
+ * \brief Expand tuple arguments as template arguments
+ *
+ * This template alias refers to T<Args...> if
+ * ArgTuple is a std::tuple<Args...>.
+ *
+ * \tparam T A variadic template
+ * \tparam ArgTuple A tuple of types
+ */
+template<template<class...> class T, class ArgTuple>
+using ExpandTuple = typename Imp::ExpandTupleHelper<T, ArgTuple>::Type;
+
+
+
 /**
  * \brief Get last entry of type list
  */
