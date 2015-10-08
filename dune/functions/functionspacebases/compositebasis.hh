@@ -48,38 +48,54 @@ class CompositeNodeIndexSet;
 template<class MI, class IT, class... SF>
 class CompositeNodeFactory
 {
+public:
+
+  using SubFactories = std::tuple<SF...>;
+  using GridView = typename std::tuple_element<0, SubFactories>::type::GridView;
+  using size_type = typename std::tuple_element<0, SubFactories>::type::size_type;
+  using IndexTag = IT;
+
+protected:
   static const std::size_t children = sizeof...(SF);
 
   template<class, class, class, class...>
   friend class CompositeNodeIndexSet;
+
+  using ChildIndexTuple = IntegerSequenceTuple<TypeTree::Std::make_index_sequence<sizeof...(SF)>>;
+
+  template<class TP>
+  struct FixedTP
+  {
+
+    template<class I>
+    using IndexToSubTreePath = decltype(TypeTree::push_back(TP(), I()));
+
+    using SubTreePaths = TransformTuple<IndexToSubTreePath, ChildIndexTuple>;
+
+    template<class F, class SubTP>
+    using FactoryToSubNode = typename F::template Node<SubTP>;
+
+    using SubNodes = TransformTuple<FactoryToSubNode, SubFactories, SubTreePaths>;
+
+    template<class F, class SubTP>
+    using FactoryToSubIndexSet = typename F::template IndexSet<SubTP>;
+
+    using SubIndexSets = TransformTuple<FactoryToSubIndexSet, SubFactories, SubTreePaths>;
+
+    template<class... N>
+    using SubNodesToNode = CompositeBasisNode<size_type, TP, N... >;
+
+    using Node = ExpandTuple<SubNodesToNode, SubNodes>;
+  };
+
 
 public:
 
   template<std::size_t k>
   using SubFactory = typename std::tuple_element<k, std::tuple<SF...>>::type;
 
-  /** \brief The grid view that the FE space is defined on */
-  using GridView = typename SubFactory<0>::GridView;
-  using size_type = typename SubFactory<0>::size_type;
-  using IndexTag = IT;
-
-  template<class TP, std::size_t k>
-  using SubNode = typename SubFactory<k>::template Node<decltype(TypeTree::push_back(TP(), TypeTree::index_constant<k>()))>;
-
-  template<class TP, std::size_t k>
-  using SubIndexSet = typename SubFactory<k>::template IndexSet<decltype(TypeTree::push_back(TP(), TypeTree::index_constant<k>()))>;
-
-  template<class, class>
-  struct NodeHelper;
-
-  template<class TP, std::size_t... k>
-  struct NodeHelper<TP, TypeTree::Std::index_sequence<k...>>
-  {
-    using type = CompositeBasisNode<size_type, TP, SubNode<TP, k>... >;
-  };
-
   template<class TP>
-  using Node = typename NodeHelper<TP, TypeTree::Std::make_index_sequence<sizeof...(SF)>>::type;
+  using Node = typename FixedTP<TP>::Node;
 
   template<class TP>
   using IndexSet = CompositeNodeIndexSet<MI, TP, IT, SF...>;
@@ -89,12 +105,6 @@ public:
 
   using SizePrefix = Dune::ReservedVector<size_type, MultiIndex::max_size()+1>;
 
-private:
-
-  using SubMultiIndex = MI;
-
-public:
-
   /** \brief Constructor for a given grid view object */
 
   template<class... SFArgs,
@@ -102,7 +112,8 @@ public:
     enableIfConstructible<std::tuple<SF...>, SFArgs...> = 0>
   CompositeNodeFactory(SFArgs&&... sfArgs) :
     subFactories_(std::forward<SFArgs>(sfArgs)...)
-  {}
+  {
+  }
 
 
   struct Lambda_initializeIndices
@@ -131,7 +142,10 @@ public:
     template<class I, class Node, class SFT, class TP>
     void operator()(const I& i, Node& node, const SFT& subFactories, const TP& tp)
     {
-      node.template setChild<I::value>(std::make_shared<SubNode<TP, I::value>>(std::get<I::value>(subFactories).node(TypeTree::push_back(tp, i))));
+      using SubNode = typename std::tuple_element<I::value, typename FixedTP<TP>::SubNodes>::type;
+      const auto& subFactory = std::get<I::value>(subFactories);
+      node.template setChild<I::value>(std::make_shared<SubNode>(subFactory.node(TypeTree::push_back(tp, i))));
+//      node.template setChild<I::value>(std::get<I::value>(subFactories).node(TypeTree::push_back(tp, i)));
     }
   };
 
@@ -286,36 +300,24 @@ public:
 
   using Node = typename NodeFactory::template Node<TP>;
 
-  template<std::size_t k>
-  using SubTreePath = typename TypeTree::Child<Node,k>::TreePath;
+  using SubTreePaths = typename NodeFactory::template FixedTP<TP>::SubTreePaths;
+  using SubIndexSets = typename NodeFactory::template FixedTP<TP>::SubIndexSets;
 
-  template<std::size_t k>
-  using SubIndexSet = typename NodeFactory::template SubIndexSet<TP, k>;
 
-  template<class>
-  struct SubIndexSetTupleHelper;
-
-  template<std::size_t... k>
-  struct SubIndexSetTupleHelper<TypeTree::Std::index_sequence<k...>>
+  struct Lambda_FactoryToSubIndexSet
   {
-    using type = std::tuple<SubIndexSet<k>...>;
+    // transform a single (factory,subTreePath) pait to subIndexSet
+    template<class Factory, class SubTP>
+    auto operator()(const Factory& factory, const SubTP& subTP)
+      ->decltype(factory.template indexSet<SubTP>())
+    {
+      return factory.template indexSet<SubTP>();
+    }
   };
-
-  using SubIndexSetTuple = typename SubIndexSetTupleHelper<TypeTree::Std::make_index_sequence<sizeof...(SF)>>::type;
-
-
-
-  template<class SubFactoryTuple, size_t... I>
-  static auto makeSubNodeIndexSetTuple(const SubFactoryTuple& subFactories, TypeTree::Std::index_sequence<I...>)
-    -> decltype(std::make_tuple((std::get<I>(subFactories).template indexSet<SubTreePath<I>>())...))
-  {
-    return std::make_tuple((std::get<I>(subFactories).template indexSet<SubTreePath<I>>())...);
-  }
-
 
   CompositeNodeIndexSet(const NodeFactory & nodeFactory) :
     nodeFactory_(&nodeFactory),
-    subNodeIndexSetTuple_(makeSubNodeIndexSetTuple(nodeFactory_->subFactories_, TypeTree::Std::make_index_sequence<sizeof...(SF)>()))
+    subNodeIndexSetTuple_(transformTuple(Lambda_FactoryToSubIndexSet(), nodeFactory_->subFactories_, SubTreePaths()))
   {}
 
   struct Lambda_bind
@@ -421,7 +423,7 @@ public:
 
 private:
   const NodeFactory* nodeFactory_;
-  SubIndexSetTuple subNodeIndexSetTuple_;
+  SubIndexSets subNodeIndexSetTuple_;
   const Node* node_;
 };
 
