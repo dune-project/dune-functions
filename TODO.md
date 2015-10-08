@@ -1,17 +1,16 @@
+# Open questions
 <!-- vi: set ft=mkd ts=8 sw=2 et sts=2: -->
 
 Feel free to put your wishes and questions into this file.
 It would be nice to prefix your statements with your initials
 or one more letter if needed.
 
-# Development
+## Development
 * CaG: Should we discuss the further development using a bug tracker?
   And put everythig below into requests?
 
 
-#########################################
-# Function space basis interface
-#########################################
+## Function space basis interface
 
 * OS: The TaylorHoodIndexSet class currently contains two members
 
@@ -38,18 +37,18 @@ or one more letter if needed.
   hard-wire the element type if that is what you want.
   I don't think this is a difficult issue, it just needs a bit of discussion.
 
-#########################################
-# Function interface
-#########################################
 
 
-# EntitySet interface
+## Function interface
+
+
+### EntitySet interface
 * CaG: It seems that the EntitySet concept and GridViewEntitySet are
   candidates for dune-grid.
 
 
 
-# GridFunction concept
+### GridFunction concept
 * CaG: Should GridFunction export the grid type?
 * CaG: If yes, should GridFunction store/export a pointer to the grid?
 * CaG: While LocalFunction is defined in a grid-agnostig way with
@@ -63,7 +62,7 @@ or one more letter if needed.
 
 
 
-# GridViewFunction concept
+### GridViewFunction concept
 * CaG: Should GridViewFunction default-implement the global evaluate() method?
   This would be as simple as
 
