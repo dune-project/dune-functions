@@ -5,6 +5,7 @@
 
 
 #include <dune/functions/common/concept.hh>
+#include <dune/functions/common/utility.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
 
@@ -97,19 +98,16 @@ struct PowerBasisNode : Refines<BasisNode>
 template<class GridView>
 struct CompositeBasisNode : Refines<BasisNode>
 {
-
-  template<class ST, class TP, class Tuple>
-  struct CompositeBasisNodeHelper {};
-
-  template<class ST, class TP, class... T>
-  struct CompositeBasisNodeHelper<ST, TP, std::tuple<T...>>
+  template<class ST, class TP>
+  struct FixArgs
   {
-    using Type = typename Dune::Functions::CompositeBasisNode<ST, TP, T...>;
+    template<class...T>
+    using CompositeBasisNode = typename Dune::Functions::CompositeBasisNode<ST, TP, T...>;
   };
 
   template<class N>
   auto require(const N& node) -> decltype(
-    requireBaseOf<typename CompositeBasisNodeHelper<typename N::size_type, typename N::TreePath, typename N::ChildTypes>::Type, N>(),
+    requireBaseOf<ExpandTuple<FixArgs<typename N::size_type, typename N::TreePath>::template CompositeBasisNode, typename N::ChildTypes>, N>(),
     requireConceptForTupleEntries<BasisTree<GridView>, typename N::ChildTypes>()
   );
 };
