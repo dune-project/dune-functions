@@ -112,7 +112,7 @@ public:
   {
     auto node = Node<TP>(tp);
     for(int i=0; i<children; ++i)
-      node.setChild(i, std::make_shared<SubNode<TP> >(subFactory_.node(TypeTree::push_back(tp, i))));
+      node.setChild(i, subFactory_.node(TypeTree::push_back(tp, i)));
     return node;
   }
 

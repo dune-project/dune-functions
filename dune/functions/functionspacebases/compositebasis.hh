@@ -142,10 +142,7 @@ public:
     template<class I, class Node, class SFT, class TP>
     void operator()(const I& i, Node& node, const SFT& subFactories, const TP& tp)
     {
-      using SubNode = typename std::tuple_element<I::value, typename FixedTP<TP>::SubNodes>::type;
-      const auto& subFactory = std::get<I::value>(subFactories);
-      node.template setChild<I::value>(std::make_shared<SubNode>(subFactory.node(TypeTree::push_back(tp, i))));
-//      node.template setChild<I::value>(std::get<I::value>(subFactories).node(TypeTree::push_back(tp, i)));
+      node.template setChild<I::value>(std::get<I::value>(subFactories).node(TypeTree::push_back(tp, i)));
     }
   };
 
