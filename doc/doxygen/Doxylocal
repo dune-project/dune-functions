@@ -7,11 +7,10 @@
 # with spaces.
 
 INPUT                 += @top_srcdir@/dune/functions \
-                         @srcdir@/mainpage
+                         @top_srcdir@/TODO.md \
+                         @top_srcdir@/doc/doxygen/mainpage.md
 
-# see e.g. dune-grid for the examples of mainpage and modules
-# INPUT                 += @srcdir@/mainpage \
-#                          @srcdir@/modules
+USE_MDFILE_AS_MAINPAGE = @top_srcdir@/doc/doxygen/mainpage.md
 
 # The EXCLUDE tag can be used to specify files and/or directories that should
 # excluded from the INPUT source files. This way you can easily exclude a
