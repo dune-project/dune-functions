@@ -35,6 +35,8 @@ auto forwardAsStaticInteger(Dune::Std::integer_sequence<size_type, firstValue> v
 /**
  * \brief Transform dynamic index to static index_constant
  *
+ * \ingroup Utility
+ *
  * This will call the given function with index_constant<i>
  * where i is the dynamically provided index.
  *
@@ -77,6 +79,8 @@ namespace Imp {
 /**
  * \brief Expand tuple arguments as template arguments
  *
+ * \ingroup Utility
+ *
  * This template alias refers to T<Args...> if
  * ArgTuple is a std::tuple<Args...>.
  *
@@ -111,6 +115,8 @@ namespace Imp {
 /**
  * \brief Transform tuple types argument using type-functor
  *
+ * \ingroup Utility
+ *
  * This is a template alias for a tuple whose i-th type
  * is given by F<T1i,...,TMi> where T1i,...,TMi are the
  * i-th types of the 1,...,M-th tuple of the given tuple
@@ -144,6 +150,8 @@ namespace Imp {
 /**
  * \brief Transform tuple value using a functor
  *
+ * \ingroup Utility
+ *
  * This will apply the given functor to all values in
  * given tuple and return the results in a new tuple.
  *
@@ -159,6 +167,8 @@ auto transformTuple(F&& f, const std::tuple<T...>& tuple)
 
 /**
  * \brief Transform tuple value using a binary functor
+ *
+ * \ingroup Utility
  *
  * This will apply the given functor to the each corresponding
  * pair of values in the given tuples and return the results
@@ -201,6 +211,8 @@ using IntegerSequenceTuple= typename Imp::IntegerSequenceTupleHelper<IntegerSequ
 
 /**
  * \brief Get last entry of type list
+ *
+ * \ingroup Utility
  */
 template<class... T>
 struct LastType
@@ -226,6 +238,8 @@ struct RotateHelper<std::tuple<T...>, TypeTree::Std::index_sequence<I...> >
 
 /**
  * \brief Rotate type list by one, such that last entry is moved to first position
+ *
+ * \ingroup Utility
  *
  * The rotated type list is exported as tuple
  */
