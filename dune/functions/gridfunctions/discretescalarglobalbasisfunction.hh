@@ -14,6 +14,12 @@
 namespace Dune {
 namespace Functions {
 
+/**
+ * \brief A grid function induced by a global basis and a coefficient vector
+ *
+ * \ingroup FunctionImplementations
+ *
+ */
 template<typename Basis, typename V>
 class DUNE_DEPRECATED_MSG("Use DiscreteGlobalBasisFunction instead!") DiscreteScalarGlobalBasisFunction
 {
