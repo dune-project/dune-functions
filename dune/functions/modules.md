@@ -23,7 +23,15 @@ of type-erasure wrappers in the spirit of std::function.
 @ingroup Functions
 @brief Concrete function implementations
 
-@defgroup Utility Helper classes and functions
+@defgroup FunctionUtility Function related utilities
+@ingroup Functions
+@brief Helper classes and functions related to functions
+
+@defgroup Utility Utility
+@brief Various helper classes and functions
+
+@defgroup TypeErasure Helper classes for implementing type-erased interfaces
+@ingroup Utility
 
 
 
