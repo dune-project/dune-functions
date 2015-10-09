@@ -11,7 +11,13 @@ namespace Dune {
 namespace Functions {
 
 
-
+/**
+ * \brief An entity set for all entities of given codim in a grid view
+ *
+ * \ingroup FunctionUtility
+ *
+ * This implements the \ref Concept::EntitySet concept.
+ */
 template<class GV, int cd>
 class GridViewEntitySet
 {
