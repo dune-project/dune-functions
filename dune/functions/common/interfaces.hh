@@ -11,6 +11,15 @@ namespace Functions {
 
 
 
+/**
+ * \brief Base class with polymorphic type boiler plate code
+ *
+ * \ingroup Utility
+ *
+ * By deriving your polymorphic type from this class you
+ * enforce a default interface for common operations like
+ * clone, clone to buffer, and move.
+ */
 template<class Interface>
 class PolymorphicType
 {
