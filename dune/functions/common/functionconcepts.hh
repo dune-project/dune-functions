@@ -41,6 +41,14 @@ static constexpr bool isCallable(F&& f, TypeList<Args...>)
 template<class Signature>
 struct Function;
 
+/**
+ * \brief Concept for a function mapping \p Domain to \p Range
+ *
+ * \ingroup FunctionConcepts
+ *
+ * \tparam Domain Domain type
+ * \tparam Range Range type
+ */
 template<class Range, class Domain>
 struct Function<Range(Domain)> : Refines<Callable<Domain> >
 {
@@ -67,6 +75,17 @@ static constexpr bool isFunction(F&& f, SignatureTag<Signature, DerivativeTraits
 template<class Signature, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 struct DifferentiableFunction;
 
+/**
+ * \brief Concept for a differentiable function mapping \p Domain to \p Range
+ *
+ * \ingroup FunctionConcepts
+ *
+ * The derivative range is derived from the provided \p DerivativeTraits
+ *
+ * \tparam Domain Domain type
+ * \tparam Range Range type
+ * \tparam DerivativeTraits Traits class for computation of derivative range
+ */
 template<class Range, class Domain, template<class> class DerivativeTraits>
 struct DifferentiableFunction<Range(Domain), DerivativeTraits> : Refines<Dune::Functions::Concept::Function<Range(Domain)> >
 {
@@ -95,6 +114,18 @@ static constexpr bool isDifferentiableFunction(F&& f, SignatureTag<Signature, De
 template<class Signature, class LocalContext, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 struct LocalFunction;
 
+/**
+ * \brief Concept for a local function mapping \p Domain to \p Range
+ *
+ * \ingroup FunctionConcepts
+ *
+ * The derivative range is derived from the provided \p DerivativeTraits
+ *
+ * \tparam Domain Domain type
+ * \tparam Range Range type
+ * \tparam LocalContext The local context this function is defined on
+ * \tparam DerivativeTraits Traits class for computation of derivative range
+ */
 template<class Range, class Domain, class LocalContext, template<class> class DerivativeTraits>
 struct LocalFunction<Range(Domain), LocalContext, DerivativeTraits> :
     Refines<Dune::Functions::Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> >
@@ -116,6 +147,16 @@ static constexpr bool isLocalFunction()
 
 
 // EntitySet concept ##############################################
+
+/**
+ * \brief Concept for an entity set for a \ref Concept::GridFunction<Range(Domain), EntitySet, DerivativeTraits>
+ *
+ * \ingroup FunctionConcepts
+ *
+ * This describes the set of entities on which a grid function
+ * can be localized.
+ *
+ */
 struct EntitySet
 {
   template<class E>
@@ -137,6 +178,18 @@ static constexpr bool isEntitySet()
 template<class Signature, class EntitySet, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 struct GridFunction;
 
+/**
+ * \brief Concept for a grid function mapping \p Domain to \p Range
+ *
+ * \ingroup FunctionConcepts
+ *
+ * The derivative range is derived from the provided \p DerivativeTraits.
+ *
+ * \tparam Domain Domain type
+ * \tparam Range Range type
+ * \tparam EntitySet Set of entities on which the function can be localized
+ * \tparam DerivativeTraits Traits class for computation of derivative range
+ */
 template<class Range, class Domain, class EntitySet, template<class> class DerivativeTraits>
 struct GridFunction<Range(Domain), EntitySet, DerivativeTraits> :
     Refines<Dune::Functions::Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> >
@@ -169,6 +222,19 @@ static constexpr bool isGridFunction()
 template<class Signature, class GridView, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 struct GridViewFunction;
 
+/**
+ * \brief Concept for a grid view function mapping \p Domain to \p Range
+ *
+ * \ingroup FunctionConcepts
+ *
+ * This exactly the \ref Concept::GridFunction<Range(Domain), EntitySet, DerivativeTraits>
+ * concept with a \ref GridViewEntitySet as \p EntitySet.
+ *
+ * \tparam Domain Domain type
+ * \tparam Range Range type
+ * \tparam GridView GridView on which the function can be localized
+ * \tparam DerivativeTraits Traits class for computation of derivative range
+ */
 template<class Range, class Domain, class GridView, template<class> class DerivativeTraits>
 struct GridViewFunction<Range(Domain), GridView, DerivativeTraits> :
     Refines<Dune::Functions::Concept::GridFunction<Range(Domain), GridViewEntitySet<GridView,0>, DerivativeTraits>>
