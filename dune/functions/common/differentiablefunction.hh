@@ -64,6 +64,8 @@ namespace Imp
 /**
  * \brief Class storing differentiable functions using type erasure
  *
+ * \ingroup FunctionInterface
+ *
  */
 template<class Range, class Domain, template<class> class DerivativeTraits, size_t bufferSize>
 class DifferentiableFunction< Range(Domain), DerivativeTraits, bufferSize> :

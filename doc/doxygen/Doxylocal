@@ -8,7 +8,8 @@
 
 INPUT                 += @top_srcdir@/dune/functions \
                          @top_srcdir@/TODO.md \
-                         @top_srcdir@/doc/doxygen/mainpage.md
+                         @top_srcdir@/doc/doxygen/mainpage.md \
+                         @top_srcdir@/dune/functions/modules.md
 
 USE_MDFILE_AS_MAINPAGE = @top_srcdir@/doc/doxygen/mainpage.md
 
