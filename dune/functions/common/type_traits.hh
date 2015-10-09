@@ -10,15 +10,31 @@ namespace Dune {
 namespace Functions {
 
 
-// Helper typedef to remove constructor with forwarding reference from
-// overload set for copy and move constructor or assignment.
+/**
+ * \brief Helper to disable constructor as copy and move constructor
+ *
+ * \ingroup Utility
+ *
+ * Helper typedef to remove constructor with forwarding reference from
+ * overload set for copy and move constructor or assignment.
+ */
 template<class This, class... T>
 using disableCopyMove = typename std::enable_if<
   (not(std::is_same<This, typename std::tuple_element<0, std::tuple<typename std::decay<T>::type...> >::type >::value)
   and not(std::is_base_of<This, typename std::tuple_element<0, std::tuple<typename std::decay<T>::type...> >::type >::value)), int>::type;
 
-// Helper typedef to remove constructor with forwarding reference from
-// overload set for type is not constructible from argument list
+
+
+/**
+ * \brief Helper to constrain forwarding constructors
+ *
+ * \ingroup Utility
+ *
+ * Helper typedef to remove constructor with forwarding reference from
+ * overload set for type is not constructible from argument list.
+ * This is usefull to avoid failng forwarding constructors
+ * for base classes or members.
+ */
 template<class T, class... Args>
 using enableIfConstructible = typename std::enable_if<
   std::is_constructible<T, Args...>::value, int>::type;
@@ -87,6 +103,8 @@ namespace Imp {
 /**
  * \brief Check if type is a statically sized container
  *
+ * \ingroup Utility
+ *
  * Derives from std::true_type or std::false_type
  */
 template<class T>
@@ -98,6 +116,8 @@ struct HasStaticSize :
 
 /**
  * \brief Obtain size of statically sized container
+ *
+ * \ingroup Utility
  *
  * Derives from std::integral_constant<std::size_t, size>
  */
