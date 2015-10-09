@@ -19,6 +19,8 @@ namespace Functions {
 /**
  * \brief A grid function induced by a global basis and a coefficient vector
  *
+ * \ingroup FunctionImplementations
+ *
  * This implements the grid function interface by combining a given global
  * basis and a coefficient vector. The part of the spanned space that should
  * be covered by the function is determined by a tree path to specifies the

@@ -20,7 +20,7 @@ namespace Functions {
 
 
 
-/**
+/*
  * Default implementation is empty
  * The actual implementation is only given if Signature is an type
  * describing a function signature as Range(Domain).
@@ -79,8 +79,13 @@ namespace Imp
 
 
 /**
- * \brief Class storing differentiable functions using type erasure
+ * \brief Wrapper class for functions defined on a Grid
  *
+ * \ingroup FunctionInterface
+ *
+ * Being defined on a grid means in particular that you can evaluate the function
+ * in local coordinates of a given entities of the grid. The set of the entities
+ * this function is defined on is given by an EntitySet.
  */
 template<class Range, class Domain, class ES, template<class> class DerivativeTraits, size_t bufferSize>
 class GridFunction<Range(Domain), ES, DerivativeTraits, bufferSize> :

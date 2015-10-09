@@ -23,6 +23,8 @@ class GridViewFunction
 /**
  * \brief Wrapper class for functions defined on a GridView
  *
+ * \ingroup FunctionInterface
+ *
  * Being defined on a grid view means in particular that you can evaluate the function
  * in local coordinates of a given element of the grid view.
  *
