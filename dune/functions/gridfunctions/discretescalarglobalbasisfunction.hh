@@ -6,6 +6,7 @@
 #include <memory>
 
 #include <dune/common/shared_ptr.hh>
+#include <dune/common/deprecated.hh>
 
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
@@ -14,7 +15,7 @@ namespace Dune {
 namespace Functions {
 
 template<typename Basis, typename V>
-class DiscreteScalarGlobalBasisFunction
+class DUNE_DEPRECATED_MSG("Use DiscreteGlobalBasisFunction instead!") DiscreteScalarGlobalBasisFunction
 {
 public:
   using GridView = typename Basis::GridView;
