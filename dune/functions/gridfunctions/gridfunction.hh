@@ -86,6 +86,8 @@ namespace Imp
  * Being defined on a grid means in particular that you can evaluate the function
  * in local coordinates of a given entities of the grid. The set of the entities
  * this function is defined on is given by an EntitySet.
+ *
+ * This models the \ref Concept::GridFunction<Range(Domain), EntitySet, DerivativeTraits> concept.
  */
 template<class Range, class Domain, class ES, template<class> class DerivativeTraits, size_t bufferSize>
 class GridFunction<Range(Domain), ES, DerivativeTraits, bufferSize> :

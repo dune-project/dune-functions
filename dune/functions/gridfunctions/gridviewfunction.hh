@@ -28,6 +28,8 @@ class GridViewFunction
  * Being defined on a grid view means in particular that you can evaluate the function
  * in local coordinates of a given element of the grid view.
  *
+ * This models the \ref Concept::GridViewFunction<Range(Domain), GridView, DerivativeTraits> concept.
+ *
  * \tparam GV The GridView that the function is defined on
  * \tparam Domain The domain type used for function arguments
  * \tparam Range The range type used for function values

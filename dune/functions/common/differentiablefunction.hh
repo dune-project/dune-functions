@@ -66,6 +66,7 @@ namespace Imp
  *
  * \ingroup FunctionInterface
  *
+ * This models the \ref Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> concept.
  */
 template<class Range, class Domain, template<class> class DerivativeTraits, size_t bufferSize>
 class DifferentiableFunction< Range(Domain), DerivativeTraits, bufferSize> :

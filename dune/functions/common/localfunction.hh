@@ -69,6 +69,7 @@ namespace Imp
  * Objects of this type are returned as local functions
  * by the GridFunction wrapper.
  *
+ * This models the \ref Concept::LocalFunction<Range(Domain), LocalContext, DerivativeTraits> concept.
  */
 template<class Range, class Domain, class LocalContext, template<class> class DerivativeTraits, size_t bufferSize>
 class LocalFunction< Range(Domain), LocalContext, DerivativeTraits, bufferSize> :
