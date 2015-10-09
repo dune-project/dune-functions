@@ -15,10 +15,14 @@ namespace Functions {
 
 
 /**
- * \brief Wrap a list of callable objects as function modelling the DifferentiableFunction interface
+ * \brief Wrap a list of callable objects as derivative sequence modelling \ref Concept::DifferentiableFunction<Range(Domain), DerivativeTraits>
  *
- * You can use this to implement a DifferentiableFunction including
+ * \ingroup FunctionImplementations
+ *
+ * You can use this to implement a differentiable function including
  * a variable number of derivatives using callable objects.
+ *
+ * This models the \ref Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> concept.
  *
  * Note that using makeDifferentiableFunction will be less verbose than
  * creating this wrapper manually.
