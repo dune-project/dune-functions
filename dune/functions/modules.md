@@ -15,9 +15,9 @@ of type-erasure wrappers in the spirit of std::function.
 @ingroup Functions
 @brief Concept definitions for function interfaces
 
-@defgroup FunctionInterface Polymorphic interface
+@defgroup FunctionInterface Function interface wrappers
 @ingroup Functions
-@brief Type-erasure based polymorphic interface
+@brief Type-erasure based polymorphic wrappers
 
 @defgroup FunctionImplementations Function implementations
 @ingroup Functions
