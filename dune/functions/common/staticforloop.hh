@@ -12,7 +12,7 @@
 namespace Dune {
 namespace Functions {
 
-
+namespace Imp {
 
 template<class ST, ST begin, ST end>
 struct StaticForLoop
@@ -33,22 +33,29 @@ struct StaticForLoop<ST, end, end>
   {}
 };
 
+} //end namespace Imp
+
+
+
 /**
  * \brief Static for loop
  *
+ * \ingroup Utility
+ *
  * Run static for-loop from 'begin' to 'end-1' with functor.
- * The functor is called with TypeTree::index_constant<i>
+ * The functor is called with \p TypeTree::index_constant<i>
  * as first argument. All other arguments of this method
  * are forwarded to the functor.
  */
 template<std::size_t begin_t, std::size_t end_t, class F, class... Args>
 void staticForLoop(F&& f, Args&&... args)
 {
-  StaticForLoop<std::size_t, begin_t, end_t>::apply(std::forward<F>(f), std::forward<Args>(args)...);
+  Imp::StaticForLoop<std::size_t, begin_t, end_t>::apply(std::forward<F>(f), std::forward<Args>(args)...);
 }
 
 
 
+namespace Imp {
 
 template<class ST, ST begin, ST end>
 struct StaticFindInRange
@@ -70,11 +77,17 @@ struct StaticFindInRange<ST, end, end>
   {}
 };
 
+} //end namespace Imp
+
+
+
 /**
  * \brief Static find loop
  *
+ * \ingroup Utility
+ *
  * Run static for-loop from 'begin' to 'end-1' with functor.
- * The functor is called with TypeTree::index_constant<i>
+ * The functor is called with \p TypeTree::index_constant<i>
  * as first argument. All other arguments of this method
  * are forwarded to the functor. If the functor returns
  * true the loop is terminated.
@@ -84,7 +97,7 @@ struct StaticFindInRange<ST, end, end>
 template<std::size_t begin_t, std::size_t end_t, class F, class... Args>
 void staticFindInRange(F&& f, Args&&... args)
 {
-  StaticFindInRange<std::size_t, begin_t, end_t>::apply(std::forward<F>(f), std::forward<Args>(args)...);
+  Imp::StaticFindInRange<std::size_t, begin_t, end_t>::apply(std::forward<F>(f), std::forward<Args>(args)...);
 }
 
 
