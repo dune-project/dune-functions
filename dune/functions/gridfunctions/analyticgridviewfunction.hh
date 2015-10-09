@@ -17,6 +17,8 @@
 namespace Dune {
 namespace Functions {
 
+namespace Imp {
+
 template<class Signature, class GV, class FLocal, template<class> class DerivativeTraits=DefaultDerivativeTraits>
 class LocalAnalyticGridViewFunction;
 
@@ -89,6 +91,9 @@ private:
   F f_;
 };
 
+} // end namespace Imp
+
+
 
 
 template<class Signature, class GV, class F, template<class> class DerivativeTraits=DefaultDerivativeTraits>
@@ -98,6 +103,7 @@ class AnalyticGridViewFunction;
 /**
  * \brief Class wrapping any differentiable function as grid function
  *
+ * \ingroup FunctionImplementations
  */
 template<class Range, class Domain, class GV, class F, template<class> class DerivativeTraits>
 class AnalyticGridViewFunction<Range(Domain), GV, F, DerivativeTraits>
@@ -121,7 +127,7 @@ public:
   using Derivative = AnalyticGridViewFunction<DerivativeSignature, GridView, GlobalRawDerivative, DerivativeTraits>;
 
   using LocalDomain = typename EntitySet::LocalCoordinate;
-  using LocalFunction = LocalAnalyticGridViewFunction<Range(LocalDomain), GridView, F, LocalDerivativeTraits<EntitySet, DerivativeTraits>::template Traits>;
+  using LocalFunction = typename Imp::LocalAnalyticGridViewFunction<Range(LocalDomain), GridView, F, LocalDerivativeTraits<EntitySet, DerivativeTraits>::template Traits>;
 
   template<class FT>
   AnalyticGridViewFunction(FT&& f, const GridView& gridView) :
