@@ -12,6 +12,8 @@ namespace Functions {
 /**
  * \brief A wrapper providing small object optimization with polymorphic types
  *
+ * \ingroup Utility
+ *
  * \tparam Base Base class type of wrapped objects
  * \tparam bufferSize Size of small object buffer
  *

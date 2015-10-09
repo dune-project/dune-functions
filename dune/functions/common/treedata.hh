@@ -16,6 +16,8 @@ namespace Functions {
 /**
  * \brief Mixin for visitors that should apply the same action on all nodes
  *
+ * \ingroup Utility
+ *
  * By deriving from this you only have to implement apply(node,treepath)
  * in the derived class. This will be used for pre(...) and leaf(...).
  *
@@ -53,6 +55,8 @@ struct UniformNodeVisitor :
 
 /**
  * \brief Container allowing to attach data to each node of a tree
+ *
+ * \ingroup Utility
  *
  * This provides operator[](Node) for accessing the data attached to the node.
  * For storing the data each node is identified via its treeIndex() method

@@ -26,6 +26,8 @@ namespace Functions {
   /**
      \brief A Vector class with statically reserved memory.
 
+     \ingroup Utility
+
      ReservedDeque is something between Dune::array and std::deque.
      You have a double ended queue which can be extended and shrunk using methods like
      push_back and pop_back at the end, or via push_front and pop_front,

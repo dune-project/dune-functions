@@ -14,6 +14,8 @@ namespace Functions {
 /**
  * \brief A wrapper that can either contain an object of T or be empty
  *
+ * \ingroup Utility
+ *
  * \tparam T Type of wrapped objects
  */
 template<class T>

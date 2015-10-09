@@ -12,7 +12,10 @@ namespace Functions {
   /**
    * \brief A simple type list
    *
+   * \ingroup Utility
+   *
    * If T... is not empty it provides access to Head and Tail.
+   * Maybe we can replace this by a tuple.
    */
   template<class... T>
   struct TypeList
