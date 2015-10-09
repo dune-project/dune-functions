@@ -25,7 +25,11 @@ on a finite element grid, the concept of local function is introduced. Local
 functions can be bound to grid elements. All further evaluations of a function
 bound to an element are in local coordinates of that element. This approach
 allows to avoid overhead when there are many evaluations on a single element.
-Function space bases
+
+For more details refer to the @ref Functions section.
+
+
+## Function space bases
 
 The second part of dune-functions provides a well-defined interface to bases of
 finite element function spaces. For this interface, a finite element basis is a
@@ -48,4 +52,5 @@ tree for the three-dimensional Taylor-Hood basis is shown above. This tree
 structure is directly exposed in the dune-functions interface. An easy
 mechanism allows to construct new spaces.
 
+For more details refer to the @ref FunctionSpaceBases section.
 
