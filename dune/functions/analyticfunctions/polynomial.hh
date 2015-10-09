@@ -8,6 +8,14 @@ namespace Dune {
 namespace Functions {
 
 
+/**
+ * \brief A scalar polynomial implementation
+ *
+ * \ingroup FunctionImplementations
+ *
+ * This class exists mainly to demonstrate how to implement
+ * the \ref Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> concept.
+ */
 template<class K>
 class Polynomial
 {

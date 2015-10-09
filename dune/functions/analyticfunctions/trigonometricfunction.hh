@@ -9,6 +9,14 @@ namespace Functions {
 
 
 
+/**
+ * \brief A linear combination of trigonomic functions
+ *
+ * \ingroup FunctionImplementations
+ *
+ * This class exists mainly to demonstrate how to implement
+ * the \ref Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> concept.
+ */
 template<class K, int sinFactor, int cosFactor>
 class TrigonometricFunction
 {
