@@ -11,6 +11,10 @@ concept as defined in the Dune::Functions::Concept namespace.
 Additionally there is a polymorphic interface consisting
 of type-erasure wrappers in the spirit of std::function.
 
+@defgroup FunctionConcepts Function concepts
+@ingroup Functions
+@brief Concept definitions for function interfaces
+
 @defgroup FunctionInterface Polymorphic interface
 @ingroup Functions
 @brief Type-erasure based polymorphic interface
