@@ -17,7 +17,7 @@ namespace Functions {
 
 
 
-/**
+/*
  * Default implementation is empty
  * The actual implementation is only given if Signature is an type
  * describing a function signature as Range(Domain).
