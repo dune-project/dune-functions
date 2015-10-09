@@ -14,10 +14,24 @@ namespace Functions {
 
 
 
+/**
+ * \brief Dummy range class to be used if no proper type is available
+ *
+ * \ingroup FunctionUtility
+ */
 class InvalidRange
 {};
 
 
+/**
+ * \brief Default implementation for derivative traits
+ *
+ * \ingroup FunctionUtility
+ *
+ * This class provides sensible defaults for the range
+ * of derivatives of functions with some common \p Domain
+ * and \p Range types.
+ */
 template<class Signature>
 struct DefaultDerivativeTraits
 {

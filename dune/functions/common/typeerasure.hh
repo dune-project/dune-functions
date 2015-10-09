@@ -18,6 +18,8 @@ namespace Imp {
 /**
  * \brief The internal wrapper interface for type erasure
  *
+ * \ingroup TypeErasure
+ *
  * This class adds some foundation interfaces needed
  * for proper dynamic polymorphism and type erasure.
  *
@@ -39,6 +41,8 @@ public:
 
 /**
  * \brief Base implementation of the internal wrapper interface
+ *
+ * \ingroup TypeErasure
  *
  * This class derives from the foundation interfaces
  * and the user defined interfaces provided by the interface
@@ -80,6 +84,8 @@ protected:
 
 /**
  * \brief Implementation of the internal wrapper interface
+ *
+ * \ingroup TypeErasure
  *
  * This class implements the foundation and user interfaces
  * of the internal type erasure wrapper.
@@ -133,6 +139,18 @@ public:
 
 } // namespace Dune::Functions::Imp
 
+
+
+/**
+ * \brief Base class for type-erased interface wrapper
+ *
+ * \ingroup TypeErasure
+ *
+ * This is menat as a base class for the type-erased interface
+ * wrapper that is actually visible to the user. By deriving
+ * from this you get small object optimization for the interlan
+ * polymorphic wrapper.
+ */
 template<class Interface, template<class> class Implementation, size_t bufferSize = 56>
 class TypeErasureBase
 {

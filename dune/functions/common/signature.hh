@@ -12,6 +12,8 @@ namespace Functions {
 
 /**
  * \brief Helper class to check that F is callable
+ *
+ * \ingroup FunctionUtility
  */
 template<typename F>
 struct IsCallable;
@@ -46,6 +48,8 @@ struct IsCallable<R(*)(D)>
 
 /**
  * \brief Helper class to deduce the signature of a callable
+ *
+ * \ingroup FunctionUtility
  */
 template<class Signature, bool isCallable = IsCallable<Signature>::value >
 struct SignatureTraits {};
@@ -98,6 +102,8 @@ struct SignatureTag;
 
 /**
  * \brief Tag-class to encapsulate signature information
+ *
+ * \ingroup FunctionUtility
  *
  * \tparam Range range type
  * \tparam Domain domain type
