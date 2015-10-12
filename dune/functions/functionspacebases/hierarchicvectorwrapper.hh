@@ -6,6 +6,7 @@
 
 #include <dune/typetree/utility.hh>
 
+#include <dune/functions/common/indexaccess.hh>
 #include <dune/functions/common/utility.hh>
 #include <dune/functions/common/concept.hh>
 #include <dune/functions/common/type_traits.hh>
@@ -152,66 +153,12 @@ class HierarchicVectorWrapper
 
 
 
-
-  // The getEntry functions recursively apply operator[] to the given object e.
-  // Each call of getEntry<i>(e, multiIndex) computes the multiIndex[i]-th entry
-  // of e, calls getEntry<i+1>(e[multiIndex[i]], multiIndex) and returns the result.
-
-  // This is the overload for dynamically sized e.
-  template<class Coefficient, size_type i, class E, class MultiIndex,
-      typename std::enable_if< not std::is_convertible<E&, Coefficient&>::value, int>::type = 0,
-      typename std::enable_if< not HasStaticSize<E>::value, int>::type = 0>
-  static auto getEntry(E&& e, const MultiIndex& multiIndex)
-    -> Coefficient&
-  {
-    return getEntry<Coefficient, i+1>(e[multiIndex[i]], multiIndex);
-  }
-
-  // This should be a generic lambda
-  template<class Coefficient>
-  struct Lambda_getEntry
-  {
-    template<class Index, size_type i, class E, class MultiIndex>
-    Coefficient& operator()(const Index& multiIndex_i, std::integral_constant<size_type, i>, E&& e, const MultiIndex& multiIndex)
-    {
-      return getEntry<Coefficient, i+1>(e[multiIndex_i], multiIndex);
-    }
-  };
-
-  // This is the overload for statically sized e. Since e may be a multi-type container,
-  // we can in general not use e[multiIndex[i]]. Instead we have to do a dynamic->static
-  // mapping of multiIndex[i] which is achieved by forwardAsStaticIndex.
-  template<class Coefficient, size_type i, class E, class MultiIndex,
-      typename std::enable_if< not std::is_convertible<E&, Coefficient&>::value, int>::type = 0,
-      typename std::enable_if< HasStaticSize<E>::value, int>::type = 0>
-  static auto getEntry(E&& e, const MultiIndex& multiIndex)
-    -> Coefficient&
-  {
-    // With generic lambdas the following line would become:
-    //
-    //    return forwardAsStaticIndex<StaticSize<E>::value>(multiIndex[i], [&](auto&& multiIndex_i)-> Coefficient& {
-    //      return getEntry<i+1>(e[multiIndex_i], multiIndex);
-    //    };)
-    //
-    return forwardAsStaticIndex<StaticSize<E>::value>(multiIndex[i], Lambda_getEntry<Coefficient>(), std::integral_constant<size_type, i>(), std::forward<E>(e), multiIndex);
-  }
-
-  // This is the overload for the coefficient type. If e can be cast to the Coefficient type
-  // we must assume that we have already addressed the coefficient and stop the index access
-  // recursion. Notice that a check if i has reached the size of multiIndex cannot be used
-  // as termination criterion in general, because multiIndex can be dynamically sized. This
-  // is especially true, if the multi-indices are non-uniform.
-  template<class Coefficient, size_type i, class E, class MultiIndex,
-      typename std::enable_if< std::is_convertible<E&, Coefficient&>::value, int>::type = 0>
-  static auto getEntry(E&& e, const MultiIndex& multiIndex)
-    -> Coefficient&
-  {
-    return std::forward<E>(e);
-  }
-
 public:
 
   using Vector = V;
+
+  template<class MultiIndex>
+  using Entry = Coefficient<MultiIndex>;
 
   HierarchicVectorWrapper(Vector& vector) :
     vector_(&vector)
@@ -226,17 +173,15 @@ public:
   }
 
   template<class MultiIndex>
-  auto operator[](const MultiIndex& index) const
-      ->decltype(getEntry<Coefficient<MultiIndex>,0>(std::declval<Vector>(), index))
+  const Entry<MultiIndex>& operator[](const MultiIndex& index) const
   {
-    return getEntry<Coefficient<MultiIndex>, 0>(*vector_, index);
+      return hybridMultiIndexAccess<const Entry<MultiIndex>&>(*vector_, index);
   }
 
   template<class MultiIndex>
-  auto operator[](const MultiIndex& index)
-      ->decltype(getEntry<Coefficient<MultiIndex>, 0>(std::declval<Vector>(), index))
+  Entry<MultiIndex>& operator[](const MultiIndex& index)
   {
-    return getEntry<Coefficient<MultiIndex>, 0>(*vector_, index);
+      return hybridMultiIndexAccess<Entry<MultiIndex>&>(*vector_, index);
   }
 
   const Vector& vector() const
