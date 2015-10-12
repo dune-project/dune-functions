@@ -15,22 +15,23 @@ namespace Functions {
 
 
 
-template<class F, class size_type, size_type firstValue, size_type secondValue, size_type... otherValues, class... Args>
-auto forwardAsStaticInteger(Dune::Std::integer_sequence<size_type, firstValue, secondValue, otherValues...> values, const size_type i, F&& f, Args&&... args)
-  ->decltype(f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...))
-{
-  if (i==firstValue)
-    return f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...);
-  else
-    return forwardAsStaticInteger(Dune::Std::integer_sequence<size_type, secondValue, otherValues...>(), i, std::forward<F>(f), std::forward<Args>(args)...);
-}
-
 template<class F, class size_type, size_type firstValue, class... Args>
 auto forwardAsStaticInteger(Dune::Std::integer_sequence<size_type, firstValue> values, const size_type& i, F&& f, Args&&... args)
   ->decltype(f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...))
 {
   return f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...);
 }
+
+template<class F, class size_type, size_type firstValue, size_type secondValue, size_type... otherValues, class... Args>
+auto forwardAsStaticInteger(Dune::Std::integer_sequence<size_type, firstValue, secondValue, otherValues...> values, const size_type i, F&& f, Args&&... args)
+  ->decltype(f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...))
+{
+  if (i==firstValue)
+    return f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...);
+  return forwardAsStaticInteger(Dune::Std::integer_sequence<size_type, secondValue, otherValues...>(), i, std::forward<F>(f), std::forward<Args>(args)...);
+}
+
+
 
 /**
  * \brief Transform dynamic index to static index_constant
