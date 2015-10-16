@@ -116,8 +116,6 @@ void testScalarBasis(const Basis& feBasis,
 
 
 
-  auto indexSet = feBasis.indexSet();
-
   // Check whether the basis exports a type 'MultiIndex'
   typedef typename Basis::MultiIndex MultiIndex;
 
@@ -129,10 +127,10 @@ void testScalarBasis(const Basis& feBasis,
   //  and whether each global index appears at least once.
   ///////////////////////////////////////////////////////////////////////////////////
 
-  std::vector<bool> seen(indexSet.size());
+  std::vector<bool> seen(feBasis.size());
   std::fill(seen.begin(), seen.end(), false);
 
-  auto localIndexSet = indexSet.localIndexSet();
+  auto localIndexSet = feBasis.localIndexSet();
 
   // Loop over all leaf elements
   for (auto it = gridView.template begin<0>(); it!=gridView.template end<0>(); ++it)
@@ -164,14 +162,14 @@ void testScalarBasis(const Basis& feBasis,
   // the expected integral.
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  std::vector<double> x(indexSet.size());
+  std::vector<double> x(feBasis.size());
   if (! disableInterpolate)
     interpolate(feBasis, x, [](FieldVector<double,dim> x){ return x[0]; });
   else  // dummy values
     std::fill(x.begin(), x.end(), 0.5);
 
   // Objects required in the local context
-  auto localIndexSet2 = feBasis.indexSet().localIndexSet();
+  auto localIndexSet2 = feBasis.localIndexSet();
   std::vector<double> localCoefficients(localView.maxSize());
 
   // Loop over elements and integrate over the function
