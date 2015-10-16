@@ -24,12 +24,12 @@ namespace Imp
   struct RefinedConcept {};
 
   template<class C>
-  static constexpr bool isRefinedConcept()
+  constexpr bool isRefinedConcept()
   { return std::is_base_of<RefinedConcept, C>(); }
 
 
   template<class C, class... T>
-  static constexpr bool modelsImp();
+  constexpr bool modelsImp();
 
   // Here is the implementation of the concept checking.
   // The first two overloads do the magic for checking
@@ -43,19 +43,19 @@ namespace Imp
   // overload is selected because C* is a better match than void*.
   template<class C, class... T,
     decltype(std::declval<C>().require(std::declval<T>()...), 0) =0>
-  static constexpr auto matchesRequirement(C*) -> std::true_type
+  constexpr auto matchesRequirement(C*) -> std::true_type
   { return std::true_type(); }
 
   // If the above overload is ruled out by SFINAE because
   // the T... does snot match the requirements of C, then
   // this default overload drops in.
   template<class C, class... T>
-  static constexpr auto matchesRequirement(void*) -> std::false_type
+  constexpr auto matchesRequirement(void*) -> std::false_type
   { return std::false_type(); }
 
   // Wrap above check into nice constexpr function
   template<class C, class...T>
-  static constexpr bool matchesRequirement()
+  constexpr bool matchesRequirement()
   {
     return decltype(matchesRequirement<C, T...>(std::declval<C*>()))::value;
   }
@@ -65,7 +65,7 @@ namespace Imp
   // An empty list C of concepts is always matched by T...
   template<class C, class...T,
     typename std::enable_if< isEmptyTypeList<C>(), int>::type =0>
-  static constexpr bool modelsConceptList()
+  constexpr bool modelsConceptList()
   {
     return true;
   }
@@ -75,7 +75,7 @@ namespace Imp
   // and Concepts in C::Tail.
   template<class C, class...T,
     typename std::enable_if< not(isEmptyTypeList<C>()), int>::type =0>
-  static constexpr bool modelsConceptList()
+  constexpr bool modelsConceptList()
   {
     return modelsImp<typename C::Head, T...>() and modelsConceptList<typename C::Tail, T...>();
   }
@@ -86,7 +86,7 @@ namespace Imp
   // if it matches the requirement of C.
   template<class C, class... T,
     typename std::enable_if< not(isTypeList<C>()) and not(isRefinedConcept<C>()), int>::type=0>
-  static constexpr bool modelsConcept()
+  constexpr bool modelsConcept()
   {
     return matchesRequirement<C, T...>();
   }
@@ -96,7 +96,7 @@ namespace Imp
   // all base concepts.
   template<class C, class... T,
     typename std::enable_if< not(isTypeList<C>()) and isRefinedConcept<C>(), int>::type=0>
-  static constexpr bool modelsConcept()
+  constexpr bool modelsConcept()
   {
     return matchesRequirement<C, T...>() and modelsConceptList<typename C::BaseConceptList, T...>();
   }
@@ -106,14 +106,14 @@ namespace Imp
   // in the list.
   template<class C, class... T,
     typename std::enable_if< isTypeList<C>(), int>::type=0>
-  static constexpr bool modelsConcept()
+  constexpr bool modelsConcept()
   {
     return modelsConceptList<C, T...>();
   }
 
   // Check if T... models the concept or TypeList C
   template<class C, class... T>
-  static constexpr bool modelsImp()
+  constexpr bool modelsImp()
   {
     return modelsConcept<C, T...>();
   }
@@ -128,7 +128,7 @@ namespace Imp
 
 // Check if T... models the concept or TypeList C
 template<class C, class... T>
-static constexpr bool models()
+constexpr bool models()
 {
   return Imp::modelsImp<C, T...>();
 }
@@ -143,17 +143,17 @@ namespace Imp
 {
 
   template<class C, class First>
-  static constexpr auto allModel()
+  constexpr auto allModel()
     -> std::integral_constant<bool, Concept::models<C, First>()>
   { return {}; }
 
   template<class C, class First, class... Other>
-  static constexpr auto allModel()
+  constexpr auto allModel()
     -> std::integral_constant<bool, Concept::models<C, First>() and allModel<C, Other...>()>
   { return {}; }
 
   template<class C, class... T>
-  static constexpr auto tupleEntriesModel(const std::tuple<T...>&)
+  constexpr auto tupleEntriesModel(const std::tuple<T...>&)
     -> decltype(allModel<C, T...>())
   { return {}; }
 
@@ -167,7 +167,7 @@ namespace Imp
 // #############################################################################
 
 template<class C, class Tuple>
-static constexpr auto tupleEntriesModel()
+constexpr auto tupleEntriesModel()
   -> decltype(Imp::tupleEntriesModel<C>(std::declval<Tuple>()))
 {
   return {};
@@ -196,14 +196,14 @@ struct Refines : Imp::RefinedConcept
 // Helper function for use in concept definitions.
 // If the passed value b is not true, the concept will to be satisfied.
 template<bool b, typename std::enable_if<b, int>::type = 0>
-static constexpr bool requireTrue()
+constexpr bool requireTrue()
 {
   return true;
 }
 
 // Helper function for use in concept definitions.
 template<class C, class... T, typename std::enable_if<models<C, T...>(), int>::type = 0>
-static constexpr bool requireConcept()
+constexpr bool requireConcept()
 {
   return true;
 }
@@ -211,7 +211,7 @@ static constexpr bool requireConcept()
 // Helper function for use in concept definitions.
 // This allows to avoid using decltype
 template<class C, class... T, typename std::enable_if<models<C, T...>(), int>::type = 0>
-static constexpr bool requireConcept(T&&... t)
+constexpr bool requireConcept(T&&... t)
 {
   return true;
 }
@@ -219,7 +219,7 @@ static constexpr bool requireConcept(T&&... t)
 // Helper function for use in concept definitions.
 // This checks if the concept given as first type is modelled by all types in the tuple passed as argument
 template<class C, class Tuple, typename std::enable_if<tupleEntriesModel<C, Tuple>(), int>::type = 0>
-static constexpr bool requireConceptForTupleEntries()
+constexpr bool requireConceptForTupleEntries()
 {
   return true;
 }
@@ -228,7 +228,7 @@ static constexpr bool requireConceptForTupleEntries()
 // If the first passed type is not convertible to the second, the concept will not be satisfied.
 template<class From, class To,
   typename std::enable_if< std::is_convertible<From, To>::value, int>::type = 0>
-static constexpr bool requireConvertible()
+constexpr bool requireConvertible()
 {
   return true;
 }
@@ -237,7 +237,7 @@ static constexpr bool requireConvertible()
 // If passed argument is not convertible to the first passed type, the concept will not be satisfied.
 template<class To, class From,
   typename std::enable_if< std::is_convertible<From, To>::value, int>::type = 0>
-static constexpr bool requireConvertible(const From&)
+constexpr bool requireConvertible(const From&)
 {
   return true;
 }
@@ -247,7 +247,7 @@ static constexpr bool requireConvertible(const From&)
 // to turn a type into an expression. The failure happens
 // already during substitution for the type argument.
 template<typename T>
-static constexpr bool requireType()
+constexpr bool requireType()
 {
   return true;
 }
@@ -256,7 +256,7 @@ static constexpr bool requireType()
 // If first passed type is not a base class of second type, the concept will not be satisfied.
 template<class Base, class Derived,
   typename std::enable_if< std::is_base_of<Base, Derived>::value, int>::type = 0>
-static constexpr bool requireBaseOf()
+constexpr bool requireBaseOf()
 {
   return true;
 }
@@ -265,7 +265,7 @@ static constexpr bool requireBaseOf()
 // If first passed type is not a base class of first arguments type, the concept will not be satisfied.
 template<class Base, class Derived,
   typename std::enable_if< std::is_base_of<Base, Derived>::value, int>::type = 0>
-static constexpr bool requireBaseOf(const Derived&)
+constexpr bool requireBaseOf(const Derived&)
 {
   return true;
 }
@@ -274,7 +274,7 @@ static constexpr bool requireBaseOf(const Derived&)
 // If the passed types are not the same, the concept will not be satisfied.
 template<class A, class B,
   typename std::enable_if< std::is_same<A, B>::value, int>::type = 0>
-static constexpr bool requireSameType()
+constexpr bool requireSameType()
 {
   return true;
 }
