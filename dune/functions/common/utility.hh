@@ -137,14 +137,14 @@ namespace Imp {
     -> decltype(std::make_tuple(f(std::get<k>(tuple))...))
   {
     return std::make_tuple(f(std::get<k>(tuple))...);
-  };
+  }
 
   template<class F, class... T1, class...T2, std::size_t... k>
   auto transformTupleHelper(F&& f, const std::tuple<T1...>& tuple1, const std::tuple<T2...>& tuple2, Dune::TypeTree::Std::index_sequence<k...>)
     -> decltype(std::make_tuple(f(std::get<k>(tuple1), std::get<k>(tuple2))...))
   {
     return std::make_tuple(f(std::get<k>(tuple1), std::get<k>(tuple2))...);
-  };
+  }
 
 } // end namespace Imp
 
