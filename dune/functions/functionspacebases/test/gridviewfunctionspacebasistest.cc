@@ -363,12 +363,12 @@ void testOnHybridGrid()
   testScalarBasis(lagrangeDG1Basis, true, disableInterpolate);
 
   // Test LagrangeDGBasis for k==2
-  // \todo Enbale these tests once pyramid element of order two is bug free
+  // \todo Enable these tests once pyramid element of order two is bug free
 //  LagrangeDGBasis<GridView, 2> lagrangeDG2Basis(gridView);
 //  testScalarBasis(lagrangeDG2Basis, true, disableInterpolate);
 
   // Test LagrangeDGBasis for k==3
-  // \todo Enbale these tests once pyramid element of order three is implemented
+  // \todo Enable these tests once pyramid element of order three is implemented
 //  LagrangeDGBasis<GridView, 3> lagrangeDG3Basis(gridView);
 //  testScalarBasis(lagrangeDG3Basis, true, disableInterpolate);
 #endif

@@ -23,7 +23,7 @@ namespace Functions {
  *
  * \tparam F Some function deriving from Dune::VirtualFunction
  *
- * This class provides an operator() that forward to the evaluate
+ * This class provides an operator() that forwards to the evaluate
  * method. In order to allow this F::RangeType must be default constructible.
  * This class is copyable and ownership policy of the wrapped function
  * (see constructors) will be the same for all copies.
