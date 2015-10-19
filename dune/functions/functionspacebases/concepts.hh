@@ -49,7 +49,7 @@ struct HasIndexAccess
 struct BasisNode
 {
   template<class N>
-  auto require(N&& node) -> decltype(
+  auto require(const N& node) -> decltype(
     requireType<typename N::size_type>(),
     requireType<typename N::TreePath>(),
     requireConvertible<typename N::size_type>(node.size()),
@@ -68,7 +68,7 @@ template<class GridView>
 struct LeafBasisNode : Refines<BasisNode>
 {
   template<class N>
-  auto require(N&& node) -> decltype(
+  auto require(const N& node) -> decltype(
     requireType<typename N::Element>(),
     requireType<typename N::FiniteElement>(),
     requireConvertible<typename N::Element>(node.element()),
@@ -87,7 +87,7 @@ template<class GridView>
 struct PowerBasisNode : Refines<BasisNode>
 {
   template<class N>
-  auto require(N&& node) -> decltype(
+  auto require(const N& node) -> decltype(
     requireBaseOf<Dune::Functions::PowerBasisNode<typename N::size_type, typename N::TreePath, typename N::ChildType, N::CHILDREN>, N>(),
     requireConcept<BasisTree<GridView>, typename N::ChildType>()
   );
