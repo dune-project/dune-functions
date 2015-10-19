@@ -174,6 +174,79 @@ struct NodeFactory
 };
 
 
+
+// Concept for a LocalView
+template<class GlobalBasis>
+struct LocalView
+{
+  template<class V>
+  auto require(const V& localView) -> decltype(
+    requireType<typename V::size_type>(),
+    requireType<typename V::GlobalBasis>(),
+    requireType<typename V::Tree>(),
+    requireType<typename V::GridView>(),
+    requireType<typename V::Element>(),
+    requireSameType<typename V::GlobalBasis, GlobalBasis>(),
+    requireSameType<typename V::GridView, typename GlobalBasis::GridView>(),
+    requireSameType<typename V::size_type, typename GlobalBasis::size_type>(),
+    requireSameType<typename V::Element, typename GlobalBasis::GridView::template Codim<0>::Entity>(),
+    const_cast<V&>(localView).bind(std::declval<typename V::Element>()),
+    const_cast<V&>(localView).unbind(),
+    requireConvertible<typename V::Tree>(localView.tree()),
+    requireConvertible<typename V::size_type>(localView.size()),
+    requireConvertible<typename V::size_type>(localView.maxSize()),
+    requireConvertible<typename V::GlobalBasis>(localView.globalBasis()),
+    requireConcept<BasisTree<typename V::GridView>>(localView.tree()),
+    0
+  );
+};
+
+
+
+// Concept for a LocalIndexSet
+template<class LocalView>
+struct LocalIndexSet
+{
+  template<class I>
+  auto require(const I& indexSet) -> decltype(
+    requireType<typename I::size_type>(),
+    requireType<typename I::MultiIndex>(),
+    requireType<typename I::LocalView>(),
+    requireSameType<typename I::LocalView, LocalView>(),
+    const_cast<I&>(indexSet).bind(std::declval<typename I::LocalView>()),
+    const_cast<I&>(indexSet).unbind(),
+    requireConvertible<typename I::size_type>(indexSet.size()),
+    requireConvertible<typename I::MultiIndex>(indexSet.index(std::declval<typename I::size_type>())),
+    requireConvertible<typename I::LocalView>(indexSet.localView())
+  );
+};
+
+
+
+// Concept for a GlobalBasis
+template<class GridView>
+struct GlobalBasis
+{
+  template<class B>
+  auto require(const B& basis) -> decltype(
+    requireType<typename B::GridView>(),
+    requireType<typename B::size_type>(),
+    requireType<typename B::MultiIndex>(),
+    requireType<typename B::SizePrefix>(),
+    requireType<typename B::LocalIndexSet>(),
+    requireType<typename B::LocalView>(),
+    requireSameType<typename B::GridView, GridView>(),
+    requireConvertible<typename B::GridView>(basis.gridView()),
+    requireConvertible<typename B::LocalIndexSet>(basis.localIndexSet()),
+    requireConvertible<typename B::LocalView>(basis.localView()),
+    requireConvertible<typename B::size_type>(basis.size()),
+    requireConvertible<typename B::size_type>(basis.size(std::declval<typename B::SizePrefix>())),
+    requireConvertible<typename B::size_type>(basis.dimension()),
+    requireConcept<LocalIndexSet<typename B::LocalView>>(basis.localIndexSet()),
+    requireConcept<LocalView<B>>(basis.localView())
+  );
+};
+
 } // namespace Dune::Functions::Concept
 } // namespace Dune::Functions
 } // namespace Dune
