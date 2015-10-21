@@ -1,5 +1,5 @@
 # tests that should build and run successfully
-set(TESTS analyticgridviewfunctiontest discretescalarglobalbasisfunctiontest gridfunctiontest)
+set(TESTS analyticgridviewfunctiontest discreteglobalbasisfunctiontest gridfunctiontest)
 
 set(TESTPROGS ${TESTS})
 
@@ -12,9 +12,9 @@ add_executable("analyticgridviewfunctiontest"
                analyticgridviewfunctiontest.cc)
 target_link_libraries("analyticgridviewfunctiontest" ${DUNE_LIBS})
 
-add_executable("discretescalarglobalbasisfunctiontest"
-               discretescalarglobalbasisfunctiontest.cc)
-target_link_libraries("discretescalarglobalbasisfunctiontest" ${DUNE_LIBS})
+add_executable("discreteglobalbasisfunctiontest"
+               discreteglobalbasisfunctiontest.cc)
+target_link_libraries("discreteglobalbasisfunctiontest" ${DUNE_LIBS})
 
 add_executable("gridfunctiontest"
                gridfunctiontest.cc)

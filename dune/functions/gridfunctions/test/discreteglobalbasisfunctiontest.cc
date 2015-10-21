@@ -11,7 +11,7 @@
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/gridfunctions/discretescalarglobalbasisfunction.hh>
+#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
 #include <dune/functions/gridfunctions/test/gridfunctiontest.hh>
 
@@ -23,11 +23,12 @@ using namespace Dune::Functions::Test;
 template<class B, class C>
 bool checkInterpolationConsistency(B&& basis, C&& x)
 {
-  using Basis = typename std::decay<B>::type;
   using Coeff = typename std::decay<C>::type;
+  using Range = typename Coeff::value_type;
 
   // generate a discrete function
-  DiscreteScalarGlobalBasisFunction<Basis,Coeff> f(basis,x);
+  auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<Range>
+                            (basis, Dune::TypeTree::hybridTreePath(), x);
 
   Coeff y;
   interpolate(basis, y, f);
@@ -37,7 +38,7 @@ bool checkInterpolationConsistency(B&& basis, C&& x)
     diff -= y[i];
     if (diff.infinity_norm()> 1e-10)
     {
-      std::cout << "Interpolation of DiscreteScalarGlobalBasisFunction differs from original coefficient vector" << std::endl;
+      std::cout << "Interpolation of DiscreteGlobalBasisFunction differs from original coefficient vector" << std::endl;
       return false;
     }
   }
@@ -92,11 +93,12 @@ int main (int argc, char* argv[]) try
   passed = passed and checkInterpolationConsistency(feBasis, x);
 
   // generate a discrete function to evaluate the integral
-  Dune::Functions::DiscreteScalarGlobalBasisFunction<decltype(feBasis),decltype(x)> f(feBasis,x);
+  auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<double>
+                            (feBasis, Dune::TypeTree::hybridTreePath(), x);
 
   double exactIntegral = 0.5;
 
-  std::cout << "Testing with raw DiscreteScalarGlobalBasisFunction" << std::endl;
+  std::cout << "Testing with raw DiscreteGlobalBasisFunction" << std::endl;
   passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, f, exactIntegral);
 
   if (passed)
