@@ -6,6 +6,7 @@
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/typetraits.hh>
+#include <dune/common/parallel/mpihelper.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -376,6 +377,8 @@ void testOnHybridGrid()
 
 int main (int argc, char* argv[]) try
 {
+  Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
+
   testOnStructuredGrid<1>();
   testOnStructuredGrid<2>();
   testOnStructuredGrid<3>();

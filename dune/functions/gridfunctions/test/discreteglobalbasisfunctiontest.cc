@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include <dune/common/exceptions.hh>
+#include <dune/common/parallel/mpihelper.hh>
 
 #include <dune/grid/yaspgrid.hh>
 
@@ -48,6 +49,7 @@ bool checkInterpolationConsistency(B&& basis, C&& x)
 
 int main (int argc, char* argv[]) try
 {
+  Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
   bool passed = true;
 
   // Generate grid for testing
