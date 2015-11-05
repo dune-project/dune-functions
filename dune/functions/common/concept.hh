@@ -7,6 +7,7 @@
 #include <utility>
 
 #include <dune/functions/common/typelist.hh>
+#include <dune/functions/common/type_traits.hh>
 
 namespace Dune {
 namespace Functions {
@@ -43,73 +44,64 @@ namespace Imp
   // overload is selected because C* is a better match than void*.
   template<class C, class... T,
     decltype(std::declval<C>().require(std::declval<T>()...), 0) =0>
-  constexpr auto matchesRequirement(C*) -> std::true_type
-  { return std::true_type(); }
+  constexpr std::true_type matchesRequirement(Dune::Functions::Imp::PriorityTag<1>)
+  { return {}; }
 
   // If the above overload is ruled out by SFINAE because
   // the T... does snot match the requirements of C, then
   // this default overload drops in.
   template<class C, class... T>
-  constexpr auto matchesRequirement(void*) -> std::false_type
-  { return std::false_type(); }
+  constexpr std::false_type matchesRequirement(Dune::Functions::Imp::PriorityTag<0>)
+  { return {}; }
 
   // Wrap above check into nice constexpr function
   template<class C, class...T>
-  constexpr bool matchesRequirement()
-  {
-    return decltype(matchesRequirement<C, T...>(std::declval<C*>()))::value;
-  }
+  constexpr auto matchesRequirement()
+    -> decltype(matchesRequirement<C, T...>(Dune::Functions::Imp::PriorityTag<42>()))
+  { return {}; }
 
 
 
   // An empty list C of concepts is always matched by T...
   template<class C, class...T,
     typename std::enable_if< isEmptyTypeList<C>(), int>::type =0>
-  constexpr bool modelsConceptList()
-  {
-    return true;
-  }
+  constexpr std::true_type modelsConceptList()
+  { return {}; }
 
   // A nonempty list C of concepts is modeled
   // by T...  if it models the concept C::Head
   // and Concepts in C::Tail.
   template<class C, class...T,
     typename std::enable_if< not(isEmptyTypeList<C>()), int>::type =0>
-  constexpr bool modelsConceptList()
-  {
-    return modelsImp<typename C::Head, T...>() and modelsConceptList<typename C::Tail, T...>();
-  }
-
-
+  constexpr auto modelsConceptList()
+    -> std::integral_constant<bool, modelsImp<typename C::Head, T...>() and modelsConceptList<typename C::Tail, T...>()>
+  { return {}; }
 
   // If C is an unrefined concept, then T... models C
   // if it matches the requirement of C.
   template<class C, class... T,
     typename std::enable_if< not(isTypeList<C>()) and not(isRefinedConcept<C>()), int>::type=0>
-  constexpr bool modelsConcept()
-  {
-    return matchesRequirement<C, T...>();
-  }
+  constexpr auto modelsConcept()
+    -> decltype(matchesRequirement<C, T...>())
+  { return {}; }
 
   // If C is a refined concept, then T... models C
   // if it matches the requirement of C and of
   // all base concepts.
   template<class C, class... T,
     typename std::enable_if< not(isTypeList<C>()) and isRefinedConcept<C>(), int>::type=0>
-  constexpr bool modelsConcept()
-  {
-    return matchesRequirement<C, T...>() and modelsConceptList<typename C::BaseConceptList, T...>();
-  }
+  constexpr auto modelsConcept()
+    -> std::integral_constant<bool, matchesRequirement<C, T...>() and modelsConceptList<typename C::BaseConceptList, T...>()>
+  { return {}; }
 
   // If C is a list of concepts, then T... models C
   // if matches the requirement of all concepts
   // in the list.
   template<class C, class... T,
     typename std::enable_if< isTypeList<C>(), int>::type=0>
-  constexpr bool modelsConcept()
-  {
-    return modelsConceptList<C, T...>();
-  }
+  constexpr auto modelsConcept()
+    -> decltype(modelsConceptList<C, T...>())
+  { return {}; }
 
   // Check if T... models the concept or TypeList C
   template<class C, class... T>
