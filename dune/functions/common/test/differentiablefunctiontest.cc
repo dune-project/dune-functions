@@ -8,6 +8,7 @@
 
 #include <dune/common/shared_ptr.hh>
 #include <dune/common/exceptions.hh>
+#include <dune/common/parallel/mpihelper.hh>
 
 #include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/common/differentiablefunctionfromcallables.hh>
@@ -223,6 +224,7 @@ struct DerivativeRangeTerminationTest
 int main ( int argc, char **argv )
 try
 {
+  Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
   bool passed = true;
 
   passed = passed and DifferentiableFunctionImplementableTest::check();
