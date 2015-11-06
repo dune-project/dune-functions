@@ -55,6 +55,25 @@ struct HasFooAndBar3
   );
 };
 
+struct HasFooAndBar4 : Refines<HasFoo, HasBar>
+{
+  template<class T>
+  auto require(const T& t) -> decltype(
+    0
+  );
+};
+
+struct HasFooAndBar5
+{
+  template<class T>
+  auto require(const T& t) -> decltype(
+    0
+  );
+  using BaseConceptList = Dune::Functions::TypeList<HasFoo, HasBar>;
+};
+
+
+
 
 template<class T>
 struct Foo
@@ -142,6 +161,29 @@ try
 
   test.check(models<HasFooAndBar3, FooBar<int>>())
       << "models<HasFooAndBar3, FooBar<int>>() gives wrong result";
+
+
+
+  test.check(not models<HasFooAndBar4, Foo<int>>())
+      << "models<HasFooAndBar4, Foo<int>>() gives wrong result";
+
+  test.check(not models<HasFooAndBar4, Bar<int>>())
+      << "models<HasFooAndBar4, Bar<int>>() gives wrong result";
+
+  test.check(models<HasFooAndBar4, FooBar<int>>())
+      << "models<HasFooAndBar4, FooBar<int>>() gives wrong result";
+
+
+
+  test.check(not models<HasFooAndBar5, Foo<int>>())
+      << "models<HasFooAndBar5, Foo<int>>() gives wrong result";
+
+  test.check(not models<HasFooAndBar5, Bar<int>>())
+      << "models<HasFooAndBar5, Bar<int>>() gives wrong result";
+
+  test.check(models<HasFooAndBar5, FooBar<int>>())
+      << "models<HasFooAndBar5, FooBar<int>>() gives wrong result";
+
 
 
 
