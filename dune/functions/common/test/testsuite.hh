@@ -9,6 +9,8 @@
 
 #include <dune/common/exceptions.hh>
 
+#include <dune/functions/common/type_traits.hh>
+
 #include <dune/functions/common/test/collectorstream.hh>
 
 
