@@ -103,7 +103,32 @@ namespace Imp
 // # using the implementation details above.
 // #############################################################################
 
-// Check if T... models the concept or TypeList C
+/**
+ * \brief Check if concept is modeled by given types
+ *
+ * This will check if the given concept is modeled by the given
+ * list of types. This is true if the list of types models all
+ * the base concepts that are refined by the given concept
+ * and if it satisfies all additional requirements of the latter.
+ *
+ * Notice that a concept may be defined for a list of interacting types.
+ * The function will check if the given list of types matches the requirements
+ * on the whole list. It does not check if each individual type in the list
+ * satisfies the concept.
+ *
+ * This concept check mechanism is inspired by the concept checking
+ * facility in Eric Nieblers range-v3. For more information please
+ * refer to the libraries project page https://github.com/ericniebler/range-v3
+ * or this blog entry: http://ericniebler.com/2013/11/23/concept-checking-in-c11/.
+ *
+ * In fact the interface provided here is almost exactly the same as in range-v3.
+ * However the implementation differs, because range-v3 uses its own meta-programming
+ * library whereas our implementation is more straight forward.
+ *
+ * \tparam C The concept to check
+ * \tparam T The list of type to check against the concept
+ *
+ */
 template<class C, class... T>
 constexpr bool models()
 {
