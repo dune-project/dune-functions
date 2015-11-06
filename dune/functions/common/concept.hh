@@ -106,6 +106,12 @@ namespace Imp
   { return {}; }
 
   // Check if T... models the concept or TypeList C
+  // Here we cannot use true_type/false_type as return
+  // type because we need a recursion for checking base
+  // concepts. In order to make the recursion compile we
+  // need a forward declaration of the corresponding function,
+  // which is not possible if the result is encoded in the
+  // return type and not only the return value.
   template<class C, class... T>
   constexpr bool modelsImp()
   {
