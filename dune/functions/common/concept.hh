@@ -20,15 +20,7 @@ namespace Concept {
 namespace Imp
 {
 
-  // Base class to mark refined concepts
-  // Please derive from the derived template Concept::Refines
-  struct RefinedConcept {};
-
-  template<class C>
-  constexpr bool isRefinedConcept()
-  { return std::is_base_of<RefinedConcept, C>(); }
-
-
+  // Forward declaration
   template<class C, class... T>
   constexpr bool modelsImp();
 
@@ -56,54 +48,39 @@ namespace Imp
   constexpr std::false_type matchesRequirement(PriorityTag<0>)
   { return {}; }
 
-  // Wrap above check into nice constexpr function
-  template<class C, class...T>
-  constexpr auto matchesRequirement()
-    -> decltype(matchesRequirement<C, T...>(PriorityTag<42>()))
-  { return {}; }
-
-
 
   // An empty list C of concepts is always matched by T...
   template<class C, class...T,
     typename std::enable_if< isEmptyTypeList<C>(), int>::type =0>
-  constexpr std::true_type modelsConceptList()
-  { return {}; }
+  constexpr bool modelsConceptList()
+  { return true; }
 
   // A nonempty list C of concepts is modeled
   // by T...  if it models the concept C::Head
   // and Concepts in C::Tail.
   template<class C, class...T,
     typename std::enable_if< not(isEmptyTypeList<C>()), int>::type =0>
-  constexpr auto modelsConceptList()
-    -> std::integral_constant<bool, modelsImp<typename C::Head, T...>() and modelsConceptList<typename C::Tail, T...>()>
-  { return {}; }
+  constexpr bool modelsConceptList()
+  { return modelsImp<typename C::Head, T...>() and modelsConceptList<typename C::Tail, T...>(); }
+
 
   // If C is an unrefined concept, then T... models C
   // if it matches the requirement of C.
-  template<class C, class... T,
-    typename std::enable_if< not(isTypeList<C>()) and not(isRefinedConcept<C>()), int>::type=0>
-  constexpr auto modelsConcept()
-    -> decltype(matchesRequirement<C, T...>())
-  { return {}; }
+  template<class C, class... T>
+  constexpr bool modelsConcept(PriorityTag<0>)
+  { return matchesRequirement<C, T...>(PriorityTag<42>()); }
 
   // If C is a refined concept, then T... models C
   // if it matches the requirement of C and of
   // all base concepts.
+  //
+  // This overload is used if C::BaseConceptList exists
+  // due to its higher priority.
   template<class C, class... T,
-    typename std::enable_if< not(isTypeList<C>()) and isRefinedConcept<C>(), int>::type=0>
-  constexpr auto modelsConcept()
-    -> std::integral_constant<bool, matchesRequirement<C, T...>() and modelsConceptList<typename C::BaseConceptList, T...>()>
-  { return {}; }
+    decltype(typename C::BaseConceptList(), 0) = 0>
+  constexpr bool modelsConcept(PriorityTag<1>)
+  { return matchesRequirement<C, T...>(PriorityTag<42>()) and modelsConceptList<typename C::BaseConceptList, T...>(); }
 
-  // If C is a list of concepts, then T... models C
-  // if matches the requirement of all concepts
-  // in the list.
-  template<class C, class... T,
-    typename std::enable_if< isTypeList<C>(), int>::type=0>
-  constexpr auto modelsConcept()
-    -> decltype(modelsConceptList<C, T...>())
-  { return {}; }
 
   // Check if T... models the concept or TypeList C
   // Here we cannot use true_type/false_type as return
@@ -115,7 +92,7 @@ namespace Imp
   template<class C, class... T>
   constexpr bool modelsImp()
   {
-    return modelsConcept<C, T...>();
+    return modelsConcept<C, T...>(PriorityTag<42>());
   }
 } // namespace Imp
 
@@ -176,11 +153,14 @@ constexpr auto tupleEntriesModel()
 // If you want to require
 // A and B in a new concept C you
 // should derive it from Refines<A,B>.
-// By introducing the base class RefinedConcept
-// we tag all refined concepts for recognition
-// in overloads.
+// Refined concepts are recognized solely
+// by the existence of the type BaseConceptList.
+// Hence one could, instead of deriving from
+// Refines<C1,...,CN>, add a typedef
+// BaseConceptList = TypeList<C1,...,CN>
+// to the refined concept directly.
 template<class... Base>
-struct Refines : Imp::RefinedConcept
+struct Refines
 {
   typedef TypeList<Base...> BaseConceptList;
 };
