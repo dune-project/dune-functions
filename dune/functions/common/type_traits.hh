@@ -5,6 +5,7 @@
 
 #include <type_traits>
 
+#include <dune/common/prioritytag.hh>
 
 namespace Dune {
 namespace Functions {
@@ -42,22 +43,6 @@ using enableIfConstructible = typename std::enable_if<
 
 
 namespace Imp {
-
-  // Helper class for multi-stage SFINAE based overload
-  // resolution. You can tag overloads by priority.
-  // The matching overload with the highest prioriry
-  // will be selected. Be carefull to always use
-  // a large enough priority value when trying to call
-  // the overloaded function.
-  template<std::size_t i>
-  struct PriorityTag : public PriorityTag<i-1>
-  {};
-
-  template<>
-  struct PriorityTag<0>
-  {};
-
-
 
   // As a last resort try if there's a static constexpr size()
   template<class T>
@@ -109,7 +94,7 @@ namespace Imp {
  */
 template<class T>
 struct HasStaticSize :
-  public decltype(Imp::hasStaticSize((typename std::decay<T>::type*)(nullptr), Imp::PriorityTag<42>()))
+  public decltype(Imp::hasStaticSize((typename std::decay<T>::type*)(nullptr), PriorityTag<42>()))
 {};
 
 
@@ -123,7 +108,7 @@ struct HasStaticSize :
  */
 template<class T>
 struct StaticSize :
-  public decltype(Imp::staticSize((typename std::decay<T>::type*)(nullptr), Imp::PriorityTag<42>()))
+  public decltype(Imp::staticSize((typename std::decay<T>::type*)(nullptr), PriorityTag<42>()))
 {};
 
 
