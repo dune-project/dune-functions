@@ -6,8 +6,8 @@
 #include <type_traits>
 #include <utility>
 
+#include <dune/common/prioritytag.hh>
 #include <dune/functions/common/typelist.hh>
-#include <dune/functions/common/type_traits.hh>
 
 namespace Dune {
 namespace Functions {
@@ -41,23 +41,25 @@ namespace Imp
   // This overload is present if type substitution for
   // C::require(T...) is successful, i.e., if the T...
   // matches the requirement of C. In this case this
-  // overload is selected because C* is a better match than void*.
+  // overload is selected because PriorityTag<1>
+  // is a better match for PrioriryTag<42> than
+  // PriorityTag<0> in the default overload.
   template<class C, class... T,
     decltype(std::declval<C>().require(std::declval<T>()...), 0) =0>
-  constexpr std::true_type matchesRequirement(Dune::Functions::Imp::PriorityTag<1>)
+  constexpr std::true_type matchesRequirement(PriorityTag<1>)
   { return {}; }
 
   // If the above overload is ruled out by SFINAE because
-  // the T... does snot match the requirements of C, then
+  // the T... does not match the requirements of C, then
   // this default overload drops in.
   template<class C, class... T>
-  constexpr std::false_type matchesRequirement(Dune::Functions::Imp::PriorityTag<0>)
+  constexpr std::false_type matchesRequirement(PriorityTag<0>)
   { return {}; }
 
   // Wrap above check into nice constexpr function
   template<class C, class...T>
   constexpr auto matchesRequirement()
-    -> decltype(matchesRequirement<C, T...>(Dune::Functions::Imp::PriorityTag<42>()))
+    -> decltype(matchesRequirement<C, T...>(PriorityTag<42>()))
   { return {}; }
 
 
