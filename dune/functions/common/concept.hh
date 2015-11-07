@@ -13,16 +13,40 @@ namespace Dune {
 namespace Functions {
 namespace Concept {
 
+
+
+/**
+ * \brief Base class for refined concepts.
+ *
+ * If a new concept should refine one or more existing concepts,
+ * this can be achieved by deriving the new concept from
+ * Refines<C1,...,CN> where C1, ..., CN are the concepts
+ * to be refined. If you want to refine several concepts
+ * they should all be put in a single Refines<...> base
+ * class.
+ *
+ * \tparam BaseConcepts The list of concepts to be refined.
+ */
+template<class... BaseConcepts>
+struct Refines
+{
+  typedef TypeList<BaseConcepts...> BaseConceptList;
+};
+
+
+
+// Forward declaration
+template<class C, class... T>
+constexpr bool models();
+
+
+
 // #############################################################################
-// # All types and functions following here are implementation details
+// # All functions following here are implementation details
 // # for the models() function below.
 // #############################################################################
 namespace Imp
 {
-
-  // Forward declaration
-  template<class C, class... T>
-  constexpr bool modelsImp();
 
   // Here is the implementation of the concept checking.
   // The first two overloads do the magic for checking
@@ -61,7 +85,7 @@ namespace Imp
   template<class C, class...T,
     typename std::enable_if< not(isEmptyTypeList<C>()), int>::type =0>
   constexpr bool modelsConceptList()
-  { return modelsImp<typename C::Head, T...>() and modelsConceptList<typename C::Tail, T...>(); }
+  { return models<typename C::Head, T...>() and modelsConceptList<typename C::Tail, T...>(); }
 
 
   // If C is an unrefined concept, then T... models C
@@ -81,27 +105,9 @@ namespace Imp
   constexpr bool modelsConcept(PriorityTag<1>)
   { return matchesRequirement<C, T...>(PriorityTag<42>()) and modelsConceptList<typename C::BaseConceptList, T...>(); }
 
-
-  // Check if T... models the concept or TypeList C
-  // Here we cannot use true_type/false_type as return
-  // type because we need a recursion for checking base
-  // concepts. In order to make the recursion compile we
-  // need a forward declaration of the corresponding function,
-  // which is not possible if the result is encoded in the
-  // return type and not only the return value.
-  template<class C, class... T>
-  constexpr bool modelsImp()
-  {
-    return modelsConcept<C, T...>(PriorityTag<42>());
-  }
 } // namespace Imp
 
 
-
-// #############################################################################
-// # The method models() does the actual check if a type models a concept
-// # using the implementation details above.
-// #############################################################################
 
 /**
  * \brief Check if concept is modeled by given types
@@ -119,8 +125,7 @@ namespace Imp
  * This concept check mechanism is inspired by the concept checking
  * facility in Eric Nieblers range-v3. For more information please
  * refer to the libraries project page https://github.com/ericniebler/range-v3
- * or this blog entry: http://ericniebler.com/2013/11/23/concept-checking-in-c11/.
- *
+ * or this blog entry: http://ericniebler.com/2013/11/23/concept-checking-in-c11.
  * In fact the interface provided here is almost exactly the same as in range-v3.
  * However the implementation differs, because range-v3 uses its own meta-programming
  * library whereas our implementation is more straight forward.
@@ -132,7 +137,7 @@ namespace Imp
 template<class C, class... T>
 constexpr bool models()
 {
-  return Imp::modelsImp<C, T...>();
+  return Imp::modelsConcept<C, T...>(PriorityTag<42>());
 }
 
 
@@ -174,23 +179,6 @@ constexpr auto tupleEntriesModel()
 {
   return {};
 }
-
-// If you want to require
-// A and B in a new concept C you
-// should derive it from Refines<A,B>.
-// Refined concepts are recognized solely
-// by the existence of the type BaseConceptList.
-// Hence one could, instead of deriving from
-// Refines<C1,...,CN>, add a typedef
-// BaseConceptList = TypeList<C1,...,CN>
-// to the refined concept directly.
-template<class... Base>
-struct Refines
-{
-  typedef TypeList<Base...> BaseConceptList;
-};
-
-
 
 // #############################################################################
 // # The following require*() functions are just helpers that allow to
