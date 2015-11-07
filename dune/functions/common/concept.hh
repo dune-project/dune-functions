@@ -73,19 +73,19 @@ namespace Imp
   { return {}; }
 
 
+
   // An empty list C of concepts is always matched by T...
-  template<class C, class...T,
-    typename std::enable_if< isEmptyTypeList<C>(), int>::type =0>
-  constexpr bool modelsConceptList()
+  template<class...T>
+  constexpr bool modelsConceptList(TypeList<>)
   { return true; }
 
-  // A nonempty list C of concepts is modeled
-  // by T...  if it models the concept C::Head
-  // and Concepts in C::Tail.
-  template<class C, class...T,
-    typename std::enable_if< not(isEmptyTypeList<C>()), int>::type =0>
-  constexpr bool modelsConceptList()
-  { return models<typename C::Head, T...>() and modelsConceptList<typename C::Tail, T...>(); }
+  // A nonempty list C0,..,CN of concepts is modeled
+  // by T...  if it models the concept C0
+  // and all concepts in the list C1,..,CN.
+  template<class...T, class C0, class... CC>
+  constexpr bool modelsConceptList(TypeList<C0, CC...>)
+  { return models<C0, T...>() and modelsConceptList<T...>(TypeList<CC...>()); }
+
 
 
   // If C is an unrefined concept, then T... models C
@@ -103,7 +103,7 @@ namespace Imp
   template<class C, class... T,
     decltype(typename C::BaseConceptList(), 0) = 0>
   constexpr bool modelsConcept(PriorityTag<1>)
-  { return matchesRequirement<C, T...>(PriorityTag<42>()) and modelsConceptList<typename C::BaseConceptList, T...>(); }
+  { return matchesRequirement<C, T...>(PriorityTag<42>()) and modelsConceptList<T...>(typename C::BaseConceptList()); }
 
 } // namespace Imp
 
