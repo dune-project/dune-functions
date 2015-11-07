@@ -65,12 +65,12 @@ auto forwardAsStaticIndex(const size_type& i, F&& f, Args&&... args)
 
 namespace Imp {
 
-  template<template<class...> class T, class Tuple>
+  template<template<class...> class T, class List>
   struct ExpandTupleHelper
   {};
 
-  template<template<class...> class T, class... Args>
-  struct ExpandTupleHelper<T, typename std::tuple<Args...>>
+  template<template<class...> class T, template<class...> class ListType, class... Args>
+  struct ExpandTupleHelper<T, ListType<Args...>>
   {
     using Type = T<Args...>;
   };
