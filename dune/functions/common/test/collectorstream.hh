@@ -8,6 +8,8 @@
 #include <functional>
 
 
+#include <dune/functions/common/type_traits.hh>
+
 
 namespace Dune {
 namespace Functions {
