@@ -9,8 +9,6 @@
 
 #include <dune/common/exceptions.hh>
 
-#include <dune/functions/common/type_traits.hh>
-
 #include <dune/functions/common/test/collectorstream.hh>
 
 
@@ -31,41 +29,62 @@ namespace Functions {
 class TestSuite
 {
 public:
+  enum ThrowPolicy
+  {
+    AlwaysThrow,
+    ThrowOnRequired
+  };
 
-  TestSuite(bool alwaysThrow, std::string name="") :
+  TestSuite(ThrowPolicy policy, std::string name="") :
     name_(name),
-    result_(true),
-    alwaysThrow_(alwaysThrow)
+    checks_(0),
+    failedChecks_(0),
+    throwPolicy_(policy==AlwaysThrow)
   {}
 
-  TestSuite(std::string name="", bool alwaysThrow=false) :
+  TestSuite(std::string name="", ThrowPolicy policy=ThrowOnRequired) :
     name_(name),
-    result_(true),
-    alwaysThrow_(alwaysThrow)
+    checks_(0),
+    failedChecks_(0),
+    throwPolicy_(policy==AlwaysThrow)
   {}
 
   CollectorStream check(bool condition, std::string name="")
   {
+    ++checks_;
+    if (not condition)
+      ++failedChecks_;
+
     return CollectorStream([=](std::string reason) {
-        this->announceCheckResult(condition, false, "CHECK  ", name, reason);
+        if (not condition)
+          this->announceCheckResult(throwPolicy_, "CHECK  ", name, reason);
       });
   }
 
   CollectorStream require(bool condition, std::string name="")
   {
+    ++checks_;
+    if (not condition)
+      ++failedChecks_;
+
     return CollectorStream([=](std::string reason) {
-        this->announceCheckResult(condition, true, "REQUIRED CHECK", name, reason);
+        if (not condition)
+          this->announceCheckResult(true, "REQUIRED CHECK", name, reason);
       });
   }
 
   void subTest(const TestSuite& subTest)
   {
-    announceCheckResult(subTest, false, "SUBTEST", subTest.name(), "Some checks or subtests of this subtest failed.");
+    checks_ += subTest.checks_;
+    failedChecks_ += subTest.failedChecks_;
+
+    if (not subTest)
+      announceCheckResult(throwPolicy_, "SUBTEST", subTest.name(), std::to_string(subTest.failedChecks_)+"/"+std::to_string(subTest.checks_) + " checks failed in this subtest.");
   }
 
   operator const bool () const
   {
-    return result_;
+    return (failedChecks_==0);
   }
 
   std::string name() const
@@ -75,9 +94,9 @@ public:
 
   bool report() const
   {
-    if (not result_)
-      std::cout << composeMessage(false, "TEST   ", name_, "Some checks or subtests of the test failed.") << std::endl;
-    return result_;
+    if (failedChecks_>0)
+      std::cout << composeMessage("TEST   ", name(), std::to_string(failedChecks_)+"/"+std::to_string(checks_) + " checks failed in this test.") << std::endl;
+    return (failedChecks_==0);
   }
 
   int exit() const
@@ -89,34 +108,34 @@ public:
 
 protected:
 
-  std::string composeMessage(bool required, std::string type, std::string name, std::string reason) const
+  static std::string composeMessage(std::string type, std::string name, std::string reason)
   {
     std::ostringstream s;
-    if (required)
-      s << "REQUIRED ";
-    s << type << " FAILED : ";
+    s << type << " FAILED";
     if (name!="")
-      s << name << " ";
+      s << "(" << name << ")";
+    s << ": ";
     if (reason!="")
-      s << "REASON : " << reason;
+      s << reason;
     return s.str();
   }
 
-  void announceCheckResult(bool condition, bool required, std::string type, std::string name, std::string reason)
+  static void announceCheckResult(bool throwException, std::string type, std::string name, std::string reason)
   {
-    result_ &= condition;
-    if (not condition)
+    std::string message = composeMessage(type, name, reason);
+    std::cout << message << std::endl;
+    if (throwException)
     {
-      std::string message = composeMessage(required, type, name, reason);
-      std::cout << message << std::endl;
-      if (required or alwaysThrow_)
-        DUNE_THROW(Dune::Exception, message);
+      Dune::Exception ex;
+      ex.message(message);
+      throw ex;
     }
   }
 
   std::string name_;
-  bool result_;
-  bool alwaysThrow_;
+  std::size_t checks_;
+  std::size_t failedChecks_;
+  bool throwPolicy_;
 };
 
 
