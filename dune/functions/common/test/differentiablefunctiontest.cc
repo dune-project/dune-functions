@@ -224,7 +224,7 @@ struct DerivativeRangeTerminationTest
 int main ( int argc, char **argv )
 try
 {
-  Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
+  Dune::MPIHelper::instance(argc, argv);
   bool passed = true;
 
   passed = passed and DifferentiableFunctionImplementableTest::check();

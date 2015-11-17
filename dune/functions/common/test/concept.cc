@@ -105,7 +105,7 @@ struct FooBar
 int main ( int argc, char **argv )
 try
 {
-  Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
+  Dune::MPIHelper::instance(argc, argv);
 
   Dune::Functions::TestSuite test;
 

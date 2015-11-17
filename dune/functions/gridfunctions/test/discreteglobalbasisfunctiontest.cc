@@ -49,7 +49,7 @@ bool checkInterpolationConsistency(B&& basis, C&& x)
 
 int main (int argc, char* argv[]) try
 {
-  Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
+  Dune::MPIHelper::instance(argc, argv);
   bool passed = true;
 
   // Generate grid for testing

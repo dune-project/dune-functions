@@ -377,7 +377,7 @@ void testOnHybridGrid()
 
 int main (int argc, char* argv[]) try
 {
-  Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
+  Dune::MPIHelper::instance(argc, argv);
 
   testOnStructuredGrid<1>();
   testOnStructuredGrid<2>();

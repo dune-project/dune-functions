@@ -30,7 +30,7 @@ double x_component_B(const Coord & x)
 
 int main (int argc, char* argv[]) try
 {
-  Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
+  Dune::MPIHelper::instance(argc, argv);
   // Generate grid for testing
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
