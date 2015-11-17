@@ -21,6 +21,5 @@ install(FILES
         treedata.hh
         type_traits.hh
         typeerasure.hh
-        typelist.hh
         utility.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/common)

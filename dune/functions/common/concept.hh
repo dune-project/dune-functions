@@ -7,7 +7,7 @@
 #include <utility>
 
 #include <dune/common/prioritytag.hh>
-#include <dune/functions/common/typelist.hh>
+#include <dune/common/typelist.hh>
 
 namespace Dune {
 namespace Functions {

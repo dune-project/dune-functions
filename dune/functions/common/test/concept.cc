@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/typelist.hh>
 
 #include <dune/functions/common/concept.hh>
 #include <dune/functions/common/test/testsuite.hh>
@@ -69,7 +70,7 @@ struct HasFooAndBar5
   auto require(const T& t) -> decltype(
     0
   );
-  using BaseConceptList = Dune::Functions::TypeList<HasFoo, HasBar>;
+  using BaseConceptList = Dune::TypeList<HasFoo, HasBar>;
 };
 
 
