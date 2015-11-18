@@ -3,6 +3,7 @@
 #ifndef DUNE_FUNCTIONS_COMMON_FUNCTIONCONCEPT_HH
 #define DUNE_FUNCTIONS_COMMON_FUNCTIONCONCEPT_HH
 
+#include <dune/common/typelist.hh>
 
 #include <dune/functions/common/concept.hh>
 #include <dune/functions/common/signature.hh>
