@@ -5,25 +5,10 @@
 
 #include <type_traits>
 
-#include <dune/common/prioritytag.hh>
+#include <dune/common/typeutilities.hh>
 
 namespace Dune {
 namespace Functions {
-
-
-/**
- * \brief Helper to disable constructor as copy and move constructor
- *
- * \ingroup Utility
- *
- * Helper typedef to remove constructor with forwarding reference from
- * overload set for copy and move constructor or assignment.
- */
-template<class This, class... T>
-using disableCopyMove = typename std::enable_if<
-  (not(std::is_same<This, typename std::tuple_element<0, std::tuple<typename std::decay<T>::type...> >::type >::value)
-  and not(std::is_base_of<This, typename std::tuple_element<0, std::tuple<typename std::decay<T>::type...> >::type >::value)), int>::type;
-
 
 
 /**
