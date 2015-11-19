@@ -9,6 +9,7 @@
 #include <dune/common/reservedvector.hh>
 #include <dune/common/classname.hh>
 #include <dune/common/fvector.hh>
+#include <dune/common/test/testsuite.hh>
 
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
@@ -18,7 +19,6 @@
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 
-#include <dune/functions/common/test/testsuite.hh>
 
 using namespace Dune;
 
@@ -169,9 +169,9 @@ bool checkHierarchicVectorSize(const Vector& v, const SizeInfo& sizeInfo, SizePr
 
 
 template<class Vector, class Coefficient, std::size_t dim, class MultiIndex>
-Dune::Functions::TestSuite checkHierarchicVector(std::string shortName="")
+Dune::TestSuite checkHierarchicVector(std::string shortName="")
 {
-  Dune::Functions::TestSuite test(shortName);
+  Dune::TestSuite test(shortName);
 
   using namespace Dune::TypeTree::Indices;
   using SizeInfo = HybridSizeInfoDummy<dim>;
@@ -239,7 +239,7 @@ int main (int argc, char *argv[]) try
   ///////////////////////////////////
 
 
-  Dune::Functions::TestSuite test;
+  Dune::TestSuite test;
   {
     using VelocityVector = std::vector<std::vector<double>>;
     using PressureVector = std::vector<double>;
