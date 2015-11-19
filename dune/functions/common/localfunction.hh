@@ -5,6 +5,8 @@
 
 #include <type_traits>
 
+#include <dune/common/typeutilities.hh>
+
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/common/localfunction_imp.hh>

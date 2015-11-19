@@ -5,6 +5,8 @@
 
 #include <typeinfo>
 
+#include <dune/common/typeutilities.hh>
+
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/common/interfaces.hh>
 #include <dune/functions/common/polymorphicsmallobject.hh>

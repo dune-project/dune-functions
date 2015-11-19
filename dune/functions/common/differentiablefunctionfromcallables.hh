@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_COMMON_DIFFEREENTIONABEFUNCTIONFROMCALLABLES_HH
 
 
+#include <dune/common/typeutilities.hh>
 
 #include <dune/functions/common/signature.hh>
 

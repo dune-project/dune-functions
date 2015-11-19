@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTGLOBALBASIS_HH
 
 #include <dune/common/reservedvector.hh>
+#include <dune/common/typeutilities.hh>
 
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/defaultglobalindexset.hh>

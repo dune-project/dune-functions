@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_POWERBASIS_HH
 
 #include <dune/common/reservedvector.hh>
+#include <dune/common/typeutilities.hh>
 
 #include <dune/typetree/powernode.hh>
 #include <dune/typetree/utility.hh>
