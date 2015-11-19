@@ -4,7 +4,8 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_CONCEPTS_HH
 
 
-#include <dune/functions/common/concept.hh>
+#include <dune/common/concept.hh>
+
 #include <dune/functions/common/utility.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
@@ -14,6 +15,7 @@ namespace Dune {
 namespace Functions {
 namespace Concept {
 
+using namespace Dune::Concept;
 
 
 struct HasResize

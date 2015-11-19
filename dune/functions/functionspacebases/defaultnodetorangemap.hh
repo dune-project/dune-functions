@@ -4,7 +4,8 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTNODETORANGEMAP_HH
 
 
-#include <dune/functions/common/concept.hh>
+#include <dune/common/concept.hh>
+
 #include <dune/functions/functionspacebases/concepts.hh>
 
 #include <dune/typetree/traversal.hh>
@@ -71,7 +72,7 @@ struct DefaultNodeToRangeMap
 
   template<class Node, class Range,
     typename std::enable_if<
-      Concept::models<Concept::HasIndexAccess, Range, decltype(std::declval<Node>().treeIndex())>() and not Tree::isLeaf, int>::type = 0>
+      models<Concept::HasIndexAccess, Range, decltype(std::declval<Node>().treeIndex())>() and not Tree::isLeaf, int>::type = 0>
   auto operator()(const Node& node, Range&& y) const
     -> decltype(y[0])
   {
@@ -79,7 +80,7 @@ struct DefaultNodeToRangeMap
   }
 
   template<class Node, class Range,
-    typename std::enable_if< not Concept::models<Concept::HasIndexAccess, Range, decltype(std::declval<Node>().treeIndex())>() or Tree::isLeaf, int>::type = 0>
+    typename std::enable_if< not models<Concept::HasIndexAccess, Range, decltype(std::declval<Node>().treeIndex())>() or Tree::isLeaf, int>::type = 0>
   auto operator()(const Node& node, Range&& y) const
     -> decltype(std::forward<Range>(y))
   {

@@ -3,12 +3,12 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_HIERARCHICVECTORWRAPPER_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_HIERARCHICVECTORWRAPPER_HH
 
+#include <dune/common/concept.hh>
 
 #include <dune/typetree/utility.hh>
 
 #include <dune/functions/common/indexaccess.hh>
 #include <dune/functions/common/utility.hh>
-#include <dune/functions/common/concept.hh>
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/common/staticforloop.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
@@ -94,8 +94,8 @@ class HierarchicVectorWrapper
   using size_type = std::size_t;
 
   template<class C, class SizeProvider,
-    typename std::enable_if< not Concept::models<Concept::HasResize, C>(), int>::type = 0,
-    typename std::enable_if< not Concept::models<Concept::HasSizeMethod, C>(), int>::type = 0>
+    typename std::enable_if< not models<Concept::HasResize, C>(), int>::type = 0,
+    typename std::enable_if< not models<Concept::HasSizeMethod, C>(), int>::type = 0>
   static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
@@ -114,8 +114,8 @@ class HierarchicVectorWrapper
   };
 
   template<class C, class SizeProvider,
-    typename std::enable_if< not Concept::models<Concept::HasResize, C>(), int>::type = 0,
-    typename std::enable_if< Concept::models<Concept::HasSizeMethod, C>(), int>::type = 0>
+    typename std::enable_if< not models<Concept::HasResize, C>(), int>::type = 0,
+    typename std::enable_if< models<Concept::HasSizeMethod, C>(), int>::type = 0>
   static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
@@ -130,7 +130,7 @@ class HierarchicVectorWrapper
   }
 
   template<class C, class SizeProvider,
-    typename std::enable_if< Concept::models<Concept::HasResize, C>(), int>::type = 0>
+    typename std::enable_if< models<Concept::HasResize, C>(), int>::type = 0>
   static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
@@ -211,7 +211,7 @@ HierarchicVectorWrapper< V > hierarchicVector(V& v)
 
 
 template<class MultiIndex, class V,
-    typename std::enable_if< Concept::models<Concept::HasIndexAccess, V, MultiIndex>(), int>::type = 0>
+    typename std::enable_if< models<Concept::HasIndexAccess, V, MultiIndex>(), int>::type = 0>
 V& makeHierarchicVectorForMultiIndex(V& v)
 {
   return v;
@@ -220,7 +220,7 @@ V& makeHierarchicVectorForMultiIndex(V& v)
 
 
 template<class MultiIndex, class V,
-    typename std::enable_if< not Concept::models<Concept::HasIndexAccess, V, MultiIndex>(), int>::type = 0>
+    typename std::enable_if< not models<Concept::HasIndexAccess, V, MultiIndex>(), int>::type = 0>
 HierarchicVectorWrapper< V > makeHierarchicVectorForMultiIndex(V& v)
 {
   return HierarchicVectorWrapper<V>(v);

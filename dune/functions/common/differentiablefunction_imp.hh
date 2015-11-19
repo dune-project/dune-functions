@@ -4,9 +4,9 @@
 #define DUNE_FUNCTIONS_COMMON_DIFFERENTIABLE_FUNCTION_IMP_HH
 
 #include <dune/common/exceptions.hh>
+#include <dune/common/concept.hh>
 
 #include <dune/functions/common/type_traits.hh>
-#include <dune/functions/common/concept.hh>
 
 
 namespace Dune {
@@ -28,7 +28,7 @@ struct HasFreeDerivative
 
 template<class Dummy, class F,
   typename std::enable_if<
-    Dune::Functions::Concept::models< HasFreeDerivative, F>() , int>::type = 0>
+    models< HasFreeDerivative, F>() , int>::type = 0>
 auto derivativeIfImplemented(const F& f) -> decltype(derivative(f))
 {
   return derivative(f);
@@ -38,7 +38,7 @@ auto derivativeIfImplemented(const F& f) -> decltype(derivative(f))
 
 template<class Dummy, class F,
   typename std::enable_if<
-    not(Dune::Functions::Concept::models< HasFreeDerivative, F>()) , int>::type = 0>
+    not(models< HasFreeDerivative, F>()) , int>::type = 0>
 Dummy derivativeIfImplemented(const F& f)
 {
   DUNE_THROW(Dune::NotImplemented, "Derivative not implemented");

@@ -5,6 +5,7 @@
 
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
+#include <dune/common/concept.hh>
 
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/defaultglobalindexset.hh>
@@ -51,7 +52,7 @@ public:
   DefaultGlobalBasis(T&&... t) :
     nodeFactory_(std::forward<T>(t)...)
   {
-    static_assert(Concept::models<Concept::NodeFactory<GridView>, NodeFactory>(), "Type passed to DefaultGlobalBasis does not model the  NodeFactory concept.");
+    static_assert(models<Concept::NodeFactory<GridView>, NodeFactory>(), "Type passed to DefaultGlobalBasis does not model the  NodeFactory concept.");
     nodeFactory_.initializeIndices();
   }
 

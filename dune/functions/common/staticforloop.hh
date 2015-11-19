@@ -4,7 +4,8 @@
 #define DUNE_FUNCTIONS_COMMON_STATICFORLOOP_HH
 
 
-#include <dune/functions/common/concept.hh>
+#include <dune/common/concept.hh>
+
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
