@@ -6,6 +6,8 @@
 
 #include <tuple>
 
+#include <dune/common/concept.hh>
+
 #include <dune/functions/functionspacebases/concepts.hh>
 
 
@@ -43,7 +45,7 @@ public:
     globalBasis_(&globalBasis),
     tree_(globalBasis_->nodeFactory().node(RootTreePath()))
   {
-    static_assert(Concept::models<Concept::BasisTree<GridView>, Tree>(), "Tree type passed to DefaultLocalView does not model the BasisNode concept.");
+    static_assert(models<Concept::BasisTree<GridView>, Tree>(), "Tree type passed to DefaultLocalView does not model the BasisNode concept.");
     initializeTree(tree_);
   }
 

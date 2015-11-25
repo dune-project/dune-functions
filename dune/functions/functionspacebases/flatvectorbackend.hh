@@ -4,7 +4,8 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_FLATVECTORBACKEND_HH
 
 
-#include <dune/functions/common/concept.hh>
+#include <dune/common/concept.hh>
+
 #include <dune/functions/functionspacebases/concepts.hh>
 
 
@@ -20,7 +21,7 @@ struct FlatVectorBackend
 {
 
   template<class VV, class Index,
-    typename std::enable_if< Concept::models<Concept::HasIndexAccess, VV, Index>(), int>::type = 0>
+    typename std::enable_if< models<Concept::HasIndexAccess, VV, Index>(), int>::type = 0>
   static auto getEntry(VV&& v, const Index& i)
     ->decltype(v[i])
   {
@@ -28,7 +29,7 @@ struct FlatVectorBackend
   }
 
   template<class VV, class Index,
-    typename std::enable_if< not Concept::models<Concept::HasIndexAccess, VV, Index>(), int>::type = 0>
+    typename std::enable_if< not models<Concept::HasIndexAccess, VV, Index>(), int>::type = 0>
   static auto getEntry(VV&& v, const Index& i)
     ->decltype(v)
   {
@@ -36,7 +37,7 @@ struct FlatVectorBackend
   }
 
   template<class VV,
-    typename std::enable_if< Concept::models<Concept::HasSizeMethod, VV>(), int>::type = 0>
+    typename std::enable_if< models<Concept::HasSizeMethod, VV>(), int>::type = 0>
   static auto size(VV&& v)
     ->decltype(v.size())
   {
@@ -44,7 +45,7 @@ struct FlatVectorBackend
   }
 
   template<class VV,
-    typename std::enable_if< not Concept::models<Concept::HasSizeMethod, VV>(), int>::type = 0>
+    typename std::enable_if< not models<Concept::HasSizeMethod, VV>(), int>::type = 0>
   static std::size_t size(VV&& v)
   {
     return 1;

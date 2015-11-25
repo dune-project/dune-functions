@@ -2,7 +2,6 @@ add_subdirectory("test"  EXCLUDE_FROM_ALL)
 
 install(FILES
         callable.hh
-        concept.hh
         defaultderivativetraits.hh
         differentiablefunction.hh
         differentiablefunction_imp.hh

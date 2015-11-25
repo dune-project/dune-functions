@@ -6,6 +6,7 @@
 #include <tuple>
 
 #include <dune/common/reservedvector.hh>
+#include <dune/common/typeutilities.hh>
 
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/utility.hh>

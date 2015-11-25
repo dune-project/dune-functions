@@ -4,6 +4,9 @@
 #define DUNE_FUNCTIONS_GRIDFUNCTIONS_GRIDVIEWFUNCTION_HH
 
 #include <memory>
+
+#include <dune/common/concept.hh>
+
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
@@ -60,7 +63,7 @@ public:
  */
 template<class F, class GridView,
   typename std::enable_if<
-    Dune::Functions::Concept::models< Imp::HasFreeLocalFunction, F>() , int>::type = 0>
+    models< Imp::HasFreeLocalFunction, F>() , int>::type = 0>
 typename std::decay<F>::type
   makeGridViewFunction(F&& f, const GridView& gridView)
 {
@@ -88,7 +91,7 @@ typename std::decay<F>::type
  */
 template<class F, class GridView,
   typename std::enable_if<
-    not(Dune::Functions::Concept::models< Imp::HasFreeLocalFunction, F>()) , int>::type = 0>
+    not(models< Imp::HasFreeLocalFunction, F>()) , int>::type = 0>
 auto makeGridViewFunction(F&& f, const GridView& gridView)
   -> decltype(makeAnalyticGridViewFunction(std::forward<F>(f), gridView))
 {

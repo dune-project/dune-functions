@@ -4,8 +4,9 @@
 #define DUNE_FUNCTIONS_COMMON_INDEX_ACCESS_HH
 
 
+#include <dune/common/concept.hh>
+
 #include <dune/functions/common/utility.hh>
-#include <dune/functions/common/concept.hh>
 
 
 
@@ -54,7 +55,7 @@ struct HasDynamicIndexAccess
  * \param f A functor to call with the result of operator[]
  */
 template<class C, class I, class F,
-  typename std::enable_if< Concept::models<Imp::Concept::HasDynamicIndexAccess<I>, C>(), int>::type = 0>
+  typename std::enable_if< Dune::models<Imp::Concept::HasDynamicIndexAccess<I>, C>(), int>::type = 0>
 auto hybridIndexAccess(C&& c, const I& i, F&& f)
   -> decltype(f(c[i]))
 {
@@ -79,7 +80,7 @@ auto hybridIndexAccess(C&& c, const I& i, F&& f)
  * \param f A functor to call with the result of operator[]
  */
 template<class C, class I, class F,
-  typename std::enable_if< not Concept::models<Imp::Concept::HasDynamicIndexAccess<I>, C>(), int>::type = 0>
+  typename std::enable_if< not Dune::models<Imp::Concept::HasDynamicIndexAccess<I>, C>(), int>::type = 0>
 auto hybridIndexAccess(C&& c, const I& i, F&& f)
   -> decltype(forwardAsStaticIndex<StaticSize<C>::value>(i, Imp::Lambda_hybridIndexAccess(), std::forward<C>(c), std::forward<F>(f)))
 {

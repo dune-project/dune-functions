@@ -5,6 +5,8 @@
 
 #include <type_traits>
 
+#include <dune/common/typeutilities.hh>
+
 #include <dune/functions/common/signature.hh>
 #include <dune/functions/common/optional.hh>
 #include <dune/functions/common/defaultderivativetraits.hh>

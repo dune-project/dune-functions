@@ -5,7 +5,7 @@
 
 #include <utility>
 
-#include <dune/functions/common/type_traits.hh>
+#include <dune/common/typeutilities.hh>
 
 namespace Dune {
 namespace Functions {
