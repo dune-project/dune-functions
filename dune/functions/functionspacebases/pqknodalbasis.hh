@@ -268,7 +268,8 @@ public:
   using Node = typename NodeFactory::template Node<TP>;
 
   PQkNodeIndexSet(const NodeFactory& nodeFactory) :
-    nodeFactory_(&nodeFactory)
+    nodeFactory_(&nodeFactory),
+    node_(nullptr)
   {}
 
   /** \brief Bind the view to a grid element
@@ -292,12 +293,14 @@ public:
    */
   size_type size() const
   {
+    assert(node_ != nullptr);
     return node_->finiteElement().size();
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   MultiIndex index(size_type i) const
   {
+    assert(node_ != nullptr);
     Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
     const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
     const auto& element = node_->element();
