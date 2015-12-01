@@ -322,15 +322,15 @@ public:
     size_t dofDim = dim - localKey.codim();
 
     if (dofDim==0) {  // vertex dof
-      return { gridIndexSet.subIndex(element,localKey.subEntity(),dim) };
+      return {{ gridIndexSet.subIndex(element,localKey.subEntity(),dim) }};
     }
 
     if (dofDim==1)
     {  // edge dof
       if (dim==1)  // element dof -- any local numbering is fine
-        return { nodeFactory_->edgeOffset_
+        return {{ nodeFactory_->edgeOffset_
             + nodeFactory_->dofsPerEdge * gridIndexSet.subIndex(element,0,0)
-            + localKey.index() };
+            + localKey.index() }};
       else
       {
         const Dune::ReferenceElement<double,dim>& refElement
@@ -341,13 +341,13 @@ public:
         size_t v0 = gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
         size_t v1 = gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
         bool flip = (v0 > v1);
-        return { (flip)
+        return {{ (flip)
               ? nodeFactory_->edgeOffset_
                 + nodeFactory_->dofsPerEdge*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())
                 + (nodeFactory_->dofsPerEdge-1)-localKey.index()
               : nodeFactory_->edgeOffset_
                 + nodeFactory_->dofsPerEdge*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())
-                + localKey.index() };
+                + localKey.index() }};
       }
     }
 
@@ -358,12 +358,12 @@ public:
         if (element.type().isTriangle())
         {
           const int interiorLagrangeNodesPerTriangle = (k-1)*(k-2)/2;
-          return { nodeFactory_->triangleOffset_ + interiorLagrangeNodesPerTriangle*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+          return {{ nodeFactory_->triangleOffset_ + interiorLagrangeNodesPerTriangle*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
         }
         else if (element.type().isQuadrilateral())
         {
           const int interiorLagrangeNodesPerQuadrilateral = (k-1)*(k-1);
-          return { nodeFactory_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+          return {{ nodeFactory_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
         }
         else
           DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
@@ -378,7 +378,7 @@ public:
         if (k==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
           DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
 
-        return { nodeFactory_->triangleOffset_ + gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) };
+        return {{ nodeFactory_->triangleOffset_ + gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) }};
       }
     }
 
@@ -387,13 +387,13 @@ public:
       if (dim==3)   // element dof -- any local numbering is fine
       {
         if (element.type().isTetrahedron())
-          return { nodeFactory_->tetrahedronOffset_ + NodeFactory::dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+          return {{ nodeFactory_->tetrahedronOffset_ + NodeFactory::dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
         else if (element.type().isHexahedron())
-          return { nodeFactory_->hexahedronOffset_ + NodeFactory::dofsPerHexahedron*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+          return {{ nodeFactory_->hexahedronOffset_ + NodeFactory::dofsPerHexahedron*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
         else if (element.type().isPrism())
-          return { nodeFactory_->prismOffset_ + NodeFactory::dofsPerPrism*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+          return {{ nodeFactory_->prismOffset_ + NodeFactory::dofsPerPrism*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
         else if (element.type().isPyramid())
-          return { nodeFactory_->pyramidOffset_ + NodeFactory::dofsPerPyramid*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+          return {{ nodeFactory_->pyramidOffset_ + NodeFactory::dofsPerPyramid*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
         else
           DUNE_THROW(Dune::NotImplemented, "3d elements have to be tetrahedra, hexahedra, prisms, or pyramids");
       } else
