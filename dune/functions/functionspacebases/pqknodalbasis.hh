@@ -56,14 +56,22 @@ public:
 
 
   // Precompute the number of dofs per entity type
-  const static int dofsPerEdge        = k-1;
-  const static int dofsPerTriangle    = (k-1)*(k-2)/2;
-  const static int dofsPerQuad        = (k-1)*(k-1);
-  const static int dofsPerTetrahedron = ((k-3)*(k-2)*(k-1)/6 > 0) ? (k-3)*(k-2)*(k-1)/6  : 0;
-  const static int dofsPerPrism       = (k-1)*(k-1)*(k-2)/2;
-  const static int dofsPerHexahedron  = (k-1)*(k-1)*(k-1);
-  const static int dofsPerPyramid     = ((k-2)*(k-1)*(2*k-3))/6;
-
+  const static int dofsPerVertex =
+      k == 0 ? (dim == 0 ? 1 : 0) : 1;
+  const static int dofsPerEdge =
+      k == 0 ? (dim == 1 ? 1 : 0) : k-1;
+  const static int dofsPerTriangle =
+      k == 0 ? (dim == 2 ? 1 : 0) : (k-1)*(k-2)/2;
+  const static int dofsPerQuad =
+      k == 0 ? (dim == 2 ? 1 : 0) : (k-1)*(k-1);
+  const static int dofsPerTetrahedron =
+      k == 0 ? (dim == 3 ? 1 : 0) : (k-3)*(k-2)*(k-1)/6;
+  const static int dofsPerPrism =
+      k == 0 ? (dim == 3 ? 1 : 0) : (k-1)*(k-1)*(k-2)/2;
+  const static int dofsPerHexahedron =
+      k == 0 ? (dim == 3 ? 1 : 0) : (k-1)*(k-1)*(k-1);
+  const static int dofsPerPyramid =
+      k == 0 ? (dim == 3 ? 1 : 0) : (k-2)*(k-1)*(2*k-3)/6;
 
   template<class TP>
   using Node = PQkNode<GV, k, size_type, TP>;
@@ -85,7 +93,7 @@ public:
   void initializeIndices()
   {
     vertexOffset_        = 0;
-    edgeOffset_          = vertexOffset_          + gridView_.size(dim);
+    edgeOffset_          = vertexOffset_          + dofsPerVertex * gridView_.size(dim);
     triangleOffset_      = edgeOffset_            + dofsPerEdge * gridView_.size(dim-1);
 
     GeometryType triangle;
@@ -135,14 +143,18 @@ public:
     switch (dim)
     {
       case 1:
-        return gridView_.size(1) + dofsPerEdge*gridView_.size(0);
+        return dofsPerVertex * gridView_.size(dim)
+          + dofsPerEdge*gridView_.size(dim-1);
       case 2:
       {
         GeometryType triangle, quad;
         triangle.makeTriangle();
         quad.makeQuadrilateral();
-        return gridView_.size(dim) + dofsPerEdge*gridView_.size(1)
-             + dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad);
+
+        return dofsPerVertex * gridView_.size(dim)
+          + dofsPerEdge * gridView_.size(dim-1)
+          + dofsPerTriangle * gridView_.size(triangle)
+          + dofsPerQuad * gridView_.size(quad);
       }
       case 3:
       {
@@ -153,10 +165,14 @@ public:
         pyramid.makePyramid();
         prism.makePrism();
         hexahedron.makeCube(3);
-        return gridView_.size(dim) + dofsPerEdge*gridView_.size(2)
-             + dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad)
-             + dofsPerTetrahedron*gridView_.size(tetrahedron) + dofsPerPyramid*gridView_.size(pyramid)
-             + dofsPerPrism*gridView_.size(prism) + dofsPerHexahedron*gridView_.size(hexahedron);
+        return dofsPerVertex * gridView_.size(dim)
+          + dofsPerEdge * gridView_.size(dim-1)
+          + dofsPerTriangle * gridView_.size(triangle)
+          + dofsPerQuad * gridView_.size(quad)
+          + dofsPerTetrahedron * gridView_.size(tetrahedron)
+          + dofsPerPyramid * gridView_.size(pyramid)
+          + dofsPerPrism * gridView_.size(prism)
+          + dofsPerHexahedron * gridView_.size(hexahedron);
       }
     }
     DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
@@ -311,8 +327,10 @@ public:
 
     if (dofDim==1)
     {  // edge dof
-      if (dim==1)   // element dof -- any local numbering is fine
-        return { nodeFactory_->edgeOffset_ + (k-1)*gridIndexSet.subIndex(element,0,0) + localKey.index() };
+      if (dim==1)  // element dof -- any local numbering is fine
+        return { nodeFactory_->edgeOffset_
+            + nodeFactory_->dofsPerEdge * gridIndexSet.subIndex(element,0,0)
+            + localKey.index() };
       else
       {
         const Dune::ReferenceElement<double,dim>& refElement
@@ -324,8 +342,12 @@ public:
         size_t v1 = gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
         bool flip = (v0 > v1);
         return { (flip)
-          ? nodeFactory_->edgeOffset_ + (k-1)*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) + (k-2)-localKey.index()
-              : nodeFactory_->edgeOffset_ + (k-1)*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) + localKey.index() };
+              ? nodeFactory_->edgeOffset_
+                + nodeFactory_->dofsPerEdge*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())
+                + (nodeFactory_->dofsPerEdge-1)-localKey.index()
+              : nodeFactory_->edgeOffset_
+                + nodeFactory_->dofsPerEdge*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())
+                + localKey.index() };
       }
     }
 
