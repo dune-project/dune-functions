@@ -21,16 +21,9 @@ class Polynomial
 {
 public:
 
-  Polynomial()
-  {}
-
-  Polynomial(const Polynomial& other) :
-    coefficients_(other.coefficients_)
-  {}
-
-  Polynomial(Polynomial&& other) :
-    coefficients_(std::move(other.coefficients_))
-  {}
+  Polynomial() = default;
+  Polynomial(const Polynomial& other) = default;
+  Polynomial(Polynomial&& other) = default;
 
   Polynomial(std::initializer_list<double> coefficients) :
     coefficients_(coefficients)
@@ -54,11 +47,10 @@ public:
 
   friend Polynomial derivative(const Polynomial& p)
   {
-    auto derivative = Polynomial();
-    derivative.coefficients_.resize(p.coefficients_.size()-1);
+    std::vector<K> dpCoefficients(p.coefficients().size()-1);
     for (size_t i=1; i<p.coefficients_.size(); ++i)
-      derivative.coefficients_[i-1] = p.coefficients_[i]*i;
-    return derivative;
+      dpCoefficients[i-1] = p.coefficients()[i]*i;
+    return Polynomial(std::move(dpCoefficients));
   }
 
   const std::vector<K>& coefficients() const
