@@ -18,6 +18,7 @@ install(FILES
         signature.hh
         staticforloop.hh
         treedata.hh
+        tuplevector.hh
         type_traits.hh
         typeerasure.hh
         utility.hh
