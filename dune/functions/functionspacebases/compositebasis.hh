@@ -117,18 +117,11 @@ public:
   }
 
 
-  struct Lambda_initializeIndices
-  {
-    template<class I, class SFT>
-    void operator()(const I& i, SFT& subFactories)
-    {
-      std::get<I::value>(subFactories).initializeIndices();
-    }
-  };
-
   void initializeIndices()
   {
-    staticForLoop<0, sizeof...(SF)>(Lambda_initializeIndices(), subFactories_);
+    staticForLoop<0, sizeof...(SF)>([&](const auto& i) {
+      std::get<i.value>(subFactories_).initializeIndices();
+    });
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -138,20 +131,13 @@ public:
     return std::get<0>(subFactories_).gridView();
   }
 
-  struct Lambda_node
-  {
-    template<class I, class Node, class SFT, class TP>
-    void operator()(const I& i, Node& node, const SFT& subFactories, const TP& tp)
-    {
-      node.template setChild<I::value>(std::get<I::value>(subFactories).node(TypeTree::push_back(tp, i)));
-    }
-  };
-
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
     auto node = Node<TP>(tp);
-    staticForLoop<0, sizeof...(SF)>(Lambda_node(), node, subFactories_, tp);
+    staticForLoop<0, sizeof...(SF)>([&](const auto& i){
+      node.setChild(std::get<i.value>(subFactories_).node(TypeTree::push_back(tp, i)), i);
+    });
     return node;
   }
 
@@ -173,36 +159,19 @@ public:
     return size(prefix, IndexTag());
   }
 
-  struct Lambda_size_blocked
-  {
-    template<class I, class SFT>
-    size_type operator()(const I&, const SFT& subFactories, const SizePrefix& prefix)
-    {
-      using SubFactory = typename std::tuple_element<I::value, SFT>::type;
-      const SubFactory& subFactory = std::get<I::value>(subFactories);
-
-      typename SubFactory::SizePrefix subPrefix;
-      for(std::size_t i=1; i<prefix.size(); ++i)
-        subPrefix.push_back(prefix[i]);
-      return subFactory.size(subPrefix);
-    }
-  };
-
   size_type size(const SizePrefix& prefix, BasisTags::BlockedIndex) const
   {
     if (prefix.size() == 0)
       return children;
-    return forwardAsStaticIndex<children>(prefix[0], Lambda_size_blocked(), subFactories_, prefix);
-  }
 
-  struct Lambda_size_flat_rootSize
-  {
-    template<class I, class SFT>
-    void operator()(const I&, const SFT& subFactories, size_type& rootSizeSum)
-    {
-      rootSizeSum += std::get<I::value>(subFactories).size();
-    }
-  };
+    return forwardAsStaticIndex<children>(prefix[0], [&] (auto i) {
+      const auto& subFactory = std::get<i.value>(subFactories_);
+      typename std::decay<decltype(subFactory)>::type::SizePrefix subPrefix;
+      for(std::size_t i=1; i<prefix.size(); ++i)
+        subPrefix.push_back(prefix[i]);
+      return subFactory.size(subPrefix);
+    });
+  }
 
   struct Lambda_size_flat_sizeInSubtree
   {
@@ -229,7 +198,9 @@ public:
   {
     size_type r = 0;
     if (prefix.size() == 0)
-      staticForLoop<0, sizeof...(SF)>(Lambda_size_flat_rootSize(), subFactories_, r);
+      staticForLoop<0, sizeof...(SF)>([&](auto i) {
+        r += std::get<i.value>(subFactories_).size();
+      });
     else
     {
       size_type shiftedFirst = prefix[0];
