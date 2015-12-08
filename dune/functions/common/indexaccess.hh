@@ -16,16 +16,6 @@ namespace Functions {
 
 namespace Imp {
 
-struct Lambda_hybridIndexAccess
-{
-  template<class I, class C, class F>
-  auto operator()(const I& i, C&& c, F&& f)
-    -> decltype(f(c[i]))
-  {
-    return f(c[i]);
-  }
-};
-
 namespace Concept {
 template<class size_type>
 struct HasDynamicIndexAccess
@@ -81,10 +71,11 @@ auto hybridIndexAccess(C&& c, const I& i, F&& f)
  */
 template<class C, class I, class F,
   typename std::enable_if< not Dune::models<Imp::Concept::HasDynamicIndexAccess<I>, C>(), int>::type = 0>
-auto hybridIndexAccess(C&& c, const I& i, F&& f)
-  -> decltype(forwardAsStaticIndex<StaticSize<C>::value>(i, Imp::Lambda_hybridIndexAccess(), std::forward<C>(c), std::forward<F>(f)))
+decltype(auto) hybridIndexAccess(C&& c, const I& i, F&& f)
 {
-  return forwardAsStaticIndex<StaticSize<C>::value>(i, Imp::Lambda_hybridIndexAccess(), std::forward<C>(c), std::forward<F>(f));
+  return forwardAsStaticIndex<StaticSize<C>::value>(i, [&](const auto& ii) -> decltype(auto){
+        return f(c[ii]);
+      });
 }
 
 
