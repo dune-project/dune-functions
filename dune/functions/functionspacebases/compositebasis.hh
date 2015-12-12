@@ -263,7 +263,7 @@ public:
 
   struct Lambda_FactoryToSubIndexSet
   {
-    // transform a single (factory,subTreePath) pait to subIndexSet
+    // transform a single (factory,subTreePath) pair to subIndexSet
     template<class Factory, class SubTP>
     auto operator()(const Factory& factory, const SubTP& subTP)
       ->decltype(factory.template indexSet<SubTP>())
