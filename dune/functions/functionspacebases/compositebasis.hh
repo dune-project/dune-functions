@@ -209,36 +209,24 @@ public:
     return r;
   }
 
-  struct Lambda_dimension
-  {
-    template<class I, class SFT>
-    void operator()(const I& i, const SFT& subFactories, size_type& sum)
-    {
-      sum += std::get<I::value>(subFactories).dimension();
-    }
-  };
-
   /** \todo This method has been added to the interface without prior discussion. */
   size_type dimension() const
   {
     size_type r=0;
-    staticForLoop<0, sizeof...(SF)>(Lambda_dimension(), subFactories_, r);
+    // Accumulate dimension() for all subfactories
+    staticForLoop<0, sizeof...(SF)>([&](auto i) {
+      r += std::get<i.value>(subFactories_).dimension();
+    });
     return r;
   }
-
-  struct Lambda_maxNodeSize
-  {
-    template<class I, class SFT>
-    void operator()(const I& i, const SFT& subFactories, size_type& sum)
-    {
-      sum += std::get<i>(subFactories).maxNodeSize();
-    }
-  };
 
   size_type maxNodeSize() const
   {
     size_type r=0;
-    staticForLoop<0, sizeof...(SF)>(Lambda_maxNodeSize(), subFactories_, r);
+    // Accumulate maxNodeSize() for all subfactories
+    staticForLoop<0, sizeof...(SF)>([&](auto i) {
+      r += std::get<i.value>(subFactories_).maxNodeSize();
+    });
     return r;
   }
 
@@ -289,35 +277,21 @@ public:
     subNodeIndexSetTuple_(transformTuple(Lambda_FactoryToSubIndexSet(), nodeFactory_->subFactories_, SubTreePaths()))
   {}
 
-  struct Lambda_bind
-  {
-    template<class I, class SNIT>
-    void operator()(const I& i, SNIT& subNodeIndexSetTuple, const Node& node)
-    {
-      std::get<I::value>(subNodeIndexSetTuple).bind(node.template child<I::value>());
-    }
-  };
-
   void bind(const Node& node)
   {
     using namespace TypeTree::Indices;
     node_ = &node;
-    staticForLoop<0, sizeof...(SF)>(Lambda_bind(), subNodeIndexSetTuple_, node);
+    staticForLoop<0, sizeof...(SF)>([&](auto i){
+      std::get<i.value>(subNodeIndexSetTuple_).bind(node.template child<i.value>());
+    });
   }
-
-  struct Lambda_unbind
-  {
-    template<class I, class SNIT>
-    void operator()(const I& i, SNIT& subNodeIndexSetTuple)
-    {
-      std::get<I::value>(subNodeIndexSetTuple).unbind();
-    }
-  };
 
   void unbind()
   {
     node_ = nullptr;
-    staticForLoop<0, sizeof...(SF)>(Lambda_unbind(), subNodeIndexSetTuple_);
+    staticForLoop<0, sizeof...(SF)>([&](auto i){
+      std::get<i.value>(subNodeIndexSetTuple_).unbind();
+    });
   }
 
   size_type size() const
