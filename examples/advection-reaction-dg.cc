@@ -20,6 +20,7 @@
 #include <dune/istl/preconditioners.hh>
 #include <dune/istl/solvers.hh>
 
+#include <dune/functions/common/vtkadapter.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
@@ -488,7 +489,7 @@ int main (int argc, char *argv[]) try
   //  We need to subsample, because VTK cannot natively display real second-order functions
   //////////////////////////////////////////////////////////////////////////////////////////////
   SubsamplingVTKWriter<GridView> vtkWriter(gridView,2);
-  vtkWriter.addVertexData(xFunction, VTK::FieldInfo("x", VTK::FieldInfo::Type::scalar, 1));
+  vtkWriter.addVertexData(vtkFunction(xFunction), VTK::FieldInfo("x", VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.write("advection-reaction-dg");
 
 }
