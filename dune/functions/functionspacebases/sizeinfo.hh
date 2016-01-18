@@ -3,12 +3,38 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_SIZEINFO_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_SIZEINFO_HH
 
+#include <dune/common/reservedvector.hh>
 #include <array>
 
 namespace Dune {
 namespace Functions {
 
+/**
+ * \brief Traits class encapsulating size information of the prefix
+ */
+template<typename P>
+struct PrefixSizeTraits
+{
+    using size_type = typename P::size_type;
 
+    //! Returns the maximum length of the prefix.
+    static constexpr size_type max_size()
+    {
+      return P::max_size();
+    }
+};
+
+template<class T, int n>
+struct PrefixSizeTraits<Dune::ReservedVector<T,n>>
+{
+    using size_type = typename Dune::ReservedVector<T,n>::size_type;
+
+    //! Returns the maximum length of the prefix.
+    static constexpr size_type max_size()
+    {
+      return n;
+    }
+};
 
 /**
  * \brief A class encapsulating size information

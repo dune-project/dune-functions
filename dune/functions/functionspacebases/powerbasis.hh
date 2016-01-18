@@ -12,7 +12,7 @@
 #include <dune/functions/common/utility.hh>
 #include <dune/functions/common/staticforloop.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
-
+#include <dune/functions/functionspacebases/sizeinfo.hh>
 
 
 namespace Dune {
@@ -78,7 +78,7 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using SizePrefix = Dune::ReservedVector<size_type, SubFactory::SizePrefix::max_size()+1>;
+  using SizePrefix = Dune::ReservedVector<size_type, PrefixSizeTraits<typename SubFactory::SizePrefix>::max_size()+1>;
 
 private:
 

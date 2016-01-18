@@ -14,7 +14,7 @@
 #include <dune/functions/common/utility.hh>
 #include <dune/functions/common/staticforloop.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
-
+#include <dune/functions/functionspacebases/sizeinfo.hh>
 
 
 namespace Dune {
@@ -104,7 +104,7 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using SizePrefix = Dune::ReservedVector<size_type, MultiIndex::max_size()+1>;
+  using SizePrefix = Dune::ReservedVector<size_type, PrefixSizeTraits<MultiIndex>::max_size()+1>;
 
   /** \brief Constructor for a given grid view object */
 
