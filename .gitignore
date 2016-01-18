@@ -35,3 +35,8 @@ dune.css
 build-cmake/
 *~
 compile
+CMakeFiles
+CMakeCache.txt
+language_tests/
+DartConfiguration.tcl
+FC.h
