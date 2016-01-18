@@ -8,6 +8,10 @@
 #include <dune/common/typeutilities.hh>
 
 namespace Dune {
+
+// forward declaration
+template< class K, int SIZE > class FieldVector;
+
 namespace Functions {
 
 
@@ -49,6 +53,14 @@ namespace Imp {
   template<class T>
   constexpr auto staticSize(const T*, const PriorityTag<2>&)
     -> decltype(std::integral_constant<std::size_t,std::tuple_size<T>::value>())
+  {
+    return {};
+  }
+
+  // Specialization for FieldVector
+  template<class T, int N>
+  constexpr auto staticSize(const FieldVector<T,N>*, const PriorityTag<10>&)
+    -> decltype(std::integral_constant<std::size_t,N>())
   {
     return {};
   }
