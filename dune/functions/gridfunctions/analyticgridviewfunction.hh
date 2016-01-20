@@ -167,8 +167,8 @@ private:
 /**
  * \brief Construct AnalyticGridViewFunction from function and grid view
  *
- * The returned function supports localFunction() and
- * stores a copy of the original function. In contrast
+ * The returned function supports localFunction() and stores a copy of the
+ * original function.
  *
  * \param f A function object supporting argument compatible with global coordinates
  * \param gridView The GridView the function should act on.
