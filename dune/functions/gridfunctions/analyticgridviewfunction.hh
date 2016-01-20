@@ -169,10 +169,6 @@ private:
  *
  * The returned function supports localFunction() and
  * stores a copy of the original function. In contrast
- * it will only store a pointer to the GridView and can
- * only be used as long as this exists. Hence you must
- * take care to store the GridView yourself.
- * \todo: Should be store a copy of the GridView?
  *
  * \param f A function object supporting argument compatible with global coordinates
  * \param gridView The GridView the function should act on.

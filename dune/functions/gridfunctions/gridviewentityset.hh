@@ -46,12 +46,6 @@ public:
   /**
    * \brief Construct GridViewEntitySet for a GridView
    *
-   * Be carefull: This is only a thin wrapper that does not
-   * store a copy but only a pointer to the gridview.
-   * Hence you have to take care to always store it outside
-   * by yourself.
-   *
-   * \todo Should we store copies instead?
    */
   GridViewEntitySet(const GridView& gv) :
     gv_(gv)
