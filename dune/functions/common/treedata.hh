@@ -7,6 +7,9 @@
 
 #include <dune/common/shared_ptr.hh>
 
+#include <dune/typetree/visitor.hh>
+#include <dune/typetree/traversal.hh>
+
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 

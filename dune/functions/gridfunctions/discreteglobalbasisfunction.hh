@@ -10,6 +10,8 @@
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/common/treedata.hh>
+#include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
+#include <dune/functions/functionspacebases/flatvectorbackend.hh>
 
 namespace Dune {
 namespace Functions {
