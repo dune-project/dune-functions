@@ -119,7 +119,7 @@ public:
 
   void initializeIndices()
   {
-    staticForLoop<0, sizeof...(SF)>([&](const auto& i) {
+    staticForLoop<0, sizeof...(SF)>([&](auto i) {
       std::get<i.value>(subFactories_).initializeIndices();
     });
   }
@@ -135,7 +135,7 @@ public:
   Node<TP> node(const TP& tp) const
   {
     auto node = Node<TP>(tp);
-    staticForLoop<0, sizeof...(SF)>([&](const auto& i){
+    staticForLoop<0, sizeof...(SF)>([&](auto i){
       node.setChild(std::get<i.value>(subFactories_).node(TypeTree::push_back(tp, i)), i);
     });
     return node;
