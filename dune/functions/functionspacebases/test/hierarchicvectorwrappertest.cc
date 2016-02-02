@@ -234,6 +234,9 @@ int main (int argc, char *argv[]) try
     test.subTest(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>("TV<V<A<FV<double,1>,5>>, V<double>>"));
   }
 
+  // The following tests requires the new MultiTypeBlockVector based
+  // on std::tuple from DUNE 3.0.
+#if 0
   {
     static const std::size_t dim = 5;
     using VelocityVector = Dune::BlockVector<Dune::FieldVector<double,dim>>;
@@ -253,6 +256,7 @@ int main (int argc, char *argv[]) try
     using MultiIndex = ReservedVector<std::size_t, 3>;
     test.subTest(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>("MTBV<V<MTBV<FV<double,1>, double, FV<double,1>>>, BV<FV<double,1>>"));
   }
+#endif
 
 
   return test.exit();
