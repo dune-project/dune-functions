@@ -12,6 +12,7 @@
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+#include <dune/functions/functionspacebases/flatmultiindex.hh>
 
 
 namespace Dune {
@@ -237,10 +238,10 @@ protected:
 /** \brief Nodal basis of a scalar first-order Lagrangian finite element space
  *
  * \tparam GV The GridView that the space is defined on
- * \tparam ST The type used for local indices; global indices are std::array<ST,1>
+ * \tparam ST The type used for local indices; global indices are FlatMultiIndex<ST>
  */
 template<typename GV, class ST = std::size_t>
-using PQ1NodalBasis = DefaultGlobalBasis<PQ1NodeFactory<GV, std::array<ST, 1>, ST> >;
+using PQ1NodalBasis = DefaultGlobalBasis<PQ1NodeFactory<GV, FlatMultiIndex<ST>, ST> >;
 
 } // end namespace Functions
 } // end namespace Dune
