@@ -46,48 +46,42 @@ public:
   /**
    * \brief Construct GridViewEntitySet for a GridView
    *
-   * Be carefull: This is only a thin wrapper that does not
-   * store a copy but only a pointer to the gridview.
-   * Hence you have to take care to always store it outside
-   * by yourself.
-   *
-   * \todo Should we store copies instead?
    */
   GridViewEntitySet(const GridView& gv) :
-    gv_(&gv)
+    gv_(gv)
   {}
 
   //! Returns true if e is contained in the EntitySet
   bool contains(const Element& e) const
   {
-    return gv_->contains(e);
+    return gv_.contains(e);
   }
 
   //! Number of Elements visited by an iterator
   size_t size() const
   {
-    return gv_->size(codim);
+    return gv_.size(codim);
   }
 
   //! Create a begin iterator
   const_iterator begin() const
   {
-    return gv_->template begin<codim>();
+    return gv_.template begin<codim>();
   }
 
   //! Create a end iterator
   const_iterator end() const
   {
-    return gv_->template end<codim>();
+    return gv_.template end<codim>();
   }
 
   const GridView& gridView() const
   {
-    return *gv_;
+    return gv_;
   }
 
 private:
-  const GridView* gv_;
+  GridView gv_;
 };
 
 
