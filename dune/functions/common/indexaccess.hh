@@ -111,7 +111,7 @@ struct Lambda_hybridMultiIndexAccess
 
 
 /**
- * \brief Provide multi-index acces by chaining operator[]
+ * \brief Provide multi-index access by chaining operator[]
  *
  * \ingroup Utility
  *

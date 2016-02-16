@@ -18,7 +18,7 @@ namespace Functions {
  *
  * Helper typedef to remove constructor with forwarding reference from
  * overload set for type is not constructible from argument list.
- * This is usefull to avoid failng forwarding constructors
+ * This is useful to avoid failng forwarding constructors
  * for base classes or members.
  */
 template<class T, class... Args>
