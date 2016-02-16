@@ -269,6 +269,10 @@ void testOnStructuredGrid()
   if (dim<3) // Currently not implemented for dim >= 3
     testScalarBasis(pq4Basis, true);
 
+  // Test PQkNodalBasis for the corner case k == 0
+  PQkNodalBasis<GridView, 0> pq0Basis(gridView);
+  testScalarBasis(pq0Basis, true);
+
   // Test LagrangeDGBasis for k==1
   LagrangeDGBasis<GridView, 1> lagrangeDG1Basis(gridView);
   testScalarBasis(lagrangeDG1Basis, true);
