@@ -14,6 +14,7 @@
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 
+#include <dune/functions/pdelab-copy/raviartthomasfem.hh>
 
 namespace Dune {
 namespace Functions {
@@ -88,7 +89,7 @@ public:
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
-    return Node<TP>{tp};
+    return Node<TP>{tp, gridView_};
   }
 
   template<class TP>
@@ -142,12 +143,14 @@ public:
   using size_type = ST;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElement = RaviartThomasCubeLocalFiniteElement<typename GV::ctype, double, dim, k>; // general RTk implementation on cube grids
+  using FiniteElementMap = typename PDELab::detail::RaviartThomasLocalFiniteElementMapBaseSelector<GV, dim, Dune::GeometryType::cube, typename GV::ctype, double, k>::type;
+  using FiniteElement =typename FiniteElementMap::Traits::FiniteElement;
 
-  RaviartThomasCubeNode(const TreePath& treePath) :
+  RaviartThomasCubeNode(const TreePath& treePath, const GV& gv) :
     Base(treePath),
     finiteElement_(nullptr),
-    element_(nullptr)
+    element_(nullptr),
+    finiteElementMap_(gv)
   { }
 
   //! Return current element, throw if unbound
@@ -169,17 +172,15 @@ public:
   void bind(const Element& e)
   {
     element_ = &e;
-    finiteElement_ = new FiniteElement(5); // get local finite element
+    finiteElement_ = &(finiteElementMap_.find(*element_));
     this->setSize(finiteElement_->size());
-
-    // TODO: The use of the constructor is hardcoded. This does not always have to work!
-    // TODO: See PDELAB::finiteelementmap.hh -> RTLocalFiniteElementMap, uses gridView.
   }
 
 protected:
 
   const FiniteElement* finiteElement_;
   const Element* element_;
+  FiniteElementMap finiteElementMap_;
 };
 
 
