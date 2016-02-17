@@ -110,6 +110,7 @@ public:
   {
     using FiniteElement = typename Node::FiniteElement;
     using FiniteElementRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+    using FiniteElementRangeType = typename FiniteElement::Traits::LocalBasisType::Traits::RangeFieldType;
     using FunctionBaseClass = typename Dune::LocalFiniteElementFunctionBase<FiniteElement>::type;
 
     // Note that we capture j by reference. Hence we can switch
@@ -126,7 +127,7 @@ public:
 
     using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<FiniteElementRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
 
-    auto interpolationValues = std::vector<FiniteElementRange>();
+    auto interpolationValues = std::vector<FiniteElementRangeType>();
 
     auto&& fe = node.finiteElement();
 
