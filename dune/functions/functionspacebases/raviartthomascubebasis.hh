@@ -46,6 +46,7 @@ template<typename GV, int k, class MI, class ST>
 class RaviartThomasCubeNodeFactory
 {
   static const int dim = GV::dimension;
+  using FiniteElementMap = typename PDELab::detail::RaviartThomasLocalFiniteElementMapBaseSelector<GV, dim, Dune::GeometryType::cube, typename GV::ctype, double, k>::type;
 
 public:
 
@@ -69,7 +70,8 @@ public:
 
   /** \brief Constructor for a given grid view object */
   RaviartThomasCubeNodeFactory(const GridView& gv) :
-    gridView_(gv)
+    gridView_(gv),
+    finiteElementMap_(gv)
   { }
 
   void initializeIndices()
@@ -89,7 +91,7 @@ public:
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
-    return Node<TP>{tp, gridView_};
+    return Node<TP>{tp, &finiteElementMap_};
   }
 
   template<class TP>
@@ -124,6 +126,7 @@ public:
 //protected:
   const GridView gridView_;
   std::vector<size_t> CodimOffset_;
+  FiniteElementMap finiteElementMap_;
 
 };
 
@@ -146,11 +149,11 @@ public:
   using FiniteElementMap = typename PDELab::detail::RaviartThomasLocalFiniteElementMapBaseSelector<GV, dim, Dune::GeometryType::cube, typename GV::ctype, double, k>::type;
   using FiniteElement =typename FiniteElementMap::Traits::FiniteElement;
 
-  RaviartThomasCubeNode(const TreePath& treePath, const GV& gv) :
+  RaviartThomasCubeNode(const TreePath& treePath, const FiniteElementMap* finiteElementMap) :
     Base(treePath),
     finiteElement_(nullptr),
     element_(nullptr),
-    finiteElementMap_(gv)
+    finiteElementMap_(finiteElementMap)
   { }
 
   //! Return current element, throw if unbound
@@ -172,7 +175,7 @@ public:
   void bind(const Element& e)
   {
     element_ = &e;
-    finiteElement_ = &(finiteElementMap_.find(*element_));
+    finiteElement_ = &(finiteElementMap_->find(*element_));
     this->setSize(finiteElement_->size());
   }
 
@@ -180,7 +183,7 @@ protected:
 
   const FiniteElement* finiteElement_;
   const Element* element_;
-  FiniteElementMap finiteElementMap_;
+  const FiniteElementMap* finiteElementMap_;
 };
 
 
