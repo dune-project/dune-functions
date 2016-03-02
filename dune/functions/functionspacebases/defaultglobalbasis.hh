@@ -52,7 +52,7 @@ public:
   DefaultGlobalBasis(T&&... t) :
     nodeFactory_(std::forward<T>(t)...)
   {
-    static_assert(models<Concept::NodeFactory<GridView>, NodeFactory>(), "Type passed to DefaultGlobalBasis does not model the  NodeFactory concept.");
+    static_assert(models<Concept::NodeFactory<GridView>, NodeFactory>(), "Type passed to DefaultGlobalBasis does not model the NodeFactory concept.");
     nodeFactory_.initializeIndices();
   }
 

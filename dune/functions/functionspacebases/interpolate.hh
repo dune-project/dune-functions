@@ -269,7 +269,7 @@ void interpolateTree(const B& basis, const TP& treePath, C&& coeff, const F& f)
  * \param treePath Tree path specifying the part of the ansatz tree to use
  * \param coeff Coefficient vector to represent the interpolation
  * \param f Function to interpolate
- * \param bitVector A vector with flags marking ald DOFs that should be interpolated
+ * \param bitVector A vector with flags marking all DOFs that should be interpolated
  */
 template <class B, class TP, class C, class F, class BV>
 void interpolate(const B& basis, const TP& treePath, C&& coeff, const F& f, const BV& bitVector)
