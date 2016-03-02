@@ -278,6 +278,28 @@ void interpolate(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>&
 }
 
 
+/**
+ * \brief Interpolate given function in discrete function space
+ *
+ * Interpolation is done wrt the leaf node of the ansatz tree
+ * corresponding to the given tree path.  Only vector coefficients marked as 'true' in the
+ * bitVector argument are interpolated.  Use this, e.g., to interpolate Dirichlet boundary values.
+ *
+ * Notice that this will only work if the range type of f and
+ * the block type of coeff are compatible and supported by
+ * FlatVectorBackend.
+ *
+ * \param basis Global function space basis of discrete function space
+ * \param coeff Coefficient vector to represent the interpolation
+ * \param f Function to interpolate
+ * \param bitVector A vector with flags marking all DOFs that should be interpolated
+ */
+template <class B, class C, class F, class BV>
+void interpolate(const B& basis, C&& coeff, const F& f, const BV& bitVector)
+{
+  auto root = Dune::TypeTree::hybridTreePath();
+  interpolateTreeSubset(basis, root, coeff, f, makeDefaultNodeToRangeMap(basis, root), bitVector);
+}
 
 
 
