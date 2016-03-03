@@ -43,7 +43,7 @@ int main (int argc, char *argv[]) try
     gridView,
     composite(
       pq<1>(),
-//      pq<1>(),
+      pq<1>(),
       pq<1>()
     ));
 
