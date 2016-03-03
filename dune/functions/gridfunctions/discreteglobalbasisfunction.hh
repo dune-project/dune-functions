@@ -146,8 +146,7 @@ public:
           // in the class documentation of DiscreteGlobalBasisFunction.
           auto dimC = FlatVectorBackend<CoefficientBlock>::size(c);
           auto dimV = FlatVectorBackend<LocalBasisRange>::size(v);
-          auto dimRE = FlatVectorBackend<RangeBlock>::size(re);
-          assert(dimC*dimV == dimRE);
+          assert(dimC*dimV == FlatVectorBackend<RangeBlock>::size(re));
           for(size_type j=0; j<dimC; ++j)
           {
             auto&& c_j = FlatVectorBackend<CoefficientBlock>::getEntry(c, j);
