@@ -37,8 +37,6 @@ int main (int argc, char *argv[]) try
   using namespace Functions::BasisTags;
   using namespace Functions::BasisBuilder;
 
-// Uncomment for testing composite basis with three components.
-
   auto basis = makeBasis(
     gridView,
     composite(
@@ -47,8 +45,9 @@ int main (int argc, char *argv[]) try
       pq<1>()
     ));
 
- }
+}
 // Error handling
- catch (Exception e) {
-    std::cout << e << std::endl;
- }
+catch (Exception e)
+{
+  std::cout << e << std::endl;
+}
