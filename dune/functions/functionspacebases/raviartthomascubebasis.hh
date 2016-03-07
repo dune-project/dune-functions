@@ -7,6 +7,14 @@
 #include <dune/common/exceptions.hh>
 
 #include <dune/localfunctions/raviartthomas.hh>
+#include <dune/localfunctions/raviartthomas/raviartthomas0cube2d.hh>
+#include <dune/localfunctions/raviartthomas/raviartthomas0cube3d.hh>
+#include <dune/localfunctions/raviartthomas/raviartthomas02d.hh>
+#include <dune/localfunctions/raviartthomas/raviartthomas1cube2d.hh>
+#include <dune/localfunctions/raviartthomas/raviartthomas1cube3d.hh>
+#include <dune/localfunctions/raviartthomas/raviartthomas12d.hh>
+#include <dune/localfunctions/raviartthomas/raviartthomas2cube2d.hh>
+
 
 #include <dune/typetree/leafnode.hh>
 
@@ -14,11 +22,113 @@
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 
-#include <dune/functions/pdelab-copy/raviartthomasfem.hh>
-
 namespace Dune {
 namespace Functions {
 
+namespace Impl {
+
+  template<int dim, GeometryType::BasicType basic_type, typename D, typename R, std::size_t k>
+  struct RaviartThomasLocalInfo
+  {
+    static_assert((AlwaysFalse<D>::value),"The requested type of Raviart-Thomas element is not implemented, sorry!");
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasLocalInfo<2,GeometryType::simplex,D,R,0>
+  {
+    using FiniteElement = RT02DLocalFiniteElement<D,R>;
+    static const std::size_t Variants = 8;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasLocalInfo<2,GeometryType::simplex,D,R,1>
+  {
+    using FiniteElement = RT12DLocalFiniteElement<D,R>;
+    static const std::size_t Variants = 8;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasLocalInfo<2,GeometryType::cube,D,R,0>
+  {
+    using FiniteElement = RT0Cube2DLocalFiniteElement<D,R>;
+    static const std::size_t Variants = 16;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasLocalInfo<2,GeometryType::cube,D,R,1>
+  {
+    using FiniteElement = RT1Cube2DLocalFiniteElement<D,R>;
+    static const std::size_t Variants = 16;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasLocalInfo<2,GeometryType::cube,D,R,2>
+  {
+    using FiniteElement = RT2Cube2DLocalFiniteElement<D,R>;
+    static const std::size_t Variants = 16;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasLocalInfo<3,GeometryType::cube,D,R,0>
+  {
+    using FiniteElement = RT0Cube3DLocalFiniteElement<D,R>;
+    static const std::size_t Variants = 64;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasLocalInfo<3,GeometryType::cube,D,R,1>
+  {
+    using FiniteElement = RT1Cube3DLocalFiniteElement<D,R>;
+    static const std::size_t Variants = 64;
+  };
+
+  template<typename GV, int dim, GeometryType::BasicType basic_type, typename D, typename R, std::size_t k>
+  class RaviartThomasLocalFiniteElementMap
+  {
+    static const std::size_t Variants = RaviartThomasLocalInfo<dim, basic_type, D, R, k>::Variants;
+
+  public:
+
+    using FiniteElement = typename RaviartThomasLocalInfo<dim, basic_type, D, R, k>::FiniteElement;
+
+    RaviartThomasLocalFiniteElementMap(const GV& gv)
+      : gv_(gv), is_(&(gv_.indexSet())), orient_(gv.size(0))
+    {
+      // create all variants
+      for (int i = 0; i < Variants; i++)
+        variant_[i] = FiniteElement(i);
+
+      // compute orientation for all elements
+      // loop once over the grid
+      for(const auto& cell : elements(gv))
+      {
+        unsigned int myId = is_->index(cell);
+        orient_[myId] = 0;
+
+        for (const auto& intersection : intersections(gv,cell))
+        {
+          if (intersection.neighbor() && (is_->index(intersection.outside()) > myId))
+            orient_[myId] |= (1 << intersection.indexInInside());
+        }
+      }
+    }
+
+    //! \brief get local basis functions for entity
+    template<class EntityType>
+    const FiniteElement& find(const EntityType& e) const
+    {
+      return variant_[orient_[is_->index(e)]];
+    }
+
+    private:
+      GV gv_;
+      std::array<FiniteElement,Variants> variant_;
+      const typename GV::IndexSet* is_;
+      std::vector<unsigned char> orient_;
+  };
+
+
+} // namespace Impl
 
 
 // *****************************************************************************
@@ -46,7 +156,7 @@ template<typename GV, int k, class MI, class ST>
 class RaviartThomasCubeNodeFactory
 {
   static const int dim = GV::dimension;
-  using FiniteElementMap = typename PDELab::detail::RaviartThomasLocalFiniteElementMapBaseSelector<GV, dim, Dune::GeometryType::cube, typename GV::ctype, double, k>::type;
+  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, Dune::GeometryType::cube, typename GV::ctype, double, k>;
 
 public:
 
@@ -146,8 +256,8 @@ public:
   using size_type = ST;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElementMap = typename PDELab::detail::RaviartThomasLocalFiniteElementMapBaseSelector<GV, dim, Dune::GeometryType::cube, typename GV::ctype, double, k>::type;
-  using FiniteElement =typename FiniteElementMap::Traits::FiniteElement;
+  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, Dune::GeometryType::cube, typename GV::ctype, double, k>;
+  using FiniteElement = typename FiniteElementMap::FiniteElement;
 
   RaviartThomasCubeNode(const TreePath& treePath, const FiniteElementMap* finiteElementMap) :
     Base(treePath),
