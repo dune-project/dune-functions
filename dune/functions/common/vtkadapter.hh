@@ -3,6 +3,8 @@
 #ifndef DUNE_FUNCTIONS_VTK_ADAPTER_HH
 #define DUNE_FUNCTIONS_VTK_ADAPTER_HH
 
+#include <dune/common/version.hh>
+
 namespace Dune {
 namespace Functions {
 
@@ -35,16 +37,24 @@ public:
 };
 
 /**
-   \brief generate an adapter class to pass a localozable function to a VTKWriter
+   \brief generate an adapter class to pass a localizable function to a VTKWriter
 
-   \note this adapter is only needed when using dune-functions with then Dune 2.4 release
+   \note This adapter is only needed when using dune-functions with the Dune 2.4 release.
  */
+#if DUNE_VERSION_NEWER_REV(DUNE_GRID,2,4,1)
+template<typename F>
+auto vtkFunction(F && f) -> decltype(std::forward<F>(f))
+{
+  return std::forward<F>(f);
+}
+#else
 template<typename F>
 auto vtkFunction(F && f) -> VTKLocalFunction<decltype(localFunction(std::forward<F>(f)))>
 {
   using LF = decltype(localFunction(std::forward<F>(f)));
   return VTKLocalFunction<LF>(localFunction(std::forward<F>(f)));
 }
+#endif
 
 }
 }
