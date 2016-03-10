@@ -277,6 +277,21 @@ void interpolate(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>&
   interpolateTreeSubset(basis, treePath, coeff, f, makeDefaultNodeToRangeMap(basis, treePath), bitVector);
 }
 
+namespace Imp {
+
+  template<class T>
+  std::true_type isHybridTreePath(const TypeTree::HybridTreePath<T>&)
+  { return {}; }
+
+  template<class T>
+  std::false_type isHybridTreePath(const T&)
+  { return {}; }
+
+  template<class T>
+  auto isHybridTreePath() -> decltype(isHybridTreePath(std::declval<std::decay_t<T>>()))
+  { return {}; }
+
+}
 
 /**
  * \brief Interpolate given function in discrete function space
@@ -294,7 +309,8 @@ void interpolate(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>&
  * \param f Function to interpolate
  * \param bitVector A vector with flags marking all DOFs that should be interpolated
  */
-template <class B, class C, class F, class BV>
+template <class B, class C, class F, class BV,
+         std::enable_if_t<not Imp::isHybridTreePath<C>(), int> = 0>
 void interpolate(const B& basis, C&& coeff, const F& f, const BV& bitVector)
 {
   auto root = Dune::TypeTree::hybridTreePath();
