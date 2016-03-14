@@ -22,5 +22,4 @@ install(FILES
         type_traits.hh
         typeerasure.hh
         utility.hh
-        vtkadapter.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/common)
