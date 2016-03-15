@@ -5,7 +5,7 @@
 
 #include <tuple>
 
-#include <dune/typetree/utility.hh>
+#include <dune/common/indices.hh>
 
 namespace Dune
 {
@@ -34,7 +34,7 @@ namespace Functions
 
     /** \brief Const access to the tuple elements */
     template<std::size_t i>
-    auto operator[](const Dune::TypeTree::index_constant<i>&) const
+    auto operator[](const Dune::index_constant<i>&) const
       ->decltype(std::get<i>(*this))
     {
       return std::get<i>(*this);
@@ -42,7 +42,7 @@ namespace Functions
 
     /** \brief Non-const access to the tuple elements */
     template<std::size_t i>
-    auto operator[](const Dune::TypeTree::index_constant<i>&)
+    auto operator[](const Dune::index_constant<i>&)
       ->decltype(std::get<i>(*this))
     {
       return std::get<i>(*this);
