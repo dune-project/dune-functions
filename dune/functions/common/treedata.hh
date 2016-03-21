@@ -96,7 +96,7 @@ protected:
 
   // Since we can generate the node data type only if
   // we know the type of the node, we have to do
-  // intialization, copy, and destruction via a
+  // initialization, copy, and destruction via a
   // tree traversal. Once we can use C++14 this can
   // be written in a much easier and more selfcontained
   // ways using generic lambda functions.

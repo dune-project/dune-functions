@@ -62,7 +62,7 @@ namespace Imp {
 
 
 /**
- * \brief A wrapper providing multiindex acces to vector entries
+ * \brief A wrapper providing multiindex access to vector entries
  *
  * The coefficient type should be a type such that the coefficients
  * entries for each global basis function can be cast to this type.

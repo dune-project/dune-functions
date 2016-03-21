@@ -69,7 +69,7 @@ public:
     return gv_.template begin<codim>();
   }
 
-  //! Create a end iterator
+  //! Create an end iterator
   const_iterator end() const
   {
     return gv_.template end<codim>();
