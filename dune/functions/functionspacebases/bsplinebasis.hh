@@ -694,7 +694,7 @@ public:
    * \param tp Root tree path
    *
    * By passing a non-trivial root tree path this can be used
-   * to create a node suitable for beeing placed in a tree at
+   * to create a node suitable for being placed in a tree at
    * the position specified by the root tree path.
    */
   template<class TP>
@@ -718,7 +718,7 @@ public:
     return IndexSet<TP>{*this};
   }
 
-  //! Return number possible values for next position in multi index
+  //! Return number of possible values for next position in multi index
   size_type size(const SizePrefix prefix) const
   {
     if (prefix.size() == 0)
