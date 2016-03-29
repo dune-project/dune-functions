@@ -5,6 +5,20 @@ Feel free to put your wishes and questions into this file.
 It would be nice to prefix your statements with your initials
 or one more letter if needed.
 
+* OS: The following started to creep into our code:  everytime a finite element space
+  is passed as an argument to some method, we start to pass two things:  the tree of
+  spaces, and a HybridTreePath.  This becomes cumbersome.  Should there be an abstraction
+  that combines the tree and the path?  Or should we at least require that there should
+  always be a default without the path?
+
+* OS: How do I specialize code for a particular basis?  For example, how can I write an
+  'interpolate' method only for BSPlineBasis objects?
+
+* OS: Carsten has introduced various new names, for example 'pq<k>' to refer to a
+  PQkNodalBasis<k> when constructing a composite basis.  Can we find a sane naming
+  scheme for them?
+
+
 ## Development
 * CaG: Should we discuss the further development using a bug tracker?
   And put everythig below into requests?
