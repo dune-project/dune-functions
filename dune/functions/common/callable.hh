@@ -115,15 +115,18 @@ CallableFunctionWrapper<F> callable(const F& f)
  * The returned object will share ownership of fp
  * using a shared_ptr. You can e.g. do the following:
  * \code
- *   // Create some F derived from DifferentiableFunction<D,R>
- *   // with F::DerivativeRange = DR
- *   F f;
+ *   // Create some F derived from VirtualFunction<D,R>
+ *   auto f = make_shared<F>();
  *
- *   // store callable derivative directly
- *   auto dfc = callable(derivative(f));
+ *   // store callable directly
+ *   auto f1 = callable(f);
  *
- *   // store callable derivative through default wrapper
- *   std::function<R(D)> stdDF = callable(derivative(f))
+ *   // store callable through default wrapper
+ *   std::function<R(D)> f2 = callable(f)
+ *
+ *   // Create some F derived from VirtualFunction<D,R> and only store
+ *   // it in the callable wrapper
+ *   auto f3 = callable(make_shared<F>());
  * \endcode
  */
 template<class F>
