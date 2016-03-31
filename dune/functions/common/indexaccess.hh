@@ -41,7 +41,7 @@ struct HasDynamicIndexAccess
  * for dynamic std::size_t arguments.
  *
  * \param c Container to access
- * \param i The index top use for accessing the container
+ * \param i The index to use for accessing the container
  * \param f A functor to call with the result of operator[]
  */
 template<class C, class I, class F,
@@ -66,7 +66,7 @@ auto hybridIndexAccess(C&& c, const I& i, F&& f)
  * the result directly but passes it to a given functor.
  *
  * \param c Container to access
- * \param i The index top use for accessing the container
+ * \param i The index to use for accessing the container
  * \param f A functor to call with the result of operator[]
  */
 template<class C, class I, class F,

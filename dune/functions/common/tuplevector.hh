@@ -13,7 +13,9 @@ namespace Functions
 {
 
   /**
-   * \brief A std::tuple that allows access to its element via operator[]
+   * \brief A class augmenting std::tuple by element access via operator[]
+   *
+   * \ingroup Utility
    */
   template<class... T>
   class TupleVector : public std::tuple<T...>

@@ -22,6 +22,8 @@ class FunctionFromCallable;
 /**
  * \brief Wrap a callable object as Dune::Function or Dune::VirtualFunction
  *
+ * \ingroup FunctionUtility
+ *
  * You can use this to implement a DifferentiableFunction including
  * a variable number of derivatives using callable objects. All
  * types that can be assigned to std::function are supported,
