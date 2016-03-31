@@ -280,15 +280,15 @@ void interpolate(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>&
 namespace Imp {
 
   template<class T>
-  std::true_type isHybridTreePath(const TypeTree::HybridTreePath<T>&)
+  constexpr std::true_type isHybridTreePath(const TypeTree::HybridTreePath<T>&)
   { return {}; }
 
   template<class T>
-  std::false_type isHybridTreePath(const T&)
+  constexpr std::false_type isHybridTreePath(const T&)
   { return {}; }
 
   template<class T>
-  auto isHybridTreePath() -> decltype(isHybridTreePath(std::declval<std::decay_t<T>>()))
+  constexpr auto isHybridTreePath() -> decltype(isHybridTreePath(std::declval<std::decay_t<T>>()))
   { return {}; }
 
 }
