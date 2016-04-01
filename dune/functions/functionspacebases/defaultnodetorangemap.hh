@@ -65,6 +65,16 @@ struct DefaultNodeToRangeMap
     std::size_t counter_;
   };
 
+  /**
+   * \brief Construct DefaultNodeToRangeMap
+   *
+   * \param tree The tree needed to initialize the map
+   *
+   * This only uses tree.treeIndex() such that the
+   * tree can be in unbound state. Furthermore
+   * no reference or pointer to the tree is stored
+   * and passing a temporary is OK here.
+   */
   DefaultNodeToRangeMap(const Tree& tree)
   {
     TypeTree::applyToTree(tree, Visitor(indices_));
