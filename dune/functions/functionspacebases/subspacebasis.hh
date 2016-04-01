@@ -108,10 +108,17 @@ protected:
 };
 
 
-template<class RootBasis, class PrefixPath>
-SubspaceBasis<RootBasis, PrefixPath> subspaceBasis(const RootBasis& rootBasis, const PrefixPath& prefixPath)
+template<class RootBasis, class... PrefixTreeIndices>
+auto subspaceBasis(const RootBasis& rootBasis, const TypeTree::HybridTreePath<PrefixTreeIndices...>& prefixPath)
 {
-  return {rootBasis, prefixPath};
+  using PrefixPath = TypeTree::HybridTreePath<PrefixTreeIndices...>;
+  return SubspaceBasis<RootBasis, PrefixPath>{rootBasis, prefixPath};
+}
+
+template<class RootBasis, class... PrefixTreeIndices>
+auto subspaceBasis(const RootBasis& rootBasis, const PrefixTreeIndices&... prefixTreeIndices)
+{
+  return subspaceBasis(rootBasis, TypeTree::hybridTreePath(prefixTreeIndices...));
 }
 
 
