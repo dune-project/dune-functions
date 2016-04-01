@@ -779,8 +779,12 @@ Finally access to the actual local basis functions are provided
 by the {\tt tree()} method returning a reference to a
 {\tt Tree} object. This encapsulates the basis functions
 in a hierarchical tree structure to also represent structured
-function spaces. The interface of the tree object is discussed
-below.
+function spaces.
+While the tree  itself can be queried in unbound state,
+the local view must be bound in order to use most of the
+trees methods.
+A detailed discussion of the interface of the tree object is
+given below.
 
 \begin{lstlisting}
   using Tree = <implementation defined>;
@@ -802,7 +806,7 @@ space is given by $(\mathcal{S}_{2}^d) \times \mathcal{S}_1$,
 or for multi-physics problems where one uses different
 ansatz spaces for each modeled quantity.
 
-Basis for all these nested product spaces can be represented
+A basis for all these nested product spaces can be represented
 in a tree data structure, where the actual local basis
 functions for each factor are associated to a leaf node
 in the tree. As a consequence the interface of leaf nodes
