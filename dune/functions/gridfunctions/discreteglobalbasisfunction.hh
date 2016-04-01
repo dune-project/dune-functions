@@ -347,22 +347,15 @@ private:
 
 
 template<typename R, typename B, typename TP, typename V>
-auto makeDiscreteGlobalBasisFunction(const B& basis, const TP& treePath, const V& vector)
-  -> DiscreteGlobalBasisFunction<B, TP, V, DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename B::LocalView::Tree, TP>>, R>
+auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
 {
-  using NTREM = DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename B::LocalView::Tree, TP>>;
+  using Basis = std::decay_t<B>;
+  using Vector = std::decay_t<V>;
+  using NTREM = DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename Basis::LocalView::Tree, TP>>;
   auto nodeToRangeEntryPtr = std::make_shared<NTREM>(makeDefaultNodeToRangeMap(basis, treePath));
-  return DiscreteGlobalBasisFunction<B, TP, V, NTREM, R>(stackobject_to_shared_ptr(basis), treePath, stackobject_to_shared_ptr(vector), nodeToRangeEntryPtr);
-}
-
-template<typename R, typename B, typename TP, typename V>
-auto makeDiscreteGlobalBasisFunction(const B& basis, const TP& treePath, const V&& vector)
-  -> DiscreteGlobalBasisFunction<B, TP, V, DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename B::LocalView::Tree, TP>>, R>
-{
-  using NTREM = DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename B::LocalView::Tree, TP>>;
-  auto nodeToRangeEntryPtr = std::make_shared<NTREM>(makeDefaultNodeToRangeMap(basis, treePath));
-  auto vectorPtr = std::make_shared<V>(vector);
-  return DiscreteGlobalBasisFunction<B, TP, V, NTREM, R>(stackobject_to_shared_ptr(basis), treePath, vectorPtr, nodeToRangeEntryPtr);
+  auto basisPtr = Dune::wrap_or_move(std::forward<B>(basis));
+  auto vectorPtr = Dune::wrap_or_move(std::forward<V>(vector));
+  return DiscreteGlobalBasisFunction<Basis, TP, Vector, NTREM, R>(basisPtr, treePath, vectorPtr, nodeToRangeEntryPtr);
 }
 
 
