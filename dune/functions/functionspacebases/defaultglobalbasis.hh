@@ -22,11 +22,11 @@ namespace Functions {
 template<class NF>
 class DefaultGlobalBasis
 {
-  using RootTreePath = TypeTree::HybridTreePath<>;
-
 public:
 
   using NodeFactory = NF;
+
+  using PrefixPath = TypeTree::HybridTreePath<>;
 
   //! The grid view that the FE space is defined on
   using GridView = typename NodeFactory::GridView;
@@ -39,7 +39,7 @@ public:
   //! Type of the local view on the restriction of the basis to a single element
   using LocalView = DefaultLocalView<DefaultGlobalBasis<NodeFactory>>;
 
-  using NodeIndexSet = typename NodeFactory::template IndexSet<RootTreePath>;
+  using NodeIndexSet = typename NodeFactory::template IndexSet<PrefixPath>;
   using SizePrefix = typename NodeFactory::SizePrefix;
   using LocalIndexSet = DefaultLocalIndexSet<LocalView, NodeIndexSet>;
   using GlobalIndexSet = DefaultGlobalIndexSet<LocalView, NodeFactory>;
@@ -50,7 +50,8 @@ public:
     disableCopyMove<DefaultGlobalBasis, T...> = 0,
     enableIfConstructible<NodeFactory, T...> = 0>
   DefaultGlobalBasis(T&&... t) :
-    nodeFactory_(std::forward<T>(t)...)
+    nodeFactory_(std::forward<T>(t)...),
+    prefixPath_()
   {
     static_assert(models<Concept::NodeFactory<GridView>, NodeFactory>(), "Type passed to DefaultGlobalBasis does not model the NodeFactory concept.");
     nodeFactory_.initializeIndices();
@@ -98,7 +99,7 @@ public:
 
   LocalIndexSet localIndexSet() const
   {
-    return LocalIndexSet(nodeFactory_.template indexSet<RootTreePath>());
+    return LocalIndexSet(nodeFactory_.template indexSet<PrefixPath>());
   }
 
   GlobalIndexSet indexSet() const
@@ -106,8 +107,19 @@ public:
     return GlobalIndexSet(nodeFactory_);
   }
 
+  const DefaultGlobalBasis& rootBasis() const
+  {
+    return *this;
+  }
+
+  const PrefixPath& prefixPath() const
+  {
+    return prefixPath_;
+  }
+
 protected:
   NodeFactory nodeFactory_;
+  PrefixPath prefixPath_;
 };
 
 

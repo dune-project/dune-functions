@@ -1,12 +1,14 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTLOCALVIEW_HH
-#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTLOCALVIEW_HH
+#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_SUBSPACELOCALVIEW_HH
+#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_SUBSPACELOCALVIEW_HH
 
 
 #include <tuple>
 
 #include <dune/common/concept.hh>
+
+#include <dune/typetree/childextraction.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>
 
@@ -17,16 +19,23 @@ namespace Functions {
 
 
 
+template<class RB, class PP>
+class SubspaceBasis;
+
+
+
 /** \brief The restriction of a finite element basis to a single element */
-template<class GB>
-class DefaultLocalView
+template<class RLV, class PP>
+class SubspaceLocalView
 {
-  using PrefixPath = TypeTree::HybridTreePath<>;
+  using PrefixPath = PP;
 
 public:
 
+  using RootLocalView = RLV;
+
   //! The global FE basis that this is a view on
-  using GlobalBasis = GB;
+  using GlobalBasis = SubspaceBasis<typename RootLocalView::GlobalBasis, PrefixPath>;
 
   //! The grid view the global FE basis lives on
   using GridView = typename GlobalBasis::GridView;
@@ -38,15 +47,17 @@ public:
   using size_type = typename GlobalBasis::size_type;
 
   //! Tree of local finite elements / local shape function sets
-  using Tree = typename GlobalBasis::NodeFactory::template Node<PrefixPath>;
+  using RootTree = typename RootLocalView::Tree;
+
+  //! Tree of local finite elements / local shape function sets
+  using Tree = typename TypeTree::ChildForTreePath<RootTree, PrefixPath>;
 
   /** \brief Construct local view for a given global finite element basis */
-  DefaultLocalView(const GlobalBasis& globalBasis) :
+  SubspaceLocalView(const GlobalBasis& globalBasis, const PrefixPath& prefixPath) :
     globalBasis_(&globalBasis),
-    tree_(globalBasis_->nodeFactory().node(PrefixPath()))
+    rootLocalView_(globalBasis.rootBasis().localView())
   {
-    static_assert(models<Concept::BasisTree<GridView>, Tree>(), "Tree type passed to DefaultLocalView does not model the BasisNode concept.");
-    initializeTree(tree_);
+//    static_assert(models<Concept::BasisTree<GridView>, Tree>(), "Tree type passed to SubspaceLocalView does not model the BasisNode concept.");
   }
 
   /** \brief Bind the view to a grid element
@@ -56,8 +67,7 @@ public:
    */
   void bind(const Element& e)
   {
-    element_ = e;
-    bindTree(tree_, element_);
+    rootLocalView_.bind(e);
   }
 
   /** \brief Return the grid element that the view is bound to
@@ -66,7 +76,7 @@ public:
    */
   const Element& element() const
   {
-    return element_;
+    return rootLocalView_.element();
   }
 
   /** \brief Unbind from the current element
@@ -74,7 +84,9 @@ public:
    * Calling this method should only be a hint that the view can be unbound.
    */
   void unbind()
-  {}
+  {
+    rootLocalView_.unbind();
+  }
 
   /** \brief Return the local ansatz tree associated to the bound entity
    *
@@ -82,14 +94,14 @@ public:
    */
   const Tree& tree() const
   {
-    return tree_;
+    return TypeTree::child(rootLocalView_.tree(), globalBasis_->prefixPath());
   }
 
   /** \brief Total number of degrees of freedom on this element
    */
   size_type size() const
   {
-    return tree_.size();
+    return rootLocalView_.size();
   }
 
   /**
@@ -100,7 +112,7 @@ public:
    */
   size_type maxSize() const
   {
-    return globalBasis_->nodeFactory().maxNodeSize();
+    return rootLocalView_.maxSize();
   }
 
   /** \brief Return the global basis that we are a view on
@@ -110,15 +122,14 @@ public:
     return *globalBasis_;
   }
 
-  const DefaultLocalView& rootLocalView() const
+  const RootLocalView& rootLocalView() const
   {
-    return *this;
+    return rootLocalView_;
   }
 
 protected:
   const GlobalBasis* globalBasis_;
-  Element element_;
-  Tree tree_;
+  RootLocalView rootLocalView_;
 };
 
 
@@ -128,4 +139,4 @@ protected:
 
 
 
-#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTLOCALVIEW_HH
+#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_SUBSPACELOCALVIEW_HH

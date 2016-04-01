@@ -24,6 +24,7 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
@@ -340,15 +341,17 @@ int main (int argc, char *argv[]) try
   BitVectorType isBoundary;
 
   for(int i=0; i<dim; ++i)
-    interpolate(taylorHoodBasis, TypeTree::hybridTreePath(_0, i), HierarchicBitVectorView(isBoundary), boundaryIndicator);
+  {
+    auto velocityComponentSpace = Functions::subspaceBasis(taylorHoodBasis, _0, i);
+    interpolate(velocityComponentSpace, HierarchicBitVectorView(isBoundary), boundaryIndicator);
+  }
   // { interpolate_boundary_predicate_end }
 
   // { interpolate_dirichlet_values_begin }
   typedef FieldVector<double,dim> VelocityRange;
   auto&& velocityDirichletData = [](Coordinate x)->VelocityRange { return {0.0, double(x[0] < 1e-8)};};
 
-  interpolateTreeSubset(taylorHoodBasis,
-                        TypeTree::hybridTreePath(_0),
+  interpolate(Functions::subspaceBasis(taylorHoodBasis, _0),
                         HierarchicVectorView(rhs),
                         velocityDirichletData,
                         HierarchicBitVectorView(isBoundary));
@@ -415,11 +418,14 @@ int main (int argc, char *argv[]) try
   using VelocityRange = FieldVector<double,dim>;
   using PressureRange = double;
 
-  auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(taylorHoodBasis,
-                                                                                    TypeTree::hybridTreePath(_0),
+  auto velocityBasis = Functions::subspaceBasis(taylorHoodBasis, _0);
+  auto pressureBasis = Functions::subspaceBasis(taylorHoodBasis, _1);
+
+  auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(velocityBasis,
+                                                                                    TypeTree::hybridTreePath(),
                                                                                     HierarchicVectorView(x));
-  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(taylorHoodBasis,
-                                                                                    TypeTree::hybridTreePath(_1),
+  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(pressureBasis,
+                                                                                    TypeTree::hybridTreePath(),
                                                                                     HierarchicVectorView(x));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
