@@ -61,6 +61,30 @@ namespace BasisBuilder {
   struct LeafBlockedInterleaved : public IndexMergingStrategy {};
 
 
+  //! Creates a lexicographic merging of direct children without blocking.
+  constexpr FlatLexicographic flatLexicographic()
+  {
+    return {};
+  }
+
+  //! Creates an interleaved merging of direct children without blocking.
+  constexpr FlatInterleaved flatInterleaved()
+  {
+    return {};
+  }
+
+  //! Creates a lexicographic merging of direct children with blocking (i.e. creating one block per direct child).
+  constexpr BlockedLexicographic blockedLexicographic()
+  {
+    return {};
+  }
+
+  //! Creates an interleaved merging of direct children with blocking (i.e. creating blocks at the leaves containing one leaf per child each).
+  constexpr LeafBlockedInterleaved leafBlockedInterleaved()
+  {
+    return {};
+  }
+
 } // end namespace BasisBuilder
 } // end namespace Functions
 } // end namespace Dune
