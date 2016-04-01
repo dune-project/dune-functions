@@ -21,7 +21,7 @@ namespace Functions {
 template<class GB>
 class DefaultLocalView
 {
-  using RootTreePath = TypeTree::HybridTreePath<>;
+  using PrefixPath = TypeTree::HybridTreePath<>;
 
 public:
 
@@ -38,12 +38,12 @@ public:
   using size_type = typename GlobalBasis::size_type;
 
   //! Tree of local finite elements / local shape function sets
-  using Tree = typename GlobalBasis::NodeFactory::template Node<RootTreePath>;
+  using Tree = typename GlobalBasis::NodeFactory::template Node<PrefixPath>;
 
   /** \brief Construct local view for a given global finite element basis */
   DefaultLocalView(const GlobalBasis& globalBasis) :
     globalBasis_(&globalBasis),
-    tree_(globalBasis_->nodeFactory().node(RootTreePath()))
+    tree_(globalBasis_->nodeFactory().node(PrefixPath()))
   {
     static_assert(models<Concept::BasisTree<GridView>, Tree>(), "Tree type passed to DefaultLocalView does not model the BasisNode concept.");
     initializeTree(tree_);
@@ -108,6 +108,11 @@ public:
   const GlobalBasis& globalBasis() const
   {
     return *globalBasis_;
+  }
+
+  const DefaultLocalView& rootLocalView() const
+  {
+    return *this;
   }
 
 protected:
