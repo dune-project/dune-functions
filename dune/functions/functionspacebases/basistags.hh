@@ -3,23 +3,65 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_BASISTAGS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_BASISTAGS_HH
 
-
+#include <type_traits>
+#include <dune/common/concept.hh>
 
 namespace Dune {
 namespace Functions {
-namespace BasisTags {
+
+  namespace Concept {
+
+    struct IndexMergingStrategy
+    {
+      template<typename T>
+      auto require(T&& t) -> decltype(
+        registerIndexMergingStrategy(t)
+      );
+    };
+
+    template<typename T>
+    static constexpr bool isIndexMergingStrategy()
+    {
+      return models<Concept::IndexMergingStrategy,T>();
+    }
+
+    template<typename T>
+    static constexpr bool isIndexMergingStrategy(T&& t)
+    {
+      return models<Concept::IndexMergingStrategy,std::decay_t<T>>();
+    }
+
+  } // namespace Concept
 
 
-
-struct IndexTag {};
-struct FlatIndex : public IndexTag {};
-struct InterleafedIndex : public IndexTag {};
-struct BlockedIndex : public IndexTag {};
-struct LeafBlockedIndex : public IndexTag {};
+namespace BasisBuilder {
 
 
+  //! Base class for index merging strategies to simplify detection
+  struct IndexMergingStrategy {};
 
-} // end namespace BasisTags
+  void registerIndexMergingStrategy(IndexMergingStrategy);
+
+  //! Lexicographic merging of direct children without blocking.
+  struct FlatLexicographic
+    : public IndexMergingStrategy
+  {};
+
+  //! Interleaved merging of direct children without blocking.
+  struct FlatInterleaved
+    : public IndexMergingStrategy
+  {};
+
+  //! Lexicographic merging of direct children with blocking (i.e. creating one block per direct child).
+  struct BlockedLexicographic
+    : public IndexMergingStrategy
+  {};
+
+  //! Interleaved merging of direct children with blocking (i.e. creating blocks at the leaves containing one leaf per child each).
+  struct LeafBlockedInterleaved : public IndexMergingStrategy {};
+
+
+} // end namespace BasisBuilder
 } // end namespace Functions
 } // end namespace Dune
 
