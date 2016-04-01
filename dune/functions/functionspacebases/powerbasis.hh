@@ -30,7 +30,7 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<class MI, class TP, class IT, class SF, std::size_t C>
+template<class MI, class TP, class IMS, class SF, std::size_t C>
 class PowerNodeIndexSet;
 
 
@@ -41,12 +41,12 @@ class PowerNodeIndexSet;
  * This node factory represente a power of a given node factory.
  * Its node type is a PowerBasisNodes for the given subnode.
  *
- * \tparam MI Type to be used for multi-indices
- * \tparam IT A tag describing how global indices are build
- * \tparam SF The subnode factory
- * \tparam C The exponent of the power node
+ * \tparam MI  Type to be used for multi-indices
+ * \tparam IMS A tag describing how global indices are build
+ * \tparam SF  The subnode factory
+ * \tparam C   The exponent of the power node
  */
-template<class MI, class IT, class SF, std::size_t C>
+template<class MI, class IMS, class SF, std::size_t C>
 class PowerNodeFactory
 {
   static const std::size_t children = C;
@@ -61,7 +61,7 @@ public:
   /** \brief The grid view that the FE space is defined on */
   using GridView = typename SF::GridView;
   using size_type = typename SF::size_type;
-  using IndexTag = IT;
+  using IndexMergingStrategy = IMS;
 
   template<class TP>
   using SubNode = typename SubFactory::template Node<decltype(TypeTree::push_back(TP(), 0))>;
@@ -73,7 +73,7 @@ public:
   using Node = PowerBasisNode<size_type, TP, SubNode<TP>, children>;
 
   template<class TP>
-  using IndexSet = PowerNodeIndexSet<MI, TP, IT, SF, C>;
+  using IndexSet = PowerNodeIndexSet<MI, TP, IMS, SF, C>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -132,10 +132,10 @@ public:
   //! Return number possible values for next position in multi index
   size_type size(const SizePrefix& prefix) const
   {
-    return size(prefix, IndexTag());
+    return size(prefix, IndexMergingStrategy{});
   }
 
-  size_type size(const SizePrefix& prefix, BasisTags::InterleafedIndex) const
+  size_type size(const SizePrefix& prefix, BasisBuilder::FlatInterleaved) const
   {
     // The root index size is the root index size of a single subnode
     // multiplied by the number of subnodes because we enumerate all
@@ -155,7 +155,7 @@ public:
     return subFactory_.size(subPrefix);
   }
 
-  size_type size(const SizePrefix& prefix, BasisTags::FlatIndex) const
+  size_type size(const SizePrefix& prefix, BasisBuilder::FlatLexicographic) const
   {
     // The size at the index tree root is the size of at the index tree
     // root of a single subnode multiplied by the number of subnodes
@@ -175,7 +175,7 @@ public:
     return subFactory_.size(subPrefix);
   }
 
-  size_type size(const SizePrefix& prefix, BasisTags::BlockedIndex) const
+  size_type size(const SizePrefix& prefix, BasisBuilder::BlockedLexicographic) const
   {
     if (prefix.size() == 0)
       return children;
@@ -185,7 +185,7 @@ public:
     return subFactory_.size(subPrefix);
   }
 
-  size_type size(const SizePrefix& prefix, BasisTags::LeafBlockedIndex) const
+  size_type size(const SizePrefix& prefix, BasisBuilder::LeafBlockedInterleaved) const
   {
     if (prefix.size() == 0)
       return subFactory_.size();
@@ -221,7 +221,7 @@ protected:
 
 
 
-template<class MI, class TP, class IT, class SF, std::size_t C>
+template<class MI, class TP, class IMS, class SF, std::size_t C>
 class PowerNodeIndexSet
 {
   static const std::size_t children = C;
@@ -233,12 +233,12 @@ public:
   /** \brief The grid view that the FE space is defined on */
   using GridView = typename SF::GridView;
   using size_type = typename SF::size_type;
-  using IndexTag = IT;
+  using IndexMergingStrategy = IMS;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = PowerNodeFactory<MI, IT, SF, C>;
+  using NodeFactory = PowerNodeFactory<MI, IMS, SF, C>;
 
   using Node = typename NodeFactory::template Node<TP>;
 
@@ -271,11 +271,11 @@ public:
 
   MultiIndex index(const size_type& localIndex) const
   {
-    return index(localIndex, IndexTag());
+    return index(localIndex, IndexMergingStrategy{});
   }
 
 
-  MultiIndex index(const size_type& localIndex, BasisTags::InterleafedIndex) const
+  MultiIndex index(const size_type& localIndex, BasisBuilder::FlatInterleaved) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
@@ -288,7 +288,7 @@ public:
     return mi;
   }
 
-  MultiIndex index(const size_type& localIndex, BasisTags::FlatIndex) const
+  MultiIndex index(const size_type& localIndex, BasisBuilder::FlatLexicographic) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
@@ -303,7 +303,7 @@ public:
     return mi;
   }
 
-  MultiIndex index(const size_type& localIndex, BasisTags::BlockedIndex) const
+  MultiIndex index(const size_type& localIndex, BasisBuilder::BlockedLexicographic) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
@@ -319,7 +319,7 @@ public:
     return mi;
   }
 
-  MultiIndex index(const size_type& localIndex, BasisTags::LeafBlockedIndex) const
+  MultiIndex index(const size_type& localIndex, BasisBuilder::LeafBlockedInterleaved) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
@@ -347,16 +347,16 @@ namespace BasisBuilder {
 
 namespace Imp {
 
-template<std::size_t k, class IndexTag, class SubFactoryTag>
+template<std::size_t k, class IndexMergingStrategy, class SubFactoryTag>
 struct PowerNodeFactoryBuilder
 {
-  static const bool isBlocked = std::is_same<IndexTag,BasisTags::BlockedIndex>::value or std::is_same<IndexTag,BasisTags::LeafBlockedIndex>::value;
+  static const bool isBlocked = std::is_same<IndexMergingStrategy,BlockedLexicographic>::value or std::is_same<IndexMergingStrategy,LeafBlockedInterleaved>::value;
 
   static const std::size_t requiredMultiIndexSize=SubFactoryTag::requiredMultiIndexSize + (std::size_t)(isBlocked);
 
   template<class MultiIndex, class GridView, class size_type=std::size_t>
   auto build(const GridView& gridView)
-    -> PowerNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTag().template build<MultiIndex, GridView, size_type>(std::declval<GridView>())), k>
+    -> PowerNodeFactory<MultiIndex,  IndexMergingStrategy, decltype(SubFactoryTag().template build<MultiIndex, GridView, size_type>(std::declval<GridView>())), k>
   {
     return {SubFactoryTag().template build<MultiIndex, GridView, size_type>(gridView)};
   }
@@ -364,14 +364,14 @@ struct PowerNodeFactoryBuilder
 
 } // end namespace BasisBuilder::Imp
 
-template<std::size_t k, class SubFactoryTag, class IndexTag>
-Imp::PowerNodeFactoryBuilder<k, IndexTag, SubFactoryTag> power(SubFactoryTag&& tag, const IndexTag&)
+template<std::size_t k, class SubFactoryTag, class IndexMergingStrategy>
+Imp::PowerNodeFactoryBuilder<k, IndexMergingStrategy, SubFactoryTag> power(SubFactoryTag&& tag, const IndexMergingStrategy&)
 {
   return{};
 }
 
 template<std::size_t k, class SubFactoryTag>
-Imp::PowerNodeFactoryBuilder<k, BasisTags::LeafBlockedIndex, SubFactoryTag> power(SubFactoryTag&& tag)
+Imp::PowerNodeFactoryBuilder<k, LeafBlockedInterleaved, SubFactoryTag> power(SubFactoryTag&& tag)
 {
   return{};
 }

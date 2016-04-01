@@ -42,11 +42,11 @@ class CompositeNodeIndexSet;
  * This node factory represente a composition of several given node factories.
  * Its node type is a CompositeBasisNodes for the given subnodes.
  *
- * \tparam MI Type to be used for multi-indices
- * \tparam IT A tag describing how global indices are build
- * \tparam SF The sub-node factories
+ * \tparam MI  Type to be used for multi-indices
+ * \tparam IMS A tag describing how indices are merged
+ * \tparam SF  The sub-node factories
  */
-template<class MI, class IT, class... SF>
+template<class MI, class IMS, class... SF>
 class CompositeNodeFactory
 {
 public:
@@ -54,7 +54,7 @@ public:
   using SubFactories = std::tuple<SF...>;
   using GridView = typename std::tuple_element<0, SubFactories>::type::GridView;
   using size_type = typename std::tuple_element<0, SubFactories>::type::size_type;
-  using IndexTag = IT;
+  using IndexMergingStrategy = IMS;
 
 protected:
   static const std::size_t children = sizeof...(SF);
@@ -99,7 +99,7 @@ public:
   using Node = typename FixedTP<TP>::Node;
 
   template<class TP>
-  using IndexSet = CompositeNodeIndexSet<MI, TP, IT, SF...>;
+  using IndexSet = CompositeNodeIndexSet<MI, TP, IMS, SF...>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -156,10 +156,10 @@ public:
   //! Return number possible values for next position in multi index
   size_type size(const SizePrefix& prefix) const
   {
-    return size(prefix, IndexTag());
+    return size(prefix, IndexMergingStrategy{});
   }
 
-  size_type size(const SizePrefix& prefix, BasisTags::BlockedIndex) const
+  size_type size(const SizePrefix& prefix, BasisBuilder::BlockedLexicographic) const
   {
     if (prefix.size() == 0)
       return children;
@@ -194,7 +194,7 @@ public:
     }
   };
 
-  size_type size(const SizePrefix& prefix, BasisTags::FlatIndex) const
+  size_type size(const SizePrefix& prefix, BasisBuilder::FlatLexicographic) const
   {
     size_type r = 0;
     if (prefix.size() == 0)
@@ -236,7 +236,7 @@ protected:
 
 
 
-template<class MI, class TP, class IT, class... SF>
+template<class MI, class TP, class IMS, class... SF>
 class CompositeNodeIndexSet
 {
   static const std::size_t children = sizeof...(SF);
@@ -248,12 +248,12 @@ public:
 
   using GridView = typename SubFactory<0>::GridView;
   using size_type = typename SubFactory<0>::size_type;
-  using IndexTag = IT;
+  using IndexMergingStrategy = IMS;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = CompositeNodeFactory<MI, IT, SF...>;
+  using NodeFactory = CompositeNodeFactory<MI, IMS, SF...>;
 
   using Node = typename NodeFactory::template Node<TP>;
 
@@ -301,7 +301,7 @@ public:
 
   MultiIndex index(size_type localIndex) const
   {
-    return index(localIndex, IndexTag());
+    return index(localIndex, IndexMergingStrategy{});
   }
 
   struct Lambda_index_flat
@@ -323,7 +323,7 @@ public:
     }
   };
 
-  MultiIndex index(const size_type& localIndex, BasisTags::FlatIndex) const
+  MultiIndex index(const size_type& localIndex, BasisBuilder::FlatLexicographic) const
   {
     size_type shiftedLocalIndex = localIndex;
     size_type rootOffset = 0;
@@ -350,7 +350,7 @@ public:
     }
   };
 
-  MultiIndex index(const size_type& localIndex, BasisTags::BlockedIndex) const
+  MultiIndex index(const size_type& localIndex, BasisBuilder::BlockedLexicographic) const
   {
     size_type shiftedLocalIndex = localIndex;
     size_type component = 0;
@@ -391,7 +391,7 @@ constexpr std::size_t maxHelper(ST0&& i0, ST&&... i)
 template<class IndexTag, class... SubFactoryTags>
 struct CompositeNodeFactoryBuilder
 {
-  static const bool isBlocked = std::is_same<IndexTag,BasisTags::BlockedIndex>::value or std::is_same<IndexTag,BasisTags::LeafBlockedIndex>::value;
+  static const bool isBlocked = std::is_same<IndexTag,BlockedLexicographic>::value or std::is_same<IndexTag,LeafBlockedInterleaved>::value;
 
   static const std::size_t requiredMultiIndexSize=maxHelper(SubFactoryTags::requiredMultiIndexSize...) + (std::size_t)(isBlocked);
 
@@ -412,20 +412,20 @@ auto compositeImp(std::tuple<Args...>)
 
 } // end namespace BasisBuilder::Imp
 
-template<class... Args,
-  typename std::enable_if<std::is_base_of<BasisTags::IndexTag, typename LastType<Args...>::type  >::value, int>::type = 0>
+template<
+  typename... Args,
+  std::enable_if_t<Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
 auto composite(Args&&... args)
-  -> decltype(Imp::compositeImp(typename RotateTuple<Args...>::type()))
 {
-  return{};
+  return Imp::compositeImp(typename RotateTuple<Args...>::type{});
 }
 
-template<class... Args,
-  typename std::enable_if<not std::is_base_of<BasisTags::IndexTag, typename LastType<Args...>::type  >::value, int>::type = 0>
+template<
+  typename... Args,
+  std::enable_if_t<not Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
 auto composite(Args&&... args)
-  -> decltype(Imp::compositeImp(typename RotateTuple<Args..., BasisTags::BlockedIndex>::type()))
 {
-  return{};
+  return Imp::compositeImp(typename RotateTuple<Args..., BasisBuilder::BlockedLexicographic>::type{});
 }
 
 } // end namespace BasisBuilder

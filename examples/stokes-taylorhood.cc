@@ -276,7 +276,6 @@ int main (int argc, char *argv[]) try
 //  typedef Functions::TaylorHoodBasis<GridView> TaylorHoodBasis;        /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
 //  TaylorHoodBasis taylorHoodBasis(gridView);
 
-  using namespace Functions::BasisTags;
   using namespace Functions::BasisBuilder;
 
   static const std::size_t K = 1; // pressure order for Taylor-Hood
@@ -286,7 +285,7 @@ int main (int argc, char *argv[]) try
     composite(
       power<dim>(
         lagrange<K+1>(),
-        InterleafedIndex()),
+        flatInterleaved()),
       lagrange<K>()
     ));
 
