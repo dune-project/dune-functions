@@ -284,7 +284,7 @@ int main (int argc, char *argv[]) try
     composite(
       power<dim>(
         lagrange<K+1>(),
-        FlatInterleaved()),
+        flatInterleaved()),
       lagrange<K>()
     ));
 
