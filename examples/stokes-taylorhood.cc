@@ -23,6 +23,7 @@
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
@@ -283,9 +284,9 @@ int main (int argc, char *argv[]) try
     gridView,
     composite(
       power<dim>(
-        pq<K+1>(),
+        lagrange<K+1>(),
         InterleafedIndex()),
-      pq<K>()
+      lagrange<K>()
     ));
 
 
