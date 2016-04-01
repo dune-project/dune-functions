@@ -3,6 +3,7 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTLOCALINDEXSET_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTLOCALINDEXSET_HH
 
+#include <dune/functions/functionspacebases/subspacelocalview.hh>
 
 
 namespace Dune {
@@ -30,15 +31,20 @@ public:
     nodeIndexSet_(nodeIndexSet)
   {}
 
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
+  /** \brief Bind the index set to a LocalView
    */
   void bind(const LocalView& localView)
   {
     localView_ = &localView;
     nodeIndexSet_.bind(localView_->tree());
+  }
+
+  /** \brief Bind the index set to a SubspaceLocalView
+   */
+  template<class TreePath>
+  void bind(const SubspaceLocalView<LocalView, TreePath>& subspaceLocalView)
+  {
+    bind(subspaceLocalView.rootLocalView());
   }
 
   /** \brief Unbind the view
