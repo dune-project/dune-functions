@@ -112,7 +112,7 @@ public:
   Node<TP> node(const TP& tp) const
   {
     auto node = Node<TP>(tp);
-    for(int i=0; i<children; ++i)
+    for (std::size_t i=0; i<children; ++i)
       node.setChild(i, subFactory_.node(TypeTree::push_back(tp, i)));
     return node;
   }
