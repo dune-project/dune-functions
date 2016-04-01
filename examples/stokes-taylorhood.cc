@@ -417,13 +417,10 @@ int main (int argc, char *argv[]) try
   using VelocityRange = FieldVector<double,dim>;
   using PressureRange = double;
 
-  auto velocityBasis = Functions::subspaceBasis(taylorHoodBasis, _0);
-  auto pressureBasis = Functions::subspaceBasis(taylorHoodBasis, _1);
-
-  auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(velocityBasis,
+  auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(Functions::subspaceBasis(taylorHoodBasis, _0),
                                                                                     TypeTree::hybridTreePath(),
                                                                                     HierarchicVectorView(x));
-  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(pressureBasis,
+  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(Functions::subspaceBasis(taylorHoodBasis, _1),
                                                                                     TypeTree::hybridTreePath(),
                                                                                     HierarchicVectorView(x));
 
