@@ -2,7 +2,7 @@
 add_definitions(-DDUNE_GRID_EXAMPLE_GRIDS_PATH=\"${DUNE_GRID_EXAMPLE_GRIDS_PATH}\")
 
 # tests that should build and run successfully
-set(TESTS gridviewfunctionspacebasistest taylorhoodbasistest hierarchicvectorwrappertest)
+set(TESTS compositebasistest gridviewfunctionspacebasistest taylorhoodbasistest hierarchicvectorwrappertest)
 
 set(TESTPROGS ${TESTS})
 
@@ -11,12 +11,15 @@ set(TESTPROGS ${TESTS})
 add_directory_test_target(_test_target)
 add_dependencies(${_test_target} ${TESTPROGS})
 
+add_executable("compositebasistest"
+               compositebasistest.cc)
 add_executable("gridviewfunctionspacebasistest"
                gridviewfunctionspacebasistest.cc)
 add_executable("taylorhoodbasistest"
                taylorhoodbasistest.cc)
 add_executable("hierarchicvectorwrappertest"
                hierarchicvectorwrappertest.cc)
+target_link_libraries("compositebasistest" "dunecommon" "dunegeometry")
 target_link_libraries("gridviewfunctionspacebasistest" "dunecommon" "dunegeometry")
 target_link_libraries("taylorhoodbasistest" "dunecommon" "dunegeometry")
 target_link_libraries("hierarchicvectorwrappertest" "dunecommon" "dunegeometry")
