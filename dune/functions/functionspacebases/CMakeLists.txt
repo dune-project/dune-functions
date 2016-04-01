@@ -15,6 +15,7 @@ install(FILES
         gridviewfunctionspacebasis.hh
         hierarchicvectorwrapper.hh
         interpolate.hh
+        lagrangebasis.hh
         lagrangedgbasis.hh
         powerbasis.hh
         pq1nodalbasis.hh
