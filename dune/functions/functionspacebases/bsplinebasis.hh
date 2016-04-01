@@ -1317,6 +1317,8 @@ protected:
 
 /** \brief Nodal basis of a scalar k-th-order Lagrangean finite element space
  *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
  * \tparam GV The GridView that the space is defined on
  */
 template<typename GV>

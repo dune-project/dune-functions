@@ -37,6 +37,7 @@ of type-erasure wrappers in the spirit of std::function.
 
 @defgroup FunctionSpaceBasesImplementations Function space basis implementations
 @ingroup FunctionSpaceBases
+@brief Implementations of the GlobalBasis concept
 
 @defgroup FunctionSpaceBasesUtilities Function space basis related utilities
 @ingroup FunctionSpaceBases

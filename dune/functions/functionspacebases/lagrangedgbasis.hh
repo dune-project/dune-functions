@@ -295,6 +295,8 @@ protected:
 
 /** \brief Basis of a scalar k-th-order Lagrangean-DG finite element space
  *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */

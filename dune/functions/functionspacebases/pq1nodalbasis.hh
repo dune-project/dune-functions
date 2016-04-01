@@ -237,6 +237,8 @@ protected:
 
 /** \brief Nodal basis of a scalar first-order Lagrangian finite element space
  *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
  * \tparam GV The GridView that the space is defined on
  * \tparam ST The type used for local indices; global indices are FlatMultiIndex<ST>
  */
