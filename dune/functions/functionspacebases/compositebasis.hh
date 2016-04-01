@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_COMPOSITEBASIS_HH
 
 #include <tuple>
+#include <utility>
 
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
@@ -11,7 +12,6 @@
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/utility.hh>
 
-#include <dune/functions/common/utility.hh>
 #include <dune/functions/common/staticforloop.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 
@@ -62,7 +62,7 @@ protected:
   template<class, class, class, class...>
   friend class CompositeNodeIndexSet;
 
-  using ChildIndexTuple = IntegerSequenceTuple<TypeTree::Std::make_index_sequence<sizeof...(SF)>>;
+  using ChildIndexTuple = IntegerSequenceTuple<std::index_sequence_for<SF...>>;
 
   template<class TP>
   struct FixedTP
