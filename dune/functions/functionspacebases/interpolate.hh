@@ -214,10 +214,8 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
   // Obtain a local view of f
   auto localF = localFunction(gf);
 
-  auto basisIndexSet = basis.indexSet();
-
   auto localView = basis.localView();
-  auto localIndexSet = basisIndexSet.localIndexSet();
+  auto localIndexSet = basis.localIndexSet();
 
   for (const auto& e : elements(gridView))
   {
