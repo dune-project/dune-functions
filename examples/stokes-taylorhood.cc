@@ -418,10 +418,8 @@ int main (int argc, char *argv[]) try
   using PressureRange = double;
 
   auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(Functions::subspaceBasis(taylorHoodBasis, _0),
-                                                                                    TypeTree::hybridTreePath(),
                                                                                     HierarchicVectorView(x));
   auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(Functions::subspaceBasis(taylorHoodBasis, _1),
-                                                                                    TypeTree::hybridTreePath(),
                                                                                     HierarchicVectorView(x));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
