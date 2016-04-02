@@ -360,6 +360,14 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
 
 
 
+template<typename R, typename B, typename V>
+auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
+{
+  return makeDiscreteGlobalBasisFunction<R>(std::forward<B>(basis), TypeTree::hybridTreePath(), std::forward<V>(vector));
+}
+
+
+
 } // namespace Functions
 } // namespace Dune
 
