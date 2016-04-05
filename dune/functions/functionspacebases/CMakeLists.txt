@@ -24,4 +24,5 @@ install(FILES
         sizeinfo.hh
         subspacebasis.hh
         subspacelocalview.hh
+        taylorhoodbasis.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/functionspacebases)
