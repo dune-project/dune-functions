@@ -21,4 +21,5 @@ install(FILES
         pqknodalbasis.hh
         nodes.hh
         sizeinfo.hh
+        taylorhoodbasis.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/functionspacebases)
