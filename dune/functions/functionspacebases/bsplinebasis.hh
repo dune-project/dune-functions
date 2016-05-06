@@ -5,6 +5,8 @@
  * \brief The B-spline global function space basis
  */
 
+#include <numeric>
+
 /** \todo Don't use this matrix */
 #include <dune/common/dynmatrix.hh>
 

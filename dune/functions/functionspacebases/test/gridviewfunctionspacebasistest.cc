@@ -3,6 +3,7 @@
 #include <config.h>
 
 #include <iostream>
+#include <numeric>
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/typetraits.hh>
