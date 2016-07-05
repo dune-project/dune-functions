@@ -4,13 +4,13 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_HIERARCHICVECTORWRAPPER_HH
 
 #include <dune/common/concept.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/utility.hh>
 
 #include <dune/functions/common/indexaccess.hh>
 #include <dune/functions/common/utility.hh>
 #include <dune/functions/common/type_traits.hh>
-#include <dune/functions/common/staticforloop.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
 
@@ -106,7 +106,7 @@ class HierarchicVectorWrapper
   struct StaticResizeHelper
   {
     template<class I, class C, class SizeProvider>
-    void operator()(I&& i, C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
+    static void apply(I&& i, C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
     {
       prefix.back() = i;
       resizeHelper(c[i], sizeProvider, prefix);
@@ -125,8 +125,11 @@ class HierarchicVectorWrapper
     if (c.size() != size)
       DUNE_THROW(RangeError, "Can't resize statically sized vector entry v[" << prefix << "] of size " << c.size() << " to size(" << prefix << ")=" << size);
 
+    using namespace Dune::Hybrid;
     prefix.push_back(0);
-    staticForLoop<0, StaticSize<C>::value>(StaticResizeHelper(), c, sizeProvider, prefix);
+    forEach(integralRange(Hybrid::size(c)), [&](auto&& i) {
+        StaticResizeHelper::apply(i, c, sizeProvider, prefix);
+      });
   }
 
   template<class C, class SizeProvider,
