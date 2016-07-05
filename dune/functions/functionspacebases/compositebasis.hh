@@ -6,6 +6,7 @@
 #include <tuple>
 #include <utility>
 
+#include <dune/common/hybridutilities.hh>
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
 
@@ -119,9 +120,11 @@ public:
 
   void initializeIndices()
   {
-    staticForLoop<0, sizeof...(SF)>([&](auto i) {
-      std::get<i.value>(subFactories_).initializeIndices();
-    });
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t,sizeof...(SF)>()), [&](auto&& i) {
+        // Clang 3.8 chokes on the rvalue-reference here, so we remove it
+        std::get<std::decay_t<decltype(i)>::value>(subFactories_).initializeIndices();
+      });
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -135,9 +138,11 @@ public:
   Node<TP> node(const TP& tp) const
   {
     auto node = Node<TP>(tp);
-    staticForLoop<0, sizeof...(SF)>([&](auto i){
-      node.setChild(std::get<i.value>(subFactories_).node(TypeTree::push_back(tp, i)), i);
-    });
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t,sizeof...(SF)>()), [&](auto&& i) {
+        // Clang 3.8 chokes on the rvalue-reference here, so we remove it
+        node.setChild(std::get<std::decay_t<decltype(i)>::value>(subFactories_).node(TypeTree::push_back(tp, i)), i);
+      });
     return node;
   }
 
@@ -197,10 +202,12 @@ public:
   size_type size(const SizePrefix& prefix, BasisBuilder::FlatLexicographic) const
   {
     size_type r = 0;
+    using namespace Dune::Hybrid;
     if (prefix.size() == 0)
-      staticForLoop<0, sizeof...(SF)>([&](auto i) {
-        r += std::get<i.value>(subFactories_).size();
-      });
+      forEach(integralRange(std::integral_constant<size_t,sizeof...(SF)>()), [&](auto&& i) {
+          // Clang 3.8 chokes on the rvalue-reference here, so we remove it
+          r += std::get<std::decay_t<decltype(i)>::value>(subFactories_).size();
+        });
     else
     {
       size_type shiftedFirst = prefix[0];
@@ -214,9 +221,11 @@ public:
   {
     size_type r=0;
     // Accumulate dimension() for all subfactories
-    staticForLoop<0, sizeof...(SF)>([&](auto i) {
-      r += std::get<i.value>(subFactories_).dimension();
-    });
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t,sizeof...(SF)>()), [&](auto&& i) {
+        // Clang 3.8 chokes on the rvalue-reference here, so we remove it
+        r += std::get<std::decay_t<decltype(i)>::value>(subFactories_).dimension();
+      });
     return r;
   }
 
@@ -224,9 +233,11 @@ public:
   {
     size_type r=0;
     // Accumulate maxNodeSize() for all subfactories
-    staticForLoop<0, sizeof...(SF)>([&](auto i) {
-      r += std::get<i.value>(subFactories_).maxNodeSize();
-    });
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t,sizeof...(SF)>()), [&](auto&& i) {
+        // Clang 3.8 chokes on the rvalue-reference here, so we remove it
+        r += std::get<std::decay_t<decltype(i)>::value>(subFactories_).maxNodeSize();
+      });
     return r;
   }
 
@@ -279,18 +290,21 @@ public:
 
   void bind(const Node& node)
   {
-    using namespace TypeTree::Indices;
     node_ = &node;
-    staticForLoop<0, sizeof...(SF)>([&](auto i){
-      std::get<i.value>(subNodeIndexSetTuple_).bind(node.template child<i.value>());
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t,sizeof...(SF)>()), [&](auto&& i) {
+        // Clang 3.8 chokes on the rvalue-reference here, so we remove it
+        std::get<std::decay_t<decltype(i)>::value>(subNodeIndexSetTuple_).bind(node.template child<std::decay_t<decltype(i)>::value>());
     });
   }
 
   void unbind()
   {
     node_ = nullptr;
-    staticForLoop<0, sizeof...(SF)>([&](auto i){
-      std::get<i.value>(subNodeIndexSetTuple_).unbind();
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t,sizeof...(SF)>()), [&](auto&& i) {
+        // Clang 3.8 chokes on the rvalue-reference here, so we remove it
+        std::get<std::decay_t<decltype(i)>::value>(subNodeIndexSetTuple_).unbind();
     });
   }
 
