@@ -137,7 +137,7 @@ class HierarchicVectorWrapper
     if (size==0)
     {
       if (c.size()==0)
-        DUNE_THROW(RangeError, "Can't resize dynamically sized vector entry v[" << prefix << "]. It's size is 0 but the target size is unknown due to size(" << prefix << ")=0.");
+        DUNE_THROW(RangeError, "Can't resize dynamically sized vector entry v[" << prefix << "]. Its size is 0 but the target size is unknown due to size(" << prefix << ")=0.");
       else
         return;
     }
