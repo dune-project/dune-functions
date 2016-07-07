@@ -93,6 +93,7 @@ public:
 
     template<class Node>
     using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+    using RangeField = double; // hard-coded
 
     template<class Node>
     using NodeData = typename std::vector<LocalBasisRange<Node>>;
@@ -168,6 +169,46 @@ public:
       ShapeFunctionValueContainer& shapeFunctionValueContainer_;
     };
 
+    struct LocalDofVisitor
+      : public TypeTree::TreeVisitor
+      , public TypeTree::DynamicTraversal
+    {
+      LocalDofVisitor (std::vector<RangeField>& localDofs, const LocalIndexSet& localIndexSet, const Vector& coefficients) :
+        localDofs_(localDofs),
+        localIndexSet_(localIndexSet),
+        coefficients_(coefficients),
+        counter(0)
+      {}
+
+      template<typename Node, typename TreePath>
+      void leaf(Node& node, TreePath treePath)
+      {
+        using MultiIndex = typename LocalIndexSet::MultiIndex;
+        using CoefficientBlock = typename std::decay<decltype(std::declval<Vector>()[std::declval<MultiIndex>()])>::type;
+
+        auto&& fe = node.finiteElement();
+        auto&& localBasis = fe.localBasis();
+
+        for (size_type i = 0; i < localBasis.size(); ++i)
+        {
+          auto&& multiIndex = localIndexSet_.index(node.localIndex(i));
+
+          // Get coefficient associated to i-th shape function
+          auto&& c = coefficients_[multiIndex];
+
+          // Write modus depends on index type (interleafed, ...)
+          localDofs_[counter++] = c;
+
+          auto dimC = FlatVectorBackend<CoefficientBlock>::size(c);
+          if (dimC != 1 )std::cout << "[Warning] getLocalDofs() does only work for scalar local coefficients. (dune-functions)" << std::endl;
+        }
+      }
+
+      std::vector<RangeField>& localDofs_;
+      const LocalIndexSet& localIndexSet_;
+      const Vector& coefficients_;
+      size_t counter=0;
+    };
 
   public:
 
@@ -223,8 +264,8 @@ public:
       localIndexSet_.bind(localBasisView_);
 
       // Read dofs associated to bound element
-//      localDoFs_.resize(subTree.size());
-//      for (size_type i = 0; i < subTree.size(); ++i)
+//      localDoFs_.resize(subTree_->size());
+//      for (size_type i = 0; i < subTree_->size(); ++i)
 //        localDoFs_[i] = globalFunction_->dofs()[localIndexSet_.index(i)];
     }
 
@@ -251,6 +292,16 @@ public:
       TypeTree::applyToTree(*subTree_, localEvaluateVisitor);
 
       return y;
+    }
+
+    std::vector<RangeField> localDofs() const
+    {
+      std::vector<RangeField> localDofs(subTree_->size());
+
+      LocalDofVisitor localDofVisitor(localDofs, localIndexSet_, globalFunction_->dofs());
+      TypeTree::applyToTree(*subTree_, localDofVisitor);
+
+      return localDofs;
     }
 
     const Element& localContext() const
