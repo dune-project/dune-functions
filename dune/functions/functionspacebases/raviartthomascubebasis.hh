@@ -165,7 +165,7 @@ public:
   using size_type = ST;
 
   // Precompute the number of dofs per entity type depending on the entity's codimension
-  std::vector<int> dofsPerCodim {dim*k, k+1}; // holds only for 2D!
+  std::vector<int> dofsPerCodim {k*(k+1)*dim, k+1}; // holds only for 2D!
 
   template<class TP>
   using Node = RaviartThomasCubeNode<GV, k, size_type, TP>;
