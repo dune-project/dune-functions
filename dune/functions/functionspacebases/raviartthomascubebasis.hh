@@ -357,28 +357,10 @@ public:
     // throw if Element is no cube
     if (not(element.type().isCube())) DUNE_THROW(Dune::NotImplemented, "RaviartThomasCubeNodalBasis only implemented for cube elements.");
 
-    if (codim==0) { // element dof
-      return { nodeFactory_->CodimOffset_[codim] +
-               nodeFactory_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
-    }
+    if (not(codim==0 or codim==1)) DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasCubeBasis");
 
-    // treat edges individually due to orientation
-    if (codim==1) { // edge/face dof
-        const Dune::ReferenceElement<double,dim>& refElement
-            = Dune::ReferenceElements<double,dim>::general(element.type());
-
-        // we have to reverse the numbering if the local triangle edge is
-        // not aligned with the global edge
-        size_t v0 = gridIndexSet.subIndex(element,refElement.subEntity(subentity,codim,0,dim),dim);
-        size_t v1 = gridIndexSet.subIndex(element,refElement.subEntity(subentity,codim,1,dim),dim);
-        bool flip = (v0 > v1);
-        return { (flip)
-          ? nodeFactory_->CodimOffset_[codim]
-          + nodeFactory_->dofsPerCodim[codim] * gridIndexSet.subIndex(element,subentity,codim) + (nodeFactory_->dofsPerCodim[codim]-1) - localKey.index()
-              : nodeFactory_->CodimOffset_[codim]
-              + nodeFactory_->dofsPerCodim[codim] * gridIndexSet.subIndex(element,subentity,codim) + localKey.index() };
-    }
-    DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasCubeBasis");
+    return { nodeFactory_->CodimOffset_[codim] +
+             nodeFactory_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
   }
 
 protected:
