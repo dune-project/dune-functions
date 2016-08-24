@@ -8,6 +8,8 @@
 
 #include <dune/functions/common/signature.hh>
 
+#include <dune/functions/common/differentiablefunction.hh>
+
 
 
 namespace Dune {
