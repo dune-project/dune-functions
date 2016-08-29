@@ -8,6 +8,7 @@
 
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/utility.hh>
@@ -164,12 +165,14 @@ public:
     if (prefix.size() == 0)
       return children;
 
-    return forwardAsStaticIndex<children>(prefix[0], [&] (auto i) {
+    return Hybrid::switchCases(std::make_index_sequence<children>(), prefix[0], [&] (auto i) {
       const auto& subFactory = std::get<i.value>(subFactories_);
       typename std::decay<decltype(subFactory)>::type::SizePrefix subPrefix;
       for(std::size_t i=1; i<prefix.size(); ++i)
         subPrefix.push_back(prefix[i]);
       return subFactory.size(subPrefix);
+    }, []() {
+      return size_type(0);
     });
   }
 

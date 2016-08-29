@@ -5,8 +5,7 @@
 
 
 #include <dune/common/concept.hh>
-
-#include <dune/functions/common/utility.hh>
+#include <dune/common/hybridutilities.hh>
 
 
 
@@ -73,8 +72,12 @@ template<class C, class I, class F,
   typename std::enable_if< not Dune::models<Imp::Concept::HasDynamicIndexAccess<I>, C>(), int>::type = 0>
 decltype(auto) hybridIndexAccess(C&& c, const I& i, F&& f)
 {
-  return forwardAsStaticIndex<StaticSize<C>::value>(i, [&](const auto& ii) -> decltype(auto){
+  using Size = decltype(Hybrid::size(c));
+  return Hybrid::switchCases(std::make_index_sequence<Size::value>(), i,
+      [&](const auto& ii) -> decltype(auto){
         return f(c[ii]);
+      }, [&]() -> decltype(auto){
+        return f(c[Dune::Indices::_0]);
       });
 }
 
