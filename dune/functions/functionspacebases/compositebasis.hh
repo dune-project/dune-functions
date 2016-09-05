@@ -132,6 +132,13 @@ public:
     return std::get<0>(subFactories_).gridView();
   }
 
+  void update(const GridView& gv)
+  {
+    staticForLoop<0, sizeof...(SF)>([&](auto i) {
+      std::get<i.value>(subFactories_).update(gv);
+    });
+  }
+
   template<class TP>
   Node<TP> node(const TP& tp) const
   {

@@ -99,6 +99,12 @@ public:
     return gridView_;
   }
 
+  void update (const GridView& gv)
+  {
+    pq1Factory_.update(gv);
+    pq2Factory_.update(gv);
+  }
+
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
@@ -178,7 +184,7 @@ public:
   }
 
 protected:
-  const GridView gridView_;
+  GridView gridView_;
 
   PQ1Factory pq1Factory_;
   PQ2Factory pq2Factory_;
