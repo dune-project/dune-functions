@@ -5,6 +5,8 @@
 
 #include <array>
 
+#include <dune/common/hash.hh>
+
 namespace Dune {
 namespace Functions {
 
@@ -54,11 +56,18 @@ public:
     return this->operator[](0);
   }
 
+  inline friend std::size_t hash_value(const FlatMultiIndex& arg)
+  {
+    return std::hash<size_type>()(arg);
+  }
+
 };
 
 
 
 } // end namespace Functions
 } // end namespace Dune
+
+DUNE_DEFINE_HASH(DUNE_HASH_TEMPLATE_ARGS(typename size_type),DUNE_HASH_TYPE(Dune::Functions::FlatMultiIndex<size_type>))
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_FLATMULTIINDEX_HH
