@@ -70,7 +70,7 @@ public:
   }
 
   //! Update the indexing information of the GlobalBasis.
-  void update(GridView gv)
+  void update(const GridView & gv)
   {
     nodeFactory_.update(gv);
     nodeFactory_.initializeIndices();
