@@ -56,21 +56,21 @@ public:
 
 
   // Precompute the number of dofs per entity type
-  const static int dofsPerVertex =
+  const static size_type dofsPerVertex =
       k == 0 ? (dim == 0 ? 1 : 0) : 1;
-  const static int dofsPerEdge =
+  const static size_type dofsPerEdge =
       k == 0 ? (dim == 1 ? 1 : 0) : k-1;
-  const static int dofsPerTriangle =
+  const static size_type dofsPerTriangle =
       k == 0 ? (dim == 2 ? 1 : 0) : (k-1)*(k-2)/2;
-  const static int dofsPerQuad =
+  const static size_type dofsPerQuad =
       k == 0 ? (dim == 2 ? 1 : 0) : (k-1)*(k-1);
-  const static int dofsPerTetrahedron =
+  const static size_type dofsPerTetrahedron =
       k == 0 ? (dim == 3 ? 1 : 0) : (k-3)*(k-2)*(k-1)/6;
-  const static int dofsPerPrism =
+  const static size_type dofsPerPrism =
       k == 0 ? (dim == 3 ? 1 : 0) : (k-1)*(k-1)*(k-2)/2;
-  const static int dofsPerHexahedron =
+  const static size_type dofsPerHexahedron =
       k == 0 ? (dim == 3 ? 1 : 0) : (k-1)*(k-1)*(k-1);
-  const static int dofsPerPyramid =
+  const static size_type dofsPerPyramid =
       k == 0 ? (dim == 3 ? 1 : 0) : (k-2)*(k-1)*(2*k-3)/6;
 
   template<class TP>
@@ -93,29 +93,29 @@ public:
   void initializeIndices()
   {
     vertexOffset_        = 0;
-    edgeOffset_          = vertexOffset_          + dofsPerVertex * gridView_.size(dim);
-    triangleOffset_      = edgeOffset_            + dofsPerEdge * gridView_.size(dim-1);
+    edgeOffset_          = vertexOffset_          + dofsPerVertex * ((size_type)gridView_.size(dim));
+    triangleOffset_      = edgeOffset_            + dofsPerEdge * ((size_type) gridView_.size(dim-1));
 
     GeometryType triangle;
     triangle.makeTriangle();
-    quadrilateralOffset_ = triangleOffset_        + dofsPerTriangle * gridView_.size(triangle);
+    quadrilateralOffset_ = triangleOffset_        + dofsPerTriangle * ((size_type)gridView_.size(triangle));
 
     Dune::GeometryType quadrilateral;
     quadrilateral.makeQuadrilateral();
     if (dim==3) {
-      tetrahedronOffset_   = quadrilateralOffset_ + dofsPerQuad * gridView_.size(quadrilateral);
+      tetrahedronOffset_   = quadrilateralOffset_ + dofsPerQuad * ((size_type)gridView_.size(quadrilateral));
 
       GeometryType tetrahedron;
       tetrahedron.makeSimplex(3);
-      prismOffset_         = tetrahedronOffset_   +   dofsPerTetrahedron * gridView_.size(tetrahedron);
+      prismOffset_         = tetrahedronOffset_   +   dofsPerTetrahedron * ((size_type)gridView_.size(tetrahedron));
 
       GeometryType prism;
       prism.makePrism();
-      hexahedronOffset_    = prismOffset_         +   dofsPerPrism * gridView_.size(prism);
+      hexahedronOffset_    = prismOffset_         +   dofsPerPrism * ((size_type)gridView_.size(prism));
 
       GeometryType hexahedron;
       hexahedron.makeCube(3);
-      pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * gridView_.size(hexahedron);
+      pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * ((size_type)gridView_.size(hexahedron));
     }
   }
 
@@ -143,18 +143,18 @@ public:
     switch (dim)
     {
       case 1:
-        return dofsPerVertex * gridView_.size(dim)
-          + dofsPerEdge*gridView_.size(dim-1);
+        return dofsPerVertex * ((size_type)gridView_.size(dim))
+          + dofsPerEdge*((size_type)gridView_.size(dim-1));
       case 2:
       {
         GeometryType triangle, quad;
         triangle.makeTriangle();
         quad.makeQuadrilateral();
 
-        return dofsPerVertex * gridView_.size(dim)
-          + dofsPerEdge * gridView_.size(dim-1)
-          + dofsPerTriangle * gridView_.size(triangle)
-          + dofsPerQuad * gridView_.size(quad);
+        return dofsPerVertex * ((size_type)gridView_.size(dim))
+          + dofsPerEdge * ((size_type)gridView_.size(dim-1))
+          + dofsPerTriangle * ((size_type)gridView_.size(triangle))
+          + dofsPerQuad * ((size_type)gridView_.size(quad));
       }
       case 3:
       {
@@ -165,14 +165,14 @@ public:
         pyramid.makePyramid();
         prism.makePrism();
         hexahedron.makeCube(3);
-        return dofsPerVertex * gridView_.size(dim)
-          + dofsPerEdge * gridView_.size(dim-1)
-          + dofsPerTriangle * gridView_.size(triangle)
-          + dofsPerQuad * gridView_.size(quad)
-          + dofsPerTetrahedron * gridView_.size(tetrahedron)
-          + dofsPerPyramid * gridView_.size(pyramid)
-          + dofsPerPrism * gridView_.size(prism)
-          + dofsPerHexahedron * gridView_.size(hexahedron);
+        return dofsPerVertex * ((size_type)gridView_.size(dim))
+          + dofsPerEdge * ((size_type)gridView_.size(dim-1))
+          + dofsPerTriangle * ((size_type)gridView_.size(triangle))
+          + dofsPerQuad * ((size_type)gridView_.size(quad))
+          + dofsPerTetrahedron * ((size_type)gridView_.size(tetrahedron))
+          + dofsPerPyramid * ((size_type)gridView_.size(pyramid))
+          + dofsPerPrism * ((size_type)gridView_.size(prism))
+          + dofsPerHexahedron * ((size_type)gridView_.size(hexahedron));
       }
     }
     DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
@@ -199,14 +199,14 @@ public:
 //protected:
   const GridView gridView_;
 
-  size_t vertexOffset_;
-  size_t edgeOffset_;
-  size_t triangleOffset_;
-  size_t quadrilateralOffset_;
-  size_t tetrahedronOffset_;
-  size_t pyramidOffset_;
-  size_t prismOffset_;
-  size_t hexahedronOffset_;
+  size_type vertexOffset_;
+  size_type edgeOffset_;
+  size_type triangleOffset_;
+  size_type quadrilateralOffset_;
+  size_type tetrahedronOffset_;
+  size_type pyramidOffset_;
+  size_type prismOffset_;
+  size_type hexahedronOffset_;
 
 };
 
@@ -319,17 +319,17 @@ public:
     const auto& element = node_->element();
 
     // The dimension of the entity that the current dof is related to
-    size_t dofDim = dim - localKey.codim();
+    auto dofDim = dim - localKey.codim();
 
     if (dofDim==0) {  // vertex dof
-      return {{ gridIndexSet.subIndex(element,localKey.subEntity(),dim) }};
+      return {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
     }
 
     if (dofDim==1)
     {  // edge dof
       if (dim==1)  // element dof -- any local numbering is fine
         return {{ nodeFactory_->edgeOffset_
-            + nodeFactory_->dofsPerEdge * gridIndexSet.subIndex(element,0,0)
+            + nodeFactory_->dofsPerEdge * ((size_type)gridIndexSet.subIndex(element,0,0))
             + localKey.index() }};
       else
       {
@@ -338,15 +338,15 @@ public:
 
         // we have to reverse the numbering if the local triangle edge is
         // not aligned with the global edge
-        size_t v0 = gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
-        size_t v1 = gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
+        auto v0 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
+        auto v1 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
         bool flip = (v0 > v1);
         return {{ (flip)
               ? nodeFactory_->edgeOffset_
-                + nodeFactory_->dofsPerEdge*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())
+                + nodeFactory_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
                 + (nodeFactory_->dofsPerEdge-1)-localKey.index()
               : nodeFactory_->edgeOffset_
-                + nodeFactory_->dofsPerEdge*gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())
+                + nodeFactory_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
                 + localKey.index() }};
       }
     }
@@ -358,12 +358,12 @@ public:
         if (element.type().isTriangle())
         {
           const int interiorLagrangeNodesPerTriangle = (k-1)*(k-2)/2;
-          return {{ nodeFactory_->triangleOffset_ + interiorLagrangeNodesPerTriangle*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
+          return {{ nodeFactory_->triangleOffset_ + interiorLagrangeNodesPerTriangle*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
         }
         else if (element.type().isQuadrilateral())
         {
           const int interiorLagrangeNodesPerQuadrilateral = (k-1)*(k-1);
-          return {{ nodeFactory_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
+          return {{ nodeFactory_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
         }
         else
           DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
@@ -378,7 +378,7 @@ public:
         if (k==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
           DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
 
-        return {{ nodeFactory_->triangleOffset_ + gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()) }};
+        return {{ nodeFactory_->triangleOffset_ + ((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())) }};
       }
     }
 
@@ -387,13 +387,13 @@ public:
       if (dim==3)   // element dof -- any local numbering is fine
       {
         if (element.type().isTetrahedron())
-          return {{ nodeFactory_->tetrahedronOffset_ + NodeFactory::dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
+          return {{ nodeFactory_->tetrahedronOffset_ + NodeFactory::dofsPerTetrahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
         else if (element.type().isHexahedron())
-          return {{ nodeFactory_->hexahedronOffset_ + NodeFactory::dofsPerHexahedron*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
+          return {{ nodeFactory_->hexahedronOffset_ + NodeFactory::dofsPerHexahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
         else if (element.type().isPrism())
-          return {{ nodeFactory_->prismOffset_ + NodeFactory::dofsPerPrism*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
+          return {{ nodeFactory_->prismOffset_ + NodeFactory::dofsPerPrism*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
         else if (element.type().isPyramid())
-          return {{ nodeFactory_->pyramidOffset_ + NodeFactory::dofsPerPyramid*gridIndexSet.subIndex(element,0,0) + localKey.index() }};
+          return {{ nodeFactory_->pyramidOffset_ + NodeFactory::dofsPerPyramid*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
         else
           DUNE_THROW(Dune::NotImplemented, "3d elements have to be tetrahedra, hexahedra, prisms, or pyramids");
       } else
