@@ -428,7 +428,7 @@ template<
   std::enable_if_t<not Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
 auto composite(Args&&... args)
 {
-  return Imp::compositeImp(std::tuple<<BasisBuilder::BlockedLexicographic,Args..>{});
+  return Imp::compositeImp(std::tuple<BasisBuilder::BlockedLexicographic,Args...>{});
 }
 
 } // end namespace BasisBuilder
