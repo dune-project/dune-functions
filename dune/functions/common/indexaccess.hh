@@ -83,20 +83,94 @@ decltype(auto) hybridIndexAccess(C&& c, const I& i, F&& f)
 
 
 
+/**
+ * \brief Class representing a shifted multi index
+ *
+ * \tparam Index Type of the base multi index
+ * \tparam offset Number of positions to shift left
+ *
+ * For a given multi index of size n this
+ * represents a multi index with the first
+ * offset entries removed.
+ *
+ * Notice that this does only store a reference to
+ * the passed multi index.
+ */
+template<class Index, std::size_t offset=1>
+class ShiftedMultiIndex
+{
+public:
+  ShiftedMultiIndex(const Index& index) :
+    index_(index)
+  {}
+
+  template<class P>
+  decltype(auto) operator[](const P& position) const
+  {
+    return index_[position+offset];
+  }
+
+  /**
+   * \brief Return multi index with one more position truncated
+   */
+  ShiftedMultiIndex<Index, offset+1> pop() const
+  {
+    return {index_};
+  }
+
+  auto size() const
+  {
+    return index_.size() - offset;
+  }
+
+private:
+  const Index& index_;
+};
+
+
+
+/**
+ * \brief Create a ShiftedMultiIndex
+ *
+ * \tparam offset Number of positions to shift left
+ */
+template<std::size_t offset, class Index>
+ShiftedMultiIndex<Index, offset> shiftedMultiIndex(const Index& index)
+{
+  return {index};
+}
+
+
+
+/**
+ * \brief Create a ShiftedMultiIndex with one position truncated
+ *
+ * \tparam offset Number of positions to shift left
+ */
+template<class Index>
+ShiftedMultiIndex<Index, 1> shiftedMultiIndex(const Index& index)
+{
+  return {index};
+}
+
+
+
 namespace Imp {
 
-template<class Result, class MultiIndex, std::size_t position>
-struct Lambda_hybridMultiIndexAccess
+template<class Result, class Index>
+struct MultiIndexResolver
 {
-  Lambda_hybridMultiIndexAccess(const MultiIndex& multiIndex) :
-    multiIndex_(multiIndex)
+  MultiIndexResolver(const Index& index) :
+    index_(index)
   {}
 
   template<class C,
     typename std::enable_if<not std::is_convertible<C&, Result>::value, int>::type = 0>
   Result operator()(C&& c)
   {
-    return (Result)(hybridIndexAccess(std::forward<C>(c), multiIndex_[position], Lambda_hybridMultiIndexAccess<Result,MultiIndex, position+1>(multiIndex_)));
+    auto&& subIndex = shiftedMultiIndex(index_);
+    auto&& subIndexResolver = MultiIndexResolver<Result, decltype(subIndex)>(subIndex);
+    return (Result)(hybridIndexAccess(c, index_[Dune::Indices::_0], subIndexResolver));
   }
 
   template<class C,
@@ -106,7 +180,7 @@ struct Lambda_hybridMultiIndexAccess
     return (Result)(std::forward<C>(c));
   }
 
-  const MultiIndex& multiIndex_;
+  const Index& index_;
 };
 
 } // namespace Imp
@@ -134,8 +208,9 @@ struct Lambda_hybridMultiIndexAccess
 template<class Result, class C, class MultiIndex>
 Result hybridMultiIndexAccess(C&& c, const MultiIndex& index)
 {
-  Imp::Lambda_hybridMultiIndexAccess<Result,MultiIndex, 0> getter(index);
-  return getter(c);
+
+  Imp::MultiIndexResolver<Result, MultiIndex> multiIndexResolver(index);
+  return multiIndexResolver(c);
 }
 
 
