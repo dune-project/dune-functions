@@ -398,11 +398,11 @@ struct CompositeNodeFactoryBuilder
 
   static const std::size_t requiredMultiIndexSize=maxHelper(SubFactoryTags::requiredMultiIndexSize...) + (std::size_t)(isBlocked);
 
-  template<class MultiIndex, class GridView, class size_type=std::size_t>
+  template<class MultiIndex, class GridView>
   auto build(const GridView& gridView)
-    -> CompositeNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTags().template build<MultiIndex, GridView, size_type>(gridView))...>
+    -> CompositeNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTags().template build<MultiIndex, GridView>(gridView))...>
   {
-    return {SubFactoryTags().template build<MultiIndex, GridView, size_type>(gridView)...};
+    return {SubFactoryTags().template build<MultiIndex, GridView>(gridView)...};
   }
 };
 

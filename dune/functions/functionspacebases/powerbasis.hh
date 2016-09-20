@@ -354,11 +354,11 @@ struct PowerNodeFactoryBuilder
 
   static const std::size_t requiredMultiIndexSize=SubFactoryTag::requiredMultiIndexSize + (std::size_t)(isBlocked);
 
-  template<class MultiIndex, class GridView, class size_type=std::size_t>
+  template<class MultiIndex, class GridView>
   auto build(const GridView& gridView)
-    -> PowerNodeFactory<MultiIndex,  IndexMergingStrategy, decltype(SubFactoryTag().template build<MultiIndex, GridView, size_type>(std::declval<GridView>())), k>
+    -> PowerNodeFactory<MultiIndex,  IndexMergingStrategy, decltype(SubFactoryTag().template build<MultiIndex, GridView>(std::declval<GridView>())), k>
   {
-    return {SubFactoryTag().template build<MultiIndex, GridView, size_type>(gridView)};
+    return {SubFactoryTag().template build<MultiIndex, GridView>(gridView)};
   }
 };
 
