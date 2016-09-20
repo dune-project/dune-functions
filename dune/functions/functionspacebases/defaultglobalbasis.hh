@@ -8,7 +8,7 @@
 #include <dune/common/concept.hh>
 
 #include <dune/functions/common/type_traits.hh>
-#include <dune/functions/functionspacebases/defaultglobalindexset.hh>
+#include <dune/functions/functionspacebases/defaultlocalindexset.hh>
 #include <dune/functions/functionspacebases/defaultlocalview.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
@@ -42,7 +42,6 @@ public:
   using NodeIndexSet = typename NodeFactory::template IndexSet<PrefixPath>;
   using SizePrefix = typename NodeFactory::SizePrefix;
   using LocalIndexSet = DefaultLocalIndexSet<LocalView, NodeIndexSet>;
-  using GlobalIndexSet = DefaultGlobalIndexSet<LocalView, NodeFactory>;
 
 
   /** \brief Constructor for a given grid view object */
@@ -107,11 +106,6 @@ public:
   LocalIndexSet localIndexSet() const
   {
     return LocalIndexSet(nodeFactory_.template indexSet<PrefixPath>());
-  }
-
-  GlobalIndexSet indexSet() const
-  {
-    return GlobalIndexSet(nodeFactory_);
   }
 
   const DefaultGlobalBasis& rootBasis() const

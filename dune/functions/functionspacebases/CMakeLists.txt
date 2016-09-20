@@ -6,7 +6,6 @@ install(FILES
         compositebasis.hh
         concepts.hh
         defaultglobalbasis.hh
-        defaultglobalindexset.hh
         defaultlocalindexset.hh
         defaultlocalview.hh
         defaultnodetorangemap.hh

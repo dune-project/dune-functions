@@ -31,7 +31,6 @@ int main (int argc, char* argv[]) try
 
   const GridView& gridView = grid.leafGridView();
   Basis feBasis(gridView);
-  auto indexSet = feBasis.indexSet();
 
   typedef Basis::MultiIndex MultiIndex;
 
