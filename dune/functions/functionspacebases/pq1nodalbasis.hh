@@ -30,16 +30,16 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, typename ST, typename TP>
+template<typename GV, typename TP>
 class PQ1Node;
 
-template<typename GV, class MI, class TP, class ST>
+template<typename GV, class MI, class TP>
 class PQ1NodeIndexSet;
 
-template<typename GV, class MI, class ST>
+template<typename GV, class MI>
 class PQ1NodeFactory;
 
-template<typename GV, class MI, class ST>
+template<typename GV, class MI>
 class PQ1NodeFactory
 {
   static const int dim = GV::dimension;
@@ -48,13 +48,13 @@ public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = GV;
-  using size_type = ST;
+  using size_type = std::size_t;
 
   template<class TP>
-  using Node = PQ1Node<GV, size_type, TP>;
+  using Node = PQ1Node<GV, TP>;
 
   template<class TP>
-  using IndexSet = PQ1NodeIndexSet<GV, MI, TP, ST>;
+  using IndexSet = PQ1NodeIndexSet<GV, MI, TP>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -90,7 +90,7 @@ public:
 
   size_type size() const
   {
-    return gridView_.size(dim);
+    return (size_type)(gridView_.size(dim));
   }
 
   //! Return number possible values for next position in multi index
@@ -120,19 +120,19 @@ public:
 
 
 
-template<typename GV, typename ST, typename TP>
+template<typename GV, typename TP>
 class PQ1Node :
-  public LeafBasisNode<ST, TP>
+  public LeafBasisNode<std::size_t, TP>
 {
   static const int dim = GV::dimension;
   static const int maxSize = StaticPower<2,GV::dimension>::power;
 
-  using Base = LeafBasisNode<ST,TP>;
+  using Base = LeafBasisNode<std::size_t,TP>;
   using FiniteElementCache = typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, dim, 1>;
 
 public:
 
-  using size_type = ST;
+  using size_type = std::size_t;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElement = typename FiniteElementCache::FiniteElementType;
@@ -175,19 +175,19 @@ protected:
 
 
 
-template<typename GV, class MI, class TP, class ST>
+template<typename GV, class MI, class TP>
 class PQ1NodeIndexSet
 {
   enum {dim = GV::dimension};
 
 public:
 
-  using size_type = ST;
+  using size_type = std::size_t;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = PQ1NodeFactory<GV, MI, ST>;
+  using NodeFactory = PQ1NodeFactory<GV, MI>;
 
   using Node = typename NodeFactory::template Node<TP>;
 
@@ -216,7 +216,7 @@ public:
    */
   size_type size() const
   {
-    return node_->finiteElement().size();
+    return (size_type)(node_->finiteElement().size());
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
@@ -226,7 +226,7 @@ public:
     const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
     const auto& element = node_->element();
 
-    return {{ gridIndexSet.subIndex(element,localKey.subEntity(),dim) }};
+    return {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
   }
 
 protected:
@@ -240,10 +240,9 @@ protected:
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV The GridView that the space is defined on
- * \tparam ST The type used for local indices; global indices are FlatMultiIndex<ST>
  */
-template<typename GV, class ST = std::size_t>
-using PQ1NodalBasis = DefaultGlobalBasis<PQ1NodeFactory<GV, FlatMultiIndex<ST>, ST> >;
+template<typename GV>
+using PQ1NodalBasis = DefaultGlobalBasis<PQ1NodeFactory<GV, FlatMultiIndex<std::size_t>> >;
 
 } // end namespace Functions
 } // end namespace Dune

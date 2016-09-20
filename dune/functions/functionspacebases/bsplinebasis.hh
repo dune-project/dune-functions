@@ -25,7 +25,7 @@ namespace Functions {
 template<typename GV, typename R>
 class BSplineLocalFiniteElement;
 
-template<typename GV, class MI, class ST>
+template<typename GV, class MI>
 class BSplineNodeFactory;
 
 
@@ -52,7 +52,7 @@ public:
    *
    * The patch object does all the work.
    */
-  BSplineLocalBasis(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory,
+  BSplineLocalBasis(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory,
                     const BSplineLocalFiniteElement<GV,R>& lFE)
   : nodeFactory_(nodeFactory),
     lFE_(lFE)
@@ -144,7 +144,7 @@ public:
   }
 
 private:
-  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory_;
+  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory_;
 
   const BSplineLocalFiniteElement<GV,R>& lFE_;
 
@@ -362,7 +362,7 @@ public:
 
   /** \brief Constructor with a given B-spline basis
    */
-  BSplineLocalFiniteElement(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory)
+  BSplineLocalFiniteElement(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory)
   : nodeFactory_(nodeFactory),
     localBasis_(nodeFactory,*this)
   {}
@@ -453,7 +453,7 @@ public:
     return r;
   }
 
-  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory_;
+  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory_;
 
   BSplineLocalBasis<GV,R> localBasis_;
   BSplineLocalCoefficients<dim> localCoefficients_;
@@ -464,13 +464,13 @@ public:
 };
 
 
-template<typename GV, typename ST, typename TP>
+template<typename GV, typename TP>
 class BSplineNode;
 
-template<typename GV, class MI, class TP, class ST>
+template<typename GV, class MI, class TP>
 class BSplineNodeIndexSet;
 
-template<typename GV, class MI, class ST>
+template<typename GV, class MI>
 class BSplineNodeFactory
 {
   static const int dim = GV::dimension;
@@ -534,13 +534,13 @@ public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = GV;
-  using size_type = ST;
+  using size_type = std::size_t;
 
   template<class TP>
-  using Node = BSplineNode<GV, size_type, TP>;
+  using Node = BSplineNode<GV, TP>;
 
   template<class TP>
-  using IndexSet = BSplineNodeIndexSet<GV, MI, TP, ST>;
+  using IndexSet = BSplineNodeIndexSet<GV, MI, TP>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -1179,22 +1179,22 @@ public:
 
 
 
-template<typename GV, typename ST, typename TP>
+template<typename GV, typename TP>
 class BSplineNode :
-  public LeafBasisNode<ST, TP>
+  public LeafBasisNode<std::size_t, TP>
 {
   static const int dim = GV::dimension;
 
-  using Base = LeafBasisNode<ST,TP>;
+  using Base = LeafBasisNode<std::size_t,TP>;
 
 public:
 
-  using size_type = ST;
+  using size_type = std::size_t;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElement = BSplineLocalFiniteElement<GV,double>;
 
-  BSplineNode(const TreePath& treePath, const BSplineNodeFactory<GV, FlatMultiIndex<ST>, ST>* nodeFactory) :
+  BSplineNode(const TreePath& treePath, const BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>>* nodeFactory) :
     Base(treePath),
     nodeFactory_(nodeFactory),
     finiteElement_(*nodeFactory)
@@ -1226,7 +1226,7 @@ public:
 
 protected:
 
-  const BSplineNodeFactory<GV, FlatMultiIndex<ST>, ST>* nodeFactory_;
+  const BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>>* nodeFactory_;
 
   FiniteElement finiteElement_;
   Element element_;
@@ -1234,19 +1234,19 @@ protected:
 
 
 
-template<typename GV, class MI, class TP, class ST>
+template<typename GV, class MI, class TP>
 class BSplineNodeIndexSet
 {
   enum {dim = GV::dimension};
 
 public:
 
-  using size_type = ST;
+  using size_type = std::size_t;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = BSplineNodeFactory<GV, MI, ST>;
+  using NodeFactory = BSplineNodeFactory<GV, MI>;
 
   using Node = typename NodeFactory::template Node<TP>;
 
@@ -1324,7 +1324,7 @@ protected:
  * \tparam GV The GridView that the space is defined on
  */
 template<typename GV>
-using BSplineBasis = DefaultGlobalBasis<BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>, std::size_t> >;
+using BSplineBasis = DefaultGlobalBasis<BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>> >;
 
 
 }   // namespace Functions
