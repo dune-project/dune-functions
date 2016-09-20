@@ -12,7 +12,6 @@ install(FILES
         defaultnodetorangemap.hh
         flatmultiindex.hh
         flatvectorbackend.hh
-        gridviewfunctionspacebasis.hh
         hierarchicvectorwrapper.hh
         interpolate.hh
         lagrangebasis.hh
