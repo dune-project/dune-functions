@@ -6,6 +6,7 @@
 #include <tuple>
 #include <utility>
 
+#include <dune/common/hybridutilities.hh>
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
 #include <dune/common/hybridutilities.hh>
@@ -120,9 +121,9 @@ public:
 
   void initializeIndices()
   {
-    staticForLoop<0, sizeof...(SF)>([&](auto i) {
-      std::get<i.value>(subFactories_).initializeIndices();
-    });
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
+            [&](auto i) { elementAt(subFactories_, i).initializeIndices(); });
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -143,9 +144,13 @@ public:
   Node<TP> node(const TP& tp) const
   {
     auto node = Node<TP>(tp);
-    staticForLoop<0, sizeof...(SF)>([&](auto i){
-      node.setChild(std::get<i.value>(subFactories_).node(TypeTree::push_back(tp, i)), i);
-    });
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
+            [&](auto&& i) {
+              node.setChild(
+                  elementAt(subFactories_, i).node(TypeTree::push_back(tp, i)),
+                  i);
+            });
     return node;
   }
 
@@ -207,12 +212,11 @@ public:
   size_type size(const SizePrefix& prefix, BasisBuilder::FlatLexicographic) const
   {
     size_type r = 0;
+    using namespace Dune::Hybrid;
     if (prefix.size() == 0)
-      staticForLoop<0, sizeof...(SF)>([&](auto i) {
-        r += std::get<i.value>(subFactories_).size();
-      });
-    else
-    {
+      forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
+              [&](auto&& i) { r += elementAt(subFactories_, i).size(); });
+    else {
       size_type shiftedFirst = prefix[0];
       staticFindInRange<0, sizeof...(SF)>(Lambda_size_flat_sizeInSubtree(), subFactories_, prefix, shiftedFirst, r);
     }
@@ -224,9 +228,9 @@ public:
   {
     size_type r=0;
     // Accumulate dimension() for all subfactories
-    staticForLoop<0, sizeof...(SF)>([&](auto i) {
-      r += std::get<i.value>(subFactories_).dimension();
-    });
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
+            [&](auto&& i) { r += elementAt(subFactories_, i).dimension(); });
     return r;
   }
 
@@ -234,9 +238,9 @@ public:
   {
     size_type r=0;
     // Accumulate maxNodeSize() for all subfactories
-    staticForLoop<0, sizeof...(SF)>([&](auto i) {
-      r += std::get<i.value>(subFactories_).maxNodeSize();
-    });
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
+            [&](auto&& i) { r += elementAt(subFactories_, i).maxNodeSize(); });
     return r;
   }
 
@@ -289,19 +293,20 @@ public:
 
   void bind(const Node& node)
   {
-    using namespace TypeTree::Indices;
     node_ = &node;
-    staticForLoop<0, sizeof...(SF)>([&](auto i){
-      std::get<i.value>(subNodeIndexSetTuple_).bind(node.template child<i.value>());
-    });
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
+            [&](auto&& i) {
+              elementAt(subNodeIndexSetTuple_, i).bind(node.child(i));
+            });
   }
 
   void unbind()
   {
     node_ = nullptr;
-    staticForLoop<0, sizeof...(SF)>([&](auto i){
-      std::get<i.value>(subNodeIndexSetTuple_).unbind();
-    });
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
+            [&](auto&& i) { elementAt(subNodeIndexSetTuple_, i).unbind(); });
   }
 
   size_type size() const
