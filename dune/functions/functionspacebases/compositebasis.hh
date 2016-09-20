@@ -135,8 +135,9 @@ public:
 
   void update(const GridView& gv)
   {
-    staticForLoop<0, sizeof...(SF)>([&](auto i) {
-      std::get<i.value>(subFactories_).update(gv);
+    using namespace Dune::Hybrid;
+    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()), [&](auto i) {
+      elementAt(subFactories_, i).update(gv);
     });
   }
 
