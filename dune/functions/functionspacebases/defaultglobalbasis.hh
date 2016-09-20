@@ -34,7 +34,7 @@ public:
   //! Type used for global numbering of the basis vectors
   using MultiIndex = typename NodeFactory::MultiIndex;
 
-  using size_type = typename NodeFactory::size_type;
+  using size_type = std::size_t;
 
   //! Type of the local view on the restriction of the basis to a single element
   using LocalView = DefaultLocalView<DefaultGlobalBasis<NodeFactory>>;

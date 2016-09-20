@@ -54,7 +54,7 @@ public:
 
   using SubFactories = std::tuple<SF...>;
   using GridView = typename std::tuple_element<0, SubFactories>::type::GridView;
-  using size_type = typename std::tuple_element<0, SubFactories>::type::size_type;
+  using size_type = std::size_t;
   using IndexMergingStrategy = IMS;
 
 protected:
@@ -250,7 +250,7 @@ public:
   using SubFactory = typename std::tuple_element<k, std::tuple<SF...>>::type;
 
   using GridView = typename SubFactory<0>::GridView;
-  using size_type = typename SubFactory<0>::size_type;
+  using size_type = std::size_t;
   using IndexMergingStrategy = IMS;
 
   /** \brief Type used for global numbering of the basis vectors */

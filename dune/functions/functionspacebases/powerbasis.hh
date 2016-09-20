@@ -60,7 +60,7 @@ public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = typename SF::GridView;
-  using size_type = typename SF::size_type;
+  using size_type = std::size_t;
   using IndexMergingStrategy = IMS;
 
   template<class TP>
@@ -232,7 +232,7 @@ public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = typename SF::GridView;
-  using size_type = typename SF::size_type;
+  using size_type = std::size_t;
   using IndexMergingStrategy = IMS;
 
   /** \brief Type used for global numbering of the basis vectors */

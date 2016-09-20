@@ -35,7 +35,7 @@ public:
   //! Type used for global numbering of the basis vectors
   using MultiIndex = typename RootBasis::MultiIndex;
 
-  using size_type = typename RootBasis::size_type;
+  using size_type = std::size_t;
 
   //! Type of the local view on the restriction of the basis to a single element
   using LocalView = SubspaceLocalView<RootLocalView, PrefixPath>;

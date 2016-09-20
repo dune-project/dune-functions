@@ -44,7 +44,7 @@ public:
   using Element = typename GridView::template Codim<0>::Entity;
 
   //! The type used for sizes
-  using size_type = typename GlobalBasis::size_type;
+  using size_type = std::size_t;
 
   //! Tree of local finite elements / local shape function sets
   using RootTree = typename RootLocalView::Tree;
