@@ -108,7 +108,7 @@ namespace Dune {
     }
 
 
-    template<typename size_t, typename TP>
+    template<typename TP>
     class BasisNodeMixin
     {
 
@@ -124,7 +124,7 @@ namespace Dune {
     public:
 
       using TreePath = TP;
-      using size_type = size_t;
+      using size_type = std::size_t;
 
       BasisNodeMixin(const TreePath& treePath) :
         offset_(0),
@@ -185,18 +185,18 @@ namespace Dune {
     };
 
 
-    template<typename size_t, typename TP>
+    template<typename SIZE_T_DUMMY, typename TP>
     class LeafBasisNode :
-        public BasisNodeMixin<size_t, TP>,
+        public BasisNodeMixin<TP>,
         public TypeTree::LeafNode
     {
 
-      using Mixin = BasisNodeMixin<size_t,TP>;
+      using Mixin = BasisNodeMixin<TP>;
 
     public:
 
       using TreePath = TP;
-      using size_type = size_t;
+      using size_type = std::size_t;
 
       LeafBasisNode(TreePath treePath = TreePath()) :
         Mixin(treePath)
@@ -205,13 +205,13 @@ namespace Dune {
     };
 
 
-    template<typename size_t, typename TP, typename T, std::size_t n>
+    template<typename SIZE_T_DUMMY, typename TP, typename T, std::size_t n>
     class PowerBasisNode :
-      public BasisNodeMixin<size_t,TP>,
+      public BasisNodeMixin<TP>,
       public TypeTree::PowerNode<T,n>
     {
 
-      using Mixin = BasisNodeMixin<size_t,TP>;
+      using Mixin = BasisNodeMixin<TP>;
       using Node = TypeTree::PowerNode<T,n>;
 
     public:
@@ -228,13 +228,13 @@ namespace Dune {
     };
 
 
-    template<typename size_t, typename TP, typename... T>
+    template<typename SIZE_T_DUMMY, typename TP, typename... T>
     class CompositeBasisNode :
-      public BasisNodeMixin<size_t,TP>,
+      public BasisNodeMixin<TP>,
       public TypeTree::CompositeNode<T...>
     {
 
-      using Mixin = BasisNodeMixin<size_t,TP>;
+      using Mixin = BasisNodeMixin<TP>;
       using Node = TypeTree::CompositeNode<T...>;
 
     public:
@@ -257,23 +257,23 @@ namespace Dune {
     };
 
 
-    template<typename Tree, typename size_type>
-    void clearSize(Tree& tree, size_type offset)
+    template<typename Tree>
+    void clearSize(Tree& tree, std::size_t offset)
     {
-      TypeTree::applyToTree(tree,ClearSizeVisitor<size_type>(offset));
+      TypeTree::applyToTree(tree,ClearSizeVisitor<std::size_t>(offset));
     }
 
-    template<typename Tree, typename Entity, typename size_type = std::size_t>
-    void bindTree(Tree& tree, const Entity& entity, size_type offset = 0)
+    template<typename Tree, typename Entity>
+    void bindTree(Tree& tree, const Entity& entity, std::size_t offset = 0)
     {
-      BindVisitor<Entity,size_type> visitor(entity,offset);
+      BindVisitor<Entity,std::size_t> visitor(entity,offset);
       TypeTree::applyToTree(tree,visitor);
     }
 
-    template<typename Tree, typename size_type = std::size_t>
-    void initializeTree(Tree& tree, size_type treeIndexOffset = 0)
+    template<typename Tree>
+    void initializeTree(Tree& tree, std::size_t treeIndexOffset = 0)
     {
-      InitializeTreeVisitor<size_type> visitor(treeIndexOffset);
+      InitializeTreeVisitor<std::size_t> visitor(treeIndexOffset);
       TypeTree::applyToTree(tree,visitor);
     }
 
