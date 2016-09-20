@@ -117,6 +117,11 @@ public:
     return gridView_;
   }
 
+  void update(const GridView& gv)
+  {
+    gridView_ = gv;
+  }
+
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
@@ -176,7 +181,7 @@ public:
   }
 
 //protected:
-  const GridView gridView_;
+  GridView gridView_;
 
   size_t quadrilateralOffset_;
   size_t pyramidOffset_;

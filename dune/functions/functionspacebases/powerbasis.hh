@@ -108,6 +108,11 @@ public:
     return subFactory_.gridView();
   }
 
+  void update(const GridView& gv)
+  {
+    subFactory_.update(gv);
+  }
+
   template<class TP>
   Node<TP> node(const TP& tp) const
   {

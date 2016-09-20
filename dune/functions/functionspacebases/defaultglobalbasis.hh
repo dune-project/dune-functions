@@ -69,6 +69,13 @@ public:
     return nodeFactory_;
   }
 
+  //! Update the indexing information of the GlobalBasis.
+  void update(const GridView & gv)
+  {
+    nodeFactory_.update(gv);
+    nodeFactory_.initializeIndices();
+  }
+
   /**
    * \todo This method has been added to the interface without prior discussion.
    */
