@@ -6,6 +6,7 @@
 #include <tuple>
 #include <utility>
 
+#include <dune/common/std/utility.hh>
 #include <dune/common/hybridutilities.hh>
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
@@ -122,8 +123,9 @@ public:
   void initializeIndices()
   {
     using namespace Dune::Hybrid;
-    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
-            [&](auto i) { elementAt(subFactories_, i).initializeIndices(); });
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      elementAt(subFactories_, i).initializeIndices();
+    });
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -136,7 +138,7 @@ public:
   void update(const GridView& gv)
   {
     using namespace Dune::Hybrid;
-    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()), [&](auto i) {
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
       elementAt(subFactories_, i).update(gv);
     });
   }
@@ -146,12 +148,9 @@ public:
   {
     auto node = Node<TP>(tp);
     using namespace Dune::Hybrid;
-    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
-            [&](auto&& i) {
-              node.setChild(
-                  elementAt(subFactories_, i).node(TypeTree::push_back(tp, i)),
-                  i);
-            });
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      node.setChild( elementAt(subFactories_, i).node(TypeTree::push_back(tp, i)), i);
+    });
     return node;
   }
 
@@ -215,8 +214,9 @@ public:
     size_type r = 0;
     using namespace Dune::Hybrid;
     if (prefix.size() == 0)
-      forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
-              [&](auto&& i) { r += elementAt(subFactories_, i).size(); });
+      forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+        r += elementAt(subFactories_, i).size();
+      });
     else {
       size_type shiftedFirst = prefix[0];
       staticFindInRange<0, sizeof...(SF)>(Lambda_size_flat_sizeInSubtree(), subFactories_, prefix, shiftedFirst, r);
@@ -230,8 +230,9 @@ public:
     size_type r=0;
     // Accumulate dimension() for all subfactories
     using namespace Dune::Hybrid;
-    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
-            [&](auto&& i) { r += elementAt(subFactories_, i).dimension(); });
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      r += elementAt(subFactories_, i).dimension();
+    });
     return r;
   }
 
@@ -240,8 +241,9 @@ public:
     size_type r=0;
     // Accumulate maxNodeSize() for all subfactories
     using namespace Dune::Hybrid;
-    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
-            [&](auto&& i) { r += elementAt(subFactories_, i).maxNodeSize(); });
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      r += elementAt(subFactories_, i).maxNodeSize();
+    });
     return r;
   }
 
@@ -296,18 +298,18 @@ public:
   {
     node_ = &node;
     using namespace Dune::Hybrid;
-    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
-            [&](auto&& i) {
-              elementAt(subNodeIndexSetTuple_, i).bind(node.child(i));
-            });
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      elementAt(subNodeIndexSetTuple_, i).bind(node.child(i));
+    });
   }
 
   void unbind()
   {
     node_ = nullptr;
     using namespace Dune::Hybrid;
-    forEach(integralRange(std::integral_constant<size_t, sizeof...(SF)>()),
-            [&](auto&& i) { elementAt(subNodeIndexSetTuple_, i).unbind(); });
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      elementAt(subNodeIndexSetTuple_, i).unbind();
+    });
   }
 
   size_type size() const
