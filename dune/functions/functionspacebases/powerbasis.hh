@@ -60,7 +60,7 @@ public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = typename SF::GridView;
-  using size_type = typename SF::size_type;
+  using size_type = std::size_t;
   using IndexMergingStrategy = IMS;
 
   template<class TP>
@@ -232,7 +232,7 @@ public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = typename SF::GridView;
-  using size_type = typename SF::size_type;
+  using size_type = std::size_t;
   using IndexMergingStrategy = IMS;
 
   /** \brief Type used for global numbering of the basis vectors */
@@ -354,11 +354,11 @@ struct PowerNodeFactoryBuilder
 
   static const std::size_t requiredMultiIndexSize=SubFactoryTag::requiredMultiIndexSize + (std::size_t)(isBlocked);
 
-  template<class MultiIndex, class GridView, class size_type=std::size_t>
+  template<class MultiIndex, class GridView>
   auto build(const GridView& gridView)
-    -> PowerNodeFactory<MultiIndex,  IndexMergingStrategy, decltype(SubFactoryTag().template build<MultiIndex, GridView, size_type>(std::declval<GridView>())), k>
+    -> PowerNodeFactory<MultiIndex,  IndexMergingStrategy, decltype(SubFactoryTag().template build<MultiIndex, GridView>(std::declval<GridView>())), k>
   {
-    return {SubFactoryTag().template build<MultiIndex, GridView, size_type>(gridView)};
+    return {SubFactoryTag().template build<MultiIndex, GridView>(gridView)};
   }
 };
 

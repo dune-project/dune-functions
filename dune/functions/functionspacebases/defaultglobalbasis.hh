@@ -34,7 +34,7 @@ public:
   //! Type used for global numbering of the basis vectors
   using MultiIndex = typename NodeFactory::MultiIndex;
 
-  using size_type = typename NodeFactory::size_type;
+  using size_type = std::size_t;
 
   //! Type of the local view on the restriction of the basis to a single element
   using LocalView = DefaultLocalView<DefaultGlobalBasis<NodeFactory>>;
@@ -126,15 +126,15 @@ protected:
 
 namespace BasisBuilder {
 
-template<class GridView, class FactoryTag, class size_type=std::size_t>
+template<class GridView, class FactoryTag>
 auto makeBasis(const GridView& gridView, FactoryTag&& factoryTag)
-  -> DefaultGlobalBasis<decltype(factoryTag.template build<typename Dune::ReservedVector<size_type, FactoryTag::requiredMultiIndexSize> >(gridView))>
+  -> DefaultGlobalBasis<decltype(factoryTag.template build<typename Dune::ReservedVector<std::size_t, FactoryTag::requiredMultiIndexSize> >(gridView))>
 {
-  using MultiIndex = typename Dune::ReservedVector<size_type, FactoryTag::requiredMultiIndexSize>;
+  using MultiIndex = typename Dune::ReservedVector<std::size_t, FactoryTag::requiredMultiIndexSize>;
   return {factoryTag.template build<MultiIndex>(gridView)};
 }
 
-template<class MultiIndex, class GridView, class FactoryTag, class size_type=std::size_t>
+template<class MultiIndex, class GridView, class FactoryTag>
 auto makeBasis(const GridView& gridView, FactoryTag&& factoryTag)
   -> DefaultGlobalBasis<decltype(factoryTag.template build<MultiIndex>(gridView))>
 {

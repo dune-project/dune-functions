@@ -59,7 +59,7 @@ struct BasisNode
     requireConvertible<typename N::size_type>(node.localIndex(std::declval<typename N::size_type>())),
     requireConvertible<typename N::size_type>(node.treeIndex()),
     requireConvertible<typename N::TreePath>(node.treePath()),
-    requireBaseOf<BasisNodeMixin<typename N::size_type, typename N::TreePath>, N>()
+    requireBaseOf<BasisNodeMixin<typename N::TreePath>, N>()
   );
 };
 

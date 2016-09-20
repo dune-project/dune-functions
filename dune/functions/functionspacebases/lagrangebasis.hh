@@ -40,8 +40,8 @@ Imp::PQkNodeFactoryBuilder<k> lagrange()
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
-template<typename GV, int k, class ST = std::size_t>
-using LagrangeBasis = DefaultGlobalBasis<PQkNodeFactory<GV, k, FlatMultiIndex<ST>, ST> >;
+template<typename GV, int k>
+using LagrangeBasis = DefaultGlobalBasis<PQkNodeFactory<GV, k, FlatMultiIndex<std::size_t>> >;
 
 
 

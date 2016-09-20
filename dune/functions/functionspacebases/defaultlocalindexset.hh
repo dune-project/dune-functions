@@ -20,7 +20,7 @@ public:
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = typename NodeIndexSet::MultiIndex;
-  using size_type = typename NodeIndexSet::size_type;
+  using size_type = std::size_t;
 
 
   DefaultLocalIndexSet(const NodeIndexSet& nodeIndexSet) :
