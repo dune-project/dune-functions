@@ -23,6 +23,16 @@
 namespace Dune {
 namespace Functions {
 
+namespace Imp {
+
+  template<typename... T>
+  struct SizeOf
+    : public std::integral_constant<std::size_t,sizeof...(T)>
+  {};
+
+  template<typename... T>
+  using index_sequence_for = std::make_index_sequence<typename Dune::SizeOf<T...>{}>;
+}
 
 // *****************************************************************************
 // This is the reusable part of the composite bases. It contains
@@ -65,7 +75,7 @@ protected:
   template<class, class, class, class...>
   friend class CompositeNodeIndexSet;
 
-  using ChildIndexTuple = IntegerSequenceTuple<std::index_sequence_for<SF...>>;
+  using ChildIndexTuple = IntegerSequenceTuple<Imp::index_sequence_for<SF...>>;
 
   template<class TP>
   struct FixedTP
