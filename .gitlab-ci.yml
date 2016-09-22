@@ -42,3 +42,17 @@ debian:8+backports--clang:
   - dunecontrol --current --opts=/duneci/opts.clang all
   - dunecontrol --current make build_tests
   - cd build-cmake; duneci-ctest
+
+ubuntu:16.04--gcc:
+  image: duneci/base:16.04
+  script:
+  - dunecontrol --current --opts=/duneci/opts.gcc all
+  - dunecontrol --current make build_tests
+  - cd build-cmake; duneci-ctest
+
+ubuntu:16.04--clang:
+  image: duneci/base:16.04
+  script:
+  - dunecontrol --current --opts=/duneci/opts.clang all
+  - dunecontrol --current make build_tests
+  - cd build-cmake; duneci-ctest
