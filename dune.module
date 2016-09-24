@@ -1,13 +1,9 @@
-################################
-# Dune module information file #
-################################
+# Dune module information file
 
-#Name of the module
 Module: dune-functions
-Version: 3.0-dev
+Version: 2.5-dev
 Maintainer: dune-devel@dune-project.org
-#depending on
-Depends: dune-localfunctions (>= 3.0) dune-grid (>= 3.0) dune-typetree
+Depends: dune-localfunctions (>= 2.5) dune-grid (>= 2.5) dune-typetree
 # We suggest dune-istl, because it is used by the example programs.
 Suggests: dune-istl
 Whitespace-Hook: Yes
