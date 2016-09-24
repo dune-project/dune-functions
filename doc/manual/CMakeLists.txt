@@ -10,7 +10,6 @@ set(IMAGES
 
 if(LATEX_USABLE)
     dune_add_latex_document(dune-functions-manual.tex
-      DEFAULT_PDF
       INPUTS ${SOURCES}
       IMAGES ${IMAGES})
 endif(LATEX_USABLE)
