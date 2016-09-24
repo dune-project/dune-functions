@@ -436,7 +436,7 @@ auto compositeImp(std::tuple<Args...>)
   -> Imp::CompositeNodeFactoryBuilder<Args...>
 {
   return {};
-};
+}
 
 } // end namespace BasisBuilder::Imp
 
