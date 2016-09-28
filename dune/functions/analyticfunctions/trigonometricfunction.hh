@@ -14,6 +14,10 @@ namespace Functions {
  *
  * \ingroup FunctionImplementations
  *
+ * \tparam K Scalar type. The polynomial will map K to K
+ * \tparam sinFactor Factor in front of sin
+ * \tparam cosFactor Factor in front of cos
+ *
  * This class exists mainly to demonstrate how to implement
  * the \ref Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> concept.
  */
@@ -21,6 +25,7 @@ template<class K, int sinFactor, int cosFactor>
 class TrigonometricFunction
 {
 public:
+  //! Evaluate function
   K operator () (const K& x) const
   {
     return sinFactor * std::sin(x) + cosFactor * std::cos(x);
@@ -28,6 +33,7 @@ public:
 };
 
 
+//! Obtain derivative of TrigonometricFunction function
 template<class K, int sinFactor, int cosFactor>
 TrigonometricFunction<K, -cosFactor, sinFactor> derivative(const TrigonometricFunction<K, sinFactor, cosFactor>& f)
 {
