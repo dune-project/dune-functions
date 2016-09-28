@@ -128,6 +128,8 @@ struct SignatureTag<Range(Domain), DerivativeTraitsT>
 /**
  * \brief Construct SignatureTag for derivative
  *
+ * \ingroup FunctionUtility
+ *
  * \param tag SignatureTag for a function
  * \returns SignatureTags of the derivative
  */
@@ -142,6 +144,8 @@ auto derivativeSignatureTag(SignatureTag<Range(Domain), DerivativeTraits> tag)
 
 /**
  * \brief Construct SignatureTags for derivatives
+ *
+ * \ingroup FunctionUtility
  *
  * \tparam maxOrder Maximal order of derivatives
  * \param tag SignatureTag for a function

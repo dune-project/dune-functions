@@ -33,7 +33,7 @@ public:
 };
 
 
-//! Obtain derivative of TrigonometricFunction function
+//! Obtain derivative of TrigonometricFunction function \ingroup FunctionImplementations
 template<class K, int sinFactor, int cosFactor>
 TrigonometricFunction<K, -cosFactor, sinFactor> derivative(const TrigonometricFunction<K, sinFactor, cosFactor>& f)
 {

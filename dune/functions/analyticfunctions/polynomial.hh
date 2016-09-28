@@ -74,7 +74,9 @@ public:
   }
 
   /**
-   * \brief Obtain derivative of polynomial
+   * \brief Obtain derivative of Polynomial function
+   *
+   * \ingroup FunctionImplementations
    *
    * The derivative contains its own coefficient
    * list and is not updated if the original function

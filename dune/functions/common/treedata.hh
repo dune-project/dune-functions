@@ -82,11 +82,17 @@ class TreeData
 {
 
 public:
+
+  //! Type of tree the data is associated with
   using Tree = T;
+
+  //! Type used for indices and size information
   using size_type = typename Tree::size_type;
 
+  //! Set if data should only be associated to the leafs
   static const bool leafOnly = LO;
 
+  //! Template to determine the data type for given node type
   template<class Node>
   using NodeData = ND<Node>;
 
@@ -162,10 +168,18 @@ protected:
 
 public:
 
+  //! Default constructor
   TreeData() :
     tree_(nullptr)
   {}
 
+  /**
+   * \brief Initialize from tree
+   *
+   * This default creates the data object associated to each node in the tree.
+   * A reference to the tree is stored because it's needed for destruction
+   * of the tree data.
+   */
   void init(const Tree& tree)
   {
     if (tree_)
@@ -174,6 +188,7 @@ public:
     TypeTree::applyToTree(*tree_, InitVisitor(data_));
   }
 
+  //! Copy constructor
   TreeData(const TreeData& other) :
     tree_(other.tree_)
   {
@@ -181,6 +196,7 @@ public:
     TypeTree::applyToTree(*tree_, CopyVisitor(*this, other));
   }
 
+  //! Copy assignment
   TreeData& operator=(const TreeData& other)
   {
     if (tree_)
@@ -190,6 +206,7 @@ public:
     return *this;
   }
 
+  //! Destroy data
   void destroy()
   {
     if (tree_)
@@ -197,18 +214,21 @@ public:
     tree_ = nullptr;
   }
 
+  //! Destructor
   ~TreeData()
   {
     if (tree_)
       TypeTree::applyToTree(*tree_, DestroyVisitor(data_));
   }
 
+  //! Get mutable reference to data associated to given node
   template<class Node>
   NodeData<Node>& operator[](const Node& node)
   {
     return *(NodeData<Node>*)(data_[node.treeIndex()]);
   }
 
+  //! Get reference to data associated to given node
   template<class Node>
   const NodeData<Node>& operator[](const Node& node) const
   {

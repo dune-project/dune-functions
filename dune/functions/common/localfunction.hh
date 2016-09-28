@@ -68,10 +68,20 @@ namespace Imp
  *
  * \ingroup FunctionInterface
  *
- * Objects of this type are returned as local functions
- * by the GridFunction wrapper.
+ * \tparam Range Range type
+ * \tparam Domain Domain type
+ * \tparam LocalContext Type of local context where this function is defined on
+ * \tparam DerivativeTraits Traits class to determine range of derivative.
+ * \tparam bufferSize Size of stack buffer for small object optimization (defaults to 56)
+ *
  *
  * This models the \ref Concept::LocalFunction<Range(Domain), LocalContext, DerivativeTraits> concept.
+ * Objects of this type are returned as local functions
+ * by the GridFunction wrapper. Notice that the DerivativeTraits type
+ * used here should normally be LocalDerivativeTraits<E,GDE> where GDE
+ * is the DerivativeTraits type of the corresponding global function.
+ * Small object optimization is used to store the given function.
+ * If its size exceed \p bufferSize, memory will be allocated dynamically.
  */
 template<class Range, class Domain, class LocalContext, template<class> class DerivativeTraits, size_t bufferSize>
 class LocalFunction< Range(Domain), LocalContext, DerivativeTraits, bufferSize> :
@@ -118,6 +128,8 @@ public:
   /**
    * \brief Get derivative of wrapped function
    *
+   * \ingroup FunctionInterface
+   *
    * This is free function will be found by ADL.
    */
   friend DerivativeInterface derivative(const LocalFunction& t)
@@ -125,16 +137,28 @@ public:
     return t.asInterface().derivative();
   }
 
+  /**
+   * \brief Bind function to a local context
+   *
+   * You must bind a LocalFunction to a local
+   * context before you can evaluate it.
+   */
   void bind(const LocalContext& context)
   {
     this->asInterface().bind(context);
   }
 
+  /**
+   * \brief Unbind from local context
+   */
   void unbind()
   {
     this->asInterface().unbind();
   }
 
+  /**
+   * \brief Obtain local contex this LocalFunction is bound to
+   */
   const LocalContext& localContext() const
   {
     return this->asInterface().localContext();

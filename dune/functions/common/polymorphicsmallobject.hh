@@ -39,10 +39,17 @@ class PolymorphicSmallObject
 {
 public:
 
+  //! Default constructor
   PolymorphicSmallObject() :
     p_(nullptr)
   {}
 
+  /**
+   * \brief Construct from object
+   *
+   * \tparam Derived Type of object to be stored, should be derived from Base
+   * \param derived Object to be stored
+   */
   template<class Derived>
   PolymorphicSmallObject(Derived&& derived)
   {
@@ -52,21 +59,25 @@ public:
       p_ = new Derived(std::forward<Derived>(derived));
   }
 
+  //! Move constructor from other PolymorphicSmallObject
   PolymorphicSmallObject(PolymorphicSmallObject&& other)
   {
     moveToWrappedObject(std::move(other));
   }
 
+  //! Copy constructor from other PolymorphicSmallObject
   PolymorphicSmallObject(const PolymorphicSmallObject& other)
   {
     copyToWrappedObject(other);
   }
 
+  //! Destructor
   ~PolymorphicSmallObject()
   {
     destroyWrappedObject();
   }
 
+  //! Copy assignment from other PolymorphicSmallObject
   PolymorphicSmallObject& operator=(const PolymorphicSmallObject& other)
   {
     destroyWrappedObject();
@@ -74,6 +85,7 @@ public:
     return *this;
   }
 
+  //! Move assignment from other PolymorphicSmallObject
   PolymorphicSmallObject& operator=(PolymorphicSmallObject&& other)
   {
     destroyWrappedObject();
@@ -81,21 +93,25 @@ public:
     return *this;
   }
 
+  //! Check if *this is not empty
   explicit operator bool() const
   {
     return p_;
   }
 
+  //! Check if object is stored in internal stack buffer
   bool bufferUsed() const
   {
     return ((void*) (p_) == (void*)(&buffer_));
   }
 
+  //! Obtain reference to stored object
   const Base& get() const
   {
     return *p_;
   }
 
+  //! Obtain mutable reference to stored object
   Base& get()
   {
     return *p_;

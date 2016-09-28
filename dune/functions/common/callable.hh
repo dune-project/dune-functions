@@ -83,6 +83,8 @@ class CallableFunctionWrapper
 /**
  * \brief Create a callable object from some Dune::VirtualFunction
  *
+ * \ingroup FunctionImplementations
+ *
  * \tparam F Function type derived from Dune::VirtualFunction
  * \param f The function to be wrapper
  *
@@ -108,6 +110,8 @@ CallableFunctionWrapper<F> callable(const F& f)
 
 /**
  * \brief Create a callable object from shared_ptr<F>
+ *
+ * \ingroup FunctionImplementations
  *
  * \tparam F Function type derived from Dune::VirtualFunction
  * \param fp shared_ptr<F> to the function to be wrapper
