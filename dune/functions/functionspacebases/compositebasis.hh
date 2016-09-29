@@ -129,7 +129,7 @@ public:
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
-  //! Type used for prefixes handed to the CompositeNodeFactory::size()
+  //! Type used for prefixes handed to the size() method
   using SizePrefix = Dune::ReservedVector<size_type, MultiIndex::max_size()+1>;
 
   /**
@@ -211,7 +211,7 @@ public:
     return size({});
   }
 
-  //! Return number possible values for next position in multi index
+  //! Return number of possible values for next position in multi index
   size_type size(const SizePrefix& prefix) const
   {
     return size(prefix, IndexMergingStrategy{});

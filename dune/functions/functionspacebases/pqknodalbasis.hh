@@ -106,7 +106,7 @@ public:
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
-  //! Type used for prefixes handed to the CompositeNodeFactory::size()
+  //! Type used for prefixes handed to the size() method
   using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
   //! Constructor for a given grid view object
@@ -228,7 +228,7 @@ public:
     DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
   }
 
-  //! Return number possible values for next position in multi index
+  //! Return number of possible values for next position in multi index
   size_type size(const SizePrefix prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
