@@ -43,6 +43,20 @@ class PQkNodeFactory;
 
 
 
+/**
+ * \brief A factory for PQ-lagrange bases with given order
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam GV  The grid view that the FE basis is defined on
+ * \tparam k   The polynomial order of ansatz functions
+ * \tparam MI  Type to be used for multi-indices
+ *
+ * \note This only works for certain grids.  The following restrictions hold
+ * - If k is no larger than 2, then the grids can have any dimension
+ * - If k is larger than 3 then the grid must be two-dimensional
+ * - If k is 3, then the grid can be 3d *if* it is a simplex grid
+ */
 template<typename GV, int k, class MI>
 class PQkNodeFactory
 {
@@ -50,10 +64,16 @@ class PQkNodeFactory
 
 public:
 
-  /** \brief The grid view that the FE space is defined on */
+  //! The grid view that the FE basis is defined on
   using GridView = GV;
+
+  //! Type used for indices and size information
   using size_type = std::size_t;
 
+private:
+
+  template<typename, int, class, class>
+  friend class PQkNodeIndexSet;
 
   // Precompute the number of dofs per entity type
   const static size_type dofsPerVertex =
@@ -73,23 +93,28 @@ public:
   const static size_type dofsPerPyramid =
       k == 0 ? (dim == 3 ? 1 : 0) : (k-2)*(k-1)*(2*k-3)/6;
 
+public:
+
+  //! Template mapping root tree path to type of created tree node
   template<class TP>
   using Node = PQkNode<GV, k, TP>;
 
+  //! Template mapping root tree path to type of created tree node index set
   template<class TP>
   using IndexSet = PQkNodeIndexSet<GV, k, MI, TP>;
 
-  /** \brief Type used for global numbering of the basis vectors */
+  //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
+  //! Type used for prefixes handed to the CompositeNodeFactory::size()
   using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
-  /** \brief Constructor for a given grid view object */
+  //! Constructor for a given grid view object
   PQkNodeFactory(const GridView& gv) :
     gridView_(gv)
   {}
 
-
+  //! Initialize the global indices
   void initializeIndices()
   {
     vertexOffset_        = 0;
@@ -119,30 +144,50 @@ public:
     }
   }
 
-  /** \brief Obtain the grid view that the basis is defined on
-   */
+  //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
     return gridView_;
   }
 
+  //! Update the stored grid view, to be called if the grid has changed
   void update (const GridView& gv)
   {
     gridView_ = gv;
   }
 
+  /**
+   * \brief Create tree node with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * By passing a non-trivial root tree path this can be used
+   * to create a node suitable for beeing placed in a tree at
+   * the position specified by the root tree path.
+   */
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
     return Node<TP>{tp};
   }
 
+  /**
+   * \brief Create tree node index set with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * Create an index set suitable for the tree node obtained
+   * by node(tp).
+   */
   template<class TP>
   IndexSet<TP> indexSet() const
   {
     return IndexSet<TP>{*this};
   }
 
+  //! Same as size(prefix) with empty prefix
   size_type size() const
   {
     switch (dim)
@@ -190,18 +235,19 @@ public:
     return (prefix.size() == 0) ? size() : 0;
   }
 
-  /** \todo This method has been added to the interface without prior discussion. */
+  //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
     return size();
   }
 
+  //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
     return StaticPower<(k+1),GV::dimension>::power;
   }
 
-//protected:
+protected:
   GridView gridView_;
 
   size_type vertexOffset_;
@@ -437,6 +483,15 @@ struct PQkNodeFactoryBuilder
 
 } // end namespace BasisBuilder::Imp
 
+
+
+/**
+ * \brief Create a factory builder that can build a PQkNodeFactory
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam k   The polynomial order of ansatz functions
+ */
 template<std::size_t k>
 Imp::PQkNodeFactoryBuilder<k> pq()
 {

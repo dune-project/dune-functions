@@ -39,6 +39,17 @@ class PQ1NodeIndexSet;
 template<typename GV, class MI>
 class PQ1NodeFactory;
 
+/**
+ * \brief Factory for a first order PQ-lagrange basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam GV  The grid view that the FE basis is defined on
+ * \tparam MI  Type to be used for multi-indices
+ *
+ * \note This mainly serves as an example, since PQkNodeFactory<GV,1,MI>
+ * provides the same functionality.
+ */
 template<typename GV, class MI>
 class PQ1NodeFactory
 {
@@ -46,53 +57,79 @@ class PQ1NodeFactory
 
 public:
 
-  /** \brief The grid view that the FE space is defined on */
+  //! The grid view that the FE basis is defined on
   using GridView = GV;
+
+  //! Type used for indices and size information
   using size_type = std::size_t;
 
+  //! Template mapping root tree path to type of created tree node
   template<class TP>
   using Node = PQ1Node<GV, TP>;
 
+  //! Template mapping root tree path to type of created tree node index set
   template<class TP>
   using IndexSet = PQ1NodeIndexSet<GV, MI, TP>;
 
-  /** \brief Type used for global numbering of the basis vectors */
+  //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
+  //! Type used for prefixes handed to the CompositeNodeFactory::size()
   using SizePrefix = Dune::ReservedVector<size_type, 2>;
 
-  /** \brief Constructor for a given grid view object */
+  //! Constructor for a given grid view object
   PQ1NodeFactory(const GridView& gv) :
     gridView_(gv)
   {}
 
+  //! Initialize the global indices
   void initializeIndices()
   {}
 
-  /** \brief Obtain the grid view that the basis is defined on
-   */
+  //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
     return gridView_;
   }
 
+  //! Update the stored grid view, to be called if the grid has changed
   void update (const GridView& gv)
   {
     gridView_ = gv;
   }
 
+  /**
+   * \brief Create tree node with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * By passing a non-trivial root tree path this can be used
+   * to create a node suitable for beeing placed in a tree at
+   * the position specified by the root tree path.
+   */
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
     return Node<TP>{tp};
   }
 
+  /**
+   * \brief Create tree node index set with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * Create an index set suitable for the tree node obtained
+   * by node(tp).
+   */
   template<class TP>
   IndexSet<TP> indexSet() const
   {
     return IndexSet<TP>{*this};
   }
 
+  //! Same as size(prefix) with empty prefix
   size_type size() const
   {
     return (size_type)(gridView_.size(dim));
@@ -108,18 +145,19 @@ public:
     DUNE_THROW(RangeError, "Method size() can only be called for prefixes of length up to one");
   }
 
-  /** \todo This method has been added to the interface without prior discussion. */
+  //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
     return size();
   }
 
+  //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
     return StaticPower<2,GV::dimension>::power;
   }
 
-//protected:
+protected:
   GridView gridView_;
 };
 
@@ -240,11 +278,16 @@ protected:
   const Node* node_;
 };
 
+
+
 /** \brief Nodal basis of a scalar first-order Lagrangian finite element space
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV The GridView that the space is defined on
+ *
+ * \note This mainly serves as an example, since PQkNodalBasis<GV,1>
+ * provides the same functionality.
  */
 template<typename GV>
 using PQ1NodalBasis = DefaultGlobalBasis<PQ1NodeFactory<GV, FlatMultiIndex<std::size_t>> >;

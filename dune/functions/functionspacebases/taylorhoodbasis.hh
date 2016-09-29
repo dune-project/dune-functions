@@ -42,6 +42,26 @@ class TaylorHoodNodeIndexSet;
 
 
 
+/**
+ * \brief Factory for lowest order Taylor-Hood basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam GV The grid view that the FE basis is defined on
+ * \tparam MI Type to be used for multi-indices
+ * \tparam HI Flag to select hybrid indices
+ *
+ * \note This mainly serves as an example, since you can construct a factory with
+ * the same functionality manually using
+ * \code
+ * static const int k = 1;
+ * using VelocityFactory = PowerNodeFactory<MI,IMS,PQkNodeFactory<GV,k+1,MI>,dim>;
+ * using PressureFactory = PQkNodeFactory<GV,k,MI>;
+ * using TaylorHoodKNodeFactory = CompositeNodeFactory<MI, BlockedLexicographic, VelocityFactory, PressureFactory>;
+ * \endcode
+ * Where IMS is LeafBlockedInterleaved if HI is set and
+ * FlatInterleaved otherwise.
+ */
 template<typename GV, class MI, bool HI=false>
 class TaylorHoodNodeFactory
 {
@@ -54,20 +74,24 @@ class TaylorHoodNodeFactory
 
 public:
 
-  /** \brief The grid view that the FE space is defined on */
+  //! The grid view that the FE basis is defined on
   using GridView = GV;
+
+  //! Type used for indices and size information
   using size_type = std::size_t;
 
-
+  //! Template mapping root tree path to type of created tree node
   template<class TP>
   using Node = TaylorHoodBasisTree<GV, TP>;
 
+  //! Template mapping root tree path to type of created tree node index set
   template<class TP>
   using IndexSet = TaylorHoodNodeIndexSet<GV, MI, TP, HI>;
 
-  /** \brief Type used for global numbering of the basis vectors */
+  //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
+  //! Type used for prefixes handed to the CompositeNodeFactory::size()
   using SizePrefix = Dune::ReservedVector<size_type, 3>;
 
 private:
@@ -78,39 +102,58 @@ private:
 
 public:
 
-  /** \brief Constructor for a given grid view object */
+  //! Constructor for a given grid view object
   TaylorHoodNodeFactory(const GridView& gv) :
     gridView_(gv),
     pq1Factory_(gv),
     pq2Factory_(gv)
   {}
 
-
+  //! Initialize the global indices
   void initializeIndices()
   {
     pq1Factory_.initializeIndices();
     pq2Factory_.initializeIndices();
   }
 
-  /** \brief Obtain the grid view that the basis is defined on
-   */
+  //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
     return gridView_;
   }
 
+  //! Update the stored grid view, to be called if the grid has changed
   void update (const GridView& gv)
   {
     pq1Factory_.update(gv);
     pq2Factory_.update(gv);
   }
 
+  /**
+   * \brief Create tree node with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * By passing a non-trivial root tree path this can be used
+   * to create a node suitable for beeing placed in a tree at
+   * the position specified by the root tree path.
+   */
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
     return Node<TP>{tp};
   }
 
+  /**
+   * \brief Create tree node index set with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * Create an index set suitable for the tree node obtained
+   * by node(tp).
+   */
   template<class TP>
   IndexSet<TP> indexSet() const
   {
@@ -128,6 +171,8 @@ public:
   {
     return sizeImp<useHybridIndices>(prefix);
   }
+
+private:
 
   template<bool hi,
     typename std::enable_if<not hi,int>::type = 0>
@@ -172,12 +217,15 @@ public:
     assert(false);
   }
 
-  /** \todo This method has been added to the interface without prior discussion. */
+public:
+
+  //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
     return dim * pq2Factory_.size() + pq1Factory_.size();
   }
 
+  //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
     return dim * pq2Factory_.maxNodeSize() + pq1Factory_.maxNodeSize();
@@ -349,11 +397,26 @@ private:
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************
 
-/** \brief Nodal basis of a scalar second-order Lagrangean finite element space
+/**
+ * \brief Nodal basis for a lowest order Taylor-Hood Lagrangean finite element space
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV The GridView that the space is defined on.
+ *
+ * \note This mainly serves as an example, since you can construct a basis with
+ * the same functionality manually using
+ * \code
+ * static const int k = 1;
+ * auto taylorHoodBasis = makeBasis(
+ *   gridView,
+ *   composite(
+ *     power<dim>(
+ *       lagrange<k+1>(),
+ *       flatInterleaved()),
+ *     lagrange<k>()
+ *   ));
+ * \endcode
  */
 template<typename GV>
 using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodNodeFactory<GV, std::array<std::size_t, 2>> >;
