@@ -32,6 +32,8 @@ class BSplineNodeFactory;
 /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
  * of a B-spline patch to a knot span
  *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
  * \tparam GV Grid view that the basis is defined on
  * \tparam R Number type used for spline function values
  */
@@ -155,6 +157,8 @@ private:
 };
 
 /** \brief Attaches a shape function to an entity
+ *
+ * \ingroup FunctionSpaceBasesImplementations
  *
  * The attachment uses the same order as for Qk elements.  This does *not* provide sufficient information
  * to compute global indices for the shape functions.  However, it does allow to find all degrees of freedom
@@ -324,6 +328,8 @@ private:
 };
 
 /** \brief Local interpolation in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
+ *
+ * \ingroup FunctionSpaceBasesImplementations
  */
 template<int dim, class LB>
 class BSplineLocalInterpolation
@@ -339,6 +345,8 @@ public:
 };
 
 /** \brief LocalFiniteElement in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
+ *
+ * \ingroup FunctionSpaceBasesImplementations
  *
  * This class ties together the implementation classes BSplineLocalBasis, BSplineLocalCoefficients, and BSplineLocalInterpolation
  *
@@ -470,6 +478,16 @@ class BSplineNode;
 template<typename GV, class MI, class TP>
 class BSplineNodeIndexSet;
 
+/** \brief Node factory for B-spline basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam GV The GridView that the space is defined on
+ * \tparam MI Type to be used for multi-indices
+ *
+ * The BSplineNodeFactory can be used to embed a BSplineBasis
+ * in a larger basis for the construction of product spaces.
+ */
 template<typename GV, class MI>
 class BSplineNodeFactory
 {
@@ -1322,7 +1340,7 @@ protected:
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************
 
-/** \brief Nodal basis of a scalar k-th-order Lagrangean finite element space
+/** \brief A global B-spline basis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
