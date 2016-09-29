@@ -41,8 +41,8 @@ class PowerNodeIndexSet;
  * Its node type is a PowerBasisNodes for the given subnode.
  *
  * \tparam MI  Type to be used for multi-indices
- * \tparam IMS A tag describing how global indices are build
- * \tparam SF  The subnode factory
+ * \tparam IMS An IndexMergingStrategy used to merge the global indices of the child factories
+ * \tparam SF  The child factory
  * \tparam C   The exponent of the power node
  */
 template<class MI, class IMS, class SF, std::size_t C>
@@ -55,11 +55,16 @@ class PowerNodeFactory
 
 public:
 
+  //! The child factory
   using SubFactory = SF;
 
-  /** \brief The grid view that the FE space is defined on */
+  //! The grid view that the FE basis is defined on
   using GridView = typename SF::GridView;
+
+  //! Type used for indices and size information
   using size_type = std::size_t;
+
+  //! Strategy used to merge the global indices of the child factories
   using IndexMergingStrategy = IMS;
 
   template<class TP>
@@ -68,15 +73,18 @@ public:
   template<class TP>
   using SubIndexSet = typename SubFactory::template IndexSet<decltype(TypeTree::push_back(TP(), 0))>;
 
+  //! Template mapping root tree path to type of created tree node
   template<class TP>
   using Node = PowerBasisNode<size_type, TP, SubNode<TP>, children>;
 
+  //! Template mapping root tree path to type of created tree node index set
   template<class TP>
   using IndexSet = PowerNodeIndexSet<MI, TP, IMS, SF, C>;
 
-  /** \brief Type used for global numbering of the basis vectors */
+  //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
+  //! Type used for prefixes handed to the CompositeNodeFactory::size()
   using SizePrefix = Dune::ReservedVector<size_type, SubFactory::SizePrefix::max_size()+1>;
 
 private:
@@ -85,8 +93,11 @@ private:
 
 public:
 
-  /** \brief Constructor for a given grid view object */
-
+  /**
+   * \brief Constructor for given child factory objects
+   *
+   * The child factories will be stored as copies
+   */
   template<class... SFArgs,
     disableCopyMove<PowerNodeFactory, SFArgs...> = 0,
     enableIfConstructible<SubFactory, SFArgs...> = 0>
@@ -94,24 +105,34 @@ public:
     subFactory_(std::forward<SFArgs>(sfArgs)...)
   {}
 
-
+  //! Initialize the global indices
   void initializeIndices()
   {
     subFactory_.initializeIndices();
   }
 
-  /** \brief Obtain the grid view that the basis is defined on
-   */
+  //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
     return subFactory_.gridView();
   }
 
+  //! Update the stored grid view, to be called if the grid has changed
   void update(const GridView& gv)
   {
     subFactory_.update(gv);
   }
 
+  /**
+   * \brief Create tree node with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * By passing a non-trivial root tree path this can be used
+   * to create a node suitable for beeing placed in a tree at
+   * the position specified by the root tree path.
+   */
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
@@ -121,6 +142,15 @@ public:
     return node;
   }
 
+  /**
+   * \brief Create tree node index set with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * Create an index set suitable for the tree node obtained
+   * by node(tp).
+   */
   template<class TP>
   IndexSet<TP> indexSet() const
   {
@@ -138,6 +168,8 @@ public:
   {
     return size(prefix, IndexMergingStrategy{});
   }
+
+private:
 
   size_type size(const SizePrefix& prefix, BasisBuilder::FlatInterleaved) const
   {
@@ -208,12 +240,15 @@ public:
     return r;
   }
 
-  /** \todo This method has been added to the interface without prior discussion. */
+public:
+
+  //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
     return subFactory_.dimension() * children;
   }
 
+  //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
     return subFactory_.maxNodeSize() * children;
@@ -368,14 +403,40 @@ struct PowerNodeFactoryBuilder
 
 } // end namespace BasisBuilder::Imp
 
+
+
+/**
+ * \brief Create a factory builder that can build a PowerNodeFactory
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam SubFactoryTag Types of child factory builder and IndexMergingStrategy type
+ * \tparam IndexMergingStrategy An IndexMergingStrategy type
+ * \param tag Child factory builder objects and an IndexMergingStrategy
+ * \param ims IndexMergingStrategy to be used
+ *
+ * This overload can be used to explicitly supply an IndexMergingStrategy.
+ */
 template<std::size_t k, class SubFactoryTag, class IndexMergingStrategy>
-Imp::PowerNodeFactoryBuilder<k, IndexMergingStrategy, SubFactoryTag> power(SubFactoryTag&& tag, const IndexMergingStrategy&)
+Imp::PowerNodeFactoryBuilder<k, IndexMergingStrategy, SubFactoryTag>
+  power(SubFactoryTag&& tag, const IndexMergingStrategy& ims)
 {
   return{};
 }
 
+/**
+ * \brief Create a factory builder that can build a PowerNodeFactory
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam SubFactoryTag Types of child factory builder and IndexMergingStrategy type
+ * \param tag Child factory builder objects and an IndexMergingStrategy
+ *
+ * This overload will select the BasisBuilder::BlockedLexicographic strategy.
+ */
 template<std::size_t k, class SubFactoryTag>
-Imp::PowerNodeFactoryBuilder<k, LeafBlockedInterleaved, SubFactoryTag> power(SubFactoryTag&& tag)
+Imp::PowerNodeFactoryBuilder<k, LeafBlockedInterleaved, SubFactoryTag>
+  power(SubFactoryTag&& tag)
 {
   return{};
 }

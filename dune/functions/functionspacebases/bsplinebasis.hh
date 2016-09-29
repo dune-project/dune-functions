@@ -671,27 +671,47 @@ public:
     std::fill(order_.begin(), order_.end(), order);
   }
 
+  //! Initialize the global indices
   void initializeIndices()
   {}
 
-  /** \brief Obtain the grid view that the basis is defined on
-   */
+  //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
     return gridView_;
   }
 
+  //! Update the stored grid view, to be called if the grid has changed
   void update(const GridView& gv)
   {
     gridView_ = gv;
   }
 
+  /**
+   * \brief Create tree node with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * By passing a non-trivial root tree path this can be used
+   * to create a node suitable for beeing placed in a tree at
+   * the position specified by the root tree path.
+   */
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
     return Node<TP>{tp,this};
   }
 
+  /**
+   * \brief Create tree node index set with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * Create an index set suitable for the tree node obtained
+   * by node(tp).
+   */
   template<class TP>
   IndexSet<TP> indexSet() const
   {
@@ -706,11 +726,13 @@ public:
     assert(false);
   }
 
+  //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
     return size();
   }
 
+  //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
     size_type result = 1;

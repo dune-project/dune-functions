@@ -52,21 +52,30 @@ class CompositeNodeIndexSet;
 /**
  * \brief A factory for composite bases
  *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
  * This node factory represente a composition of several given node factories.
  * Its node type is a CompositeBasisNodes for the given subnodes.
  *
- * \tparam MI  Type to be used for multi-indices
- * \tparam IMS A tag describing how indices are merged
- * \tparam SF  The sub-node factories
+ * \tparam MI  Type to be used for global multi-indices
+ * \tparam IMS An IndexMergingStrategy used to merge the global indices of the child factories
+ * \tparam SF  The child factories
  */
 template<class MI, class IMS, class... SF>
 class CompositeNodeFactory
 {
 public:
 
+  //! Tuple of child factories
   using SubFactories = std::tuple<SF...>;
+
+  //! The grid view that the FE basis is defined on
   using GridView = typename std::tuple_element<0, SubFactories>::type::GridView;
+
+  //! Type used for indices and size information
   using size_type = std::size_t;
+
+  //! Strategy used to merge the global indices of the child factories
   using IndexMergingStrategy = IMS;
 
 protected:
@@ -105,22 +114,29 @@ protected:
 
 public:
 
+  //! Template mapping index of child to its factory type
   template<std::size_t k>
   using SubFactory = typename std::tuple_element<k, std::tuple<SF...>>::type;
 
+  //! Template mapping root tree path to type of created tree node
   template<class TP>
   using Node = typename FixedTP<TP>::Node;
 
+  //! Template mapping root tree path to type of created tree node index set
   template<class TP>
   using IndexSet = CompositeNodeIndexSet<MI, TP, IMS, SF...>;
 
-  /** \brief Type used for global numbering of the basis vectors */
+  //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
+  //! Type used for prefixes handed to the CompositeNodeFactory::size()
   using SizePrefix = Dune::ReservedVector<size_type, MultiIndex::max_size()+1>;
 
-  /** \brief Constructor for a given grid view object */
-
+  /**
+   * \brief Constructor for given child factory objects
+   *
+   * The child factories will be stored as copies
+   */
   template<class... SFArgs,
     disableCopyMove<CompositeNodeFactory, SFArgs...> = 0,
     enableIfConstructible<std::tuple<SF...>, SFArgs...> = 0>
@@ -129,7 +145,7 @@ public:
   {
   }
 
-
+  //! Initialize the global indices
   void initializeIndices()
   {
     using namespace Dune::Hybrid;
@@ -138,13 +154,13 @@ public:
     });
   }
 
-  /** \brief Obtain the grid view that the basis is defined on
-   */
+  //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
     return std::get<0>(subFactories_).gridView();
   }
 
+  //! Update the stored grid view, to be called if the grid has changed
   void update(const GridView& gv)
   {
     using namespace Dune::Hybrid;
@@ -153,6 +169,16 @@ public:
     });
   }
 
+  /**
+   * \brief Create tree node with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * By passing a non-trivial root tree path this can be used
+   * to create a node suitable for beeing placed in a tree at
+   * the position specified by the root tree path.
+   */
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
@@ -164,6 +190,15 @@ public:
     return node;
   }
 
+  /**
+   * \brief Create tree node index set with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * Create an index set suitable for the tree node obtained
+   * by node(tp).
+   */
   template<class TP>
   IndexSet<TP> indexSet() const
   {
@@ -181,6 +216,8 @@ public:
   {
     return size(prefix, IndexMergingStrategy{});
   }
+
+private:
 
   size_type size(const SizePrefix& prefix, BasisBuilder::BlockedLexicographic) const
   {
@@ -234,7 +271,9 @@ public:
     return r;
   }
 
-  /** \todo This method has been added to the interface without prior discussion. */
+public:
+
+  //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
     size_type r=0;
@@ -246,6 +285,7 @@ public:
     return r;
   }
 
+  //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
     size_type r=0;
@@ -440,6 +480,18 @@ auto compositeImp(std::tuple<Args...>)
 
 } // end namespace BasisBuilder::Imp
 
+
+
+/**
+ * \brief Create a factory builder that can build a CompositeNodeFactory
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam Args Types of child factory builders and IndexMergingStrategy type
+ * \param args Child factory builder objects and an IndexMergingStrategy
+ *
+ * This is the overload used if the last argument is an IndexMergingStrategy.
+ */
 template<
   typename... Args,
   std::enable_if_t<Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
@@ -448,6 +500,17 @@ auto composite(Args&&... args)
   return Imp::compositeImp(typename RotateTuple<Args...>::type{});
 }
 
+/**
+ * \brief Create a factory builder that can build a CompositeNodeFactory
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam Args Types of child factory builders
+ * \param args Child factory builder objects
+ *
+ * This is the overload used if no IndexMergingStrategy is supplied.
+ * In this case the BasisBuilder::BlockedLexicographic strategy is used.
+ */
 template<
   typename... Args,
   std::enable_if_t<not Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
