@@ -10,5 +10,8 @@ target_link_dune_default_libraries("stokes-taylorhood")
 add_executable("poisson-rt0-p0" poisson-rt0-p0.cc)
 target_link_dune_default_libraries("poisson-rt0-p0")
 
+add_executable("poisson-rt0-p0-unstructured" poisson-rt0-p0-unstructured.cc)
+target_link_dune_default_libraries("poisson-rt0-p0-unstructured")
+
 add_executable("rt0-basistest" rt0-basistest.cc)
 target_link_dune_default_libraries("rt0-basistest")
