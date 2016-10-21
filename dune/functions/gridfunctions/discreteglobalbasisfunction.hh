@@ -7,6 +7,8 @@
 
 #include <dune/common/shared_ptr.hh>
 
+#include <dune/localfunctions/finiteelementtypes/functionspacetypes.hh>
+
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/common/treedata.hh>
@@ -127,9 +129,40 @@ public:
         auto&& shapeFunctionValues = shapeFunctionValueContainer_[node];
         localBasis.evaluateFunction(x_, shapeFunctionValues);
 
+        // Apply function space type dependent continuity preserving transformation.
+        // Distinguish between H, Hdiv and Hcurl types. Use transformations:
+        // H:     φ → φ
+        // Hdiv:  φ → 1/|det J| J^T φ
+        // Hcurl: φ → J^(-T) φ
+        auto&& type = fe.functionSpaceType();
+        if (type==FunctionSpace::Type::Hdiv)
+        {
+          auto element = node.element();
+          auto geometry = element->geometry();
+          auto jacobianTransposed = geometry.jacobianTransposed(x_);
+          auto integrationElement = geometry.integrationElement(x_);
+          for (size_type i = 0; i < localBasis.size(); ++i)
+          {
+            auto tmp = shapeFunctionValues[i];
+            jacobianTransposed.mtv(tmp, shapeFunctionValues[i]);
+            shapeFunctionValues[i] /= integrationElement;
+          }
+        }
+        else if (type==FunctionSpace::Type::Hcurl)
+        {
+          auto element = node.element();
+          auto geometry = element->geometry();
+          auto jacobianInverseTransposed = geometry.jacobianInverseTransposed(x_);
+          for (size_type i = 0; i < localBasis.size(); ++i)
+          {
+            auto tmp = shapeFunctionValues[i];
+            jacobianInverseTransposed.mtv(tmp, shapeFunctionValues[i]);
+          }
+        }
+        // if type==FunctionSpace::Type::H) no further transformation needed.
+
         // Get range entry associated to this node
         auto&& re = nodeToRangeEntry_(node, y_);
-
 
         for (size_type i = 0; i < localBasis.size(); ++i)
         {
