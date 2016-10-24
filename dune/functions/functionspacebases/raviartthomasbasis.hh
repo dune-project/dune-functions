@@ -134,29 +134,29 @@ namespace Impl {
 // *****************************************************************************
 // This is the reusable part of the basis. It contains
 //
-//   RaviartThomasCubeNodeFactory
-//   RaviartThomasCubeNodeIndexSet
-//   RaviartThomasCubeNode
+//   RaviartThomasNodeFactory
+//   RaviartThomasNodeIndexSet
+//   RaviartThomasNode
 //
 // The factory allows to create the others and is the owner of possible shared
 // state. These three components do _not_ depend on the global basis or index
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k, typename ST, typename TP>
-class RaviartThomasCubeNode;
+template<typename GV, int k, typename ST, typename TP, GeometryType::BasicType basic_type>
+class RaviartThomasNode;
 
-template<typename GV, int k, class MI, class TP, class ST>
-class RaviartThomasCubeNodeIndexSet;
+template<typename GV, int k, class MI, class TP, class ST, GeometryType::BasicType basic_type>
+class RaviartThomasNodeIndexSet;
 
-template<typename GV, int k, class MI, class ST>
-class RaviartThomasCubeNodeFactory;
+template<typename GV, int k, class MI, class ST, GeometryType::BasicType basic_type>
+class RaviartThomasNodeFactory;
 
-template<typename GV, int k, class MI, class ST>
-class RaviartThomasCubeNodeFactory
+template<typename GV, int k, class MI, class ST, GeometryType::BasicType basic_type>
+class RaviartThomasNodeFactory
 {
   static const int dim = GV::dimension;
-  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, Dune::GeometryType::cube, typename GV::ctype, double, k>;
+  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, basic_type, typename GV::ctype, double, k>;
 
 public:
 
@@ -164,14 +164,14 @@ public:
   using GridView = GV;
   using size_type = ST;
 
-  // Precompute the number of dofs per entity type depending on the entity's codimension
-  std::vector<int> dofsPerCodim {k*(k+1)*dim, k+1}; // holds only for 2D!
+  // Precompute the number of dofs per entity type depending on the entity's codimension and the grid's type (only valid for cube and simplex grids)
+  std::vector<int> dofsPerCodim { (basic_type == GeometryType::BasicType::cube ? k*(k+1)*dim : k*dim), k+1}; // holds only for 2D!
 
   template<class TP>
-  using Node = RaviartThomasCubeNode<GV, k, size_type, TP>;
+  using Node = RaviartThomasNode<GV, k, size_type, TP, basic_type>;
 
   template<class TP>
-  using IndexSet = RaviartThomasCubeNodeIndexSet<GV, k, MI, TP, ST>;
+  using IndexSet = RaviartThomasNodeIndexSet<GV, k, MI, TP, ST, basic_type>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -179,7 +179,7 @@ public:
   using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
   /** \brief Constructor for a given grid view object */
-  RaviartThomasCubeNodeFactory(const GridView& gv) :
+  RaviartThomasNodeFactory(const GridView& gv) :
     gridView_(gv),
     finiteElementMap_(gv)
   { }
@@ -242,8 +242,8 @@ public:
 
 
 
-template<typename GV, int k, typename ST, typename TP>
-class RaviartThomasCubeNode :
+template<typename GV, int k, typename ST, typename TP, GeometryType::BasicType basic_type>
+class RaviartThomasNode :
   public LeafBasisNode<ST, TP>
 {
   static const int dim = GV::dimension;
@@ -256,10 +256,10 @@ public:
   using size_type = ST;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, Dune::GeometryType::cube, typename GV::ctype, double, k>;
+  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, basic_type, typename GV::ctype, double, k>;
   using FiniteElement = typename FiniteElementMap::FiniteElement;
 
-  RaviartThomasCubeNode(const TreePath& treePath, const FiniteElementMap* finiteElementMap) :
+  RaviartThomasNode(const TreePath& treePath, const FiniteElementMap* finiteElementMap) :
     Base(treePath),
     finiteElement_(nullptr),
     element_(nullptr),
@@ -298,8 +298,8 @@ protected:
 
 
 
-template<typename GV, int k, class MI, class TP, class ST>
-class RaviartThomasCubeNodeIndexSet
+template<typename GV, int k, class MI, class TP, class ST, GeometryType::BasicType basic_type>
+class RaviartThomasNodeIndexSet
 {
   enum {dim = GV::dimension};
 
@@ -310,11 +310,11 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = RaviartThomasCubeNodeFactory<GV, k, MI, ST>;
+  using NodeFactory = RaviartThomasNodeFactory<GV, k, MI, ST, basic_type>;
 
   using Node = typename NodeFactory::template Node<TP>;
 
-  RaviartThomasCubeNodeIndexSet(const NodeFactory& nodeFactory) :
+  RaviartThomasNodeIndexSet(const NodeFactory& nodeFactory) :
     nodeFactory_(&nodeFactory)
   {}
 
@@ -354,10 +354,11 @@ public:
     size_t subentity = localKey.subEntity();
     size_t codim = localKey.codim();
 
-    // throw if Element is no cube
-    if (not(element.type().isCube())) DUNE_THROW(Dune::NotImplemented, "RaviartThomasCubeNodalBasis only implemented for cube elements.");
+    // throw if Element is not of predefined type
+    if (not(basic_type==GeometryType::BasicType::cube and element.type().isCube()) and
+        not(basic_type==GeometryType::BasicType::simplex and element.type().isSimplex())) DUNE_THROW(Dune::NotImplemented, "RaviartThomasNodalBasis only implemented for cube and simplex elements.");
 
-    if (not(codim==0 or codim==1)) DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasCubeBasis");
+    if (not(codim==0 or codim==1)) DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasBasis");
 
     return { nodeFactory_->CodimOffset_[codim] +
              nodeFactory_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
@@ -374,14 +375,14 @@ namespace BasisBuilder {
 
 namespace Imp {
 
-template<std::size_t k>
-struct RaviartThomasCubeNodeFactoryBuilder
+template<std::size_t k, GeometryType::BasicType basic_type>
+struct RaviartThomasNodeFactoryBuilder
 {
   static const std::size_t requiredMultiIndexSize=1;
 
   template<class MultiIndex, class GridView, class size_type=std::size_t>
   auto build(const GridView& gridView)
-    -> RaviartThomasCubeNodeFactory<GridView, k, MultiIndex, size_type>
+    -> RaviartThomasNodeFactory<GridView, k, MultiIndex, size_type, basic_type>
   {
     return {gridView};
   }
@@ -389,8 +390,8 @@ struct RaviartThomasCubeNodeFactoryBuilder
 
 } // end namespace BasisBuilder::Imp
 
-template<std::size_t k>
-Imp::RaviartThomasCubeNodeFactoryBuilder<k> rtcube()
+template<std::size_t k, GeometryType::BasicType basic_type>
+Imp::RaviartThomasNodeFactoryBuilder<k, basic_type> rt()
 {
   return{};
 }
@@ -403,15 +404,15 @@ Imp::RaviartThomasCubeNodeFactoryBuilder<k> rtcube()
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************
 
-/** \brief Nodal basis of a scalar k-th-order Raviart Thomas finite element space on simplicial elements
+/** \brief Nodal basis of a scalar k-th-order Raviart Thomas finite element space
  *
  * TODO
  *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
-template<typename GV, int k, class ST = std::size_t>
-using RaviartThomasCubeNodalBasis = DefaultGlobalBasis<RaviartThomasCubeNodeFactory<GV, k, FlatMultiIndex<ST>, ST> >;
+template<typename GV, int k, GeometryType::BasicType basic_type, class ST = std::size_t>
+using RaviartThomasNodalBasis = DefaultGlobalBasis<RaviartThomasNodeFactory<GV, k, FlatMultiIndex<ST>, ST, basic_type> >;
 
 } // end namespace Functions
 } // end namespace Dune

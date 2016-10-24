@@ -20,7 +20,7 @@
 #include <dune/istl/solvers.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/raviartthomascubebasis.hh>
+#include <dune/functions/functionspacebases/raviartthomasbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
@@ -350,7 +350,7 @@ int main (int argc, char *argv[]) try
   auto basis = makeBasis(
     gridView,
     composite(
-      rtcube<0>(),
+      rt<0, GeometryType::BasicType::cube>(),
       pq<0>()
     ));
 
