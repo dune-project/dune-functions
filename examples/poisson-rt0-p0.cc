@@ -20,12 +20,16 @@
 #include <dune/istl/solvers.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/raviartthomasbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/raviartthomasbasis.hh>
+#include <dune/functions/functionspacebases/bdmbasis.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
+
+//#define RT0
+#define BDM1
 
 using namespace Dune;
 
@@ -324,6 +328,12 @@ void assembleMixedPoissonRhs(const Basis& basis,
 
 int main (int argc, char *argv[]) try
 {
+#ifndef RT0
+#ifndef BDM1
+  DUNE_THROW(Dune::NotImplemented, "Choose RT0 or BDM1.");
+#endif
+#endif
+
   // Set up MPI, if available
   MPIHelper::instance(argc, argv);
 
@@ -350,8 +360,14 @@ int main (int argc, char *argv[]) try
   auto basis = makeBasis(
     gridView,
     composite(
+#ifdef RT0
       rt<0, GeometryType::BasicType::cube>(),
       pq<0>()
+#endif
+#ifdef BDM1
+      bdm<1, GeometryType::BasicType::cube>(),
+      pq<0>()
+#endif
     ));
 
 
@@ -377,6 +393,20 @@ int main (int argc, char *argv[]) try
   auto rightHandSide = [] (const Domain& x) { return 2.;};
   assembleMixedPoissonRhs(basis, rhs, rightHandSide);
 
+  auto topFluxBC = [] (const Domain& x) { return 0.0; };
+  auto lowerFluxBC = [] (const Domain& x) { return 0.0; };
+
+  using namespace TypeTree::Indices;
+  using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
+  using HierarchicBitVectorView = Functions::HierarchicVectorWrapper<BitVectorType, char>;
+
+  BitVectorType isTopBoundary;
+  BitVectorType isLowerBoundary;
+
+#ifdef RT0
+
+  // Use the same way as for PQk functions to mark boundaries.
+
   // Mark top boundary.
   auto topBoundaryIndicator = [&l] (Domain x) {
         bool isBoundary = x[1] > l[1] - 1e-8;
@@ -389,20 +419,43 @@ int main (int argc, char *argv[]) try
         return isBoundary;
   };
 
-  auto topFluxBC = [] (const Domain& x) { return -1.0; };
-  auto lowerFluxBC = [] (const Domain& x) { return 0.0; };
-
-  using namespace TypeTree::Indices;
-  using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
-  using HierarchicBitVectorView = Functions::HierarchicVectorWrapper<BitVectorType, char>;
-
-  BitVectorType isTopBoundary;
-  BitVectorType isLowerBoundary;
-
   interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicBitVectorView(isTopBoundary), topBoundaryIndicator);
-  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicVectorView(rhs), topFluxBC, HierarchicBitVectorView(isTopBoundary));
-
   interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicBitVectorView(isLowerBoundary), lowerBoundaryIndicator);
+
+#else
+
+  // Use a messy way of defining a boundary. Using the RT0-way, only the RT0 basis DOF are triggered,
+  // as they suffice to interpolate a constant function on an edge. In particular BDM1 DOF are not triggered,
+  // which are linear (but non-constant) on edges.
+
+  // Mark top boundary.
+  auto topBoundaryIndicator = [&l] (Domain x) {
+       double isBoundary = x[1] > l[1] - 1e-8 ? x[0] : 0.0;
+        return isBoundary;
+  };
+
+  // Mark top boundary.
+  auto lowerBoundaryIndicator = [&l] (Domain x) {
+        double isBoundary = x[1] < 1e-8 ? x[0] : 0.0;
+        return isBoundary;
+  };
+
+  VectorType isTopBoundaryTmp, isLowerBoundaryTmp;
+
+  // Use double-valued interpolation and transfer to char-valued vectors.
+  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicVectorView(isTopBoundaryTmp), topBoundaryIndicator);
+  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicVectorView(isLowerBoundaryTmp), lowerBoundaryIndicator);
+  HierarchicBitVectorView(isTopBoundary).resize(basis);
+  HierarchicBitVectorView(isLowerBoundary).resize(basis);
+  isTopBoundary = 0;
+  isLowerBoundary = 0;
+  for (size_t i=0; i<isTopBoundaryTmp[0].size(); i++){
+    isTopBoundary[0][i] = isTopBoundaryTmp[0][i]!=0 ? 1: 0;
+    isLowerBoundary[0][i] = isLowerBoundaryTmp[0][i]!=0 ? 1: 0;
+  }
+#endif
+
+  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicVectorView(rhs), topFluxBC, HierarchicBitVectorView(isTopBoundary));
   interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicVectorView(rhs), lowerFluxBC, HierarchicBitVectorView(isLowerBoundary));
 
   ////////////////////////////////////////////
