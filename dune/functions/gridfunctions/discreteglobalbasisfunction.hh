@@ -138,7 +138,7 @@ public:
         if (type==FunctionSpace::Type::Hdiv)
         {
           auto element = node.element();
-          auto geometry = element->geometry();
+          auto geometry = element.geometry();
           auto jacobianTransposed = geometry.jacobianTransposed(x_);
           auto integrationElement = geometry.integrationElement(x_);
           for (size_type i = 0; i < localBasis.size(); ++i)
@@ -151,7 +151,7 @@ public:
         else if (type==FunctionSpace::Type::Hcurl)
         {
           auto element = node.element();
-          auto geometry = element->geometry();
+          auto geometry = element.geometry();
           auto jacobianInverseTransposed = geometry.jacobianInverseTransposed(x_);
           for (size_type i = 0; i < localBasis.size(); ++i)
           {
