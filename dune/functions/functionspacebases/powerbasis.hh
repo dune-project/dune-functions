@@ -10,7 +10,9 @@
 #include <dune/typetree/utility.hh>
 
 #include <dune/functions/common/utility.hh>
+#include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
+#include <dune/functions/functionspacebases/nodes.hh>
 
 
 
