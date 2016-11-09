@@ -187,6 +187,18 @@ public:
       return hybridMultiIndexAccess<Entry<MultiIndex>&>(*vector_, index);
   }
 
+  template<class MultiIndex>
+  const Entry<MultiIndex>& operator()(const MultiIndex& index) const
+  {
+      return (*this)[index];
+  }
+
+  template<class MultiIndex>
+  Entry<MultiIndex>& operator()(const MultiIndex& index)
+  {
+      return (*this)[index];
+  }
+
   const Vector& vector() const
   {
     return *vector_;
