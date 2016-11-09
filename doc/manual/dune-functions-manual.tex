@@ -614,7 +614,7 @@ the construction of composed bases for the user.
 
 
 
-\subsection{User interface of a {\tt GlobalBasis}}
+\subsection{User interface of a \texttt{GlobalBasis}}
 We now describe the user interface provided by global bases and related types.
 Since there may be various implementations of those types, all class names used
 below are auxiliary names.  We will group exported type names and related methods
@@ -630,8 +630,8 @@ public:
 \end{lstlisting}
 
 As the global basis represents a function space defined on a grid view access to
-the latter is provided by the {\tt gridView()} method while its type
-is exported as {\tt GridView}.
+the latter is provided by the\texttt{gridView()} method while its type
+is exported as \texttt{GridView}.
 
 \begin{lstlisting}
   using GridView = <implementation defined>;
@@ -640,12 +640,12 @@ is exported as {\tt GridView}.
 
 One of the main functionalities of the global basis is to provide
 access to the basis functions. The latter are available via the
-local view interface. The {\tt localView()} method returns a new
-object of type {\tt LocalView}. After binding this object to a
+local view interface. The \texttt{localView()} method returns a new
+object of type \texttt{LocalView}. After binding this object to a
 grid element from the respective grid view, it provides access
 to the restriction of all basis functions whose support has a
 nontrivial intersection with this element. For details on the
-{\tt LocalView} interface see below.
+\texttt{LocalView} interface see below.
 
 \begin{lstlisting}
   using LocalView = <implementation defined>;
@@ -658,11 +658,11 @@ consecutive, and unique within the respective element.
 In order to  associate global degrees of freedom to basis functions
 the local indices can be mapped to global indices. To facilitate
 hierarchical representations of the basis these global indices
-are in general multi-indices. The {\tt localIndexSet()} method
-returns a new object of type {\tt LocalIndexSet} that, after
+are in general multi-indices. The \texttt{localIndexSet()} method
+returns a new object of type \texttt{LocalIndexSet} that, after
 binding it to a local view, allows to map the local indices
 of all basis functions appearing in this local view to those
-global multi-indices. The interface of the {\tt LocalIndexSet}
+global multi-indices. The interface of the \texttt{LocalIndexSet}
 is defined below.
 
 \begin{lstlisting}
@@ -671,14 +671,14 @@ is defined below.
 \end{lstlisting}
 
 The total number of basis functions of the global basis is
-exported via the {\tt dimension()} method. However, since
+exported via the \texttt{dimension()} method. However, since
 the global indices are hierarchically structured multi-indices
-of type {\tt MultiIndex}, this information is in general not
+of type \texttt{MultiIndex}, this information is in general not
 sufficient to allocate hierarchical containers for storing,
 e.g., coefficients with respect to all basis functions.
 
 Because of this, the basis provides access to the structural
-information of those multi-indices via the {\tt size(SizePrefix)}
+information of those multi-indices via the \texttt{size(SizePrefix)}
 method. The given prefix takes the form of a multi-index itself.
 For a prefix $(p_1,\dots,p_k)$ the method returns the maximal value $q$ such that there
 is a global index of the form $(p_1,\dots,p_k,q-1,\dots)$.
@@ -687,13 +687,13 @@ $(p_1,\dots,p_k)$ is itself one of the multi-indices.
 In this case the result is zero.
 In any case this corresponds to the number of direct children
 of the node $(p_1,\dots,p_k)$ in the index tree.
-For convenience there is also a method {\tt size()} returning the same
-value the method with an empty prefix, i.e., {\tt size(\{\})}.
+For convenience there is also a method \texttt{size()} returning the same
+value the method with an empty prefix, i.e., \texttt{size(\{\})}.
 
-Since prefixes may have variable size, it is guaranteed that {\tt SizePrefix}
-is always a {\tt Dune::ReservedVector<size\_type,k>} where {\tt k}
+Since prefixes may have variable size, it is guaranteed that \texttt{SizePrefix}
+is always a \texttt{Dune::ReservedVector<size\_type,k>} where \texttt{k}
 is strictly larger than the maximal length of a multi-index. The result
-type of all size-related methods is exported as {\tt size\_type}.
+type of all size-related methods is exported as \texttt{size\_type}.
 
 \begin{lstlisting}
   using size_type = <implementation defined>;
@@ -704,8 +704,8 @@ type of all size-related methods is exported as {\tt size\_type}.
   size_type size(const SizePrefix& prefix) const;
 \end{lstlisting}
 
-Finally, the basis exports its node-factory of type {\tt NodeFactory}
-via the {\tt nodeFactory()} method. The concept of a node-factory
+Finally, the basis exports its node-factory of type \texttt{NodeFactory}
+via the \texttt{nodeFactory()} method. The concept of a node-factory
 will be discussed below.
 \todo[inline]{Carsten:Do we require that this method exists?}
 \todo[inline]{Carsten:Do we require that each global basis is
@@ -721,14 +721,14 @@ will be discussed below.
 
 
 
-\subsection{User interface of a {\tt LocalView}}
+\subsection{User interface of a \texttt{LocalView}}
 We will now continue with the description of the interface
-of a local view as returned by {\tt GlobalBasis::localView()}.
-Since a {\tt LocalView} is not meant to be constructed
-manually, there is no interface for this. Instead, a {\tt LocalView}
-can be obtained from the global basis via the {\tt localView()}
-method. As a consequence the global basis of type {\tt GlobalBasis}
-is known and exported by the {\tt globalBasis()} method.
+of a local view as returned by \texttt{GlobalBasis::localView()}.
+Since a \texttt{LocalView} is not meant to be constructed
+manually, there is no interface for this. Instead, a \texttt{LocalView}
+can be obtained from the global basis via the \texttt{localView()}
+method. As a consequence the global basis of type \texttt{GlobalBasis}
+is known and exported by the \texttt{globalBasis()} method.
 
 \begin{lstlisting}
 class LocalView
@@ -742,14 +742,14 @@ A local view is meant to provides access to all basis
 functions whose support has nontrivial intersection with
 a given element. These will be called \emph{local basis functions}
 in the following. To achieve this, the local view must
-first be bound to this element by calling {\tt bind(Element)}.
+first be bound to this element by calling \texttt{bind(Element)}.
 This call may incorporate expensive computations needed to
 setup the those local basis functions. The local view can be
 bound to another element by calling this method again.
 To set the local view to unbound state again, you
-can call the {\tt unbind()} method.
+can call the \texttt{unbind()} method.
 Notice that the local view will store a copy of the bound
-element that is accessible via {\tt element()}.
+element that is accessible via \texttt{element()}.
 
 \begin{lstlisting}
   using GridView = typename GlobalBasis::GridView;
@@ -761,11 +761,11 @@ element that is accessible via {\tt element()}.
 
 The total number of basis functions associated to the
 local view at the currently bound element is returned
-by {\tt size()}. The result of calling this method in
+by \texttt{size()}. The result of calling this method in
 unbound state is undefined.
 To allow preallocation of buffers for local functions
-the {\tt maxSize()} method returns the maximal of the
-{\tt size()} method for all elements in the grid view
+the \texttt{maxSize()} method returns the maximal of the
+\texttt{size()} method for all elements in the grid view
 associated to the global basis. This can be called in
 unbound state.
 
@@ -776,8 +776,8 @@ unbound state.
 \end{lstlisting}
 
 Finally access to the actual local basis functions are provided
-by the {\tt tree()} method returning a reference to a
-{\tt Tree} object. This encapsulates the basis functions
+by the \texttt{tree()} method returning a reference to a
+\texttt{Tree} object. This encapsulates the basis functions
 in a hierarchical tree structure to also represent structured
 function spaces.
 While the tree  itself can be queried in unbound state,
@@ -792,9 +792,9 @@ given below.
 }; // end LocalView
 \end{lstlisting}
 
-\subsection{User interface of a local ansatz {\tt Tree}}
+\subsection{User interface of a local ansatz \texttt{Tree}}
 The local view provides access to all local basis functions
-by exporting a {\tt Tree} object. This implements a tree
+by exporting a \texttt{Tree} object. This implements a tree
 data structure using the foundation classes of the
 \dunemodule{dune-typetree} library. Using a tree allows
 to represent basis of spaces that have a nested product
@@ -816,23 +816,23 @@ user so there is no constructor in the interface.
 First we describe the interface shared by interior
 and leaf nodes.
 
-The {\tt size()} method returns the total number of
+The \texttt{size()} method returns the total number of
 local basis functions within the subtree rooted at the
 present node. For each of these local basis functions the
-{\tt localIndex(size\_type)} method given a unique
+\texttt{localIndex(size\_type)} method given a unique
 index within all local basis functions within the full
 tree. The argument to this method is the lexicographic
 index of the local basis functions within the subtree
 and the result is the lexicographic index within the full
 tree. Hence the local indices of all basis functions
 within this subtree form a consecutive range. The first
-value in this rage,i.e., the result of {\tt localIndex(0)}
-is also accessible via the {\tt offset()} method.
+value in this rage,i.e., the result of \texttt{localIndex(0)}
+is also accessible via the \texttt{offset()} method.
 \todo[inline]{Is the offset() method part of the interface?
 Making it protected seems to be reasonable.}
 The result of these methods is undefined if the
 local view containing the tree is in unbound state.
-All these indices are of type {\tt size\_type}.
+All these indices are of type \texttt{size\_type}.
 
 \begin{lstlisting}
 class BasisNode
@@ -846,15 +846,15 @@ public:
 
 For some computations it is important to identify
 individual nodes in the tree. To this end the node
-exports its path in the full tree via the {\tt treePath()}
+exports its path in the full tree via the \texttt{treePath()}
 method. The result is a tree path
 as defined in the \dunemodule{dune-typetree} module.
 It is possible to retrieve the node from the full
 tree by addressing it with its tree path.
 Notice that, to allow this functionality, the
-type {\tt TreePath} will differ from node to node
+type \texttt{TreePath} will differ from node to node
 in general. If data needs to be attached to nodes,
-the {\tt treeIndex()} can be used. The latter returns
+the \texttt{treeIndex()} can be used. The latter returns
 the lexicographic index of the node within the full
 tree in a fixed type for all nodes.
 These methods can also be used if the local view containing
@@ -870,8 +870,8 @@ the tree is in unbound state.
 Leaf nodes share the same interface as interior
 nodes. Additionally they provide access to the
 element the local view and thus the tree is bound
-to via the {\tt element()} method. Probably most important
-is the {\tt finiteElement()} method that gives access
+to via the \texttt{element()} method. Probably most important
+is the \texttt{finiteElement()} method that gives access
 to the local finite element. The finite element
 itself provides access to the local basis functions
 by the finite element interface defined in the
@@ -902,16 +902,16 @@ public:
 
 
 
-\subsection{User interface of a {\tt LocalIndexSet}}
-The {\tt LocalIndexSet} as returned by {\tt GlobalBasis::localIndexSet()}
+\subsection{User interface of a \texttt{LocalIndexSet}}
+The \texttt{LocalIndexSet} as returned by \texttt{GlobalBasis::localIndexSet()}
 provides access to global multi-indices for the
 local basis functions reachable from a local view.
-To this end the {\tt LocalIndexSet} must
-first be bound to the {\tt LocalView} using
-the {\tt bind(LocalView)} method. Similar to the
-local view there is an {\tt unbind()} method
+To this end the \texttt{LocalIndexSet} must
+first be bound to the \texttt{LocalView} using
+the \texttt{bind(LocalView)} method. Similar to the
+local view there is an \texttt{unbind()} method
 and the bound on local view can be accessed
-using the {\tt localView()} method.
+using the \texttt{localView()} method.
 
 \begin{lstlisting}
 class LocalIndexSet
@@ -924,15 +924,15 @@ public:
 \end{lstlisting}
 
 If the local index set is in bound state
-the {\tt size()} method can be used to query
+the \texttt{size()} method can be used to query
 the number of local basis functions in the
 bound local view. This is a simple shortcut for
-{\tt localView().size()} and {\tt localView().tree().size()}.
+\texttt{localView().size()} and \texttt{localView().tree().size()}.
 For any of these local basis functions the global
-multi-index is provided by the {\tt index(size\_type)}
+multi-index is provided by the \texttt{index(size\_type)}
 method. The argument for this method is the local
 index of the basis function within the tree as
-returned by the {\tt BasisNode::localIndex(size\_type)}
+returned by the \texttt{BasisNode::localIndex(size\_type)}
 method.
 
 \begin{lstlisting}
@@ -945,8 +945,8 @@ method.
 
 We now give a short example on how to use the interface
 to compute global indices for local basis functions
-of a given {\tt globalBasis} at a given {\tt element}.
-If we want to compute the global index of the {\tt i}-th
+of a given \texttt{globalBasis} at a given \texttt{element}.
+If we want to compute the global index of the \texttt{i}-th
 local basis function in the finite element attached to
 a leaf node this can be done by the following snippet.
 
@@ -970,8 +970,8 @@ auto globalIndex = localIndex.index(i);
 \end{lstlisting}
 
 Here we assumed that we do not have a nested local ansatz tree
-such that the {\tt tree()} method directly returns a {\tt LeafBasisNode}.
-In this case {\tt localIndex} coincides with {\tt i}.
+such that the \texttt{tree()} method directly returns a \texttt{LeafBasisNode}.
+In this case \texttt{localIndex} coincides with \texttt{i}.
 In the more general case of a nontrivial product space
 we must first retrieve the leaf node corresponding to
 the desired factor in the product space. This can be done
@@ -993,14 +993,14 @@ auto treePath = TypeTree::hybridTreePath(_0, 1);
 const auto& node = TypeTree::child(localView.tree(), treePath);
 \end{lstlisting}
 
-Notice that we used the index constants {\tt \_0}
-from the namespace {\tt TypeTree::Indices}
+Notice that we used the index constants \texttt{\_0}
+from the namespace \texttt{TypeTree::Indices}
 to address the velocity node because the
 tree root is a hybrid container whose child nodes
 for velocity and pressure are of different type.
 
-\subsection{Implementors interface of a {\tt NodeFactory}}
-\subsection{Implementors interface of a {\tt NodeIndexSet}}
+\subsection{Implementors interface of a \texttt{NodeFactory}}
+\subsection{Implementors interface of a \texttt{NodeIndexSet}}
 
 
 
