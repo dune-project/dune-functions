@@ -167,7 +167,7 @@ auto derivativeSignatureTags(Dune::Functions::SignatureTag<Signature, Derivative
   }, [&](auto id) {
     // else we first construct the tail tuple with SignatureTags for derivatives
     // of order 1 to maxOrder
-    auto tailTagsTuple = derivativeSignatureTags<maxOrder-1>(derivativeSignatureTag(tag));
+    auto tailTagsTuple = derivativeSignatureTags<decltype(id,std::size_t(0))(maxOrder-1)>(derivativeSignatureTag(tag));
     // and prepend this with the given SignatureTag.
     // This is done by unpacking the tail tuple with apply().
     return Std::apply([&](auto&&... tailTags){
