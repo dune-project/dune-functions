@@ -25,7 +25,7 @@ namespace Functions {
  *
  * This implements the grid function interface by combining a given global
  * basis and a coefficient vector. The part of the spanned space that should
- * be covered by the function is determined by a tree path to specifies the
+ * be covered by the function is determined by a tree path that specifies the
  * corresponding local ansatz tree.
  *
  * This class supports mapping of subtrees to multi-component ranges,
@@ -143,7 +143,7 @@ public:
           auto&& v = shapeFunctionValues[i];
 
           // Notice that the range entry re, the coefficient c, and the shape functions
-          // value v may all scalar, vector, matrix, or general container valued.
+          // value v may all be scalar, vector, matrix, or general container valued.
           // The matching of their entries is done via the multistage procedure described
           // in the class documentation of DiscreteGlobalBasisFunction.
           auto dimC = FlatVectorBackend<CoefficientBlock>::size(c);
