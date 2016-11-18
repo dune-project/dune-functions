@@ -6,7 +6,7 @@ before_script:
   - duneci-install-module https://gitlab.dune-project.org/staging/dune-uggrid.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-grid.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-istl.git
-  - duneci-install-module https://gitlab.dune-project.org/pdelab/dune-typetree.git
+  - duneci-install-module https://gitlab.dune-project.org/staging/dune-typetree.git
 
 debian:9--gcc:
   image: duneci/base:9
