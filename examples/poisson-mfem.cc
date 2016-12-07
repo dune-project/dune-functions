@@ -28,8 +28,9 @@
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
-//#define RT0
-#define BDM1
+#define RT0
+//#define BDM1
+//#define DIM2
 
 using namespace Dune;
 
@@ -341,10 +342,15 @@ int main (int argc, char *argv[]) try
   //   Generate the grid
   ///////////////////////////////////
 
+#ifdef DIM2
   const int dim = 2;
+  std::array<int,dim> elements = {20, 20};
+#else
+  const int dim = 3;
+  std::array<int,dim> elements = {20, 20, 20};
+#endif
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> l(1);
-  std::array<int,dim> elements = {20, 20};
   GridType grid(l,elements);
 
   typedef GridType::LeafGridView GridView;
@@ -409,13 +415,13 @@ int main (int argc, char *argv[]) try
 
   // Mark top boundary.
   auto topBoundaryIndicator = [&l] (Domain x) {
-        bool isBoundary = x[1] > l[1] - 1e-8;
+        bool isBoundary = x[dim-1] > l[dim-1] - 1e-8;
         return isBoundary;
   };
 
   // Mark top boundary.
   auto lowerBoundaryIndicator = [&l] (Domain x) {
-        bool isBoundary = x[1] < 1e-8;
+        bool isBoundary = x[dim-1] < 1e-8;
         return isBoundary;
   };
 
@@ -430,13 +436,13 @@ int main (int argc, char *argv[]) try
 
   // Mark top boundary.
   auto topBoundaryIndicator = [&l] (Domain x) {
-       double isBoundary = x[1] > l[1] - 1e-8 ? x[0] : 0.0;
+       double isBoundary = x[dim-1] > l[dim-1] - 1e-8 ? x[0] : 0.0;
         return isBoundary;
   };
 
   // Mark top boundary.
   auto lowerBoundaryIndicator = [&l] (Domain x) {
-        double isBoundary = x[1] < 1e-8 ? x[0] : 0.0;
+        double isBoundary = x[dim-1] < 1e-8 ? x[0] : 0.0;
         return isBoundary;
   };
 
@@ -499,7 +505,7 @@ int main (int argc, char *argv[]) try
   // Preconditioned conjugate-gradient solver
   RestartedGMResSolver<VectorType> solver(op,
                                           preconditioner,
-                                          1e-10,  // desired residual reduction factor
+                                          1e-6,  // desired residual reduction factor
                                           100,     // number of iterations between restarts
                                           1000,   // maximum number of iterations
                                           2);    // verbosity of the solver
@@ -527,7 +533,7 @@ int main (int argc, char *argv[]) try
   SubsamplingVTKWriter<GridView> vtkWriter(gridView,2);
   vtkWriter.addVertexData(fluxFunction, VTK::FieldInfo("flux", VTK::FieldInfo::Type::vector, dim));
   vtkWriter.addCellData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
-  vtkWriter.write("poisson-rt0-p0-result");
+  vtkWriter.write("poisson-mfem-result");
  }
 // Error handling
  catch (Exception e) {
