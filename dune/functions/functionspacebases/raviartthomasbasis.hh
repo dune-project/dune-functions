@@ -165,7 +165,14 @@ public:
   using size_type = ST;
 
   // Precompute the number of dofs per entity type depending on the entity's codimension and the grid's type (only valid for cube and simplex grids)
-  std::vector<int> dofsPerCodim { (basic_type == GeometryType::BasicType::cube ? k*(k+1)*dim : k*dim), k+1}; // holds only for 2D!
+
+  // for 3D only for cubes k=0,1
+  // Note: dofsPerElement = dofsPerFace * dim for cubes, k=0,1
+
+  const static int dofsPerFace    = dim == 2 ? k+1 : 3*k+1;
+  const static int dofsPerElement = dim == 2 ? (basic_type == GeometryType::cube ? k*(k+1)*dim : k*dim) : k*(k+1)*(k+1)*dim;
+
+  const std::vector<int> dofsPerCodim {dofsPerElement, dofsPerFace};
 
   template<class TP>
   using Node = RaviartThomasNode<GV, k, size_type, TP, basic_type>;
