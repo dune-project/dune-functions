@@ -29,15 +29,36 @@ public:
   virtual ~PolymorphicType()
   {}
 
-  /** \brief Clones the object
-   * clone needs to be redefined by an implementation class, with the
-   * return type covariantly adapted. Remember to
-   * delete the resulting pointer.
+  /**
+   * \brief Clones the object
+   *
+   * clone() needs to be redefined by an implementation class, with the
+   * return type covariantly adapted. This will return a new copy of *this
+   * via a pointer to newly allocated memory.
+   * Remember to delete the resulting pointer.
    */
   virtual Interface* clone() const = 0;
 
+  /**
+   * \brief Clones the object into buffer
+   *
+   * clone(buffer) needs to be redefined by an implementation class,
+   * with the return type covariantly adapted. This will return a copy
+   * of *this created in the given buffer using placement-new with copy construction.
+   * You must not delete the returned pointer since it points
+   * to the given buffer (however with the proper type instead of void*).
+   */
   virtual Interface* clone(void* buffer) const = 0;
 
+  /**
+   * \brief Move object into buffer
+   *
+   * move(buffer) needs to be redefined by an implementation class,
+   * with the return type covariantly adapted. This will return a copy
+   * of *this created in the given buffer using placement-new with move construction.
+   * You must not delete the returned pointer since it points
+   * to the given buffer (however with the proper type instead of void*).
+   */
   virtual Interface* move(void* buffer) = 0;
 };
 

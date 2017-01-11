@@ -5,6 +5,8 @@
  * \brief The B-spline global function space basis
  */
 
+#include <numeric>
+
 /** \todo Don't use this matrix */
 #include <dune/common/dynmatrix.hh>
 
@@ -23,12 +25,14 @@ namespace Functions {
 template<typename GV, typename R>
 class BSplineLocalFiniteElement;
 
-template<typename GV, class MI, class ST>
+template<typename GV, class MI>
 class BSplineNodeFactory;
 
 
 /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
  * of a B-spline patch to a knot span
+ *
+ * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV Grid view that the basis is defined on
  * \tparam R Number type used for spline function values
@@ -50,7 +54,7 @@ public:
    *
    * The patch object does all the work.
    */
-  BSplineLocalBasis(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory,
+  BSplineLocalBasis(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory,
                     const BSplineLocalFiniteElement<GV,R>& lFE)
   : nodeFactory_(nodeFactory),
     lFE_(lFE)
@@ -142,7 +146,7 @@ public:
   }
 
 private:
-  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory_;
+  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory_;
 
   const BSplineLocalFiniteElement<GV,R>& lFE_;
 
@@ -153,6 +157,8 @@ private:
 };
 
 /** \brief Attaches a shape function to an entity
+ *
+ * \ingroup FunctionSpaceBasesImplementations
  *
  * The attachment uses the same order as for Qk elements.  This does *not* provide sufficient information
  * to compute global indices for the shape functions.  However, it does allow to find all degrees of freedom
@@ -322,6 +328,8 @@ private:
 };
 
 /** \brief Local interpolation in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
+ *
+ * \ingroup FunctionSpaceBasesImplementations
  */
 template<int dim, class LB>
 class BSplineLocalInterpolation
@@ -337,6 +345,8 @@ public:
 };
 
 /** \brief LocalFiniteElement in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
+ *
+ * \ingroup FunctionSpaceBasesImplementations
  *
  * This class ties together the implementation classes BSplineLocalBasis, BSplineLocalCoefficients, and BSplineLocalInterpolation
  *
@@ -360,7 +370,7 @@ public:
 
   /** \brief Constructor with a given B-spline basis
    */
-  BSplineLocalFiniteElement(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory)
+  BSplineLocalFiniteElement(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory)
   : nodeFactory_(nodeFactory),
     localBasis_(nodeFactory,*this)
   {}
@@ -451,7 +461,7 @@ public:
     return r;
   }
 
-  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>,std::size_t>& nodeFactory_;
+  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory_;
 
   BSplineLocalBasis<GV,R> localBasis_;
   BSplineLocalCoefficients<dim> localCoefficients_;
@@ -462,13 +472,23 @@ public:
 };
 
 
-template<typename GV, typename ST, typename TP>
+template<typename GV, typename TP>
 class BSplineNode;
 
-template<typename GV, class MI, class TP, class ST>
+template<typename GV, class MI, class TP>
 class BSplineNodeIndexSet;
 
-template<typename GV, class MI, class ST>
+/** \brief Node factory for B-spline basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam GV The GridView that the space is defined on
+ * \tparam MI Type to be used for multi-indices
+ *
+ * The BSplineNodeFactory can be used to embed a BSplineBasis
+ * in a larger basis for the construction of product spaces.
+ */
+template<typename GV, class MI>
 class BSplineNodeFactory
 {
   static const int dim = GV::dimension;
@@ -532,13 +552,13 @@ public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = GV;
-  using size_type = ST;
+  using size_type = std::size_t;
 
   template<class TP>
-  using Node = BSplineNode<GV, size_type, TP>;
+  using Node = BSplineNode<GV, TP>;
 
   template<class TP>
-  using IndexSet = BSplineNodeIndexSet<GV, MI, TP, ST>;
+  using IndexSet = BSplineNodeIndexSet<GV, MI, TP>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -651,29 +671,54 @@ public:
     std::fill(order_.begin(), order_.end(), order);
   }
 
+  //! Initialize the global indices
   void initializeIndices()
   {}
 
-  /** \brief Obtain the grid view that the basis is defined on
-   */
+  //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
     return gridView_;
   }
 
+  //! Update the stored grid view, to be called if the grid has changed
+  void update(const GridView& gv)
+  {
+    gridView_ = gv;
+  }
+
+  /**
+   * \brief Create tree node with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * By passing a non-trivial root tree path this can be used
+   * to create a node suitable for being placed in a tree at
+   * the position specified by the root tree path.
+   */
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
     return Node<TP>{tp,this};
   }
 
+  /**
+   * \brief Create tree node index set with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * Create an index set suitable for the tree node obtained
+   * by node(tp).
+   */
   template<class TP>
   IndexSet<TP> indexSet() const
   {
     return IndexSet<TP>{*this};
   }
 
-  //! Return number possible values for next position in multi index
+  //! Return number of possible values for next position in multi index
   size_type size(const SizePrefix prefix) const
   {
     if (prefix.size() == 0)
@@ -681,11 +726,13 @@ public:
     assert(false);
   }
 
+  //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
     return size();
   }
 
+  //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
     size_type result = 1;
@@ -1172,27 +1219,27 @@ public:
   /** \brief Number of grid elements in the different coordinate directions */
   std::array<uint,dim> elements_;
 
-  const GridView gridView_;
+  GridView gridView_;
 };
 
 
 
-template<typename GV, typename ST, typename TP>
+template<typename GV, typename TP>
 class BSplineNode :
-  public LeafBasisNode<ST, TP>
+  public LeafBasisNode<std::size_t, TP>
 {
   static const int dim = GV::dimension;
 
-  using Base = LeafBasisNode<ST,TP>;
+  using Base = LeafBasisNode<std::size_t,TP>;
 
 public:
 
-  using size_type = ST;
+  using size_type = std::size_t;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElement = BSplineLocalFiniteElement<GV,double>;
 
-  BSplineNode(const TreePath& treePath, const BSplineNodeFactory<GV, FlatMultiIndex<ST>, ST>* nodeFactory) :
+  BSplineNode(const TreePath& treePath, const BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>>* nodeFactory) :
     Base(treePath),
     nodeFactory_(nodeFactory),
     finiteElement_(*nodeFactory)
@@ -1224,7 +1271,7 @@ public:
 
 protected:
 
-  const BSplineNodeFactory<GV, FlatMultiIndex<ST>, ST>* nodeFactory_;
+  const BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>>* nodeFactory_;
 
   FiniteElement finiteElement_;
   Element element_;
@@ -1232,19 +1279,19 @@ protected:
 
 
 
-template<typename GV, class MI, class TP, class ST>
+template<typename GV, class MI, class TP>
 class BSplineNodeIndexSet
 {
   enum {dim = GV::dimension};
 
 public:
 
-  using size_type = ST;
+  using size_type = std::size_t;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = BSplineNodeFactory<GV, MI, ST>;
+  using NodeFactory = BSplineNodeFactory<GV, MI>;
 
   using Node = typename NodeFactory::template Node<TP>;
 
@@ -1315,12 +1362,14 @@ protected:
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************
 
-/** \brief Nodal basis of a scalar k-th-order Lagrangean finite element space
+/** \brief A global B-spline basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV The GridView that the space is defined on
  */
 template<typename GV>
-using BSplineBasis = DefaultGlobalBasis<BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>, std::size_t> >;
+using BSplineBasis = DefaultGlobalBasis<BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>> >;
 
 
 }   // namespace Functions

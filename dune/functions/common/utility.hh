@@ -7,7 +7,6 @@
 #include <utility>
 #include <type_traits>
 
-#include <dune/common/std/utility.hh>
 #include <dune/typetree/utility.hh>
 
 namespace Dune {
@@ -16,19 +15,19 @@ namespace Functions {
 
 
 template<class F, class size_type, size_type firstValue, class... Args>
-auto forwardAsStaticInteger(Dune::Std::integer_sequence<size_type, firstValue> values, const size_type& i, F&& f, Args&&... args)
+auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue> values, const size_type& i, F&& f, Args&&... args)
   ->decltype(f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...))
 {
   return f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...);
 }
 
 template<class F, class size_type, size_type firstValue, size_type secondValue, size_type... otherValues, class... Args>
-auto forwardAsStaticInteger(Dune::Std::integer_sequence<size_type, firstValue, secondValue, otherValues...> values, const size_type i, F&& f, Args&&... args)
+auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue, secondValue, otherValues...> values, const size_type i, F&& f, Args&&... args)
   ->decltype(f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...))
 {
   if (i==firstValue)
     return f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...);
-  return forwardAsStaticInteger(Dune::Std::integer_sequence<size_type, secondValue, otherValues...>(), i, std::forward<F>(f), std::forward<Args>(args)...);
+  return forwardAsStaticInteger(std::integer_sequence<size_type, secondValue, otherValues...>(), i, std::forward<F>(f), std::forward<Args>(args)...);
 }
 
 
@@ -58,7 +57,7 @@ template<std::size_t end, class F, class size_type, class... Args>
 auto forwardAsStaticIndex(const size_type& i, F&& f, Args&&... args)
   ->decltype(f(Dune::TypeTree::Indices::_0, std::forward<Args>(args)...))
 {
-  return forwardAsStaticInteger(Dune::TypeTree::Std::make_index_sequence<end>(), i, std::forward<F>(f), std::forward<Args>(args)...);
+  return forwardAsStaticInteger(std::make_index_sequence<end>{}, i, std::forward<F>(f), std::forward<Args>(args)...);
 }
 
 
@@ -133,14 +132,14 @@ using TransformTuple = typename Imp::TransformTupleHelper<F, Tuples...>::Type;
 namespace Imp {
 
   template<class F, class... T, std::size_t... k>
-  auto transformTupleHelper(F&& f, const std::tuple<T...>& tuple, Dune::TypeTree::Std::index_sequence<k...>)
+  auto transformTupleHelper(F&& f, const std::tuple<T...>& tuple, std::index_sequence<k...>)
     -> decltype(std::make_tuple(f(std::get<k>(tuple))...))
   {
     return std::make_tuple(f(std::get<k>(tuple))...);
   }
 
   template<class F, class... T1, class...T2, std::size_t... k>
-  auto transformTupleHelper(F&& f, const std::tuple<T1...>& tuple1, const std::tuple<T2...>& tuple2, Dune::TypeTree::Std::index_sequence<k...>)
+  auto transformTupleHelper(F&& f, const std::tuple<T1...>& tuple1, const std::tuple<T2...>& tuple2, std::index_sequence<k...>)
     -> decltype(std::make_tuple(f(std::get<k>(tuple1), std::get<k>(tuple2))...))
   {
     return std::make_tuple(f(std::get<k>(tuple1), std::get<k>(tuple2))...);
@@ -161,9 +160,9 @@ namespace Imp {
  */
 template<class F, class... T>
 auto transformTuple(F&& f, const std::tuple<T...>& tuple)
-  -> decltype(Imp::transformTupleHelper(std::forward<F>(f), tuple, Dune::TypeTree::Std::make_index_sequence<sizeof...(T)>()))
+  -> decltype(Imp::transformTupleHelper(std::forward<F>(f), tuple, std::index_sequence_for<T...>{}))
 {
-  return Imp::transformTupleHelper(std::forward<F>(f), tuple, Dune::TypeTree::Std::make_index_sequence<sizeof...(T)>());
+  return Imp::transformTupleHelper(std::forward<F>(f), tuple, std::index_sequence_for<T...>{});
 }
 
 /**
@@ -181,9 +180,9 @@ auto transformTuple(F&& f, const std::tuple<T...>& tuple)
  */
 template<class F, class... T1, class... T2>
 auto transformTuple(F&& f, const std::tuple<T1...>& tuple1, const std::tuple<T2...>& tuple2)
-  -> decltype(Imp::transformTupleHelper(std::forward<F>(f), tuple1, tuple2, Dune::TypeTree::Std::make_index_sequence<sizeof...(T1)>()))
+  -> decltype(Imp::transformTupleHelper(std::forward<F>(f), tuple1, tuple2, std::index_sequence_for<T1...>{}))
 {
-  return Imp::transformTupleHelper(std::forward<F>(f), tuple1, tuple2, Dune::TypeTree::Std::make_index_sequence<sizeof...(T1)>());
+  return Imp::transformTupleHelper(std::forward<F>(f), tuple1, tuple2, std::index_sequence_for<T1...>{});
 }
 
 
@@ -195,7 +194,7 @@ namespace Imp {
   {};
 
   template<class I, I... k>
-  struct IntegerSequenceTupleHelper<Dune::TypeTree::Std::integer_sequence<I, k...>>
+  struct IntegerSequenceTupleHelper<std::integer_sequence<I, k...>>
   {
     using Type = std::tuple<std::integral_constant<I, k>...>;
   };
@@ -229,7 +228,7 @@ template<class T, class I>
 struct RotateHelper;
 
 template<class... T, std::size_t... I>
-struct RotateHelper<std::tuple<T...>, TypeTree::Std::index_sequence<I...> >
+struct RotateHelper<std::tuple<T...>, std::index_sequence<I...> >
 {
   using type = typename std::tuple<typename LastType<T...>::type, typename std::tuple_element<I,std::tuple<T...>>::type...>;
 };
@@ -247,7 +246,7 @@ struct RotateHelper<std::tuple<T...>, TypeTree::Std::index_sequence<I...> >
 template<class... T>
 struct RotateTuple
 {
-  using type = typename Imp::RotateHelper<std::tuple<T...>, Dune::TypeTree::Std::make_index_sequence<sizeof...(T)-1>>::type;
+  using type = typename Imp::RotateHelper<std::tuple<T...>, std::make_index_sequence<sizeof...(T)-1>>::type;
 };
 
 } // namespace Dune::Functions

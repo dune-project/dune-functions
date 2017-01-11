@@ -13,6 +13,8 @@ namespace Functions {
  *
  * \ingroup FunctionImplementations
  *
+ * \tparam K Scalar type. The polynomial will map K to K
+ *
  * This class exists mainly to demonstrate how to implement
  * the \ref Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> concept.
  */
@@ -21,22 +23,48 @@ class Polynomial
 {
 public:
 
+  //! Default constructor
   Polynomial() = default;
+
+  //! Copy constructor
   Polynomial(const Polynomial& other) = default;
+
+  //! Move constructor
   Polynomial(Polynomial&& other) = default;
 
+  /**
+   * \brief Create from list of coefficients
+   *
+   * Coefficients are ordered in accordance with
+   * the corresponding monomial order
+   */
   Polynomial(std::initializer_list<double> coefficients) :
     coefficients_(coefficients)
   {}
 
+  /**
+   * \brief Create from list of coefficients
+   *
+   * Coefficients are ordered in accordance with
+   * the corresponding monomial order. This will
+   * move the coefficients from givven vector.
+   */
   Polynomial(std::vector<K>&& coefficients) :
       coefficients_(std::move(coefficients))
   {}
 
+  /**
+   * \brief Create from list of coefficients
+   *
+   * Coefficients are ordered in accordance with
+   * the corresponding monomial order. This will
+   * copy coefficients from given vector.
+   */
   Polynomial(const std::vector<K>& coefficients) :
     coefficients_(coefficients)
   {}
 
+  //! Evaluate polynomial
   K operator() (const K& x) const
   {
     auto y = K(0);
@@ -45,6 +73,15 @@ public:
     return y;
   }
 
+  /**
+   * \brief Obtain derivative of Polynomial function
+   *
+   * \ingroup FunctionImplementations
+   *
+   * The derivative contains its own coefficient
+   * list and is not updated if the original function
+   * is changed.
+   */
   friend Polynomial derivative(const Polynomial& p)
   {
     std::vector<K> dpCoefficients(p.coefficients().size()-1);
@@ -53,6 +90,7 @@ public:
     return Polynomial(std::move(dpCoefficients));
   }
 
+  //! Obtain reference to coefficient vector
   const std::vector<K>& coefficients() const
   {
     return coefficients_;

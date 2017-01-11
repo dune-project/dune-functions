@@ -4,15 +4,19 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_COMPOSITEBASIS_HH
 
 #include <tuple>
+#include <utility>
 
+#include <dune/common/std/utility.hh>
+#include <dune/common/hybridutilities.hh>
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/utility.hh>
 
-#include <dune/functions/common/utility.hh>
 #include <dune/functions/common/staticforloop.hh>
+#include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 
 
@@ -20,6 +24,16 @@
 namespace Dune {
 namespace Functions {
 
+namespace Imp {
+
+  template<typename... T>
+  struct SizeOf
+    : public std::integral_constant<std::size_t,sizeof...(T)>
+  {};
+
+  template<typename... T>
+  using index_sequence_for = std::make_index_sequence<SizeOf<T...>{}>;
+}
 
 // *****************************************************************************
 // This is the reusable part of the composite bases. It contains
@@ -39,22 +53,31 @@ class CompositeNodeIndexSet;
 /**
  * \brief A factory for composite bases
  *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
  * This node factory represente a composition of several given node factories.
  * Its node type is a CompositeBasisNodes for the given subnodes.
  *
- * \tparam MI Type to be used for multi-indices
- * \tparam IT A tag describing how global indices are build
- * \tparam SF The sub-node factories
+ * \tparam MI  Type to be used for global multi-indices
+ * \tparam IMS An IndexMergingStrategy used to merge the global indices of the child factories
+ * \tparam SF  The child factories
  */
-template<class MI, class IT, class... SF>
+template<class MI, class IMS, class... SF>
 class CompositeNodeFactory
 {
 public:
 
+  //! Tuple of child factories
   using SubFactories = std::tuple<SF...>;
+
+  //! The grid view that the FE basis is defined on
   using GridView = typename std::tuple_element<0, SubFactories>::type::GridView;
-  using size_type = typename std::tuple_element<0, SubFactories>::type::size_type;
-  using IndexTag = IT;
+
+  //! Type used for indices and size information
+  using size_type = std::size_t;
+
+  //! Strategy used to merge the global indices of the child factories
+  using IndexMergingStrategy = IMS;
 
 protected:
   static const std::size_t children = sizeof...(SF);
@@ -62,7 +85,7 @@ protected:
   template<class, class, class, class...>
   friend class CompositeNodeIndexSet;
 
-  using ChildIndexTuple = IntegerSequenceTuple<TypeTree::Std::make_index_sequence<sizeof...(SF)>>;
+  using ChildIndexTuple = IntegerSequenceTuple<Imp::index_sequence_for<SF...>>;
 
   template<class TP>
   struct FixedTP
@@ -92,22 +115,29 @@ protected:
 
 public:
 
+  //! Template mapping index of child to its factory type
   template<std::size_t k>
   using SubFactory = typename std::tuple_element<k, std::tuple<SF...>>::type;
 
+  //! Template mapping root tree path to type of created tree node
   template<class TP>
   using Node = typename FixedTP<TP>::Node;
 
+  //! Template mapping root tree path to type of created tree node index set
   template<class TP>
-  using IndexSet = CompositeNodeIndexSet<MI, TP, IT, SF...>;
+  using IndexSet = CompositeNodeIndexSet<MI, TP, IMS, SF...>;
 
-  /** \brief Type used for global numbering of the basis vectors */
+  //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
+  //! Type used for prefixes handed to the size() method
   using SizePrefix = Dune::ReservedVector<size_type, MultiIndex::max_size()+1>;
 
-  /** \brief Constructor for a given grid view object */
-
+  /**
+   * \brief Constructor for given child factory objects
+   *
+   * The child factories will be stored as copies
+   */
   template<class... SFArgs,
     disableCopyMove<CompositeNodeFactory, SFArgs...> = 0,
     enableIfConstructible<std::tuple<SF...>, SFArgs...> = 0>
@@ -116,31 +146,60 @@ public:
   {
   }
 
-
+  //! Initialize the global indices
   void initializeIndices()
   {
-    staticForLoop<0, sizeof...(SF)>([&](auto i) {
-      std::get<i.value>(subFactories_).initializeIndices();
+    using namespace Dune::Hybrid;
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      elementAt(subFactories_, i).initializeIndices();
     });
   }
 
-  /** \brief Obtain the grid view that the basis is defined on
-   */
+  //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
     return std::get<0>(subFactories_).gridView();
   }
 
+  //! Update the stored grid view, to be called if the grid has changed
+  void update(const GridView& gv)
+  {
+    using namespace Dune::Hybrid;
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      elementAt(subFactories_, i).update(gv);
+    });
+  }
+
+  /**
+   * \brief Create tree node with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * By passing a non-trivial root tree path this can be used
+   * to create a node suitable for being placed in a tree at
+   * the position specified by the root tree path.
+   */
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
     auto node = Node<TP>(tp);
-    staticForLoop<0, sizeof...(SF)>([&](auto i){
-      node.setChild(std::get<i.value>(subFactories_).node(TypeTree::push_back(tp, i)), i);
+    using namespace Dune::Hybrid;
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      node.setChild( elementAt(subFactories_, i).node(TypeTree::push_back(tp, i)), i);
     });
     return node;
   }
 
+  /**
+   * \brief Create tree node index set with given root tree path
+   *
+   * \tparam TP Type of root tree path
+   * \param tp Root tree path
+   *
+   * Create an index set suitable for the tree node obtained
+   * by node(tp).
+   */
   template<class TP>
   IndexSet<TP> indexSet() const
   {
@@ -153,23 +212,27 @@ public:
     return size({});
   }
 
-  //! Return number possible values for next position in multi index
+  //! Return number of possible values for next position in multi index
   size_type size(const SizePrefix& prefix) const
   {
-    return size(prefix, IndexTag());
+    return size(prefix, IndexMergingStrategy{});
   }
 
-  size_type size(const SizePrefix& prefix, BasisTags::BlockedIndex) const
+private:
+
+  size_type size(const SizePrefix& prefix, BasisBuilder::BlockedLexicographic) const
   {
     if (prefix.size() == 0)
       return children;
 
-    return forwardAsStaticIndex<children>(prefix[0], [&] (auto i) {
+    return Hybrid::switchCases(std::make_index_sequence<children>(), prefix[0], [&] (auto i) {
       const auto& subFactory = std::get<i.value>(subFactories_);
       typename std::decay<decltype(subFactory)>::type::SizePrefix subPrefix;
       for(std::size_t i=1; i<prefix.size(); ++i)
         subPrefix.push_back(prefix[i]);
       return subFactory.size(subPrefix);
+    }, []() {
+      return size_type(0);
     });
   }
 
@@ -194,38 +257,43 @@ public:
     }
   };
 
-  size_type size(const SizePrefix& prefix, BasisTags::FlatIndex) const
+  size_type size(const SizePrefix& prefix, BasisBuilder::FlatLexicographic) const
   {
     size_type r = 0;
+    using namespace Dune::Hybrid;
     if (prefix.size() == 0)
-      staticForLoop<0, sizeof...(SF)>([&](auto i) {
-        r += std::get<i.value>(subFactories_).size();
+      forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+        r += elementAt(subFactories_, i).size();
       });
-    else
-    {
+    else {
       size_type shiftedFirst = prefix[0];
       staticFindInRange<0, sizeof...(SF)>(Lambda_size_flat_sizeInSubtree(), subFactories_, prefix, shiftedFirst, r);
     }
     return r;
   }
 
-  /** \todo This method has been added to the interface without prior discussion. */
+public:
+
+  //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
     size_type r=0;
     // Accumulate dimension() for all subfactories
-    staticForLoop<0, sizeof...(SF)>([&](auto i) {
-      r += std::get<i.value>(subFactories_).dimension();
+    using namespace Dune::Hybrid;
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      r += elementAt(subFactories_, i).dimension();
     });
     return r;
   }
 
+  //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
     size_type r=0;
     // Accumulate maxNodeSize() for all subfactories
-    staticForLoop<0, sizeof...(SF)>([&](auto i) {
-      r += std::get<i.value>(subFactories_).maxNodeSize();
+    using namespace Dune::Hybrid;
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      r += elementAt(subFactories_, i).maxNodeSize();
     });
     return r;
   }
@@ -236,7 +304,7 @@ protected:
 
 
 
-template<class MI, class TP, class IT, class... SF>
+template<class MI, class TP, class IMS, class... SF>
 class CompositeNodeIndexSet
 {
   static const std::size_t children = sizeof...(SF);
@@ -247,13 +315,13 @@ public:
   using SubFactory = typename std::tuple_element<k, std::tuple<SF...>>::type;
 
   using GridView = typename SubFactory<0>::GridView;
-  using size_type = typename SubFactory<0>::size_type;
-  using IndexTag = IT;
+  using size_type = std::size_t;
+  using IndexMergingStrategy = IMS;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = CompositeNodeFactory<MI, IT, SF...>;
+  using NodeFactory = CompositeNodeFactory<MI, IMS, SF...>;
 
   using Node = typename NodeFactory::template Node<TP>;
 
@@ -279,18 +347,19 @@ public:
 
   void bind(const Node& node)
   {
-    using namespace TypeTree::Indices;
     node_ = &node;
-    staticForLoop<0, sizeof...(SF)>([&](auto i){
-      std::get<i.value>(subNodeIndexSetTuple_).bind(node.template child<i.value>());
+    using namespace Dune::Hybrid;
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      elementAt(subNodeIndexSetTuple_, i).bind(node.child(i));
     });
   }
 
   void unbind()
   {
     node_ = nullptr;
-    staticForLoop<0, sizeof...(SF)>([&](auto i){
-      std::get<i.value>(subNodeIndexSetTuple_).unbind();
+    using namespace Dune::Hybrid;
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      elementAt(subNodeIndexSetTuple_, i).unbind();
     });
   }
 
@@ -301,7 +370,7 @@ public:
 
   MultiIndex index(size_type localIndex) const
   {
-    return index(localIndex, IndexTag());
+    return index(localIndex, IndexMergingStrategy{});
   }
 
   struct Lambda_index_flat
@@ -323,7 +392,7 @@ public:
     }
   };
 
-  MultiIndex index(const size_type& localIndex, BasisTags::FlatIndex) const
+  MultiIndex index(const size_type& localIndex, BasisBuilder::FlatLexicographic) const
   {
     size_type shiftedLocalIndex = localIndex;
     size_type rootOffset = 0;
@@ -350,7 +419,7 @@ public:
     }
   };
 
-  MultiIndex index(const size_type& localIndex, BasisTags::BlockedIndex) const
+  MultiIndex index(const size_type& localIndex, BasisBuilder::BlockedLexicographic) const
   {
     size_type shiftedLocalIndex = localIndex;
     size_type component = 0;
@@ -391,15 +460,15 @@ constexpr std::size_t maxHelper(ST0&& i0, ST&&... i)
 template<class IndexTag, class... SubFactoryTags>
 struct CompositeNodeFactoryBuilder
 {
-  static const bool isBlocked = std::is_same<IndexTag,BasisTags::BlockedIndex>::value or std::is_same<IndexTag,BasisTags::LeafBlockedIndex>::value;
+  static const bool isBlocked = std::is_same<IndexTag,BlockedLexicographic>::value or std::is_same<IndexTag,LeafBlockedInterleaved>::value;
 
   static const std::size_t requiredMultiIndexSize=maxHelper(SubFactoryTags::requiredMultiIndexSize...) + (std::size_t)(isBlocked);
 
-  template<class MultiIndex, class GridView, class size_type=std::size_t>
+  template<class MultiIndex, class GridView>
   auto build(const GridView& gridView)
-    -> CompositeNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTags().template build<MultiIndex, GridView, size_type>(gridView))...>
+    -> CompositeNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTags().template build<MultiIndex, GridView>(gridView))...>
   {
-    return {SubFactoryTags().template build<MultiIndex, GridView, size_type>(gridView)...};
+    return {SubFactoryTags().template build<MultiIndex, GridView>(gridView)...};
   }
 };
 
@@ -408,24 +477,47 @@ auto compositeImp(std::tuple<Args...>)
   -> Imp::CompositeNodeFactoryBuilder<Args...>
 {
   return {};
-};
+}
 
 } // end namespace BasisBuilder::Imp
 
-template<class... Args,
-  typename std::enable_if<std::is_base_of<BasisTags::IndexTag, typename LastType<Args...>::type  >::value, int>::type = 0>
+
+
+/**
+ * \brief Create a factory builder that can build a CompositeNodeFactory
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam Args Types of child factory builders and IndexMergingStrategy type
+ * \param args Child factory builder objects and an IndexMergingStrategy
+ *
+ * This is the overload used if the last argument is an IndexMergingStrategy.
+ */
+template<
+  typename... Args,
+  std::enable_if_t<Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
 auto composite(Args&&... args)
-  -> decltype(Imp::compositeImp(typename RotateTuple<Args...>::type()))
 {
-  return{};
+  return Imp::compositeImp(typename RotateTuple<Args...>::type{});
 }
 
-template<class... Args,
-  typename std::enable_if<not std::is_base_of<BasisTags::IndexTag, typename LastType<Args...>::type  >::value, int>::type = 0>
+/**
+ * \brief Create a factory builder that can build a CompositeNodeFactory
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam Args Types of child factory builders
+ * \param args Child factory builder objects
+ *
+ * This is the overload used if no IndexMergingStrategy is supplied.
+ * In this case the BasisBuilder::BlockedLexicographic strategy is used.
+ */
+template<
+  typename... Args,
+  std::enable_if_t<not Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
 auto composite(Args&&... args)
-  -> decltype(Imp::compositeImp(typename RotateTuple<Args..., BasisTags::BlockedIndex>::type()))
 {
-  return{};
+  return Imp::compositeImp(std::tuple<BasisBuilder::BlockedLexicographic,Args...>{});
 }
 
 } // end namespace BasisBuilder

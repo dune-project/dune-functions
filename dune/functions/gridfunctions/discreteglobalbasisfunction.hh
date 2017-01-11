@@ -9,6 +9,8 @@
 
 #include <dune/localfunctions/finiteelementtypes/functionspacetypes.hh>
 
+#include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
+#include <dune/functions/functionspacebases/flatvectorbackend.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/common/treedata.hh>
@@ -25,7 +27,7 @@ namespace Functions {
  *
  * This implements the grid function interface by combining a given global
  * basis and a coefficient vector. The part of the spanned space that should
- * be covered by the function is determined by a tree path to specifies the
+ * be covered by the function is determined by a tree path that specifies the
  * corresponding local ansatz tree.
  *
  * This class supports mapping of subtrees to multi-component ranges,
@@ -175,13 +177,12 @@ public:
           auto&& v = shapeFunctionValues[i];
 
           // Notice that the range entry re, the coefficient c, and the shape functions
-          // value v may all scalar, vector, matrix, or general container valued.
+          // value v may all be scalar, vector, matrix, or general container valued.
           // The matching of their entries is done via the multistage procedure described
           // in the class documentation of DiscreteGlobalBasisFunction.
           auto dimC = FlatVectorBackend<CoefficientBlock>::size(c);
           auto dimV = FlatVectorBackend<LocalBasisRange>::size(v);
-          auto dimRE = FlatVectorBackend<RangeBlock>::size(re);
-          assert(dimC*dimV == dimRE);
+          assert(dimC*dimV == FlatVectorBackend<RangeBlock>::size(re));
           for(size_type j=0; j<dimC; ++j)
           {
             auto&& c_j = FlatVectorBackend<CoefficientBlock>::getEntry(c, j);
@@ -430,22 +431,23 @@ private:
 
 
 template<typename R, typename B, typename TP, typename V>
-auto makeDiscreteGlobalBasisFunction(const B& basis, const TP& treePath, const V& vector)
-  -> DiscreteGlobalBasisFunction<B, TP, V, DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename B::LocalView::Tree, TP>>, R>
+auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
 {
-  using NTREM = DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename B::LocalView::Tree, TP>>;
+  using Basis = std::decay_t<B>;
+  using Vector = std::decay_t<V>;
+  using NTREM = DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename Basis::LocalView::Tree, TP>>;
   auto nodeToRangeEntryPtr = std::make_shared<NTREM>(makeDefaultNodeToRangeMap(basis, treePath));
-  return DiscreteGlobalBasisFunction<B, TP, V, NTREM, R>(stackobject_to_shared_ptr(basis), treePath, stackobject_to_shared_ptr(vector), nodeToRangeEntryPtr);
+  auto basisPtr = Dune::wrap_or_move(std::forward<B>(basis));
+  auto vectorPtr = Dune::wrap_or_move(std::forward<V>(vector));
+  return DiscreteGlobalBasisFunction<Basis, TP, Vector, NTREM, R>(basisPtr, treePath, vectorPtr, nodeToRangeEntryPtr);
 }
 
-template<typename R, typename B, typename TP, typename V>
-auto makeDiscreteGlobalBasisFunction(const B& basis, const TP& treePath, const V&& vector)
-  -> DiscreteGlobalBasisFunction<B, TP, V, DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename B::LocalView::Tree, TP>>, R>
+
+
+template<typename R, typename B, typename V>
+auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
 {
-  using NTREM = DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename B::LocalView::Tree, TP>>;
-  auto nodeToRangeEntryPtr = std::make_shared<NTREM>(makeDefaultNodeToRangeMap(basis, treePath));
-  auto vectorPtr = std::make_shared<V>(vector);
-  return DiscreteGlobalBasisFunction<B, TP, V, NTREM, R>(stackobject_to_shared_ptr(basis), treePath, vectorPtr, nodeToRangeEntryPtr);
+  return makeDiscreteGlobalBasisFunction<R>(std::forward<B>(basis), TypeTree::hybridTreePath(), std::forward<V>(vector));
 }
 
 

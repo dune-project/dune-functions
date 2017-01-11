@@ -16,49 +16,6 @@ namespace Functions {
 namespace Imp {
 
 template<class ST, ST begin, ST end>
-struct StaticForLoop
-{
-  template<class F, class...Args>
-  static void apply(F&& f, Args&&... args)
-  {
-    f(std::integral_constant<ST, begin>(), std::forward<Args>(args)...);
-    StaticForLoop<ST, begin+1, end>::apply(std::forward<F>(f), std::forward<Args>(args)...);
-  }
-};
-
-template<class ST, ST end>
-struct StaticForLoop<ST, end, end>
-{
-  template<class F, class...Args>
-  static void apply(F&& f, Args&&...)
-  {}
-};
-
-} //end namespace Imp
-
-
-
-/**
- * \brief Static for loop
- *
- * \ingroup Utility
- *
- * Run static for-loop from 'begin' to 'end-1' with functor.
- * The functor is called with \p TypeTree::index_constant<i>
- * as first argument. All other arguments of this method
- * are forwarded to the functor.
- */
-template<std::size_t begin_t, std::size_t end_t, class F, class... Args>
-void staticForLoop(F&& f, Args&&... args)
-{
-  Imp::StaticForLoop<std::size_t, begin_t, end_t>::apply(std::forward<F>(f), std::forward<Args>(args)...);
-}
-
-
-
-namespace Imp {
-
-template<class ST, ST begin, ST end>
 struct StaticFindInRange
 {
   template<class F, class...Args>

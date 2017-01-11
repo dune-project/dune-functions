@@ -67,11 +67,13 @@ public:
     wrapped_(std::forward<TT>(t))
   {}
 
+  //! Get mutable reference stored object
   T& get()
   {
     return wrapped_;
   }
 
+  //! Get reference stored object
   const T& get() const
   {
     return wrapped_;
@@ -113,26 +115,31 @@ class TypeErasureWrapperImplementation :
 {
 public:
 
+  //! Construct wrapper from object
   template<class TT, disableCopyMove<TypeErasureWrapperImplementation, T> = 0>
   TypeErasureWrapperImplementation(TT&& t) :
     Implementation<TypeErasureWrapperBase<Interface, T> >(std::forward<TT>(t))
   {}
 
+  //! Implementation of PolymorphicType::clone()
   virtual TypeErasureWrapperImplementation* clone() const
   {
     return new TypeErasureWrapperImplementation(*this);
   }
 
+  //! Implementation of PolymorphicType::clone(void* buffer)
   virtual TypeErasureWrapperImplementation* clone(void* buffer) const
   {
     return new (buffer) TypeErasureWrapperImplementation(*this);
   }
 
+  //! Implementation of PolymorphicType::move(void* buffer)
   virtual TypeErasureWrapperImplementation* move(void* buffer)
   {
     return new (buffer) TypeErasureWrapperImplementation(std::move(*this));
   }
 
+  //! Get type of stored object
   virtual const std::type_info& target_type() const
   {
     return typeid(T);
@@ -158,23 +165,28 @@ class TypeErasureBase
 {
 public:
 
+  //! Construct wrapper from object
   template<class T, disableCopyMove<TypeErasureBase, T> = 0 >
   TypeErasureBase(T&& t) :
     wrapped_(Imp::TypeErasureWrapperImplementation<Interface, Implementation, typename std::decay<T>::type>(std::forward<T>(t)))
   {}
 
+  //! Default constructor
   TypeErasureBase() = default;
 
+  //! Get mutable reference to wrapped object
   Interface& asInterface()
   {
     return wrapped_.get();
   }
 
+  //! Get reference to wrapped object
   const Interface& asInterface() const
   {
     return wrapped_.get();
   }
 
+  //! Get type of stored object
   virtual const std::type_info& target_type() const
   {
     return wrapped_.get().target_type();

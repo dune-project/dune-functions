@@ -19,6 +19,7 @@ namespace Functions {
  *
  * \ingroup FunctionImplementations
  *
+ * \deprecated This class is deprecated. Please use DiscreteGlobalBasisFunction instead!
  */
 template<typename Basis, typename V>
 class DUNE_DEPRECATED_MSG("Use DiscreteGlobalBasisFunction instead!") DiscreteScalarGlobalBasisFunction

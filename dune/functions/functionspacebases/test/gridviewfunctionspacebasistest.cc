@@ -3,6 +3,7 @@
 #include <config.h>
 
 #include <iostream>
+#include <numeric>
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/typetraits.hh>
@@ -31,7 +32,7 @@ using namespace Dune::Functions;
  *  \param disabledLocalTests Allows to disable certain local tests (see dune-localfunctions/dune/localfunctions/test/test-localfe.hh)
  */
 template <typename Basis>
-void testScalarBasis(const Basis& feBasis,
+void testScalarBasisConst(const Basis& feBasis,
                      bool isPartitionOfUnity,
                      bool disableInterpolate = false,
                      char disabledLocalTests = DisableNone)
@@ -82,7 +83,7 @@ void testScalarBasis(const Basis& feBasis,
         double sum = std::accumulate(values.begin(), values.end(), 0.0);
 
         if (std::abs(sum-1.0) > 1e-5)
-          DUNE_THROW(Exception, "Basis is no partition of unity, even though it is supposed to be! Error occured for geometry type: " << e.type());
+          DUNE_THROW(Exception, "Basis is no partition of unity, even though it is supposed to be! Error occurred for geometry type: " << e.type());
       }
     }
   }
@@ -238,6 +239,16 @@ void testScalarBasis(const Basis& feBasis,
     DUNE_THROW(Dune::Exception, "Error: integral value is wrong!");
 }
 
+template <typename Basis, typename GV>
+void testScalarBasis(Basis& feBasis, GV gv,
+                     bool isPartitionOfUnity,
+                     bool disableInterpolate = false,
+                     char disabledLocalTests = DisableNone)
+{
+  feBasis.update(gv);
+  testScalarBasisConst(feBasis, isPartitionOfUnity, disableInterpolate, disabledLocalTests);
+}
+
 template <int dim>
 void testOnStructuredGrid()
 {
@@ -253,40 +264,43 @@ void testOnStructuredGrid()
 
   // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
   typedef typename GridType::LeafGridView GridView;
-  const GridView& gridView = grid.leafGridView();
+  GridView gridView = grid.leafGridView();
+
+  PQ1NodalBasis<GridView> pq1Basis(gridView);
+  PQkNodalBasis<GridView, 3> pq3Basis(gridView);
+  PQkNodalBasis<GridView, 4> pq4Basis(gridView);
+  PQkNodalBasis<GridView, 0> pq0Basis(gridView);
+  LagrangeDGBasis<GridView, 1> lagrangeDG1Basis(gridView);
+  LagrangeDGBasis<GridView, 2> lagrangeDG2Basis(gridView);
+  LagrangeDGBasis<GridView, 3> lagrangeDG3Basis(gridView);
+
+  grid.globalRefine(2);
 
   // Test PQ1NodalBasis
-  PQ1NodalBasis<GridView> pq1Basis(gridView);
-  testScalarBasis(pq1Basis, true);
+  testScalarBasis(pq1Basis, gridView, true);
 
   // Test PQkNodalBasis for k==3
-  PQkNodalBasis<GridView, 3> pq3Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
-    testScalarBasis(pq3Basis, true);
+    testScalarBasis(pq3Basis, gridView, true);
 
   // Test PQkNodalBasis for k==4
-  PQkNodalBasis<GridView, 4> pq4Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
-    testScalarBasis(pq4Basis, true);
+    testScalarBasis(pq4Basis, gridView, true);
 
   // Test PQkNodalBasis for the corner case k == 0
-  PQkNodalBasis<GridView, 0> pq0Basis(gridView);
-  testScalarBasis(pq0Basis, true);
+  testScalarBasis(pq0Basis, gridView, true);
 
   // Test LagrangeDGBasis for k==1
-  LagrangeDGBasis<GridView, 1> lagrangeDG1Basis(gridView);
-  testScalarBasis(lagrangeDG1Basis, true);
+  testScalarBasis(lagrangeDG1Basis, gridView, true);
 
   // Test LagrangeDGBasis for k==2
-  LagrangeDGBasis<GridView, 2> lagrangeDG2Basis(gridView);
-  testScalarBasis(lagrangeDG2Basis, true);
+  testScalarBasis(lagrangeDG2Basis, gridView, true);
 
   // Test LagrangeDGBasis for k==3
-  LagrangeDGBasis<GridView, 3> lagrangeDG3Basis(gridView);
-  testScalarBasis(lagrangeDG3Basis, true);
+  testScalarBasis(lagrangeDG3Basis, gridView, true);
 
   // Testing B-spline basis with open knot vectors
-  std::vector<double> knotVector(elements[0]+1);
+  std::vector<double> knotVector(elements[0]*4+1);
   for (size_t i=0; i<knotVector.size(); i++)
     knotVector[i] = i*l[0] / elements[0];
 
@@ -297,7 +311,7 @@ void testOnStructuredGrid()
     std::cout << "   order: " << order << std::endl;
 
     BSplineBasis<GridView> bSplineBasis(gridView, knotVector, order);
-    testScalarBasis(bSplineBasis,
+    testScalarBasisConst(bSplineBasis,
                     true,
                     true,      // Don't interpolate a given function and try to integrate over it
                     DisableLocalInterpolation);
@@ -310,7 +324,7 @@ void testOnStructuredGrid()
     std::cout << "   order: " << order << std::endl;
 
     BSplineBasis<GridView> bSplineBasis(gridView, knotVector, order, false);
-    testScalarBasis(bSplineBasis,
+    testScalarBasisConst(bSplineBasis,
                     order==0,   // only zero-order B-splines for a partition of unity
                     true,      // Don't interpolate a given function and try to integrate over it
                     DisableLocalInterpolation);
@@ -345,35 +359,35 @@ void testOnHybridGrid()
 
   // Test PQ1NodalBasis -- dedicated implementation
   PQ1NodalBasis<GridView> pq1DedicatedBasis(gridView);
-  testScalarBasis(pq1DedicatedBasis, true, disableInterpolate);
+  testScalarBasisConst(pq1DedicatedBasis, true, disableInterpolate);
 
   // Test PQ1NodalBasis -- generic basis
   PQkNodalBasis<GridView, 1> pq1Basis(gridView);
-  testScalarBasis(pq1Basis, true, disableInterpolate);
+  testScalarBasisConst(pq1Basis, true, disableInterpolate);
 
   // Test PQkNodalBasis for k==3
   PQkNodalBasis<GridView, 3> pq3Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
-    testScalarBasis(pq3Basis, true, disableInterpolate);
+    testScalarBasisConst(pq3Basis, true, disableInterpolate);
 
   // Test PQkNodalBasis for k==4
   PQkNodalBasis<GridView, 4> pq4Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
-    testScalarBasis(pq4Basis, true, disableInterpolate);
+    testScalarBasisConst(pq4Basis, true, disableInterpolate);
 
   // Test LagrangeDGBasis for k==1
   LagrangeDGBasis<GridView, 1> lagrangeDG1Basis(gridView);
-  testScalarBasis(lagrangeDG1Basis, true, disableInterpolate);
+  testScalarBasisConst(lagrangeDG1Basis, true, disableInterpolate);
 
   // Test LagrangeDGBasis for k==2
   // \todo Enable these tests once pyramid element of order two is bug free
 //  LagrangeDGBasis<GridView, 2> lagrangeDG2Basis(gridView);
-//  testScalarBasis(lagrangeDG2Basis, true, disableInterpolate);
+//  testScalarBasisConst(lagrangeDG2Basis, true, disableInterpolate);
 
   // Test LagrangeDGBasis for k==3
   // \todo Enable these tests once pyramid element of order three is implemented
 //  LagrangeDGBasis<GridView, 3> lagrangeDG3Basis(gridView);
-//  testScalarBasis(lagrangeDG3Basis, true, disableInterpolate);
+//  testScalarBasisConst(lagrangeDG3Basis, true, disableInterpolate);
 #endif
 }
 

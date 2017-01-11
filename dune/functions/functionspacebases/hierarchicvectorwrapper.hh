@@ -4,13 +4,13 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_HIERARCHICVECTORWRAPPER_HH
 
 #include <dune/common/concept.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/utility.hh>
 
 #include <dune/functions/common/indexaccess.hh>
 #include <dune/functions/common/utility.hh>
 #include <dune/functions/common/type_traits.hh>
-#include <dune/functions/common/staticforloop.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
 
@@ -62,7 +62,7 @@ namespace Imp {
 
 
 /**
- * \brief A wrapper providing multiindex acces to vector entries
+ * \brief A wrapper providing multiindex access to vector entries
  *
  * The coefficient type should be a type such that the coefficients
  * entries for each global basis function can be cast to this type.
@@ -106,7 +106,7 @@ class HierarchicVectorWrapper
   struct StaticResizeHelper
   {
     template<class I, class C, class SizeProvider>
-    void operator()(I&& i, C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
+    static void apply(I&& i, C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
     {
       prefix.back() = i;
       resizeHelper(c[i], sizeProvider, prefix);
@@ -125,8 +125,11 @@ class HierarchicVectorWrapper
     if (c.size() != size)
       DUNE_THROW(RangeError, "Can't resize statically sized vector entry v[" << prefix << "] of size " << c.size() << " to size(" << prefix << ")=" << size);
 
+    using namespace Dune::Hybrid;
     prefix.push_back(0);
-    staticForLoop<0, StaticSize<C>::value>(StaticResizeHelper(), c, sizeProvider, prefix);
+    forEach(integralRange(Hybrid::size(c)), [&](auto&& i) {
+        StaticResizeHelper::apply(i, c, sizeProvider, prefix);
+      });
   }
 
   template<class C, class SizeProvider,
@@ -137,7 +140,7 @@ class HierarchicVectorWrapper
     if (size==0)
     {
       if (c.size()==0)
-        DUNE_THROW(RangeError, "Can't resize dynamically sized vector entry v[" << prefix << "]. It's size is 0 but the target size is unknown due to size(" << prefix << ")=0.");
+        DUNE_THROW(RangeError, "Can't resize dynamically sized vector entry v[" << prefix << "]. Its size is 0 but the target size is unknown due to size(" << prefix << ")=0.");
       else
         return;
     }
@@ -182,6 +185,18 @@ public:
   Entry<MultiIndex>& operator[](const MultiIndex& index)
   {
       return hybridMultiIndexAccess<Entry<MultiIndex>&>(*vector_, index);
+  }
+
+  template<class MultiIndex>
+  const Entry<MultiIndex>& operator()(const MultiIndex& index) const
+  {
+      return (*this)[index];
+  }
+
+  template<class MultiIndex>
+  Entry<MultiIndex>& operator()(const MultiIndex& index)
+  {
+      return (*this)[index];
   }
 
   const Vector& vector() const

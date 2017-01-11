@@ -22,12 +22,15 @@ class FunctionFromCallable;
 /**
  * \brief Wrap a callable object as Dune::Function or Dune::VirtualFunction
  *
+ * \ingroup FunctionUtility
+ *
  * You can use this to implement a DifferentiableFunction including
  * a variable number of derivatives using callable objects. All
- * types that can be assigned to std::function are supported,
+ * types that can be assigned to std::function<Range(Domain)> are supported,
  * i.e. functions, functors, lambdas, ...
  *
- * \tparam Signature Function signature
+ * \tparam Range Range type
+ * \tparam Domain Domain type
  * \tparam F Type of wrapped function
  * \tparam FunctionInterface Interface to implement, this can be either Dune::Function or Dune::VirtualFunction
  */
@@ -40,16 +43,24 @@ public:
   /**
    * \brief Create VirtualFunction from callable object
    *
-   * This will store a std::function<Domain,Range> wrapping the callable
-   * and pass evaluate() to this object.
+   * This will store the given function and pass evaluate()
+   * to its operator(). This constructor moves data
+   * from given function.
    *
-   * \tparam F Anything that can be assigned to std::function<Domain, Range> (funcions, functors, lambdas,...)
    * \param f Callable object to use for evaluate()
    */
   FunctionFromCallable(F&& f) :
     f_(f)
   {}
 
+  /**
+   * \brief Create VirtualFunction from callable object
+   *
+   * This will store the given function and pass evaluate()
+   * to its operator(). This constructor copies the given function.
+   *
+   * \param f Callable object to use for evaluate()
+   */
   FunctionFromCallable(const F& f) :
     f_(f)
   {}

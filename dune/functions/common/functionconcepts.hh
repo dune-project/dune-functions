@@ -19,6 +19,15 @@ using namespace Dune::Concept;
 
 
 // Callable concept ############################################################
+
+
+/**
+ * \brief Concept objects that can be called with given argument list
+ *
+ * \ingroup FunctionConcepts
+ *
+ * \tparam Args Argument list for function call
+ */
 template<class... Args>
 struct Callable
 {
@@ -28,12 +37,12 @@ struct Callable
   );
 };
 
-/// Check if F models the Function concept with given signature
+/// Check if F models the Function concept with given signature \ingroup FunctionConcepts
 template<class F, class... Args>
 static constexpr bool isCallable()
 { return models<Concept::Callable<Args...>, F>(); }
 
-/// Check if f models the Function concept with given signature
+/// Check if f models the Function concept with given signature \ingroup FunctionConcepts
 template<class F, class... Args>
 static constexpr bool isCallable(F&& f, TypeList<Args...>)
 { return models<Concept::Callable<Args...>, F>(); }
@@ -62,12 +71,12 @@ struct Function<Range(Domain)> : Refines<Callable<Domain> >
   );
 };
 
-/// Check if F models the Function concept with given signature
+/// Check if F models the Function concept with given signature \ingroup FunctionConcepts
 template<class F, class Signature>
 static constexpr bool isFunction()
 { return models<Concept::Function<Signature>, F>(); }
 
-/// Check if f models the Function concept with given signature
+/// Check if f models the Function concept with given signature \ingroup FunctionConcepts
 template<class F, class Signature, template<class> class DerivativeTraits>
 static constexpr bool isFunction(F&& f, SignatureTag<Signature, DerivativeTraits>)
 { return models<Concept::Function<Signature>, F>(); }
@@ -101,12 +110,12 @@ struct DifferentiableFunction<Range(Domain), DerivativeTraits> : Refines<Dune::F
   );
 };
 
-/// Check if F models the DifferentiableFunction concept with given signature
+/// Check if F models the DifferentiableFunction concept with given signature \ingroup FunctionConcepts
 template<class F, class Signature, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 static constexpr bool isDifferentiableFunction()
 { return models<Concept::DifferentiableFunction<Signature, DerivativeTraits>, F>(); }
 
-/// Check if f models the DifferentiableFunction concept with given signature
+/// Check if f models the DifferentiableFunction concept with given signature \ingroup FunctionConcepts
 template<class F, class Signature, template<class> class DerivativeTraits>
 static constexpr bool isDifferentiableFunction(F&& f, SignatureTag<Signature, DerivativeTraits>)
 { return models<Concept::DifferentiableFunction<Signature, DerivativeTraits>, F>(); }
@@ -142,7 +151,7 @@ struct LocalFunction<Range(Domain), LocalContext, DerivativeTraits> :
   );
 };
 
-/// Check if F models the LocalFunction concept with given signature and local context
+/// Check if F models the LocalFunction concept with given signature and local context \ingroup FunctionConcepts
 template<class F, class Signature, class LocalContext, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 static constexpr bool isLocalFunction()
 { return models<Concept::LocalFunction<Signature, LocalContext, DerivativeTraits>, F>(); }
@@ -170,7 +179,7 @@ struct EntitySet
   );
 };
 
-/// Check if F models the GridFunction concept with given signature and entity set
+/// Check if F models the GridFunction concept with given signature and entity set \ingroup FunctionConcepts
 template<class E>
 static constexpr bool isEntitySet()
 { return models<Concept::EntitySet, E>(); }
@@ -214,7 +223,7 @@ struct GridFunction<Range(Domain), EntitySet, DerivativeTraits> :
   );
 };
 
-/// Check if F models the GridFunction concept with given signature and entity set
+/// Check if F models the GridFunction concept with given signature and entity set \ingroup FunctionConcepts
 template<class F, class Signature, class EntitySet, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 static constexpr bool isGridFunction()
 { return models<Concept::GridFunction<Signature, EntitySet, DerivativeTraits>, F>(); }
@@ -248,7 +257,7 @@ struct GridViewFunction<Range(Domain), GridView, DerivativeTraits> :
   );
 };
 
-/// Check if F models the GridViewFunction concept with given signature
+/// Check if F models the GridViewFunction concept with given signature \ingroup FunctionConcepts
 template<class F, class Signature, class GridView, template<class> class DerivativeTraits = DefaultDerivativeTraits>
 static constexpr bool isGridViewFunction()
 { return models<Concept::GridViewFunction<Signature, GridView, DerivativeTraits>, F>(); }

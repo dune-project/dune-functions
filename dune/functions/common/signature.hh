@@ -4,6 +4,11 @@
 #define DUNE_FUNCTIONS_COMMON_SIGNATURE_HH
 
 #include <type_traits>
+#include <tuple>
+
+#include <dune/common/hybridutilities.hh>
+#include <dune/common/std/apply.hh>
+#include <dune/common/std/type_traits.hh>
 
 #include <dune/functions/common/defaultderivativetraits.hh>
 
@@ -117,6 +122,60 @@ struct SignatureTag<Range(Domain), DerivativeTraitsT>
   template<class T>
   using DerivativeTraits = DerivativeTraitsT<T>;
 };
+
+
+
+/**
+ * \brief Construct SignatureTag for derivative
+ *
+ * \ingroup FunctionUtility
+ *
+ * \param tag SignatureTag for a function
+ * \returns SignatureTags of the derivative
+ */
+template<class Range, class Domain, template<class> class DerivativeTraits>
+auto derivativeSignatureTag(SignatureTag<Range(Domain), DerivativeTraits> tag)
+{
+  using DerivativeRange = typename DerivativeTraits<Range(Domain)>::Range;
+  return SignatureTag<DerivativeRange(Domain), DerivativeTraits>();
+}
+
+
+
+/**
+ * \brief Construct SignatureTags for derivatives
+ *
+ * \ingroup FunctionUtility
+ *
+ * \tparam maxOrder Maximal order of derivatives
+ * \param tag SignatureTag for a function
+ *
+ * \returns Tuple of SignatureTags
+ *
+ * This constructs an std::tuple of SignatureTags for
+ * all derivatives of order 0 up to maxOrder.
+ */
+template<std::size_t maxOrder, class Signature, template<class> class DerivativeTraits>
+auto derivativeSignatureTags(Dune::Functions::SignatureTag<Signature, DerivativeTraits> tag)
+{
+//  using namespace Dune::Hybrid;
+//  using namespace Dune::Std;
+
+  return Hybrid::ifElse(Std::bool_constant<maxOrder==0>(), [&](auto id) {
+    // If maxOrder== 0 we just need the given SignatureTag
+    return std::make_tuple(tag);
+  }, [&](auto id) {
+    // else we first construct the tail tuple with SignatureTags for derivatives
+    // of order 1 to maxOrder
+    auto tailTagsTuple = derivativeSignatureTags<decltype(id,std::size_t(0))(maxOrder-1)>(derivativeSignatureTag(tag));
+    // and prepend this with the given SignatureTag.
+    // This is done by unpacking the tail tuple with apply().
+    return Std::apply([&](auto&&... tailTags){
+      return std::make_tuple(tag, tailTags...);
+    }, tailTagsTuple);
+  });
+}
+
 
 
 } // namespace Functions

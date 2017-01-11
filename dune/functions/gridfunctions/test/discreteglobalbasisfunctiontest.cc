@@ -33,7 +33,7 @@ bool checkInterpolationConsistency(B&& basis, C&& x)
 
   Coeff y;
   interpolate(basis, y, f);
-  for(int i=0; i<x.size(); ++i)
+  for (typename std::decay_t<C>::size_type i=0; i<x.size(); ++i)
   {
     auto diff = x[i];
     diff -= y[i];
@@ -73,7 +73,7 @@ int main (int argc, char* argv[]) try
     using Range = FieldVector<double,5>;
     auto f = [](const Domain& x){
       Range y;
-      for(int i=0; i<y.size(); ++i)
+      for (typename Range::size_type i=0; i<y.size(); ++i)
         y[i] = x[0]+i;
       return y;
     };

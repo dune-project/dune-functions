@@ -5,9 +5,15 @@ Feel free to put your wishes and questions into this file.
 It would be nice to prefix your statements with your initials
 or one more letter if needed.
 
+* OS: How do I specialize code for a particular basis?  For example, how can I write an
+  'interpolate' method only for BSPlineBasis objects?
+
+* OS: Carsten has introduced various new names, for example 'pq<k>' to refer to a
+  PQkNodalBasis<k> when constructing a composite basis.  Can we find a sane naming
+  scheme for them?
+
+
 ## Development
-* CaG: Should we discuss the further development using a bug tracker?
-  And put everythig below into requests?
 
 
 ## Function space basis interface
@@ -59,18 +65,3 @@ or one more letter if needed.
   simply rename this in a grid-agnostic way if someone
   comes up with better names than LocalizableFunction,
   localContextSet()
-
-
-
-### GridViewFunction concept
-* CaG: Should GridViewFunction default-implement the global evaluate() method?
-  This would be as simple as
-
-    typedef typename GridView::Grid::template Codim<0>::EntityPointer ElementPointer;
-    Dune::HierarchicSearch<typename GridView::Grid, EntitySet> hsearch(this->gridView().grid(), this->entitySet());
-    ElementPointer e = hsearch.findEntity(x);
-    ::Dune::Functions::localFunction(*this, *e)->evaluate(e->geometry().local(x), y);
-
-  In priciple this would also work for GridFunction if it knows the grid
-  and if Element=Entity<0>.
-  Done: No.

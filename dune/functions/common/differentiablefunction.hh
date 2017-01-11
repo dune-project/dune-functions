@@ -68,7 +68,14 @@ namespace Imp
  *
  * \ingroup FunctionInterface
  *
+ * \tparam Range Range type
+ * \tparam Domain Domain type
+ * \tparam DerivativeTraits Traits class to determine range of derivative (defaults to DefaultDerivativeTraits)
+ * \tparam bufferSize Size of stack buffer for small object optimization (defaults to 56)
+ *
  * This models the \ref Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> concept.
+ * Small object optimization is used to store the given function.
+ * If its size exceed \p bufferSize, memory will be allocated dynamically.
  */
 template<class Range, class Domain, template<class> class DerivativeTraits, size_t bufferSize>
 class DifferentiableFunction< Range(Domain), DerivativeTraits, bufferSize> :
@@ -102,6 +109,7 @@ public:
     static_assert(Dune::Functions::Concept::isFunction<F, Range(Domain)>(), "Trying to construct a DifferentiableFunction from type that does not model the Function concept");
   }
 
+  //! Default constructor
   DifferentiableFunction() = default;
 
   /**
@@ -114,6 +122,8 @@ public:
 
   /**
    * \brief Get derivative of wrapped function
+   *
+   * \ingroup FunctionInterface
    *
    * This is a free function that will be found by ADL.
    */

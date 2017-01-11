@@ -31,14 +31,14 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k, typename ST, typename TP>
-using LagrangeDGNode = PQkNode<GV, k, ST, TP>;
+template<typename GV, int k, typename TP>
+using LagrangeDGNode = PQkNode<GV, k, TP>;
 
-template<typename GV, int k, class MI, class TP, class ST>
+template<typename GV, int k, class MI, class TP>
 class LagrangeDGNodeIndexSet;
 
 
-template<typename GV, int k, class MI, class ST>
+template<typename GV, int k, class MI>
 class LagrangeDGNodeFactory
 {
   static const int dim = GV::dimension;
@@ -47,7 +47,7 @@ public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = GV;
-  using size_type = ST;
+  using size_type = std::size_t;
 
 
   // Precompute the number of dofs per entity type
@@ -61,10 +61,10 @@ public:
 
 
   template<class TP>
-  using Node = LagrangeDGNode<GV, k, size_type, TP>;
+  using Node = LagrangeDGNode<GV, k, TP>;
 
   template<class TP>
-  using IndexSet = LagrangeDGNodeIndexSet<GV, k, MI, TP, ST>;
+  using IndexSet = LagrangeDGNodeIndexSet<GV, k, MI, TP>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -115,6 +115,11 @@ public:
   const GridView& gridView() const
   {
     return gridView_;
+  }
+
+  void update(const GridView& gv)
+  {
+    gridView_ = gv;
   }
 
   template<class TP>
@@ -176,7 +181,7 @@ public:
   }
 
 //protected:
-  const GridView gridView_;
+  GridView gridView_;
 
   size_t quadrilateralOffset_;
   size_t pyramidOffset_;
@@ -186,7 +191,7 @@ public:
 
 
 
-template<typename GV, int k, class MI, class TP, class ST>
+template<typename GV, int k, class MI, class TP>
 class LagrangeDGNodeIndexSet
 {
   // Cannot be an enum -- otherwise the switch statement below produces compiler warnings
@@ -194,12 +199,12 @@ class LagrangeDGNodeIndexSet
 
 public:
 
-  using size_type = ST;
+  using size_type = std::size_t;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = LagrangeDGNodeFactory<GV, k, MI, ST>;
+  using NodeFactory = LagrangeDGNodeFactory<GV, k, MI>;
 
   using Node = typename NodeFactory::template Node<TP>;
 
@@ -295,11 +300,13 @@ protected:
 
 /** \brief Basis of a scalar k-th-order Lagrangean-DG finite element space
  *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
-template<typename GV, int k, class ST = std::size_t>
-using LagrangeDGBasis = DefaultGlobalBasis<LagrangeDGNodeFactory<GV, k, FlatMultiIndex<ST>, ST> >;
+template<typename GV, int k>
+using LagrangeDGBasis = DefaultGlobalBasis<LagrangeDGNodeFactory<GV, k, FlatMultiIndex<std::size_t>> >;
 
 
 
