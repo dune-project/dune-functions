@@ -33,7 +33,7 @@ namespace Functions {
      push_back and pop_back at the end, or via push_front and pop_front,
      but reserved memory is predefined.
 
-     This implies that the vector can not grow bigger than the predefined
+     This implies that the vector cannot grow bigger than the predefined
      maximum size.
 
      \tparam T The data type ReservedVector stores.
