@@ -28,12 +28,17 @@ namespace Functions {
  * If the size of the derived type fits into the static buffer, then the
  * wrapped object is stored there, otherwise it is allocated dynamically.
  *
+ * Notice that this class does implement use type erasure for destructors,
+ * copy/move constructors and copy/move assignment. Hence it requires
+ * that Base has a virtual destructor.
+ *
  * In order to make the copy constructor work for polymorphic types,
- * Base must provide clone() and clone(void*). The former should return
+ * Base must provide virtual methods clone() and clone(void*). The former should return
  * a pointer to a dynamically allocated clone, while the latter
  * should call the appropriate placement-new with the passed pointer.
  *
- * Similarly the polymorphic type has to implement move(void*).
+ * Similarly the polymorphic type has to implement a virtual move(void*)
+ * method.
  * This should call placement-new and can std::move all the
  * data but leave the object in a valid and probably unusable state.
  */
