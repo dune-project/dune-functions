@@ -5,6 +5,9 @@
 
 #include <utility>
 
+#include <dune/common/std/type_traits.hh>
+#include <dune/common/hybridutilities.hh>
+
 namespace Dune {
 namespace Functions {
 
@@ -53,10 +56,13 @@ public:
   template<class Derived>
   PolymorphicSmallObject(Derived&& derived)
   {
-    if (sizeof(Derived)<bufferSize)
+    using namespace Dune::Hybrid;
+    auto useBuffer = Dune::Std::bool_constant<(sizeof(Derived)<bufferSize)>();
+    ifElse(useBuffer, [&](auto id) {
       p_ = new (buffer_) Derived(std::forward<Derived>(derived));
-    else
+    }, [&](auto id) {
       p_ = new Derived(std::forward<Derived>(derived));
+    });
   }
 
   //! Move constructor from other PolymorphicSmallObject
