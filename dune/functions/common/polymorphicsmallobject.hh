@@ -155,7 +155,7 @@ private:
       // Take ownership of allocated object
       p_ = other.p_;
 
-      // Leave pointer in a clear state to avoid double freeing it.
+      // Leave pointer in a clean state to avoid double freeing it.
       other.p_ = 0;
     }
   }
