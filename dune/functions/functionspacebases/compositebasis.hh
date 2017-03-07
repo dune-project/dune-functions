@@ -376,7 +376,7 @@ public:
   struct Lambda_index_flat
   {
     template<class I, class SNIT, class SFT>
-    bool operator()(const I& i, SNIT& subNodeIndexSetTuple, const SFT& subFactories, size_type localIndex, size_type& rootOffset, MultiIndex& multiIndex)
+    bool operator()(const I& i, SNIT& subNodeIndexSetTuple, const SFT& subFactories, size_type& localIndex, size_type& rootOffset, MultiIndex& multiIndex)
     {
       const auto& subNodeIndexSet = std::get<I::value>(subNodeIndexSetTuple);
       size_type size = subNodeIndexSet.size();
