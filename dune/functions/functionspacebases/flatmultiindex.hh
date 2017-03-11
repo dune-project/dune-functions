@@ -13,10 +13,18 @@ namespace Functions {
 
 
 /**
- * \brief A multi index class with only one level
+ * \brief A multi-index class with only one level
  *
- * This only adds a cast to size_type to std::array<size_type,1>.
- * Hence MultiIndices of type FlatMultiIndex can be used like
+ * \ingroup FunctionSpaceBasesUtilities
+ *
+ * This class provides a multi-index interface in the sense
+ * that it has operator[] access to individual interfaces.
+ * However, since it only supports flat indices of exactly
+ * one level, it also has a cast of the multi-index to
+ * this index.
+ * This is obtianed by deriving from std::array<size_type,1>
+ * and adding this cast.
+ * Hence multi-indices of type FlatMultiIndex can be used like
  * classic indices.
  */
 template<class size_type>
@@ -46,16 +54,31 @@ public:
     std::array<size_type,1>{{*l.begin()}}
   {}
 
+  /**
+   * \brief Const cast of multi-index to first entry
+   *
+   * \returns The first (and only) index of this multi-index
+   */
   operator const size_type& () const
   {
     return this->operator[](0);
   }
 
+  /**
+   * \brief Non-const cast of multi-index to first entry
+   *
+   * \returns The first (and only) index of this multi-index
+   */
   operator size_type& ()
   {
     return this->operator[](0);
   }
 
+  /**
+   * \brief Compute hash value for FlatMultiIndex
+   *
+   * \ingroup FunctionSpaceBasesUtilities
+   */
   inline friend std::size_t hash_value(const FlatMultiIndex& arg)
   {
     return std::hash<size_type>()(arg);
