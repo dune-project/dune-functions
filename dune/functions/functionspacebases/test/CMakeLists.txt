@@ -10,3 +10,8 @@ dune_add_test(SOURCES taylorhoodbasistest.cc)
 dune_add_test(SOURCES hierarchicvectorwrappertest.cc)
 
 dune_add_test(SOURCES compositebasistest.cc)
+
+install(
+  FILES
+  basistest.hh
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/functionspacebases/test)
