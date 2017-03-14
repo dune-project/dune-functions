@@ -1,42 +1,6 @@
-Makefile
-Makefile.in
-config.guess
-config.h.in
-config.log
-config.status
-config.h
-config.lt
-config.sub
-configure
-configure
-aclocal.m4
-autom4te.cache
-depcomp
-install-sh
-missing
-mkinstalldirs
-libtool
-dune-functions.pc
-semantic.cache
-configure.lineno
-stamp-h1
-dune-functions-*.tar.gz
-dune-functions-?.?
-ltmain.sh
-am
-.libs/
-.deps/
-*.la
-*.o
-*.lo
-test-driver
-dependencies.m4
-dune.css
-build-cmake/
+# ignore all build folders
+/build*/
+# ignore backup files
 *~
-compile
-CMakeFiles
-CMakeCache.txt
-language_tests/
-DartConfiguration.tcl
-FC.h
+# ignore Python files
+*.pyc
