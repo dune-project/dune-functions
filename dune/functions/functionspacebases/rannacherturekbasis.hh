@@ -50,7 +50,6 @@ class RannacherTurekNodeFactory;
  *
  * \tparam GV  The grid view that the FE basis is defined on
  * \tparam MI  Type to be used for multi-indices
- * \todo Do we really need multi-indices?
  */
 template<typename GV, class MI>
 class RannacherTurekNodeFactory
@@ -140,9 +139,8 @@ public:
   //! Return number of possible values for next position in multi index
   size_type size(const SizePrefix prefix) const
   {
-    if (prefix.size() == 0)
-      return size();
-    DUNE_THROW(RangeError, "Method size() can only be called for empty prefixes");
+    assert(prefix.size() == 0 || prefix.size() == 1);
+    return (prefix.size() == 0) ? size() : 0;
   }
 
   //! Get the total dimension of the space spanned by this basis
