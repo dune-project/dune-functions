@@ -14,6 +14,8 @@ Dune::TestSuite checkIndexTreeConsistency(const MultiIndexSet& multiIndexSet)
 {
   Dune::TestSuite test("index tree consistency check");
 
+  using namespace Dune;
+
   auto it = multiIndexSet.begin();
   auto end = multiIndexSet.end();
 
