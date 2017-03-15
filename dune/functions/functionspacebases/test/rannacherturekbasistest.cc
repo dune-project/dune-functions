@@ -34,15 +34,21 @@ int main (int argc, char* argv[]) try
 
 
   // check RannacherTurekBasis created 'manually'
-  typedef GridType::LeafGridView GridView;
-  const GridView& gridView = grid.leafGridView();
-  RannacherTurekBasis<GridView> feBasis(gridView);
-  test.subTest(checkBasis(feBasis));
+  {
+    typedef GridType::LeafGridView GridView;
+    const GridView& gridView = grid.leafGridView();
+    RannacherTurekBasis<GridView> basis(gridView);
+    test.subTest(checkBasis(basis));
+  }
 
 
 
   // check RannacherTurekBasis created using basis builder mechanism
-
+  {
+    using namespace Functions::BasisBuilder;
+    auto basis = makeBasis(grid.leafGridView(), rannacherTurek());
+    test.subTest(checkBasis(basis));
+  }
 
 
 
