@@ -6,6 +6,7 @@
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -13,12 +14,17 @@
 
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
 
+#include <dune/functions/functionspacebases/test/basistest.hh>
+
 using namespace Dune;
 using namespace Dune::Functions;
 
 int main (int argc, char* argv[]) try
 {
   Dune::MPIHelper::instance(argc, argv);
+
+  Dune::TestSuite test;
+
   // Generate grid for testing
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
@@ -31,6 +37,10 @@ int main (int argc, char* argv[]) try
 
   const GridView& gridView = grid.leafGridView();
   Basis feBasis(gridView);
+
+
+  test.subTest(checkBasis(feBasis));
+
 
   typedef Basis::MultiIndex MultiIndex;
 
@@ -109,7 +119,7 @@ int main (int argc, char* argv[]) try
   std::cout << "Computed integral is " << integral << std::endl;
   assert(std::abs(integral-0.5)< 1e-10);
 
-  return 0;
+  return test.exit();
 
 } catch ( Dune::Exception &e )
 {

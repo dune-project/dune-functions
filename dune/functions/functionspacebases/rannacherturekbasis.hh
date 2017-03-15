@@ -179,6 +179,7 @@ public:
 
   RannacherTurekNode(const TreePath& treePath) :
     Base(treePath),
+    finiteElement_(),
     element_(nullptr)
   {}
 
@@ -276,6 +277,46 @@ protected:
 
   const Node* node_;
 };
+
+
+
+namespace BasisBuilder {
+
+namespace Imp {
+
+template<class Dummy=void*>
+struct RannacherTurekNodeFactoryBuilder
+{
+  static const std::size_t requiredMultiIndexSize=1;
+
+  template<class MultiIndex, class GridView>
+  auto build(const GridView& gridView)
+    -> RannacherTurekNodeFactory<GridView, MultiIndex>
+  {
+    return {gridView};
+  }
+};
+
+} // end namespace BasisBuilder::Imp
+
+
+
+/**
+ * \brief Create a factory builder that can build a PQkNodeFactory
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam k   The polynomial order of ansatz functions
+ */
+template<class Dummy=void*>
+Imp::RannacherTurekNodeFactoryBuilder<void> rannacherTurek()
+{
+  return{};
+}
+
+} // end namespace BasisBuilder
+
+
 
 
 
