@@ -9,6 +9,43 @@
 #include <dune/common/test/testsuite.hh>
 
 
+
+// check if two multi-indices are consecutive
+template<class MultiIndex>
+bool multiIndicesConsecutive(const MultiIndex& a, const MultiIndex& b)
+{
+  std::size_t i = 0;
+
+  // find largest common prefix
+  for (; (i<a.size()) and (i<b.size()) and (a[i] == b[i]); ++i)
+  {};
+
+  // if b is exhausted but a is not, then b is a strict prefix of a and does not succeed a
+  if ((i<a.size()) and (i==b.size()))
+    return false;
+
+  // if a and b are not exhausted, then the first non-common index must be an increment
+  if ((i<a.size()) and (i<b.size()))
+  {
+    if (b[i] != a[i]+1)
+      return false;
+    ++i;
+  }
+
+  // if b is not exhausted, then the following indices should be zero
+  if (i<b.size())
+  {
+    for (; i<b.size(); ++i)
+    {
+      if (b[i] != 0)
+        return false;
+    }
+  }
+  return true;
+}
+
+
+
 template<class MultiIndexSet>
 Dune::TestSuite checkIndexTreeConsistency(const MultiIndexSet& multiIndexSet)
 {
@@ -18,38 +55,6 @@ Dune::TestSuite checkIndexTreeConsistency(const MultiIndexSet& multiIndexSet)
 
   auto it = multiIndexSet.begin();
   auto end = multiIndexSet.end();
-
-  // check if two multi-indices are consecutive
-  auto is_consecutive = [](auto&& a, auto&& b) {
-    std::size_t i = 0;
-
-    // find largest common prefix
-    for (; (i<a.size()) and (i<b.size()) and (a[i] == b[i]); ++i)
-    {};
-
-    // if b is exhausted but a is not, then b is a strict prefix of a and does not succeed a
-    if ((i<a.size()) and (i==b.size()))
-      return false;
-
-    // if a and b are not exhausted, then the first non-common index must be an increment
-    if ((i<a.size()) and (i<b.size()))
-    {
-      if (b[i] != a[i]+1)
-        return false;
-      ++i;
-    }
-
-    // if b is not exhausted, then the following indices should be zero
-    if (i<b.size())
-    {
-      for (; i<b.size(); ++i)
-      {
-        if (b[i] != 0)
-          return false;
-      }
-    }
-    return true;
-  };
 
   // get first multi-index
   auto lastMultiIndex = *it;
@@ -75,8 +80,9 @@ Dune::TestSuite checkIndexTreeConsistency(const MultiIndexSet& multiIndexSet)
       << "empty multi-index found";
 
     // assert that indices are consecutive
-    test.require(is_consecutive(lastMultiIndex, multiIndex), "consecutive index check")
+    test.check(multiIndicesConsecutive(lastMultiIndex, multiIndex), "consecutive index check")
       << "multi-indices " << lastMultiIndex << " and " << multiIndex << " are subsequent but not consecutive";
+
     lastMultiIndex = multiIndex;
   }
 
