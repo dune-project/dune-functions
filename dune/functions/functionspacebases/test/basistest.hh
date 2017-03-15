@@ -7,6 +7,9 @@
 #include <algorithm>
 
 #include <dune/common/test/testsuite.hh>
+#include <dune/common/concept.hh>
+
+#include <dune/functions/functionspacebases/concepts.hh>
 
 
 
@@ -132,6 +135,12 @@ template<class Basis>
 Dune::TestSuite checkBasis(const Basis& basis)
 {
   Dune::TestSuite test("basis check");
+
+
+  using GridView = typename Basis::GridView;
+
+  test.check(Dune::models<Dune::Functions::Concept::GlobalBasis<GridView>, Basis>(), "global basis concept check")
+    << "type passed to checkBasis() does not model the GlobalBasis concept";
 
   test.subTest(checkBasisIndices(basis));
 
