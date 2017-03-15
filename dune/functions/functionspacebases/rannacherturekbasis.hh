@@ -179,6 +179,7 @@ public:
 
   RannacherTurekNode(const TreePath& treePath) :
     Base(treePath),
+    finiteElement_(),
     element_(nullptr)
   {}
 
