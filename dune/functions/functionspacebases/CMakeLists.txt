@@ -18,6 +18,7 @@ install(FILES
         powerbasis.hh
         pq1nodalbasis.hh
         pqknodalbasis.hh
+        rannacherturekbasis.hh
         nodes.hh
         sizeinfo.hh
         subspacebasis.hh
