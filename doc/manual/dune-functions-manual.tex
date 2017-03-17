@@ -99,8 +99,562 @@
  equation with a Taylor--Hood discretization.
 \end{abstract}
 
+\section{Introduction}
+
+
+The main purpose of the \dunemodule{dune-functions} module is to describe discrete function spaces defined on a grid.
+Still, the central concept in the code is not the function space itself, but rather the {\em basis} of the function space.
+This is because even though finite element spaces play a central role in theoretical considerations of the FE method,
+actual computations are done using coefficients, given with respect to a particular basis.  Also,
+for many different finite element spaces, more than one basis is used in practice.  For example,
+the space of second-order Lagrangian finite elements is used both with the nodal (Lagrange) basis, and with the
+hierarchical basis~\cite{bank:1996}.  Discontinuous Galerkin spaces can be described in terms of Lagrange bases,
+monomial bases, Legendre bases and more.  It is therefore important to be able to distinguish these different
+representations of the same space in the application code.
+
+Finite element function space bases frequently exhibit a fair amount of structure.  Vector-valued spaces can be
+written as tensor products of scalar spaces, and the same holds for mixed finite elements.  Even more, such spaces
+have a natural structure as a tree, with scalar-valued or otherwise irreducible spaces forming the leaves, and
+tensor products forming the other nodes.
+
+This abstract construction is described in Chapter~\ref{sec:dune_functions:finite_element_trees}.
+The programmer interface is centered around this notion of trees of finite element spaces, and gains
+much elegance from it.
+Then, Chapter~\ref{sec:dune_functions:function_space_bases_implementation} explains the programmer interface to function space bases.
+
+The \dunemodule{dune-functions} module also contains an the interface for functions.
+This interface is described in a separate paper~\cite{}.
+
+\subsection{Obtaining and installing the module}
+
+The code for the \dune interface for function spaces and functions
+described in this chapter is contained in a separate \dune module called \dunemodule{dune-functions}.
+Consequently, all header include paths
+start with \cpp{dune/functions/}, and all code is contained in the namespace \cpp{Dune::Functions}.
+In addition, \dunemodule{dune-functions} depends on a library for tree data structures contained in a module
+called \dunemodule{dune-typetree}, which needs to be available to use \dunemodule{dune-functions}.
+If you have not installed the two modules already, please do so now.  On Linux systems you may get them
+from your distribution.  Otherwise, download the source code by
+\begin{shellenv}
+git clone http://git.dune-project.org/repositories/dune-typetree
+git clone http://git.dune-project.org/repositories/dune-functions
+\end{shellenv}
+Then you can build both modules in the usual way, by calling
+\begin{shellenv}
+dunecontrol all
+\end{shellenv}
+
+
+
+\section{Function space bases}
+\label{sec:dune_functions:finite_element_trees}
+
+
+Before we can explain the implementation of bases for discrete function spaces in Chapter~\ref{sec:dune_functions:function_space_bases_implementation},
+we need to say a few words about the general structure of such spaces.  Given one or several finite element bases
+with basis functions taking values in different Euclidean spaces,
+\dunemodule{dune-functions} allows to systematically construct bases for function spaces with a
+higher-dimensional range.  These include vector-valued functions, mixed finite elements, and spaces
+for multi-physics.  The building blocks are typically scalar-valued basis functions, but sometimes vector-valued
+ones like the N\'ed\'elec basis is used as well. The constructions are systematically described as tree structures.
+This tree construction of finite element spaces has first been systematically worked out in~\cite{muething:2015}.
+
+Readers who are only interested in scalar finite element spaces may try to proceed directly to
+Chapter~\ref{sec:dune_functions:function_space_bases_implementation}.  They should only know that whenever a tree
+is mentioned there, this tree consists of a single node only, which is the FE basis.
+
+\subsection{Trees of finite element spaces}
+
+Throughout this chapter we assume that we have a single fixed domain $\Omega$, and all function spaces
+that we consider are defined on this domain.
+
+There are primarily two ways how two bases can be combined to form a new one.  The first one is addition:
+Some finite element spaces arise naturally as the sum of two simpler ones.  For example,
+a $P_2$-space can be viewed as a $P_1$-space plus a hierarchical extension consisting of bubble functions.
+XFEM spaces~\cite{moes_dolbow_belytschko:1999} are constructed by adding special basis functions to a basic space to capture
+free discontinuities.  The two spaces in such a sum must have the same range space.  The sum space will
+have that same range space.  The \dunemodule{dune-functions} module does not currently support the construction
+of finite element bases by addition.
+
+The second way to construct FE bases from simpler ones is by tensor multiplication.  This is what
+\dunemodule{dune-functions} focuses on, and we will describe it in a bit more detail.
+Let $B = \{b_i\}_{i=1}^{n_1}$ and $C = \{c_i\}_{i=1}^{n_2}$ be two scalar function space bases and let $\mathbf{e}_1$, $\mathbf{e}_2$ be the canonical
+basis vectors in $\R^2$.  Then we define the product of the two bases as
+\begin{align*}
+ B \otimes C
+ & \colonequals
+ \big\{ \mathbf{e}_i (B_i)_j \; : \; i=1,2, j=1,\dots \abs{B_i} \big\} \\
+ & =
+ \big\{(b_1,0), (b_2,0), \dots, (b_{n_1},0) \big\} \cup \big\{(0,c_1), (0,c_2), \dots, (0,c_{n_2})\big\}.
+\end{align*}
+This is the natural basis of the space $\operatorname{span} B \otimes \operatorname{span} C$.  Its basis functions take values in $\R \otimes \R = \R^2$.
+More generally, if $B$ and $C$ are bases with ranges $\R^{m_1}$
+and $\R^{m_2}$, respectively, then
+\begin{equation*}
+ B \otimes C
+ \colonequals
+ \big\{(b_1,\underbrace{0}_{\in \R^{m_2}}), (b_2,\underbrace{0}_{\in \R^{m_2}}), \dots, (b_{n_1},\underbrace{0}_{\in \R^{m_2}})\big\}
+ \cup
+ \big\{(\underbrace{0}_{\in \R^{m_1}}, c_1), (\underbrace{0}_{\in \R^{m_1}},c_2), \dots, (\underbrace{0}_{\in \R^{m_1}}, c_{n_2})\big\}
+\end{equation*}
+is again the natural basis of the space $\operatorname{span} B \otimes \operatorname{span} C$.  Its basis functions take values in
+$\R^{m_1} \otimes \R^{m_2} = \R^{m_1+m_2}$.
+
+This construction allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
+For example, the space of
+first-order Lagrangian finite elements with values in $\R^3$ can be seen as the product $P_1 \otimes P_1 \otimes P_1$.
+The simplest Taylor--Hood element is the product of $(P_2)^3 = P_2 \otimes P_2 \otimes P_2$ for the velocities with $P_1$ for the pressure.
+If more physical quantities need to be dealt with, more factor bases can be included easily.  Note also that we have not
+required that these spaces be defined with respect to the same grid (or any grid at all, for that matter).
+
+For any spaces used in FE simulations that can be written as a product, there is an order of the factors that appears more natural
+than others.  For example, the Taylor--Hood space is usually written as $P_2 \otimes P_2 \otimes P_2 \otimes P_1$,
+even though $P_2 \otimes P_1 \otimes P_2 \otimes P_2$ would work as well.  The reason is that the triple
+$P_2 \otimes P_2 \otimes P_2$ forms a semantic unit---it contains the components of a velocity field.
+This, together with the associativity of the tensor product of spaces, allows to even write this
+as $(P_2 \otimes P_2 \otimes P_2) \otimes P_1$.  This grouping makes the semantic relationship even clearer.
+
+Grouped expressions of this type are conveniently visualized as tree structures.  This
+suggests to interpret composite
+finite element spaces as tree structures.  In this structure, leaf nodes represent scalar or otherwise irreducible spaces,
+and inner nodes represent tensor multiplication of their children.  Subtrees then represent composite
+finite element spaces.  Figure~\ref{fig:dune_functions:taylor_hood_basis_tree} shows the Tayor--Hood finite element
+space in such a tree representation.
+
+\begin{figure}
+  \begin{center}
+   \begin{overpic}[width=0.5\textwidth]{taylor_hood_tree}
+    \put(5,5){$V_x$}
+    \put(30,5){$V_y$}
+    \put(55,5){$V_z$}
+    \put(87,31){$V_p$}
+    \put(5,30){$V_v$}
+    \put(5,57){$V_\text{TH}$}
+    \put(30.7,32){$\otimes$}
+    \put(61.6,58){$\otimes$}
+   \end{overpic}
+
+  \end{center}
+  \caption{Taylor--Hood basis $P_2 \otimes P_2 \otimes P_2 \otimes P_1$ in a tree representation}
+    \label{fig:dune_functions:taylor_hood_basis_tree}
+\end{figure}
+
+While these extra nodes might initially appear like useless artifacts of the tree representation, they are often extremely useful
+because we can treat the subtrees rooted in those nodes as individual trees in their own right, which often makes it possible to
+reuse existing algorithms that expect to operate on those subtrees in more complex settings.
+
+
+
+\subsection{Ordering basis functions in a finite element basis tree}
+\label{sec:dune_functions:basis_ordering}
+
+To work with the basis of a finite element space, the basis vectors need to be indexed.  Indexing the basis functions
+is what allows to address the corresponding vector and matrix coefficients in suitable vector and matrix data structures.
+In simple cases, indexing means simply enumerating the basis functions with natural numbers, but for hierarchically
+constructed spaces more general ways to index are possible.
+
+There are two aspects to what we just have loosely called ``indexing''.  The first is that the set of all basis functions
+in the tree need to be given a global order.  There are several reasonable choices to do this, which we discuss
+in this section.
+Given an order of the basis functions, there is then a natural indexing by simply enumerating the basis functions in
+their specific order.
+This is what we call the {\em flat} numbering, and very often this is what we want to use.  However, as the FE basis
+is constructed hierarchically (and so may be the linear algebra data structures; see Chapter~\ref{sec:dune_istl:dune_istl}),
+it may make sense to use hierarchical indices as well.  We discuss this in Section~\ref{sec:dune_functions:blocking}.
+
+Consider first a leaf basis consisting of $n$ basis functions.  We suppose that these basis functions are given in a fixed
+order (even though being able to change this ordering can improve the performance of a numerical
+algorithm, see for example \cite{space_filling_curves,ordering_for_gauss_seidel} for more on this).
+Consider now a tree of finite element bases with a given root $R$.  This root has $m$ children, and suppose that for
+each of the subtrees rooted in these children we have already chosen an ordering.  Suppose further that the children themselves are given
+in a fixed ordering (One may of course create different overall orderings by permuting the children, but in our view
+this leads to a different bases, rather than to a different ordering of the same basis.)  It is then most natural
+to first list all basis functions of the first tree, followed by all basis functions of the second subtree,
+and so on.  This is the ordering obtained by a depth-first traversal of the tree~\cite{cormen:1990}.
+For the Taylor--Hood basis with expression
+\begin{equation*}
+ B_\text{TH}
+ =
+ (B_x \otimes B_y \otimes B_z) \otimes B_p,
+\end{equation*}
+this means that the basis vectors are ordered as
+\begin{equation*}
+ b_{x,1}, b_{x,2}, \dots, b_{x,\abs{B_x}},
+ b_{y,1}, \dots, b_{y,\abs{B_y}},
+ b_{z,1}, \dots, b_{z,\abs{B_z}},
+ b_{p,1}, \dots, b_{p,\abs{B_p}}.
+\end{equation*}
+(As this lists stands, but this has been done consciously to avoid overly technical notation.  Indeed, a given basis
+function $b_{x,i}$ from the leaf basis is scalar valued.  However, in the product velocity space
+$B_x \otimes B_y \otimes B_z$ the same basis function appears as $\mathbf{e}_1 b_{x,i} = (b_{x,i},0,0)^T$,
+and now takes values in $\R^3$.  Furthermore, as part of the complete Taylor--Hood basis it is
+$\tilde{\mathbf{e}}_1 b_{x,i} = (b_{x,i},0,0,0)^T$.  For the sake of the discussion here we identify a scalar
+basis function $b_{x,i}$ with all of its vector-values variants.)
+
+This is certainly a reasonable ordering.  Used in a finite element computation it will lead to a stiffness
+matrix which, conceptually, consists of $4 \times 4$ large sparse blocks (Figure~\ref{fig:dune_functions:matrix_occupation_patterns}).
+We call this the {\em lexicographic} ordering.
+
+\begin{figure}
+ \begin{center}
+   \includegraphics[width=0.4\textwidth]{taylor-hood-matrix-lexicographic}
+   \qquad
+   \includegraphics[width=0.4\textwidth]{taylor-hood-matrix-interleaved}
+ \end{center}
+ \caption{Two matrix occupation patterns.  Left: ordering the basis vectors of $B_x$, $B_y$, $B_z$, $B_p$
+   one after the other gives a stiffness matrix with $4 \times 4$ sparse blocks.
+   Right: interleaving the entries of $B_x$, $B_y$, $B_z$ gives a $2 \times 2$ block structure, where
+   the entries are small blocks themselves.
+   }
+ \label{fig:dune_functions:matrix_occupation_patterns}
+\end{figure}
+
+However, there is one important alternative.  Since, for the standard applications of the Taylor--Hood element,
+the $B_x$, $B_y$, $B_z$ bases are used to discretize the $x, y, z$ components of a velocity vector field,
+it would be rather unusual not to use identical bases for these three coefficients.
+In this case, all three bases have the same number of basis functions with the same ordering.  We can therefore
+{\em interleave} the basis functions from the three subtrees.  That is,
+the basis functions of the Taylor--Hood basis appear in the order
+\begin{equation*}
+ b_{x,1}, b_{y,1}, b_{z,1},
+ b_{x,2}, b_{y,2}, b_{z,2},
+ \dots
+ b_{x,N}, b_{y,N}, b_{z,N},
+ b_{p,1}, \dots, b_{p\abs{B_p}}.
+\end{equation*}
+In this case, the stiffness matrix only has $2 \times 2$ large sparse blocks, but each entry of the uppler left
+block will be a $3 \times 3$ matrix, each entry of the lower right block will be a scalar, and the off-diagonal
+blocks will have a corresponding rectangular structure (Figure~\ref{fig:dune_functions:matrix_occupation_patterns}).
+
+To deduce such possibilities from the tree structure we now divide the inner tree nodes into two classes.
+An inner node will be called {\em power node}, if all of its children are identical subtrees.
+An inner node that is not a power node is called {\em composite node}.  To construct an admissible ordering
+of all basis functions in a tree we move recursively from the leaf nodes to the root.  To start the recursion,
+the order of the basis functions in each leaf node is considered fixed.  At each inner node there are two
+possibilities.
+\begin{enumerate}
+ \item The inner node is a composite node.  Then the basis functions of all the subtrees (with the ordering
+   within each subtree already given by recursion) are concatenated to obtain lexicographic ordering.
+   Remember that we suppose the order of the children to be fixed.
+ %
+ \item The inner node is a power node.  Then there are two choices: Either combine the subtree basis functions
+   in lexicographic order, or interleave them.
+\end{enumerate}
+In total, for a tree with $N$ power nodes we obtain $2^N$ different ways to order the basis functions of the tree.
+
+
+
+\subsection{Grouping degrees of freedom in blocks}
+\label{sec:dune_functions:blocking}
+
+So far we have not mentioned what what we mean by ``index''.  Certainly it is possible to assign the numbers
+$1, \dots, n$ to the basis vectors of an $n$-dimensional space.  However, such a {\em flat} numbering discards
+quite a bit of information about the structure of the space.
+\begin{enumerate}
+ \item Even though stiffness matrices may have a very specific occupation pattern (such as the blocked
+   Taylor--Hood example in Figure~\ref{fig:dune_functions:matrix_occupation_patterns}), it is very difficult
+   to use in a data structure.  For example, quite a lot of memory can be saved if that matrix data
+   structure knows that its entries are grouped in little $3 \times 3$ blocks.
+ %
+ \item Likewise, the solver can be more efficient when the structure of the matrix is known to it.
+   For example, block variants are frequently more efficient.
+ %
+ \item Finally, it can ease debugging if the structure of the finite element space is (partially)
+   contained in the number type.
+\end{enumerate}
+For these reasons, \dunemodule{dune-functions} uses multi-indices instead of natural numbers to index
+its global degrees of freedom.
+\todo[inline]{Erklären: Wie kommt man vom Baum zum Multi-Index}
+Even for a fixed global ordering of the basis functions of a finite element tree, there is usually more
+than one way to address the individual basis functions using multi-indices.  Just like for the orderings
+the different ways to construct multi-indices can be read off from the tree structure.%
+%
+\footnote{Note how using a multi-index to address basis functions partitions the basis functions into
+separate blocks.  For example, if a two-digit multi-index is used, all basis functions with first digit $0$
+form one block.  Therefore we sometimes speak of ``blocking'' of basis functions when their assignment
+to certain multi-indices is meant.}
+
+\todo[inline, caption={}]
+{
+  Jetzt haben wir ein Problem.  Man will Multi-Indizes auch für ein paar Unterscheidungen haben, die nicht
+  in der Baumstruktur auftauchen, z.B.
+  \begin{itemize}
+   \item Elementblöcke bei DG-Verfahren
+   \item Unterscheidung der Freiheitsgrade nach Entities / Hierarchische Basen
+   \item XFEM
+  \end{itemize}
+ Problem: Das sind alles {\em additive} Zerlegungen des Raums, und die sind bisher in \dunemodule{dune-functions}
+ nicht offiziell vorgesehen.
+}
+
+Instead of flat integers, we therefore use a hierarchical numbering scheme that reflects the tree structure
+of the space.  Instead of integer numbers we obtain multi-indices, i.e., certain tuples.
+Consider a tree representing a finite element space like for example the tree for the Taylor--Hood space in
+Figure~\ref{fig:dune_functions:taylor_hood_basis_tree}.
+
+We construct multi-indices for this tree by recursion over the tree depth.  To start the recursion,
+we suppose that each ``simple'' (leaf) basis provides a numbering of its basis vectors.  This numbering is
+a flat numbering of all basis vectors, using a single integer.
+
+Multi-indices for the basis vectors represented by subtrees are now defined recursively.  Let $R$ be the tree root
+of a subtree of the finite element basis tree, and suppose that we can already construct multi-indices
+for all basis vectors of its children.  Then we construct multi-indices for the vectors of $R$ itself
+by first numbering all children of $R$ by a number $0,\dots,n_R-1$.  A vector $b$ in the basis of the
+subtree of $R$ is then constructed by prepending the number of the corresponding child node to the
+multi-index of $b$ in that child.
+
+\todo[inline]{Hier sind wir bisher noch unsauber: wenn $b$ ein Vektor aus einer Blatt-Basis ist,
+so ist er kein Vektor eines inneren Knoten.}
+
+\begin{itemize}
+ \item Note that not all multi-indices have the same size
+\end{itemize}
+
+
+\begin{table}
+ \begin{center}
+ \begin{tabular}{c|c|c|c|c}
+ \hline \\
+  $b_{x,0}$  & $0$    & $(0,0)$ & $(0,0)$ & $(0,0,0)$ \\
+  $b_{x,1}$  & $1$    & $(0,1)$ & $(0,1)$ & $(0,0,1)$ \\
+  $b_{x,2}$  & $2$    & $(0,2)$ & $(0,2)$ & $(0,0,2)$ \\
+    \vdots   & \vdots & \vdots  & \vdots  & \vdots  \\
+  $b_{y,0}$  & $n$    & $(0,n)$ & $(1,0)$ & $(0,1,0)$ \\
+  $b_{y,1}$  & $n+1$  & $(0,n+1)$ & $(1,1)$ & $(0,1,1)$ \\
+  $b_{y,2}$  & $n+2$  & $(0,n+2)$ & $(1,2)$ & $(0,1,2)$ \\
+    \vdots   & \vdots & \vdots  & \vdots  & \vdots  \\
+  $b_{z,0}$  & $2n$   & $(0,2n)$ & $(2,0)$ & $(0,2,0)$ \\
+  $b_{z,1}$  & $2n+1$ & $(0,2n+1)$ & $(2,1)$ & $(0,2,1)$ \\
+  $b_{z,2}$  & $2n+2$ & $(0,2n+2)$ & $(2,2)$ & $(0,2,2)$ \\
+    \vdots   & \vdots & \vdots  & \vdots  & \vdots  \\
+  $p_0$      & $3n$   & $(1,0)$ & $n$ & $(1,0)$ \\
+  $p_1$      & $3n+1$ & $(1,1)$ & $n+1$ & $(1,1)$ \\
+  $p_2$      & $3n+2$ & $(1,2)$ & $n+2$ & $(1,2)$ \\
+    \vdots   & \vdots & \vdots  & \vdots  & \vdots
+ \end{tabular}
+ \end{center}
+ \caption{Possible index types for a Taylor--Hood basis with lexicographic ordering of the velocity basis functions}
+ \label{tbl:dune_functions:th_multiindices_lexicographic}
+\end{table}
+
+\begin{table}
+ \begin{center}
+ \begin{tabular}{c|c|c|c|c}
+ \hline \\
+  $b_{x,0}$  & $0$    & $(0,0)$ & $(0,0)$ & $(0,0,0)$ \\
+  $b_{y,0}$  & $1$    & $(0,1)$ & $(0,1)$ & $(0,0,1)$ \\
+  $b_{z,0}$  & $2$    & $(0,2)$ & $(0,2)$ & $(0,0,2)$ \\
+  $b_{x,1}$  & $3$    & $(0,3)$ & $(1,0)$ & $(0,1,0)$ \\
+  $b_{y,1}$  & $4$    & $(0,4)$ & $(1,1)$ & $(0,1,1)$ \\
+  $b_{z,1}$  & $5$    & $(0,5)$ & $(1,2)$ & $(0,1,2)$ \\
+  $b_{x,2}$  & $6$    & $(0,6)$ & $(2,0)$ & $(0,2,0)$ \\
+  $b_{y,2}$  & $7$    & $(0,7)$ & $(2,1)$ & $(0,2,1)$ \\
+  $b_{z,2}$  & $8$    & $(0,8)$ & $(2,2)$ & $(0,2,2)$ \\
+    \vdots   & \vdots & \vdots  & \vdots  & \vdots  \\
+  $p_0$      & $3n$   & $(1,0)$ & $n$ & $(1,0)$ \\
+  $p_1$      & $3n+1$ & $(1,1)$ & $n+1$ & $(1,1)$ \\
+  $p_2$      & $3n+2$ & $(1,2)$ & $n+2$ & $(1,2)$ \\
+    \vdots   & \vdots & \vdots  & \vdots  & \vdots
+ \end{tabular}
+ \end{center}
+ \caption{Possible index types for a Taylor--Hood basis with interleaved ordering of the velocity basis functions
+ \todo[inline]{Inkonsistenz:  Der Index in der rechten Spalte ist so wie man ihn als Programmierer erwarten würde.
+   Aus Sicht der Baumkonstruktion ist er allerdings inkonsequent.  Der skalare Index in einer einzelnen Blatt-Basis
+    erscheint nicht als letzte Stelle im Multi-Index, sondern als {\em vorletzte}.  Das muss man ordentlich
+    begründen, und schauen was in allgemeineren Bäumen passiert.}
+ \label{tbl:dune_functions:th_multiindices_interleaved}
+ }
+\end{table}
+
+
+
+\section{Programmer interface for function space bases}
+\label{sec:dune_functions:function_space_bases_implementation}
+
+The design of the \dunemodule{dune-functions} interfaces for bases of discrete function spaces
+follows the ideas of the previous section.  In a nutshell, a \dunemodule{dune-functions} function space basis
+does two things for you: For each element it gives you access to the (tree of) shape functions there,
+and it provides the mapping from element-local shape function numbers to global basis function numbers.
+
+\begin{figure}
+ \begin{center}
+  \includegraphics[width=\textwidth]{febasis_interface_schematic}
+ \end{center}
+ \caption{Overview of the classes making up the interface to finite element space bases}
+ \label{fig:dune_functions:febasis_interface_schematic}
+\end{figure}
+
+
+To reflect this, the interface of function space bases is divided into two parts.  A \cpp{LocalView} on an
+element allows you to obtain the finite element of that element, which in turn gives you access to all
+shape functions, associations to element subentities, and local interpolation rules provided by
+\dunemodule{dune-localfunctions}.  The mapping of these shape functions to global degrees of freedom is
+delegated to a separate object called a \cpp{LocalIndexSet}, which you can bind to given
+\cpp{LocalView} objects.  Once bound, a \cpp{LocalIndexSet} will provide global (multi-)indices
+for each shape function on this element.  The structure of the interface is visualized in
+Figure~\ref{fig:dune_functions:febasis_interface_schematic}.
+
+\subsection{Function space bases defined on a grid view}
+
+The basis interface is implemented in a mix of static and dynamic polymorphism.  For each concept
+there is a pure abstract base class in \file{dune/functions/functionspacebases/gridviewfunctionspacebasis.hh},
+and implementations of function space bases should inherit from these classes.  On the other hand,
+objects are usually handed out by-value, and so the classes can be used in a statically polymorphic
+context.
+
+Main interface class is the class \cpp{GridViewFunctionSpaceBasis}, which represents a basis of a
+function space defined on a single grid view.%
+\footnote{As opposed to, say, a basis defined only on parts of a grid view.}
+The class is declared in
+\file{dune/functions/functionspacebases/gridviewfunctionspacebasis.hh}.  The interface of this class
+is fairly short.  Table~\ref{} lists the exported static information,
+and Table~\ref{} lists all public methods.
+As you can see, the class takes four template parameters, which all represent types.  They are
+\begin{description}
+ \item [GV] The grid view (i.e., non-hierarchical grid) that the basis is defined on,
+ \item [LV] the type implementing the restriction of the basis to a single element,
+ \item [IS] the type implementing the basis index set,
+ \item [MI] The type used for multi-indices.
+\end{description}
+These types are exported by the interface class as \cpp{GridView}, \cpp{LocalView}, \cpp{IndexSet}, and
+\cpp{MultiIndex}, respectively.  The class has four public methods, all of which are \cpp{const}
+and pure virtual.  The method \cpp{gridView} returns the grid view object that the basis is
+defined on.  The method \cpp{localIndexSet} returns the index set object, which we discuss below.
+
+Finally, the main method is called \cpp{localView}.  It returns the restriction of the basis
+to a single element.  This restriction then provides access to the actual shape functions and
+their numbers.  Note that the method \cpp{localView} does not take any arguments.
+
+\subsection{\texorpdfstring{\cpp{LocalView}}{LocalView} objects and the tree of shape functions}
+
+The \cpp{localView}
+method produces a \cpp{LocalView} object that is {\em free}, i.e., not associated to any
+element of the grid view.  Before being useful it needs to be bound to a particular element.
+
+The interface of the \cpp{LocalView} class is again rather short.  Tables~\ref{}
+and~\ref{} list the exported static data and the public methods, respectively.
+The \cpp{bind} method accepts a grid element and binds the view to the element.  Nothing can be done with a
+\cpp{LocalView} object before it is bound to an element.  This construction allows to perform element-related
+setup tasks once in the \cpp{bind}-method, and obtain faster calls afterwards.
+
+Once the view is bound to an element, you can obtain the tree of finite elements by calling the \cpp{tree}
+method.  The resulting object is a tree as described in Chapter~\ref{}.
+
+Trees are constructed from three parts, corresponding to Chapter~\ref{}.
+Leaf nodes implement scalar local finite elements.  Power nodes are inner tree nodes that combine a number
+of identical subtrees.  Finally, composite nodes combine non-identical subtrees.  Each of the three classes
+has an interface class, and we discuss each of them in turn.  If all you are interested in are
+scalar finite elements, you only have to read about the leaf nodes.
+
+\begin{itemize}
+ \item Leaf nodes
+ \item Power nodes
+ \item Composite nodes
+ \item localIndex method
+\end{itemize}
+
+\begin{description}
+\item[CompositeBasis] A \cpp{CompositeBasis} is the product of an arbitrary collection of underlying bases and is the
+most versatile representation of a composite space. We will use this class to create the overall space $V_{TH}$.
+The corresponding C++ class simply takes the list of components as both template and constructor parameters:
+\begin{lstlisting}
+template<typename... Components>
+class CompositeBasis
+{
+  ...
+  // Construct a CompositeBasis from its components
+  CompositeBasis(Components&&... components);
+
+  // Equivalent interface for dynamically allocated components
+  CompositeBasis(shared_ptr<Components>... component_pointers);
+  ...
+};
+\end{lstlisting}
+\item[PowerBasis] While the \cpp/CompositeBasis/ can be used for any kind of product space, it may not always be the most natural
+or efficient model for it. Our velocity space is a good example for this: We can most naturally understand it as a vector-valued
+version of the underlying scalar space $V_v = (P_2)^3$. The \cpp/PowerBasis/ is a direct model of this concept and describes
+a composite space as a combination of a single component space and an integer power $k$:
+  \begin{lstlisting}
+template<typename Component, std::size_t k>
+class PowerBasis
+{
+  ...
+  // This constructor will duplicate its argument k times
+  PowerBasis(Component&& component);
+  // This constructor requires exactly k arguments and should be used
+  // if the components have to be set up individually
+  PowerBasis(Component&... components);
+
+  // Equivalent interface for dynamically allocated components
+  PowerBasis(shared_ptr<Component> component_pointer);
+  PowerBasis(shared_ptr<Component>... component_pointers);
+  ...
+};
+  \end{lstlisting}
+\end{description}
+
+
+\subsection{Global shape function indices}
+
+The basis functions of this tree are numbered, and these numbers are what you use to index rows and columns
+of your element stiffness matrix.  As explained in Chapter~\ref{sec:dune_functions:basis_ordering}, there is a range
+of possibilities to index the basis functions in a finite element tree.  However, for this element-local
+tree, only the flat index is available.  It is our (current) belief that only this
+index is needed for indexing local basis functions, and providing no alternative reduces interface
+complexity considerably.  On the other hand, for the indexing of the global basis functions, having the choice
+between different numberings is definitely useful.
+
+Consider, for example, a $k$-th order DG space on a triangle grid.  It is always reasonable to use a normal
+random access container such as \cpp{std::vector<double>} to store coefficients of finite element functions.
+Such containers are indexed with a flat index.
+
+
+\subsection{Function space bases available in \texorpdfstring{\dunemodule{dune-functions}}{dune-functions}}
+
+The \dunemodule{dune-functions} module contains a collection of finite element bases that implement
+this interface.  At the time of writing these are:
+
+\begin{itemize}
+ \item \cpp{PQkNodalBasis}: Lagrangian bases of order $k$, where $k$ is a compile-time parameter.
+   For $k\le 2$, this implementation works on all kinds of conforming grids, including grids with more
+   than one element type.  At the time of writing, higher-order spaces are implemented only partially.
+   Check the online class documentation for the current status.
+
+ \item \cpp{PQ1NodalBasis}: Lagrangian nodal bases of first order.  This is a separate implementation of
+   the case $k=1$ of the previous basis.  It exists mainly so that people interested in writing their
+   own bases have a simple example to look at.
+
+ \item \cpp{TaylorHoodBasis}: The Taylor--Hood bases described in Chapter~\ref{sec:dune_functions:finite_element_trees}.
+   This is a simple example of basis constructed by tensor multiplication.
+   A complete example for how to use this basis is given in Chapter~\ref{sec:stokes_example}.
+
+ \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
+   The shape functions are the same as for the \cpp{PQkNodalBasis},
+   but the basis functions are not continuous across the element boundaries.  Therefore, this basis also
+   works well on non-conforming grids.  The polynomial order is again a compile-time constant.
+
+ \item \cpp{BSplineBasis}:  Implements a $B$-Spline basis on a structured, axis-aligned grid as described,
+   e.g., in~\cite{cottrell_hughes_bazilevs:2009}.  Arbritrary orders, dimensions, and knot vectors are supported,
+   allowing, e.g., to work with $C^1$ elements for fourth-order differential equations.
+
+   Each \cpp{BSplineBasis} object implements a basis on a single patch, and the grid must correspond to this
+   patch. For this to work, several restrictions apply for the grid.  It must be structured and axis-aligned,
+   and consist of (hyper-)cube elements only.  Further, the element indices must be lexicographic and
+   increase from the lower left to the upper right domain corner.  The element spacing must math the knot spans.
+   Unfortunately, not all these requirements can be checked for by the basis, so users have to be a bit
+   careful.  Using a \cpp{YaspGrid} object works well.
+
+   Note that unlike in standard finite element bases, in a B-spline basis basis functions cannot be associated
+   to grid entities such as vertices, edges, or elements.  The interface nevertheless mandates that a
+   \cpp{LocalCoefficient} object must be available, but for the \cpp{BSplineBasis}, the behavior of this
+   object is undefined.
+\end{itemize}
+
+
 
 \section{Solving the Stokes equation with \dunemodule{dune-functions}}
+\label{sec:stokes_example}
+
 \subsection{The Stokes equation}
 
 \begin{figure}
