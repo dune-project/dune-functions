@@ -9,6 +9,8 @@ Changes
 =======
 
 - Added an implementation of a Rannacher-Turek basis
+- Add a set of unit tests for bases
+- Extend the documentation of these bases
 
 dune-functions 2.5
 ------------
