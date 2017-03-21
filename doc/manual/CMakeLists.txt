@@ -13,6 +13,7 @@ set(IMAGES
 
 if(LATEX_USABLE)
     dune_add_latex_document(dune-functions-manual.tex
+      BIBFILES dune-functions-manual.bib
       INPUTS ${SOURCES}
       IMAGES ${IMAGES})
 endif(LATEX_USABLE)
