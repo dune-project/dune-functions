@@ -62,6 +62,8 @@
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\abs}[1]{{\lvert#1\rvert}}
 \newcommand{\norm}[1]{\lVert#1\rVert}
+\newcommand{\op}[1]{\operatorname{#1}}
+\newcommand{\st}{\; : \;}
 \renewcommand{\div}{\operatorname{div}}
 \DeclareMathOperator{\trace}{tr}
 
@@ -115,9 +117,9 @@ monomial bases, Legendre bases and more.  It is therefore important to be able t
 representations of the same space in the application code.
 
 Finite element function space bases frequently exhibit a fair amount of structure.  Vector-valued spaces can be
-written as tensor products of scalar spaces, and the same holds for mixed finite elements.  Even more, such spaces
+written as products of scalar spaces, and the same holds for mixed finite elements.  Even more, such spaces
 have a natural structure as a tree, with scalar-valued or otherwise irreducible spaces forming the leaves, and
-tensor products forming the other nodes.
+products forming the other nodes.
 
 This abstract construction is described in Chapter~\ref{sec:dune_functions:finite_element_trees}.
 The programmer interface is centered around this notion of trees of finite element spaces, and gains
@@ -169,59 +171,93 @@ is mentioned there, this tree consists of a single node only, which is the FE ba
 
 Throughout this chapter we assume that we have a single fixed domain $\Omega$, and all function spaces
 that we consider are defined on this domain.
+There are primarily two ways how two bases can be combined to form a new one:
+Internal sums and external sums.
 
-There are primarily two ways how two bases can be combined to form a new one.  The first one is addition:
-Some finite element spaces arise naturally as the sum of two simpler ones.  For example,
+Some finite element spaces arise naturally as the internal sum of two simpler ones.
+I.\,e., both have the same range space $R$ and are thus subspaces of the space $R^\Omega$
+of all functions mapping from $\Omega$ to $R$. Then the internal sum is just the classic
+sum in $R^\Omega$.  The sum space will have that same range space.
+If the sum is direct, then a basis of the sum is given by the union of the bases of
+the simpler ones.
+For example,
 a $P_2$-space can be viewed as a $P_1$-space plus a hierarchical extension consisting of bubble functions.
 XFEM spaces~\cite{moes_dolbow_belytschko:1999} are constructed by adding special basis functions to a basic space to capture
-free discontinuities.  The two spaces in such a sum must have the same range space.  The sum space will
-have that same range space.  The \dunemodule{dune-functions} module does not currently support the construction
-of finite element bases by addition.
+free discontinuities.
+If an internal sum is direct, then it can, up to an isomorphism, also be written as
+an external sum as described below.
+%The two spaces in such a sum must have the same range space.
+The \dunemodule{dune-functions} module does not currently support marking the sum
+of finite element bases to be internal.
 
-The second way to construct FE bases from simpler ones is by tensor multiplication.  This is what
+The second way to construct FE spaces from simpler ones is by building external sums or,
+equivalently, Cartesian products of FE spaces.  This is what
 \dunemodule{dune-functions} focuses on, and we will describe it in a bit more detail.
 Let $B = \{b_i\}_{i=1}^{n_1}$ and $C = \{c_i\}_{i=1}^{n_2}$ be two scalar function space bases and let $\mathbf{e}_1$, $\mathbf{e}_2$ be the canonical
-basis vectors in $\R^2$.  Then we define the product of the two bases as
+basis vectors in $\R^2$.
+Then we define the external sum or Cartesian product of the spanned spaces $\op{span}B$ and $\op{span} C$ as
 \begin{align*}
- B \otimes C
+    \operatorname{span} B \oplus \operatorname{span} C
+    = \operatorname{span} B \times \operatorname{span} C
+    = \big\{ (v,w) \st v \in \op{span} B, w \in \op{span} C \big\}.
+\end{align*}
+A natural basis of this space is given by the concatenation
+of the bases $B$ and $C$ defined by
+\begin{align*}
+(B,C)
  & \colonequals
- \big\{ \mathbf{e}_i (B_i)_j \; : \; i=1,2, j=1,\dots \abs{B_i} \big\} \\
+    \mathbf{e}_1 \otimes B \cup \mathbf{e}_2 \otimes C \\
+    &= \big\{ \mathbf{e}_1 \otimes b \st b \in B \big\}
+    \cup \big\{ \mathbf{e}_2 \otimes c \st c \in C \big\} \\
  & =
  \big\{(b_1,0), (b_2,0), \dots, (b_{n_1},0) \big\} \cup \big\{(0,c_1), (0,c_2), \dots, (0,c_{n_2})\big\}.
 \end{align*}
-This is the natural basis of the space $\operatorname{span} B \otimes \operatorname{span} C$.
-Its basis functions take values in $\R \otimes \R = \R^2$.
+These basis functions take values in $\R \times \R = \R^2$.
 More generally, if $B$ and $C$ are bases with ranges $\R^{m_1}$
 and $\R^{m_2}$, respectively, then
 \begin{equation*}
- B \otimes C
+    (B,C)
  \colonequals
  \big\{(b_1,\underbrace{0}_{\in \R^{m_2}}), (b_2,\underbrace{0}_{\in \R^{m_2}}), \dots, (b_{n_1},\underbrace{0}_{\in \R^{m_2}})\big\}
  \cup
  \big\{(\underbrace{0}_{\in \R^{m_1}}, c_1), (\underbrace{0}_{\in \R^{m_1}},c_2), \dots, (\underbrace{0}_{\in \R^{m_1}}, c_{n_2})\big\}
 \end{equation*}
-is again the natural basis of the space $\operatorname{span} B \otimes \operatorname{span} C$.  Its basis functions take values in
-$\R^{m_1} \otimes \R^{m_2} = \R^{m_1+m_2}$.
+is again the natural basis of the space $\operatorname{span} B \oplus \operatorname{span} C$.  Its basis functions take values in
+$\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
 
-This construction allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
+It is important to note that building the external sum of vector spaces
+corresponds to building the Cartesian product of the sets which should not
+be confused with building the tensor product of these spaces.
+It is however true, that the $k$-fold product or $k$-th power
+of a single space can be viewed as the tensor product with $\R^k$, i.e,
+\begin{align*}
+    (\op{span} B)^k
+    = \underbrace{\op{span}B \times \dots \times \op{span}B}_{k-\text{times}}
+    = \underbrace{\op{span}B \oplus \dots \oplus \op{span}B}_{k-\text{times}}
+    = \R^k \otimes \op{span} B.
+\end{align*} 
+In the following we will simply use the term \emph{product}
+when we talk about the Cartesian product or external sum.
+
+The construction via products (external sums) allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
 For example, the space of
-first-order Lagrangian finite elements with values in $\R^3$ can be seen as the product $P_1 \otimes P_1 \otimes P_1$.
-The simplest Taylor--Hood element is the product $(P_2)^3 \otimes P_1$
-of $(P_2)^3 = P_2 \otimes P_2 \otimes P_2$ for the velocities with $P_1$ for the pressure.
+first-order Lagrangian finite elements with values in $\R^3$ can be seen as the product $P_1 \times P_1 \times P_1$.
+The simplest Taylor--Hood element is the product $(P_2)^3 \times P_1$
+of $(P_2)^3 = P_2 \times P_2 \times P_2$ for the velocities with $P_1$ for the pressure.
 If more physical quantities need to be dealt with, more factor bases can be included easily.  Note also that we have not
 required that these spaces be defined with respect to the same grid (or any grid at all, for that matter).
 
 For any spaces used in FE simulations that can be written as a product, there is an order of the factors that appears more natural
-than others.  For example, the Taylor--Hood space is usually written as $P_2 \otimes P_2 \otimes P_2 \otimes P_1$,
-even though $P_2 \otimes P_1 \otimes P_2 \otimes P_2$ would work as well.  The reason is that the triple
-$P_2 \otimes P_2 \otimes P_2$ forms a semantic unit---it contains the components of a velocity field.
-This, together with the associativity of the tensor product of spaces, allows to even write this
-as $(P_2 \otimes P_2 \otimes P_2) \otimes P_1$.  This grouping makes the semantic relationship even clearer.
+than others.  For example, the Taylor--Hood space is usually written as $P_2 \times P_2 \times P_2 \times P_1$,
+even though $P_2 \times P_1 \times P_2 \times P_2$ would work as well.  The reason is that the triple
+$P_2 \times P_2 \times P_2$ forms a semantic unit---it contains the components of a velocity field.
+This, together with the associativity of the product of spaces, allows to even write this
+as $(P_2 \times P_2 \times P_2) \times P_1$.  This grouping makes the semantic relationship even clearer.
 
 Grouped expressions of this type are conveniently visualized as tree structures.  This
 suggests to interpret composite
 finite element spaces as tree structures.  In this structure, leaf nodes represent scalar or otherwise irreducible spaces,
-and inner nodes represent tensor multiplication of their children.  Subtrees then represent composite
+and inner nodes represent products of their children.  Subtrees then represent composite
 finite element spaces.  Figure~\ref{fig:dune_functions:taylor_hood_basis_tree} shows the Tayor--Hood finite element
 space in such a tree representation.
 
@@ -234,12 +270,12 @@ space in such a tree representation.
     \put(87,31){$V_p$}
     \put(5,30){$V_v$}
     \put(5,57){$V_\text{TH}$}
-    \put(30.7,32){$\otimes$}
-    \put(61.6,58){$\otimes$}
+    \put(30.7,32){$\times$}
+    \put(61.6,58){$\times$}
    \end{overpic}
 
   \end{center}
-  \caption{Taylor--Hood basis $P_2 \otimes P_2 \otimes P_2 \otimes P_1$ in a tree representation}
+  \caption{Taylor--Hood basis $P_2 \times P_2 \times P_2 \times P_1$ in a tree representation}
     \label{fig:dune_functions:taylor_hood_basis_tree}
 \end{figure}
 
@@ -629,7 +665,7 @@ this interface.  At the time of writing these are:
    own bases have a simple example to look at.
 
  \item \cpp{TaylorHoodBasis}: The Taylor--Hood bases described in Chapter~\ref{sec:dune_functions:finite_element_trees}.
-   This is a simple example of basis constructed by tensor multiplication.
+   This is a simple example of basis constructed by building products.
    A complete example for how to use this basis is given in Chapter~\ref{sec:stokes_example}.
 
  \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
