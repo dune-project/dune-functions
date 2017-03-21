@@ -14,8 +14,8 @@
 \usepackage{xspace}
 \usepackage[square,numbers,sort]{natbib}
 
-%\usepackage[colorinlistoftodos]{todonotes}
-\usepackage[colorinlistoftodos,disable]{todonotes}
+\usepackage[colorinlistoftodos]{todonotes}
+%\usepackage[colorinlistoftodos,disable]{todonotes}
 \usepackage{environ}
 \usepackage{enumitem}
 \usepackage{listings}
@@ -91,6 +91,8 @@
 
 \maketitle
 
+\tableofcontents
+
 \begin{abstract}
  \dunemodule{dune-functions} is a \dune module that provides interfaces for functions and function space bases.
  It forms one abstraction level above grids, shape functions, and linear algebra, but still sits below
@@ -156,7 +158,7 @@ with basis functions taking values in different Euclidean spaces,
 \dunemodule{dune-functions} allows to systematically construct bases for function spaces with a
 higher-dimensional range.  These include vector-valued functions, mixed finite elements, and spaces
 for multi-physics.  The building blocks are typically scalar-valued basis functions, but sometimes vector-valued
-ones like the N\'ed\'elec basis is used as well. The constructions are systematically described as tree structures.
+ones like the N\'ed\'elec basis are used as well. The constructions are systematically described as tree structures.
 This tree construction of finite element spaces has first been systematically worked out in~\cite{muething:2015}.
 
 Readers who are only interested in scalar finite element spaces may try to proceed directly to
@@ -187,7 +189,8 @@ basis vectors in $\R^2$.  Then we define the product of the two bases as
  & =
  \big\{(b_1,0), (b_2,0), \dots, (b_{n_1},0) \big\} \cup \big\{(0,c_1), (0,c_2), \dots, (0,c_{n_2})\big\}.
 \end{align*}
-This is the natural basis of the space $\operatorname{span} B \otimes \operatorname{span} C$.  Its basis functions take values in $\R \otimes \R = \R^2$.
+This is the natural basis of the space $\operatorname{span} B \otimes \operatorname{span} C$.
+Its basis functions take values in $\R \otimes \R = \R^2$.
 More generally, if $B$ and $C$ are bases with ranges $\R^{m_1}$
 and $\R^{m_2}$, respectively, then
 \begin{equation*}
@@ -203,7 +206,8 @@ $\R^{m_1} \otimes \R^{m_2} = \R^{m_1+m_2}$.
 This construction allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
 For example, the space of
 first-order Lagrangian finite elements with values in $\R^3$ can be seen as the product $P_1 \otimes P_1 \otimes P_1$.
-The simplest Taylor--Hood element is the product of $(P_2)^3 = P_2 \otimes P_2 \otimes P_2$ for the velocities with $P_1$ for the pressure.
+The simplest Taylor--Hood element is the product $(P_2)^3 \otimes P_1$
+of $(P_2)^3 = P_2 \otimes P_2 \otimes P_2$ for the velocities with $P_1$ for the pressure.
 If more physical quantities need to be dealt with, more factor bases can be included easily.  Note also that we have not
 required that these spaces be defined with respect to the same grid (or any grid at all, for that matter).
 
