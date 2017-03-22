@@ -49,6 +49,9 @@
 
 \newcommand{\cpp}[1]{\lstinline[basicstyle=\ttfamily]!#1!}
 
+
+\newtheorem{definition}{Definition}
+
 %%%%%%%%%%%%%%    Define a 'shellenv' environment for shell output
 \usepackage{fancyvrb}
 
@@ -60,6 +63,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
 \newcommand{\abs}[1]{{\lvert#1\rvert}}
 \newcommand{\norm}[1]{\lVert#1\rVert}
 \newcommand{\op}[1]{\operatorname{#1}}
@@ -283,6 +287,113 @@ While these extra nodes might initially appear like useless artifacts of the tre
 because we can treat the subtrees rooted in those nodes as individual trees in their own right, which often makes it possible to
 reuse existing algorithms that expect to operate on those subtrees in more complex settings.
 
+
+
+
+\subsection{Indexing basis functions in a finite element basis tree}
+\label{sec:dune_functions:basis_ordering}
+
+To work with the basis of a finite element space, the basis vectors need to be indexed.  Indexing the basis functions
+is what allows to address the corresponding vector and matrix coefficients in suitable vector and matrix data structures.
+In simple cases, indexing means simply enumerating the basis functions with natural numbers, but for many applications
+hierarchically structured matrix and vector data structures are more natural or efficient leading to the need
+for hierarchically structured multi-indices.
+
+One way to construct such multi-indices would be to directly use the tree of finite element spaces.
+Assuming that a flat indexing with natural numbers is given for each leaf FE space in the tree,
+a unique hierarchical index for all basis functions in the tree can be obtained by simply
+enumerating all children of any node and prepending the index of the child tree to the index
+within the child tree.
+We will illustrate this for the Taylor--Hood tree $(P_2 \times P_2 \times P_2) \times P_1$.
+
+We start by assuming that the basis functions for $P_1$ and $P_2$
+both have a flat indexing by natural numbers in $\N_0 = \N \cup \{0\}$.
+Then we enumerate the three children $P_2$, $P_2$, $P_2$
+in the velocity subtree $P_2 \times P_2 \times P_2$
+with the numbers $0$, $1$ and $2$.
+Finally we enumerate the two children $(P_2 \times P_2 \times P_2)$ (for the velocity)
+and $P_1$ (for the pressure) in the overall tree $(P_2 \times P_2 \times P_2) \times P_1$
+with the numbers $0$ and $1$.
+This construction leads to multi-indices indices of the form $[0,i,j]$ and $[1,k]$.
+The component of the multi-index determines if the basis function
+belongs to the velocity or pressure degrees of freedom by being either $0$ or $1$.
+For the velocity multi-indices $[0,i,j]$ the $i$ determines the component
+of the velocity vector field and the $j$ determines the number of the $P_2$ basis
+function for scalar $P_2$ function that determines this component.
+For the pressure multi-indices $[0,k]$ the $k$ determines the number of the $P_1$ basis
+function for the scalar $P_1$ function that determines the pressure.
+If the basis functions $\lambda_I$ are indexed by multi-indices of this form
+and for a coefficient vector $X$ which has a compatible hierarchical structure
+the velocity vector field $u$ and the pressure $p$ are then given by
+\begin{align*}
+    u &= (\sum_{j} X_{(0,i,j)}\lambda_{(0,i,j)})_{i=1,\dots,3},  &
+    p &= \sum_{k} X_{(1,k)}\lambda_{(1,j)}.
+\end{align*} 
+
+This example already demonstrates two important requirements:
+On the one hand natural multi-indices do not necessarily have
+a fixed length.
+On the other hand it shows that one may be interested to construct multi-indices
+that do not mimic the structure of the FE tree: To increase data locality in assembled
+matrices it may be preferable to use group all velocity corresponding to a single
+$P_2$ basis function together, i.\,e. to use the index $[0,j,i]$
+for the $j$-the $P_2$ basis function for the $i$-th component.
+
+\todo{CG:Add picture to illustrate both indexing schemes for Taylor--Hood}
+
+To reflect this \dunemodule{dune-functions} essentially allows arbitrary
+multi-indices as long as they are consistent in the sense that they
+can be viewed as the paths to the leafs in an ordered tree.
+%Consistency here means that the multi-indices should form an index tree.
+That is, the children of each node are enumerated using consecutive zero-based
+indices and paths to the leafs (i.e. the multi-indices) are build by concatenating
+those indices starting from the root and ending in a leaf.
+As motivated above, it is important to note, that this tree does not need to
+coincide with the FE tree. A precise definition of such an index tree is given by
+the following:
+
+\begin{definition}
+    \begin{enumerate}
+        \item
+            A tuple $I \in \N_0^k$ for some $k \in \N_0$ is called a multi-index of length $k$
+            and we write $|I|=k$.
+            The set of all multi-indices is denoted by
+            $\mathcal{N} = \bigcup_{k \in \N_0^k} \N_0^k$.
+        \item
+            If $I \in \mathcal{N}$ takes the form $I = (I',I'')$ for $I',I'' \in \mathcal{N}$
+            and $|I| = |I'|+|I''|$, then we call $I'$ a prefix of $I$ and write $I = (I',\dots)$.
+            If additionally $|I''|>0$ we call $I'$ a strict prefix of $I$ and write $I = (I',*,\dots)$.
+        \item
+            A set $\mathcal{I} \subset \mathcal{N}$ is called an \emph{index tree}
+            if for any $(I,i,\dots) \in \mathcal{I}$ there are also $(I,0,\dots),(I,1,\dots),\dots,(I,i,\dots) \in \mathcal{I}$
+            but $I \notin \mathcal{I}$.
+    \end{enumerate}
+\end{definition}
+
+If $\Lambda$ the set of basis functions of a finite element tree,
+then \dunemodule{dune-functions} allows any indexing scheme that
+is given by an index map $I: \Lambda \to \mathcal{N}$
+whose range $I(\Lambda)$ is an index tree.
+
+When operating with the indices of basis functions it is important
+to know the maximal appearing index in order to allocate matrices
+and vectors.
+For a flat consecutive zero-based index this is just $d-1$ where
+$d$ is the dimension of the spanned space. For multi-indices from
+an index tree $\mathcal{I}$ we need a slightly more complicated
+construction. Let $(I,\dots) \in \mathcal{I}$, i.\,e., $I$ is a
+prefix of multi-indices in $\mathcal{I}$ then the size relative
+to $I$ is given by
+\begin{align*}
+    |\mathcal{I}|_I = \op{max}\{k \st \exists (I,k,\dots) \in \mathcal{I} \}-1.
+\end{align*}
+In terms of the ordered tree associated with $\mathcal{I}$ this corresponds
+to the number of direct children of the node indexed by $I$.
+
+
+While \dunemodule{dune-functions} allows to use arbitrary index trees
+to enumerate the basis functions, there are some important generic constructions
+to derive such index trees from the finite element tree that will be described below.
 
 
 \subsection{Ordering basis functions in a finite element basis tree}
