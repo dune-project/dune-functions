@@ -21,6 +21,29 @@
 \usepackage{listings}
 \usepackage{float}
 
+
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\tikzset{
+    treenode/.style = {
+        align=center,
+        inner sep=0pt,
+        text centered,
+        font=\sffamily,
+        rectangle,
+        rounded corners=3mm,
+        draw=black,
+        minimum width=2em,
+        minimum height=2em
+    },
+    basisnode/.style = {
+        treenode,
+        rectangle,
+        rounded corners=3mm,
+    }
+}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%   hyperref should be loaded late to avoid incompatibilities
 \usepackage[pdftitle={Function space bases in the dune-functions module},
@@ -266,22 +289,42 @@ finite element spaces.  Figure~\ref{fig:dune_functions:taylor_hood_basis_tree} s
 space in such a tree representation.
 
 \begin{figure}
-  \begin{center}
-   \begin{overpic}[width=0.5\textwidth]{taylor_hood_tree}
-    \put(5,5){$V_x$}
-    \put(30,5){$V_y$}
-    \put(55,5){$V_z$}
-    \put(87,31){$V_p$}
-    \put(5,30){$V_v$}
-    \put(5,57){$V_\text{TH}$}
-    \put(30.7,32){$\times$}
-    \put(61.6,58){$\times$}
-   \end{overpic}
-
-  \end{center}
-  \caption{Taylor--Hood basis $P_2 \times P_2 \times P_2 \times P_1$ in a tree representation}
+    \begin{center}
+        \begin{tikzpicture}[
+                level/.style={
+                    sibling distance = (3-#1)*2cm + 1cm,
+                    level distance = 1.5cm
+                }
+            ]
+            \node [treenode] {$(P_2\times P_2 \times P_2) \times P_1$}
+                child{ node [treenode] {$P_2 \times P_2 \times P_2$}
+                    child{ node [treenode] {$P_2$} }
+                    child{ node [treenode] {$P_2$} }
+                    child{ node [treenode] {$P_2$} }
+                }
+                child{ node [treenode] {$P_1$} };
+        \end{tikzpicture}
+    \end{center}
+    \caption{Finite element tree of the Taylor--Hood space $(P_2 \times P_2 \times P_2)\times P_1$}
     \label{fig:dune_functions:taylor_hood_basis_tree}
 \end{figure}
+
+%\begin{figure}
+%  \begin{center}
+%   \begin{overpic}[width=0.5\textwidth]{taylor_hood_tree}
+%    \put(5,5){$V_x$}
+%    \put(30,5){$V_y$}
+%    \put(55,5){$V_z$}
+%    \put(87,31){$V_p$}
+%    \put(5,30){$V_v$}
+%    \put(5,57){$V_\text{TH}$}
+%    \put(30.7,32){$\times$}
+%    \put(61.6,58){$\times$}
+%   \end{overpic}
+%  \end{center}
+%  \caption{Taylor--Hood basis $P_2 \times P_2 \times P_2 \times P_1$ in a tree representation}
+%    \label{fig:dune_functions:taylor_hood_basis_tree}
+%\end{figure}
 
 While these extra nodes might initially appear like useless artifacts of the tree representation, they are often extremely useful
 because we can treat the subtrees rooted in those nodes as individual trees in their own right, which often makes it possible to
@@ -306,8 +349,10 @@ enumerating all children of any node and prepending the index of the child tree 
 within the child tree.
 We will illustrate this for the Taylor--Hood tree $(P_2 \times P_2 \times P_2) \times P_1$.
 
-We start by assuming that the basis functions for $P_1$ and $P_2$
-both have a flat indexing by natural numbers in $\N_0 = \N \cup \{0\}$.
+We start by assuming that the finite element basis functions $\lambda_i^2$ and $\lambda_k^1$
+of $P_2$ and $P_1$ both
+both have a flat indexing by natural numbers $i=0,\dots,n_2$ and $k=0,\dots,n_1$,
+respectively.
 Then we enumerate the three children $P_2$, $P_2$, $P_2$
 in the velocity subtree $P_2 \times P_2 \times P_2$
 with the numbers $0$, $1$ and $2$.
@@ -322,24 +367,116 @@ of the velocity vector field and the $j$ determines the number of the $P_2$ basi
 function for scalar $P_2$ function that determines this component.
 For the pressure multi-indices $[0,k]$ the $k$ determines the number of the $P_1$ basis
 function for the scalar $P_1$ function that determines the pressure.
-If the basis functions $\lambda_I$ are indexed by multi-indices of this form
-and for a coefficient vector $X$ which has a compatible hierarchical structure
-the velocity vector field $u$ and the pressure $p$ are then given by
+
+If all basis functions $\lambda_I$ of the whole finite element tree are
+indexed by multi-indices of the above given form
+and if $X$ is a coefficient vector which has a compatible hierarchical structure,
+then the velocity vector field $u$ and the pressure $p$ are given by
 \begin{align*}
-    u &= (\sum_{j} X_{(0,i,j)}\lambda_{(0,i,j)})_{i=1,\dots,3},  &
-    p &= \sum_{k} X_{(1,k)}\lambda_{(1,j)}.
-\end{align*} 
+    u &= (\sum_{j=0}^{n_2} X_{(0,i,j)}\lambda_{(0,i,j)})_{i=1,\dots,3},  &
+    p &= \sum_{k=0}^{n_1} X_{(1,k)}\lambda_{(1,j)}
+\end{align*}
+with basis functions
+\begin{align*}
+    \lambda_{(0,i,j)} &= \lambda^2_j \qquad i=0,1,2, &
+    \lambda_{(1,k)} &= \lambda^1_k.
+\end{align*}
+
+This index construction is illustrated in Figure~\ref{fig:dune_functions:taylor_hood_index_tree}
+where the Taylor--Hood finite element tree is extended with individual basis functions,
+edges are labels with corresponding multi-index entries, and node labels indicate
+what the corresponding subtree represents.
+
+\begin{figure}
+    \begin{center}
+        \begin{tikzpicture}[
+                level/.style={
+                    sibling distance = (3-#1)*2cm + 1cm,
+                    level distance = 1.5cm
+                }
+            ]
+            \node [treenode] {$P_2^3 \times P_1$}
+                child{ node [treenode] {$P_2^3$}
+                    child{ node [treenode] {$P_2$}
+                        child{ node [basisnode] {$\lambda_0^2$} edge from parent node[left] {$0$}}
+                        child{ node [] {$\dots$} }
+                        child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[right] {$n_2$} }
+                        edge from parent node[above left] {$0$}
+                    }
+                    child{ node [treenode] {$P_2$}
+                        child{ node [basisnode] {$\lambda_0^2$} edge from parent node[left] {$0$}}
+                        child{ node [] {$\dots$} }
+                        child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[right] {$n_2$} }
+                        edge from parent node[left] {$1$}
+                    }
+                    child { node [treenode] {$P_2$}
+                        child{ node [basisnode] {$\lambda_0^2$} edge from parent node[left] {$0$}}
+                        child{ node [] {$\dots$} }
+                        child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[right] {$n_2$} }
+                        edge from parent node[above right] {$2$}
+                    }
+                    edge from parent node[above left] {$0$}
+                }
+                child{ node [treenode] {$P_1$}
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^1$} edge from parent node[left] {$0$} }
+                    child [sibling distance=1cm] { node [] {$\dots$} }
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1}^1$} edge from parent node[right] {$n_1$} }
+                    edge from parent node[above right] {$1$}
+                };
+        \end{tikzpicture}
+    \end{center}
+    \caption{Index tree for Taylor--Hood with indices inherited from FE tree}
+    \label{fig:dune_functions:taylor_hood_index_tree}
+\end{figure}
 
 This example already demonstrates two important requirements:
 On the one hand natural multi-indices do not necessarily have
 a fixed length.
 On the other hand it shows that one may be interested to construct multi-indices
-that do not mimic the structure of the FE tree: To increase data locality in assembled
-matrices it may be preferable to use group all velocity corresponding to a single
-$P_2$ basis function together, i.\,e. to use the index $[0,j,i]$
+that do not mimic the structure of the finite element tree:
+To increase data locality in assembled matrices for the Taylor--Hood basis it may be
+preferable to group all velocity degrees of freedom corresponding to a single
+$P_2$ basis function together, i.\,e., to use the index $[0,j,i]$
 for the $j$-the $P_2$ basis function for the $i$-th component.
+The corresponding alternative index tree is illustrated in
+Figure~\ref{fig:dune_functions:taylor_hood_index_blocked_tree}.
 
-\todo{CG:Add picture to illustrate both indexing schemes for Taylor--Hood}
+\begin{figure}
+    \begin{center}
+        \begin{tikzpicture}[
+                level/.style={
+                    sibling distance = (3-#1)*2cm + 1cm,
+                    level distance = 1.5cm
+                },
+            ]
+            \node [treenode] {$P_2^3 \times P_1$}
+                child{ node [treenode] {$P_2^3$}
+                        child [sibling distance=2cm] { node [basisnode] {$(\lambda_0^2)^3$}
+                            child{ node [treenode] {$\lambda_0^2$} edge from parent node[above left] {$0$}}
+                            child{ node [treenode] {$\lambda_0^2$} edge from parent node[left] {$1$}}
+                            child{ node [treenode] {$\lambda_0^2$} edge from parent node[above right] {$2$}}
+                            edge from parent node[left] {$0$}
+                        }
+                        child [sibling distance=2cm]{ node [] {$\dots$} }
+                        child [sibling distance=2cm]{ node [basisnode] {$(\lambda_{n_2}^2)^3$}
+                            child{ node [treenode] {$\lambda_{n_2}^2$} edge from parent node[above left] {$0$}}
+                            child{ node [treenode] {$\lambda_{n_2}^2$} edge from parent node[left] {$1$}}
+                            child{ node [treenode] {$\lambda_{n_2}^2$} edge from parent node[above right] {$2$}}
+                            edge from parent node[right] {$n_2$}
+                        }
+                        edge from parent node[above left] {$0$}
+                }
+                child{ node [treenode] {$P_1$}
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^1$} edge from parent node[left] {$0$} }
+                    child [sibling distance=1cm] { node [] {$\dots$} }
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1}^1$} edge from parent node[right] {$n_1$} }
+                    edge from parent node[above right] {$1$}
+                };
+        \end{tikzpicture}
+    \end{center}
+    \caption{Index tree for Taylor--Hood with blocking of local velocity components}
+    \label{fig:dune_functions:taylor_hood_index_blocked_tree}
+\end{figure}
 
 To reflect this \dunemodule{dune-functions} essentially allows arbitrary
 multi-indices as long as they are consistent in the sense that they
