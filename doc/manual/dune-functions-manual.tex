@@ -34,12 +34,13 @@
         rounded corners=3mm,
         draw=black,
         minimum width=2em,
-        minimum height=2em
+        minimum height=2em,
+        inner sep=1mm,
+        outer sep=0mm
     },
     basisnode/.style = {
         treenode,
-        rectangle,
-        rounded corners=3mm,
+        minimum width=9mm,
     }
 }
 
@@ -418,9 +419,9 @@ what the corresponding subtree represents.
                     edge from parent node[above left] {$0$}
                 }
                 child{ node [treenode] {$P_1$}
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^1$} edge from parent node[left] {$0$} }
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^1$} edge from parent node[above left] {$0$} }
                     child [sibling distance=1cm] { node [] {$\dots$} }
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1}^1$} edge from parent node[right] {$n_1$} }
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1}^1$} edge from parent node[above right] {$n_1$} }
                     edge from parent node[above right] {$1$}
                 };
         \end{tikzpicture}
@@ -451,25 +452,25 @@ Figure~\ref{fig:dune_functions:taylor_hood_index_blocked_tree}.
             ]
             \node [treenode] {$P_2^3 \times P_1$}
                 child{ node [treenode] {$P_2^3$}
-                        child [sibling distance=2cm] { node [basisnode] {$(\lambda_0^2)^3$}
-                            child{ node [treenode] {$\lambda_0^2$} edge from parent node[above left] {$0$}}
-                            child{ node [treenode] {$\lambda_0^2$} edge from parent node[left] {$1$}}
-                            child{ node [treenode] {$\lambda_0^2$} edge from parent node[above right] {$2$}}
-                            edge from parent node[left] {$0$}
+                        child [sibling distance=2cm] { node [treenode] {$(\lambda_0^2)^3$}
+                            child{ node [basisnode] {$\lambda_0^2$} edge from parent node[above left] {$0$}}
+                            child{ node [basisnode] {$\lambda_0^2$} edge from parent node[left] {$1$}}
+                            child{ node [basisnode] {$\lambda_0^2$} edge from parent node[above right] {$2$}}
+                            edge from parent node[above left] {$0$}
                         }
                         child [sibling distance=2cm]{ node [] {$\dots$} }
-                        child [sibling distance=2cm]{ node [basisnode] {$(\lambda_{n_2}^2)^3$}
-                            child{ node [treenode] {$\lambda_{n_2}^2$} edge from parent node[above left] {$0$}}
-                            child{ node [treenode] {$\lambda_{n_2}^2$} edge from parent node[left] {$1$}}
-                            child{ node [treenode] {$\lambda_{n_2}^2$} edge from parent node[above right] {$2$}}
-                            edge from parent node[right] {$n_2$}
+                        child [sibling distance=2cm]{ node [treenode] {$(\lambda_{n_2}^2)^3$}
+                            child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[above left] {$0$}}
+                            child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[left] {$1$}}
+                            child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[above right] {$2$}}
+                            edge from parent node[above right] {$n_2$}
                         }
                         edge from parent node[above left] {$0$}
                 }
                 child{ node [treenode] {$P_1$}
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^1$} edge from parent node[left] {$0$} }
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^1$} edge from parent node[above left] {$0$} }
                     child [sibling distance=1cm] { node [] {$\dots$} }
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1}^1$} edge from parent node[right] {$n_1$} }
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1}^1$} edge from parent node[above right] {$n_1$} }
                     edge from parent node[above right] {$1$}
                 };
         \end{tikzpicture}
