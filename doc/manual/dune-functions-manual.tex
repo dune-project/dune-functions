@@ -1706,7 +1706,7 @@ the tree is in unbound state.
 \begin{lstlisting}
   using TreePath = <implementation defined>;
   const TreePath& treePath() const;
-  const size_type treeIndex() const;
+  size_type treeIndex() const;
 }; // end BasisNode
 \end{lstlisting}
 
@@ -1734,7 +1734,7 @@ public:
   size_type localIndex(size_type i) const;
   using TreePath = <implementation defined>;
   const TreePath& treePath() const;
-  const size_type treeIndex() const;
+  size_type treeIndex() const;
 
   using Element = <implementation defined>;
   using FiniteElement = <implementation defined>;
