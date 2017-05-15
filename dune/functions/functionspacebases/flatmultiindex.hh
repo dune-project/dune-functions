@@ -73,7 +73,7 @@ public:
    *
    * \ingroup FunctionSpaceBasesUtilities
    */
-  inline friend std::size_t hash_value(const FlatMultiIndex& arg)
+  inline friend std::size_t hash_value(const FlatMultiIndex& arg) noexcept
   {
     return std::hash<size_type>()(arg);
   }
