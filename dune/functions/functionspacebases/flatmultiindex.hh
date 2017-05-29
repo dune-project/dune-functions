@@ -25,13 +25,7 @@ class FlatMultiIndex :
 {
 public:
 
-  /**
-   * \brief Forward constructor arguments to std::array
-   */
-  template<class... T>
-  constexpr FlatMultiIndex(T&&... t) :
-    std::array<size_type,1>(t...)
-  {}
+  constexpr FlatMultiIndex() = default;
 
   /**
    * \brief Construct from initializer_list
