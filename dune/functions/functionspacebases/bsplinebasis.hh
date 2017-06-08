@@ -1043,13 +1043,13 @@ public:
         N[r][i] = factor1 * N[r-1][i] + factor2 * N[r-1][i+1];
       }
 
-      /** \todo We only hand out function values for those basis functions whose support overlaps
-       *  the current knot span.  However, in the preceding loop we still computed _all_ values_.
-       * This won't scale.
-       */
-      for (size_t i=0; i<out.size(); i++) {
-        out[i] = N[order][std::max((int)(currentKnotSpan - order),0) + i];
-      }
+    /** \todo We only hand out function values for those basis functions whose support overlaps
+     *  the current knot span.  However, in the preceding loop we still computed _all_ values_.
+     * This won't scale.
+     */
+    for (size_t i=0; i<out.size(); i++) {
+      out[i] = N[order][std::max((int)(currentKnotSpan - order),0) + i];
+    }
   }
 
   /** \brief Evaluate all one-dimensional B-spline functions for a given coordinate direction
