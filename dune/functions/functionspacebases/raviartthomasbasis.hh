@@ -95,7 +95,7 @@ namespace Impl {
       : gv_(gv), is_(&(gv_.indexSet())), orient_(gv.size(0))
     {
       // create all variants
-      for (int i = 0; i < Variants; i++)
+      for (size_t i = 0; i < Variants; i++)
         variant_[i] = FiniteElement(i);
 
       // compute orientation for all elements
@@ -308,8 +308,6 @@ protected:
   const Element* element_;
   const FiniteElementMap* finiteElementMap_;
 };
-
-
 
 template<typename GV, int k, class MI, class TP, class ST, GeometryType::BasicType basic_type>
 class RaviartThomasNodeIndexSet
