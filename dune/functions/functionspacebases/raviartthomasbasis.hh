@@ -1,7 +1,7 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_RAVIARTTHOMASCUBEBASIS_HH
-#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_RAVIARTTHOMASCUBEBASIS_HH
+#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_RAVIARTTHOMASBASIS_HH
+#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_RAVIARTTHOMASBASIS_HH
 
 #include <array>
 #include <dune/common/exceptions.hh>
@@ -158,6 +158,11 @@ class RaviartThomasNodeFactory
   static const int dim = GV::dimension;
   using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, basic_type, typename GV::ctype, double, k>;
 
+private:
+
+  template<typename, int, class, class, class, GeometryType::BasicType>
+  friend class RaviartThomasNodeIndexSet;
+
 public:
 
   /** \brief The grid view that the FE space is defined on */
@@ -193,9 +198,9 @@ public:
 
   void initializeIndices()
   {
-    CodimOffset_.resize(2);
-    CodimOffset_[0] = 0;
-    CodimOffset_[1] = CodimOffset_[0] + dofsPerCodim[0] * gridView_.size(0);
+    codimOffset_.resize(2);
+    codimOffset_[0] = 0;
+    codimOffset_[1] = codimOffset_[0] + dofsPerCodim[0] * gridView_.size(0);
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -246,11 +251,10 @@ public:
     return StaticPower<(k+1),GV::dimension>::power;
   }
 
-//protected:
+protected:
   const GridView gridView_;
-  std::vector<size_t> CodimOffset_;
+  std::vector<size_t> codimOffset_;
   FiniteElementMap finiteElementMap_;
-
 };
 
 
@@ -371,7 +375,7 @@ public:
 
     if (not(codim==0 or codim==1)) DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasBasis");
 
-    return { nodeFactory_->CodimOffset_[codim] +
+    return { nodeFactory_->codimOffset_[codim] +
              nodeFactory_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
   }
 
@@ -429,4 +433,4 @@ using RaviartThomasNodalBasis = DefaultGlobalBasis<RaviartThomasNodeFactory<GV, 
 } // end namespace Dune
 
 
-#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_RAVIARTTHOMASCUBEBASIS_HH
+#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_RAVIARTTHOMASBASIS_HH
