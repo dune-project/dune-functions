@@ -2,7 +2,7 @@
 
 Module: dune-functions
 Version: 2.5-dev
-Maintainer: dune-devel@dune-project.org
+Maintainer: dune-devel@lists.dune-project.org
 Depends: dune-localfunctions (>= 2.5) dune-grid (>= 2.5) dune-typetree
 # We suggest dune-istl, because it is used by the example programs.
 Suggests: dune-istl
