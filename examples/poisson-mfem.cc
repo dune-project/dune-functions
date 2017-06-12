@@ -360,7 +360,6 @@ int main (int argc, char *argv[]) try
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
-  using namespace Functions::BasisTags;
   using namespace Functions::BasisBuilder;
 
   auto basis = makeBasis(
