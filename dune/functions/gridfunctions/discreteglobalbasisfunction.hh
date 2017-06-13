@@ -15,6 +15,8 @@
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/common/treedata.hh>
 
+
+
 namespace Dune {
 namespace Functions {
 
@@ -83,6 +85,13 @@ public:
 
   using Domain = typename EntitySet::GlobalCoordinate;
   using Range = R;
+  // How it should be (not working for Range = double):
+  //using RangeField = typename Range::value_type;
+  //using JacobianRange = FieldVector< FieldVector<RangeField, Domain::dimension>, Range::dimension>;
+  using RangeField = double;
+  // For vectorial ranges, this works only if Range::dimension == Domain::dimension, otherwise the assert
+  // in the evaluation method for the derivative throws an error.
+  using JacobianRange = FieldVector< Range, Domain::dimension>;
 
   using LocalDomain = typename EntitySet::LocalCoordinate;
   using Element = typename EntitySet::Element;
@@ -97,12 +106,16 @@ public:
 
     template<class Node>
     using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
-    using RangeField = double; // hard-coded
+    template<class Node>
+    using LocalBasisJacobian = typename Node::FiniteElement::Traits::LocalBasisType::Traits::JacobianType;
 
     template<class Node>
     using NodeData = typename std::vector<LocalBasisRange<Node>>;
+    template<class Node>
+    using NodeDataJacobian = typename std::vector<LocalBasisJacobian<Node>>;
 
     using ShapeFunctionValueContainer = TreeData<SubTree, NodeData, true>;
+    using ShapeFunctionJacobianContainer = TreeData<SubTree, NodeDataJacobian, true>;
 
     struct LocalEvaluateVisitor
       : public TypeTree::TreeVisitor
@@ -137,6 +150,7 @@ public:
         // Hdiv:  φ → 1/|det J| J^T φ
         // Hcurl: φ → J^(-T) φ
         auto&& type = fe.functionSpaceType();
+        // if type==FunctionSpace::Type::H) no further transformation needed.
         if (type==FunctionSpace::Type::Hdiv)
         {
           auto element = node.element();
@@ -161,7 +175,6 @@ public:
             jacobianInverseTransposed.mtv(tmp, shapeFunctionValues[i]);
           }
         }
-        // if type==FunctionSpace::Type::H) no further transformation needed.
 
         // Get range entry associated to this node
         auto&& re = nodeToRangeEntry_(node, y_);
@@ -201,6 +214,111 @@ public:
       const Vector& coefficients_;
       const NodeToRangeEntry& nodeToRangeEntry_;
       ShapeFunctionValueContainer& shapeFunctionValueContainer_;
+    };
+
+    // TODO: To be tested properly!
+    struct LocalJacobianEvaluateVisitor
+      : public TypeTree::TreeVisitor
+      , public TypeTree::DynamicTraversal
+    {
+      LocalJacobianEvaluateVisitor(const LocalDomain& x, JacobianRange& y, const LocalIndexSet& localIndexSet, const Vector& coefficients, const NodeToRangeEntry& nodeToRangeEntry, ShapeFunctionJacobianContainer& shapeFunctionJacobianContainer):
+        x_(x),
+        y_(y),
+        localIndexSet_(localIndexSet),
+        coefficients_(coefficients),
+        nodeToRangeEntry_(nodeToRangeEntry),
+        shapeFunctionJacobianContainer_(shapeFunctionJacobianContainer)
+      {}
+
+      template<typename Node, typename TreePath>
+      void leaf(Node& node, TreePath treePath)
+      {
+        using LocalBasisJacobianRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::JacobianType;
+        using MultiIndex = typename LocalIndexSet::MultiIndex;
+        using CoefficientBlock = typename std::decay<decltype(std::declval<Vector>()[std::declval<MultiIndex>()])>::type;
+
+        using RangeBlock = typename std::decay<decltype(nodeToRangeEntry_(node, y_))>::type;
+
+        auto&& fe = node.finiteElement();
+        auto&& localBasis = fe.localBasis();
+
+        auto&& shapeFunctionJacobians = shapeFunctionJacobianContainer_[node];
+        localBasis.evaluateJacobian(x_, shapeFunctionJacobians);
+
+        // Apply function space type dependent continuity preserving transformation.
+        // Distinguish between H, Hdiv and Hcurl types. Use transformations:
+        // H:     ∇φ → J^(-T) ∇φ
+        // Hdiv:  ∇φ → 1/|det J| J ∇φ J^(-1)
+        // Hcurl: ∇φ → ... not implemented
+        auto&& type = fe.functionSpaceType();
+        auto element = node.element();
+        auto geometry = element.geometry();
+        if (type==FunctionSpace::Type::H)
+        {
+          auto jacobianInverseTransposed = geometry.jacobianInverseTransposed(x_);
+          for (size_type i = 0; i < localBasis.size(); ++i)
+          {
+            auto referenceShapeFunctionJacobian = shapeFunctionJacobians[i];
+            jacobianInverseTransposed.mv(referenceShapeFunctionJacobian[0], shapeFunctionJacobians[i][0]);
+          }
+        }
+        else if (type==FunctionSpace::Type::Hdiv)
+        {
+          auto integrationElement = geometry.integrationElement(x_);
+          auto jacobianInverseTransposed = geometry.jacobianInverseTransposed(x_);
+          auto jacobianTransposed = geometry.jacobianTransposed(x_);
+          for (size_type i = 0; i < localBasis.size(); ++i)
+          {
+            auto referenceShapeFunctionJacobian = shapeFunctionJacobians[i];
+            jacobianTransposed.mtv(referenceShapeFunctionJacobian[0], shapeFunctionJacobians[i][0]);
+            referenceShapeFunctionJacobian = shapeFunctionJacobians[i];
+            jacobianInverseTransposed.mtv(referenceShapeFunctionJacobian[0], shapeFunctionJacobians[i][0]);
+            shapeFunctionJacobians[i] /= integrationElement;
+          }
+        }
+        else if (type==FunctionSpace::Type::Hcurl)
+        {
+          DUNE_THROW(Dune::NotImplemented, "Derivatives for curl function not supported by dune-functions.");
+        }
+
+        // Get range entry associated to this node
+        auto&& re = nodeToRangeEntry_(node, y_);
+
+        for (size_type i = 0; i < localBasis.size(); ++i)
+        {
+          auto&& multiIndex = localIndexSet_.index(node.localIndex(i));
+
+          // Get coefficient associated to i-th shape function
+          auto&& c = coefficients_[multiIndex];
+
+          // Get value of i-th shape function
+          auto&& v = shapeFunctionJacobians[i];
+
+          // Notice that the range entry re, the coefficient c, and the shape functions
+          // value v may all be scalar, vector, matrix, or general container valued.
+          // The matching of their entries is done via the multistage procedure described
+          // in the class documentation of DiscreteGlobalBasisFunction.
+          auto dimC = FlatVectorBackend<CoefficientBlock>::size(c);
+          auto dimV = FlatVectorBackend<LocalBasisJacobianRange>::size(v);
+          assert(dimC*dimV == FlatVectorBackend<RangeBlock>::size(re));
+          for(size_type j=0; j<dimC; ++j)
+          {
+            auto&& c_j = FlatVectorBackend<CoefficientBlock>::getEntry(c, j);
+            for(size_type k=0; k<dimV; ++k)
+            {
+              auto&& v_k = FlatVectorBackend<LocalBasisJacobianRange>::getEntry(v, k);
+              FlatVectorBackend<RangeBlock>::getEntry(re, j*dimV + k) += c_j*v_k;
+            }
+          }
+        }
+      }
+
+      const LocalDomain& x_;
+      JacobianRange& y_;
+      const LocalIndexSet& localIndexSet_;
+      const Vector& coefficients_;
+      const NodeToRangeEntry& nodeToRangeEntry_;
+      ShapeFunctionJacobianContainer& shapeFunctionJacobianContainer_;
     };
 
     struct LocalDofVisitor
@@ -249,6 +367,7 @@ public:
     using GlobalFunction = DiscreteGlobalBasisFunction;
     using Domain = LocalDomain;
     using Range = GlobalFunction::Range;
+    using JacobianRange = GlobalFunction::JacobianRange;
     using Element = GlobalFunction::Element;
 
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
@@ -260,6 +379,7 @@ public:
       // and queried for tree indices even in unbound state.
       subTree_ = &TypeTree::child(localBasisView_.tree(), globalFunction_->treePath());
       shapeFunctionValueContainer_.init(*subTree_);
+      shapeFunctionJacobianContainer_.init(*subTree_);
 //      localDoFs_.reserve(localBasisView_.maxSize());
     }
 
@@ -272,6 +392,7 @@ public:
       // and queried for tree indices even in unbound state.
       subTree_ = &TypeTree::child(localBasisView_.tree(), globalFunction_->treePath());
       shapeFunctionValueContainer_.init(*subTree_);
+      shapeFunctionJacobianContainer_.init(*subTree_);
     }
 
     LocalFunction operator=(const LocalFunction& other)
@@ -284,6 +405,7 @@ public:
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
       shapeFunctionValueContainer_.init(*subTree_);
+      shapeFunctionJacobianContainer_.init(*subTree_);
     }
 
     /**
@@ -328,6 +450,21 @@ public:
       return y;
     }
 
+    /**
+     * \brief Evaluate derivative of LocalFunction at bound element.
+     */
+    JacobianRange derivative(const Domain& x) const
+    {
+      JacobianRange y;
+      for (size_t j=0; j<y.size(); ++j)
+        y[j] = 0.0;
+
+      LocalJacobianEvaluateVisitor localJacobianEvaluateVisitor(x, y, localIndexSet_, globalFunction_->dofs(), globalFunction_->nodeToRangeEntry(), shapeFunctionJacobianContainer_);
+      TypeTree::applyToTree(*subTree_, localJacobianEvaluateVisitor);
+
+      return y;
+    }
+
     std::vector<RangeField> localDofs() const
     {
       std::vector<RangeField> localDofs(subTree_->size());
@@ -355,6 +492,7 @@ public:
     LocalIndexSet localIndexSet_;
 
     mutable ShapeFunctionValueContainer shapeFunctionValueContainer_;
+    mutable ShapeFunctionJacobianContainer shapeFunctionJacobianContainer_;
 //    std::vector<typename V::value_type> localDoFs_;
     const SubTree* subTree_;
   };

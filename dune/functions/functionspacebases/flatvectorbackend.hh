@@ -75,6 +75,32 @@ struct FlatVectorBackend<typename Dune::FieldMatrix<K, n, m> >
 };
 
 
+template<class K, int n, int m>
+struct FlatVectorBackend<typename Dune::FieldVector< typename Dune::FieldVector<K, n>, m> >
+{
+
+  // Note: The ordering of first and second index is reverse compared to the FieldMatrix
+  // specialization. This is due to the 'wrong' definition of the JacobianRange in
+  // discreteglobalbasisfunction.hh. When fixing that issue, the order here has to be changed
+  // as well.
+  template<class VV, class Index>
+  static auto getEntry(VV&& v, const Index& i) -> decltype(v[i%m][i/m])
+  {
+    return v[i%m][i/m];
+  }
+
+  template<class VV>
+  static std::size_t size(VV&& v)
+  {
+    auto size = 0;
+    for (std::size_t i=0; i<v.size(); ++i)
+      size += v[i].size();
+    return size;
+  }
+
+};
+
+
 } // namespace Dune::Functions
 } // namespace Dune
 
