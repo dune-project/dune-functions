@@ -15,3 +15,6 @@ target_link_dune_default_libraries("poisson-rt0-p0-unstructured")
 
 add_executable("rt0-basistest" rt0-basistest.cc)
 target_link_dune_default_libraries("rt0-basistest")
+
+add_executable("derivative-test" derivative-test.cc)
+target_link_dune_default_libraries("derivative-test")
