@@ -450,14 +450,22 @@ int main (int argc, char *argv[]) try
   // Mark top boundary.
   auto topBoundaryIndicator = [&l] (Domain x)
   {
-    double isBoundary = x[dim-1] > l[dim-1] - 1e-8 ? x[0] : 0.0;
+#ifdef DIM2
+    double isBoundary = x[dim-1] > l[dim-1] - 1e-8 ? x[0]: 0.0;
+#else
+    double isBoundary = x[dim-1] > l[dim-1] - 1e-8 ? x[0] * x[1]: 0.0;
+#endif
     return isBoundary;
   };
 
   // Mark lower boundary.
   auto lowerBoundaryIndicator = [&l] (Domain x)
   {
-    double isBoundary = x[dim-1] < 1e-8 ? x[0] : 0.0;
+#ifdef DIM2
+    double isBoundary = x[dim-1] < 1e-8 ? x[0]: 0.0;
+#else
+    double isBoundary = x[dim-1] < 1e-8 ? x[0] * x[1]: 0.0;
+#endif
     return isBoundary;
   };
 
@@ -517,7 +525,7 @@ int main (int argc, char *argv[]) try
 
   // Preconditioned GMRES / BiCGSTAB solver
   //RestartedGMResSolver<VectorType> solver (op, preconditioner, 1e-6, 1000, 10000, 2);
-  BiCGSTABSolver<VectorType> solver(op, preconditioner, 1e-6, 10000, 2);
+  BiCGSTABSolver<VectorType> solver(op, preconditioner, 1e-6, 4000, 2);
 
   // Object storing some statistics about the solving process
   InverseOperatorResult statistics;
