@@ -15,7 +15,6 @@ debian:9--gcc:
 debian:9--clang:
   image: duneci/base:9
   script: duneci-standard-test --opts=/duneci/opts.clang
-  allow_failure: true
 
 debian:8--gcc:
   image: duneci/base:8
