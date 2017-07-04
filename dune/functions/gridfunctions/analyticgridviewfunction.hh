@@ -5,10 +5,10 @@
 
 #include <type_traits>
 
+#include <dune/common/std/optional.hh>
 #include <dune/common/typeutilities.hh>
 
 #include <dune/functions/common/signature.hh>
-#include <dune/functions/common/optional.hh>
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/differentiablefunction_imp.hh>
 #include <dune/functions/common/differentiablefunction.hh>
@@ -87,7 +87,7 @@ public:
 private:
 
   // Hack around the fact that Geometry is not default constructible.
-  Optional<Geometry> geometry_;
+  Std::optional<Geometry> geometry_;
 
   Element element_;
   F f_;
