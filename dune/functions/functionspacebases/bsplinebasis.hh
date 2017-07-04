@@ -383,7 +383,7 @@ public:
    *
    * \param ijk Integer coordinates in the tensor product patch
    */
-  void bind(const std::array<uint,dim>& elementIdx)
+  void bind(const std::array<unsigned,dim>& elementIdx)
   {
     /* \todo In the long run we need to precompute a table for this */
     for (size_t i=0; i<elementIdx.size(); i++)
@@ -434,7 +434,7 @@ public:
   }
 
   /** \brief Number of shape functions in this finite element */
-  uint size () const
+  unsigned size () const
   {
     std::size_t r = 1;
     for (int i=0; i<dim; i++)
@@ -470,7 +470,7 @@ public:
   BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R> > localInterpolation_;
 
   // The knot span we are bound to
-  std::array<uint,dim> currentKnotSpan_;
+  std::array<unsigned,dim> currentKnotSpan_;
 };
 
 
@@ -599,7 +599,7 @@ public:
 
     // Mediocre sanity check: we don't know the number of grid elements in each direction.
     // but at least we know the total number of elements.
-    assert( std::accumulate(elements_.begin(), elements_.end(), 1, std::multiplies<uint>()) == gridView_.size(0) );
+    assert( std::accumulate(elements_.begin(), elements_.end(), 1, std::multiplies<unsigned>()) == gridView_.size(0) );
 
     for (int i=0; i<dim; i++)
     {
@@ -651,7 +651,7 @@ public:
   {
     // Mediocre sanity check: we don't know the number of grid elements in each direction.
     // but at least we know the total number of elements.
-    assert( std::accumulate(elements_.begin(), elements_.end(), 1, std::multiplies<uint>()) == gridView_.size(0) );
+    assert( std::accumulate(elements_.begin(), elements_.end(), 1, std::multiplies<unsigned>()) == gridView_.size(0) );
 
     for (int i=0; i<dim; i++)
     {
@@ -762,7 +762,7 @@ public:
    */
   void evaluateFunction (const FieldVector<typename GV::ctype,dim>& in,
                          std::vector<FieldVector<R,1> >& out,
-                         const std::array<uint,dim>& currentKnotSpan) const
+                         const std::array<unsigned,dim>& currentKnotSpan) const
   {
     // Evaluate
     Dune::array<std::vector<R>, dim> oneDValues;
@@ -793,7 +793,7 @@ public:
    */
   void evaluateJacobian (const FieldVector<typename GV::ctype,dim>& in,
                          std::vector<FieldMatrix<R,1,dim> >& out,
-                         const std::array<uint,dim>& currentKnotSpan) const
+                         const std::array<unsigned,dim>& currentKnotSpan) const
   {
     // How many shape functions to we have in each coordinate direction?
     std::array<unsigned int, dim> limits;
@@ -895,7 +895,7 @@ public:
   void evaluate(const typename std::array<int,k>& directions,
                 const FieldVector<typename GV::ctype,dim>& in,
                 std::vector<FieldVector<R,1> >& out,
-                const std::array<uint,dim>& currentKnotSpan) const
+                const std::array<unsigned,dim>& currentKnotSpan) const
   {
     if (k != 1 && k != 2)
       DUNE_THROW(RangeError, "Differentiation order greater than 2 is not supported!");
@@ -990,7 +990,7 @@ public:
    */
   static std::array<unsigned int,dim> getIJK(typename GridView::IndexSet::IndexType idx, std::array<unsigned int,dim> elements)
   {
-    std::array<uint,dim> result;
+    std::array<unsigned,dim> result;
     for (int i=0; i<dim; i++)
     {
       result[i] = idx%elements[i];
@@ -1219,7 +1219,7 @@ public:
   array<std::vector<double>, dim> knotVectors_;
 
   /** \brief Number of grid elements in the different coordinate directions */
-  std::array<uint,dim> elements_;
+  std::array<unsigned,dim> elements_;
 
   GridView gridView_;
 };
