@@ -1,6 +1,7 @@
 add_subdirectory("test")
 
 install(FILES
+        algorithms.hh
         basistags.hh
         bsplinebasis.hh
         compositebasis.hh
