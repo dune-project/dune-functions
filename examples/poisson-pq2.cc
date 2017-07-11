@@ -23,6 +23,7 @@
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
+#include <dune/functions/functionspacebases/algorithms.hh>
 
 using namespace Dune;
 
@@ -259,17 +260,15 @@ void boundaryTreatment (const FEBasis& feBasis,
                         const FieldVector<double,FEBasis::GridView::dimension>& bbox,
                         std::vector<char>& dirichletNodes )
 {
-  using Coordinate = typename FEBasis::GridView::template Codim<0>::Geometry::GlobalCoordinate;
+  using namespace Dune::Functions::BasisAlgorithms;
 
-  // Interpolating the indicator function of the boundary will
-  // mark all boundary dofs.
-  interpolate(feBasis, Dune::TypeTree::hybridTreePath(), dirichletNodes,
-      [&bbox](Coordinate x){
-        bool isBoundary = false;
-        for (std::size_t j=0; j<x.size(); j++)
-          isBoundary = isBoundary || x[j] < 1e-8 || x[j] > bbox[j]-1e-8;
-        return isBoundary;
-      });
+  dirichletNodes.resize(feBasis.size());
+  for(auto&& entry: dirichletNodes)
+    entry = false;
+
+  forEachBoundaryDOF(feBasis, [&](std::size_t localIndex, auto&& localView, auto&& localIndexSet, auto&& intersection) {
+      dirichletNodes[localIndexSet.index(localIndex)] = true;
+  });
 }
 
 
