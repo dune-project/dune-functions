@@ -148,7 +148,7 @@ namespace Dune {
         return treePath_;
       }
 
-      const size_type treeIndex() const
+      size_type treeIndex() const
       {
         return treeIndex_;
       }
@@ -170,7 +170,7 @@ namespace Dune {
         size_ = size;
       }
 
-      void setTreeIndex(const size_type treeIndex)
+      void setTreeIndex(size_type treeIndex)
       {
         treeIndex_ = treeIndex;
       }
