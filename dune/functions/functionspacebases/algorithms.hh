@@ -86,6 +86,7 @@ namespace Impl {
 template<class Tree, class PreFunc, class LeafFunc, class PostFunc>
 auto forEachNode(Tree&& tree, PreFunc&& preFunc, LeafFunc&& leafFunc, PostFunc&& postFunc)
 {
+  namespace Impl = Dune::Functions::TreeAlgorithms::Impl;
   Dune::TypeTree::applyToTree(tree, Impl::callbackVisitor(preFunc, leafFunc, postFunc));
 }
 
@@ -105,7 +106,7 @@ template<class Tree, class InnerFunc, class LeafFunc>
 auto forEachNode(Tree&& tree, InnerFunc&& innerFunc, LeafFunc&& leafFunc)
 {
   auto nop = [](auto&&... args) {};
-  forEachNode(tree, innerFunc, leafFunc, nop);
+  Dune::Functions::TreeAlgorithms::forEachNode(tree, innerFunc, leafFunc, nop);
 }
 
 /**
@@ -122,7 +123,7 @@ auto forEachNode(Tree&& tree, InnerFunc&& innerFunc, LeafFunc&& leafFunc)
 template<class Tree, class NodeFunc>
 auto forEachNode(Tree&& tree, NodeFunc&& nodeFunc)
 {
-  forEachNode(tree, nodeFunc, nodeFunc);
+  Dune::Functions::TreeAlgorithms::forEachNode(tree, nodeFunc, nodeFunc);
 }
 
 /**
@@ -140,7 +141,7 @@ template<class Tree, class LeafFunc>
 auto forEachLeafNode(Tree&& tree, LeafFunc&& leafFunc)
 {
   auto nop = [](auto&&... args) {};
-  forEachNode(tree, nop, leafFunc, nop);
+  Dune::Functions::TreeAlgorithms::forEachNode(tree, nop, leafFunc, nop);
 }
 
 
@@ -209,7 +210,7 @@ void forEachSubEntity(const Dune::ReferenceElement<ctype, dim>& referenceElement
  * \ingroup FunctionSpaceBasesUtilities
  *
  * This loops over the elements in the grid view associated
- * to the basis and provides a local view a local index set
+ * to the basis and provides a local view and local index set
  * for each element.
  *
  * \param basis A function space basis
@@ -267,7 +268,7 @@ void forEachIntersectionDOF(const Intersection& intersection, const LocalView& l
     for(std::size_t i=0; i<referenceElement.size(faceIndex, 1, codim); ++i)
       isInFace[dim-codim][referenceElement.subEntity(faceIndex, 1, i, codim)] = true;
 
-  Dune::TypeTree::forEachLeafNode(localView.tree(), [&](auto&& node, auto&& treePath) {
+  Dune::Functions::TreeAlgorithms::forEachLeafNode(localView.tree(), [&](auto&& node, auto&& treePath) {
     const auto& localBasis = node.finiteElement().localBasis();
     const auto& localCoefficients = node.finiteElement().localCoefficients();
     std::size_t localSize = localBasis.size();
