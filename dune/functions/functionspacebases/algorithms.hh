@@ -268,7 +268,7 @@ void forEachIntersectionDOF(const Intersection& intersection, const LocalView& l
     for(std::size_t i=0; i<referenceElement.size(faceIndex, 1, codim); ++i)
       isInFace[dim-codim][referenceElement.subEntity(faceIndex, 1, i, codim)] = true;
 
-  Dune::Functions::TreeAlgorithms::forEachLeafNode(localView.tree(), [&](auto&& node, auto&& treePath) {
+  Dune::Functions::TreeAlgorithms::forEachLeafNode(localView.tree(), [&, dim=dim](auto&& node, auto&& treePath) {
     const auto& localBasis = node.finiteElement().localBasis();
     const auto& localCoefficients = node.finiteElement().localCoefficients();
     std::size_t localSize = localBasis.size();
