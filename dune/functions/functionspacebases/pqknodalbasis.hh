@@ -13,6 +13,7 @@
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
+#include <dune/functions/common/functionspacetypes.hh>
 
 
 namespace Dune {
@@ -283,7 +284,8 @@ public:
   PQkNode(const TreePath& treePath) :
     Base(treePath),
     finiteElement_(nullptr),
-    element_(nullptr)
+    element_(nullptr),
+    functionSpaceType_(FunctionSpaceType::H)
   {}
 
   //! Return current element, throw if unbound
@@ -301,6 +303,12 @@ public:
     return *finiteElement_;
   }
 
+  //! Return whether element is of H, HDiv or HCurl (or other) type
+  const FunctionSpaceType& functionSpaceType() const
+  {
+    return functionSpaceType_;
+  }
+
   //! Bind to element.
   void bind(const Element& e)
   {
@@ -314,6 +322,7 @@ protected:
   FiniteElementCache cache_;
   const FiniteElement* finiteElement_;
   const Element* element_;
+  const FunctionSpaceType functionSpaceType_;
 };
 
 
