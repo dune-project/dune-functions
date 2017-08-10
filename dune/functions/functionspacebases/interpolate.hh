@@ -151,6 +151,7 @@ public:
         {
           auto&& vectorBlock = vector_[multiIndex];
           FlatVectorBackend<CoefficientBlock>::getEntry(vectorBlock, j) = interpolationCoefficients[i];
+          // TODO For Hdiv functions: Divide here by the measure of the edge/face the coefficient corresponds to. This allows interpolation only to be used on lower dimensional objects which is in fact consistent with dune-localfunctions for Raviart Thomas and BDM elements. Ideally, this should be done externally. However, dune-localfunctions intentionally does not know anything about physical elements and cannot access edge lengths etc.
         }
       }
     }
