@@ -82,7 +82,6 @@ public:
 
   using Domain = typename EntitySet::GlobalCoordinate;
   using Range = R;
-  using RangeField = typename FunctionRange<Domain,Range>::RangeField;
   using JacobianRange = typename FunctionRange<Domain,Range>::JacobianRange;
 
   using LocalDomain = typename EntitySet::LocalCoordinate;

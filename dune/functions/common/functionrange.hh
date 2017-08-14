@@ -24,7 +24,7 @@ struct FunctionRange<D, R,
   using Domain = D;
   using Range = R;
   using RangeField = typename Range::value_type;
-  using JacobianRange = FieldVector< FieldVector<RangeField, Domain::dimension>, Range::dimension>;
+  using JacobianRange = FieldMatrix<RangeField, Range::dimension, Domain::dimension>;
 };
 
 template<typename D, typename R>
