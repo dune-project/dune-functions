@@ -7,6 +7,7 @@
  * \brief The B-spline global function space basis
  */
 
+#include <array>
 #include <numeric>
 
 /** \todo Don't use this matrix */
@@ -92,7 +93,7 @@ public:
 
   //! \brief Evaluate all shape functions and derivatives of any order
   template<size_t k>
-  inline void evaluate (const typename Dune::array<int,k>& directions,
+  inline void evaluate (const typename std::array<int,k>& directions,
                         const typename Traits::DomainType& in,
                         std::vector<typename Traits::RangeType>& out) const
   {
@@ -643,7 +644,7 @@ public:
   BSplineNodeFactory(const GridView& gridView,
                      const FieldVector<double,dim>& lowerLeft,
                      const FieldVector<double,dim>& upperRight,
-                     const array<unsigned int,dim>& elements,
+                     const std::array<unsigned int,dim>& elements,
                      unsigned int order,
                      bool makeOpen = true)
   : elements_(elements),
@@ -765,7 +766,7 @@ public:
                          const std::array<unsigned,dim>& currentKnotSpan) const
   {
     // Evaluate
-    Dune::array<std::vector<R>, dim> oneDValues;
+    std::array<std::vector<R>, dim> oneDValues;
 
     for (size_t i=0; i<dim; i++)
       evaluateFunction(in[i], oneDValues[i], knotVectors_[i], order_[i], currentKnotSpan[i]);
@@ -812,12 +813,12 @@ public:
       offset[i] = std::max((int)(currentKnotSpan[i] - order_[i]),0);
 
     // Evaluate 1d function values (needed for the product rule)
-    Dune::array<std::vector<R>, dim> oneDValues;
+    std::array<std::vector<R>, dim> oneDValues;
 
     // Evaluate 1d function values of one order lower (needed for the derivative formula)
-    Dune::array<std::vector<R>, dim> lowOrderOneDValues;
+    std::array<std::vector<R>, dim> lowOrderOneDValues;
 
-    Dune::array<DynamicMatrix<R>, dim> values;
+    std::array<DynamicMatrix<R>, dim> values;
 
     for (size_t i=0; i<dim; i++)
     {
@@ -836,7 +837,7 @@ public:
 
 
     // Evaluate 1d function derivatives
-    Dune::array<std::vector<R>, dim> oneDDerivatives;
+    std::array<std::vector<R>, dim> oneDDerivatives;
     for (size_t i=0; i<dim; i++)
     {
       oneDDerivatives[i].resize(limits[i]);
@@ -861,7 +862,7 @@ public:
 
     // Working towards computing only the parts that we really need:
     // Let's copy them out into a separate array
-    Dune::array<std::vector<R>, dim> oneDValuesShort;
+    std::array<std::vector<R>, dim> oneDValuesShort;
 
     for (int i=0; i<dim; i++)
     {
@@ -1213,10 +1214,10 @@ public:
 
 
   /** \brief Order of the B-spline for each space dimension */
-  array<unsigned int, dim> order_;
+  std::array<unsigned int, dim> order_;
 
   /** \brief The knot vectors, one for each space dimension */
-  array<std::vector<double>, dim> knotVectors_;
+  std::array<std::vector<double>, dim> knotVectors_;
 
   /** \brief Number of grid elements in the different coordinate directions */
   std::array<unsigned,dim> elements_;

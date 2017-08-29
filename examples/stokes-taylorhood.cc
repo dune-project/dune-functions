@@ -2,6 +2,7 @@
 // vi: set et ts=4 sw=2 sts=2:
 #include <config.h>
 
+#include <array>
 #include <vector>
 
 #include <dune/common/function.hh>
@@ -190,7 +191,7 @@ void assembleStokesMatrix(const Basis& basis,
   // MatrixIndexSets store the occupation pattern of a sparse matrix.
   // They are not particularly efficient, but simple to use.
   // { setup_matrix_pattern_begin }
-  array<array<MatrixIndexSet, 2>, 2> occupationPattern;
+  std::array<std::array<MatrixIndexSet, 2>, 2> occupationPattern;
   getOccupationPattern(basis, occupationPattern);
 
   // ... and give it the occupation pattern we want.
