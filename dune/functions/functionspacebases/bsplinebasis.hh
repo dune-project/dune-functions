@@ -92,7 +92,7 @@ public:
 
   //! \brief Evaluate all shape functions and derivatives of any order
   template<size_t k>
-  inline void evaluate (const typename Dune::array<int,k>& directions,
+  inline void evaluate (const typename std::array<int,k>& directions,
                         const typename Traits::DomainType& in,
                         std::vector<typename Traits::RangeType>& out) const
   {
@@ -765,7 +765,7 @@ public:
                          const std::array<unsigned,dim>& currentKnotSpan) const
   {
     // Evaluate
-    Dune::array<std::vector<R>, dim> oneDValues;
+    std::array<std::vector<R>, dim> oneDValues;
 
     for (size_t i=0; i<dim; i++)
       evaluateFunction(in[i], oneDValues[i], knotVectors_[i], order_[i], currentKnotSpan[i]);
@@ -812,12 +812,12 @@ public:
       offset[i] = std::max((int)(currentKnotSpan[i] - order_[i]),0);
 
     // Evaluate 1d function values (needed for the product rule)
-    Dune::array<std::vector<R>, dim> oneDValues;
+    std::array<std::vector<R>, dim> oneDValues;
 
     // Evaluate 1d function values of one order lower (needed for the derivative formula)
-    Dune::array<std::vector<R>, dim> lowOrderOneDValues;
+    std::array<std::vector<R>, dim> lowOrderOneDValues;
 
-    Dune::array<DynamicMatrix<R>, dim> values;
+    std::array<DynamicMatrix<R>, dim> values;
 
     for (size_t i=0; i<dim; i++)
     {
@@ -836,7 +836,7 @@ public:
 
 
     // Evaluate 1d function derivatives
-    Dune::array<std::vector<R>, dim> oneDDerivatives;
+    std::array<std::vector<R>, dim> oneDDerivatives;
     for (size_t i=0; i<dim; i++)
     {
       oneDDerivatives[i].resize(limits[i]);
@@ -861,7 +861,7 @@ public:
 
     // Working towards computing only the parts that we really need:
     // Let's copy them out into a separate array
-    Dune::array<std::vector<R>, dim> oneDValuesShort;
+    std::array<std::vector<R>, dim> oneDValuesShort;
 
     for (int i=0; i<dim; i++)
     {
