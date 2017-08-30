@@ -69,7 +69,7 @@ namespace BasisBuilder {
    *
    * Example: For two children with indices
    *
-   *   {(0,i0), (1,i1), (2,i2)} and {(0,i0), (1,i1), (2,i2)}
+   *   {(0,i0), (1,i1), (2,i2)} and {(0,k0), (1,k1), (2,k2)}
    *
    * the merged indices will be
    *
@@ -103,11 +103,11 @@ namespace BasisBuilder {
    *
    * Example: For two children with indices
    *
-   *   {(0,i0), (1,i1), (2,i2)} and {(0,i0), (1,i1), (2,i2)}
+   *   {(0,i0), (1,i1), (2,i2)} and {(0,k0), (1,k1), (2,k2)}
    *
    * the merged indices will be
    *
-   *   {(0,i0,0), (1,i1,0), (2,i2,0), (0,i0,1), (1,i1,1), (2,i2,1)}
+   *   {(0,i0,0), (1,i1,0), (2,i2,0), (0,k0,1), (1,k1,1), (2,k2,1)}
    */
   struct LeafBlockedInterleaved : public IndexMergingStrategy {};
 
