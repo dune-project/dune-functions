@@ -437,7 +437,7 @@ Imp::PowerNodeFactoryBuilder<k, IndexMergingStrategy, SubFactoryTag>
  * This overload will select the BasisBuilder::BlockedLexicographic strategy.
  */
 template<std::size_t k, class SubFactoryTag>
-Imp::PowerNodeFactoryBuilder<k, BlockedLexicographicInterleaved, SubFactoryTag>
+Imp::PowerNodeFactoryBuilder<k, BlockedLexicographic, SubFactoryTag>
   power(SubFactoryTag&& tag)
 {
   return{};
