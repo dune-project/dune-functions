@@ -434,7 +434,7 @@ Imp::PowerNodeFactoryBuilder<k, IndexMergingStrategy, SubFactoryTag>
  * \tparam SubFactoryTag Types of child factory builder and IndexMergingStrategy type
  * \param tag Child factory builder objects and an IndexMergingStrategy
  *
- * This overload will select the BasisBuilder::BlockedLexicographic strategy.
+ * This overload will select the BasisBuilder::LeafBlockedInterleaved strategy.
  */
 template<std::size_t k, class SubFactoryTag>
 Imp::PowerNodeFactoryBuilder<k, LeafBlockedInterleaved, SubFactoryTag>
