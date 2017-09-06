@@ -14,7 +14,6 @@
 #include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
-#include <dune/functions/common/functionfromcallable.hh>
 
 #include <dune/istl/bvector.hh>
 using namespace Dune;
@@ -23,7 +22,7 @@ template<class F, class GV>
 auto checkCopyConstruction(F&& f, const GV& gv) {
   TestSuite suite;
   auto localF = localFunction(f);
-  //suite.check(not localF.bound(), "Check if LocalFunction was marked bound too early.");
+  suite.check(not localF.bound(), "Check if LocalFunction was not marked bound too early.");
 
   for (const auto& element: elements(gv)) {
     // bind localF
