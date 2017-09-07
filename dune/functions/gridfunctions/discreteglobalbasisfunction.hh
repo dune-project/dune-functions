@@ -322,6 +322,12 @@ public:
     DUNE_THROW(NotImplemented,"not implemented");
   }
 
+  // Forbid getting local functions from a temporary
+  // The template parameter should not be necessary
+  // but gcc issues a warning without this.
+  template<typename... TT>
+  friend LocalFunction localFunction(DiscreteGlobalBasisFunction<TT...>&& t) = delete;
+
   friend LocalFunction localFunction(const DiscreteGlobalBasisFunction& t)
   {
     return LocalFunction(t);
