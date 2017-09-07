@@ -346,6 +346,13 @@ private:
 
 
 
+// Forbid getting local functions from a temporary DiscreteGlobalBasisFunction.
+// This is not allowed because the local function stores a pointer to this.
+template<typename... TT>
+void localFunction(DiscreteGlobalBasisFunction<TT...>&& t) = delete;
+
+
+
 template<typename R, typename B, typename TP, typename V>
 auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
 {
