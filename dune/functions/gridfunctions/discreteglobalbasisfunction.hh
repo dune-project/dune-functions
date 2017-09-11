@@ -191,9 +191,13 @@ public:
 
     LocalFunction(const LocalFunction& other)
       : globalFunction_(other.globalFunction_)
-      , localBasisView_(globalFunction_->basis().localView())
+      , localBasisView_(other.localBasisView_)
       , localIndexSet_(globalFunction_->basis().localIndexSet())
+      , bound_(other.bound_)
     {
+      if (other.bound_)
+        localIndexSet_.bind(localBasisView_);
+
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
       subTree_ = &TypeTree::child(localBasisView_.tree(), globalFunction_->treePath());
@@ -222,6 +226,7 @@ public:
     {
       localBasisView_.bind(element);
       localIndexSet_.bind(localBasisView_);
+      bound_ = true;
 
       // Read dofs associated to bound element
 //      localDoFs_.resize(subTree.size());
@@ -233,6 +238,14 @@ public:
     {
       localIndexSet_.unbind();
       localBasisView_.unbind();
+      bound_ = false;
+    }
+
+    /**
+     * \brief Check if LocalFunction is already bound to an element.
+     */
+    bool bound() const {
+      return bound_;
     }
 
     /**
@@ -273,6 +286,8 @@ public:
     mutable ShapeFunctionValueContainer shapeFunctionValueContainer_;
 //    std::vector<typename V::value_type> localDoFs_;
     const SubTree* subTree_;
+
+    bool bound_ = false;
   };
 
   DiscreteGlobalBasisFunction(const Basis & basis, const TreePath& treePath, const V & coefficients, const NodeToRangeEntry& nodeToRangeEntry) :
