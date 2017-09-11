@@ -259,7 +259,8 @@ public:
      */
     Range operator()(const Domain& x) const
     {
-      auto y = Range(0);
+      Range y;
+      y = 0;
 
       LocalEvaluateVisitor localEvaluateVisitor(x, y, localIndexSet_, globalFunction_->dofs(), globalFunction_->nodeToRangeEntry(), shapeFunctionValueContainer_);
       TypeTree::applyToTree(*subTree_, localEvaluateVisitor);
