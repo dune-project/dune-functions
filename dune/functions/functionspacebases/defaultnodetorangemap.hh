@@ -26,7 +26,7 @@ namespace Functions {
  * y of type range to y[i] where i is the lexicographic index
  * of the node in the subtree.
  *
- * This allows to assoziate each leaf node in the subtree
+ * This allows to associate each leaf node in the subtree
  * with a component in the range type which is necessary
  * when interpolating a vector field into a nontrivial
  * subtree.
@@ -98,7 +98,6 @@ struct DefaultNodeToRangeMap
   }
 
   std::vector<std::size_t> indices_;
-  std::size_t counter_;
 };
 
 
