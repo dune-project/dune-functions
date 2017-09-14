@@ -7,6 +7,8 @@
 #include <dune/typetree/traversal.hh>
 #include <dune/typetree/visitor.hh>
 
+#include <dune/functions/functionspacebases/algorithms.hh>
+
 namespace Dune {
   namespace Functions {
 
@@ -158,7 +160,7 @@ namespace Dune {
         return offset_;
       }
 
-    protected:
+//    protected:
 
       void setOffset(const size_type offset)
       {
@@ -266,8 +268,15 @@ namespace Dune {
     template<typename Tree, typename Entity>
     void bindTree(Tree& tree, const Entity& entity, std::size_t offset = 0)
     {
-      BindVisitor<Entity,std::size_t> visitor(entity,offset);
-      TypeTree::applyToTree(tree,visitor);
+        TreeAlgorithms::forEachNode(tree, [&](auto& node, auto treePath) {
+          node.setOffset(offset);
+        }, [&](auto& node, auto treePath) {
+          node.setOffset(offset);
+          node.bind(entity);
+          offset += node.size();
+        }, [&](auto& node, auto treePath) {
+          node.setSize(offset - node.offset());
+        });
     }
 
     template<typename Tree>
