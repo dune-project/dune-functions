@@ -5,6 +5,7 @@
 
 
 
+#include <dune/geometry/referenceelements.hh>
 #include <dune/typetree/traversal.hh>
 #include <dune/typetree/visitor.hh>
 
