@@ -2,7 +2,6 @@ add_subdirectory("test")
 
 install(FILES
         analyticgridviewfunction.hh
-        discretescalarglobalbasisfunction.hh
         discreteglobalbasisfunction.hh
         gridfunction.hh
         gridfunction_imp.hh
