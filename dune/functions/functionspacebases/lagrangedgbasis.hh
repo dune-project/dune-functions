@@ -87,24 +87,16 @@ public:
       }
       case 2:
       {
-        GeometryType triangle;
-        triangle.makeTriangle();
-        quadrilateralOffset_ = dofsPerTriangle * gridView_.size(triangle);
+        quadrilateralOffset_ = dofsPerTriangle * gridView_.size(Dune::GeometryTypes::triangle);
         break;
       }
       case 3:
       {
-        GeometryType tetrahedron;
-        tetrahedron.makeSimplex(3);
-        prismOffset_         = dofsPerTetrahedron * gridView_.size(tetrahedron);
+        prismOffset_         = dofsPerTetrahedron * gridView_.size(Dune::GeometryTypes::tetrahedron);
 
-        GeometryType prism;
-        prism.makePrism();
-        hexahedronOffset_    = prismOffset_         +   dofsPerPrism * gridView_.size(prism);
+        hexahedronOffset_    = prismOffset_         +   dofsPerPrism * gridView_.size(Dune::GeometryTypes::prism);
 
-        GeometryType hexahedron;
-        hexahedron.makeCube(3);
-        pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * gridView_.size(hexahedron);
+        pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * gridView_.size(Dune::GeometryTypes::hexahedron);
         break;
       }
     }
@@ -142,20 +134,14 @@ public:
         return dofsPerEdge*gridView_.size(0);
       case 2:
       {
-        GeometryType triangle, quad;
-        triangle.makeTriangle();
-        quad.makeQuadrilateral();
-        return dofsPerTriangle*gridView_.size(triangle) + dofsPerQuad*gridView_.size(quad);
+        return dofsPerTriangle*gridView_.size(Dune::GeometryTypes::triangle) + dofsPerQuad*gridView_.size(Dune::GeometryTypes::quadrilateral);
       }
       case 3:
       {
-        GeometryType tetrahedron, pyramid, prism, hexahedron;
-        tetrahedron.makeTetrahedron();
-        pyramid.makePyramid();
-        prism.makePrism();
-        hexahedron.makeCube(3);
-        return dofsPerTetrahedron*gridView_.size(tetrahedron) + dofsPerPyramid*gridView_.size(pyramid)
-             + dofsPerPrism*gridView_.size(prism) + dofsPerHexahedron*gridView_.size(hexahedron);
+        return dofsPerTetrahedron*gridView_.size(Dune::GeometryTypes::tetrahedron)
+             + dofsPerPyramid*gridView_.size(Dune::GeometryTypes::pyramid)
+             + dofsPerPrism*gridView_.size(Dune::GeometryTypes::prism)
+             + dofsPerHexahedron*gridView_.size(Dune::GeometryTypes::hexahedron);
       }
     }
     DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
