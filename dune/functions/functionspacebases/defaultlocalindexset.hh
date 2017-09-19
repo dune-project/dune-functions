@@ -17,9 +17,6 @@ template<class LV, class NIS>
 class DefaultLocalIndexSet
 {
 
-  template<typename NodeIndexSet>
-  using hasIndices = decltype(std::declval<NodeIndexSet>().indices(std::declval<std::vector<MultiIndex>>().begin()));
-
 public:
   using LocalView = LV;
   using NodeIndexSet = NIS;
@@ -28,6 +25,12 @@ public:
   using MultiIndex = typename NodeIndexSet::MultiIndex;
   using size_type = std::size_t;
 
+private:
+
+  template<typename NodeIndexSet>
+  using hasIndices = decltype(std::declval<NodeIndexSet>().indices(std::declval<std::vector<MultiIndex>>().begin()));
+
+public:
 
   DefaultLocalIndexSet(const NodeIndexSet& nodeIndexSet) :
     nodeIndexSet_(nodeIndexSet)
@@ -46,10 +49,10 @@ public:
     indices_.resize(size());
     Hybrid::ifElse(
       Std::is_detected<hasIndices,NodeIndexSet>{},
-      [&]() {
-        nodeIndexSet_.indices(_indices.begin());
+      [&](auto) {
+        nodeIndexSet_.indices(indices_.begin());
       },
-      [&]() {
+      [&](auto) {
         for (size_type i = 0 ; i < size() ; ++i)
           indices_[i] = nodeIndexSet_.index(i);
       });
