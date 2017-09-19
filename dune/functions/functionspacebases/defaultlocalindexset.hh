@@ -3,6 +3,8 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTLOCALINDEXSET_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTLOCALINDEXSET_HH
 
+#include <dune/common/std/type_traits.hh>
+#include <dune/common/hybridutilities.hh>
 #include <dune/functions/functionspacebases/subspacelocalview.hh>
 
 
@@ -14,6 +16,10 @@ namespace Functions {
 template<class LV, class NIS>
 class DefaultLocalIndexSet
 {
+
+  template<typename NodeIndexSet>
+  using hasIndices = decltype(std::declval<NodeIndexSet>().indices(std::declval<std::vector<MultiIndex>>().begin()));
+
 public:
   using LocalView = LV;
   using NodeIndexSet = NIS;
@@ -37,6 +43,16 @@ public:
   {
     localView_ = &localView;
     nodeIndexSet_.bind(localView_->tree());
+    indices_.resize(size());
+    Hybrid::ifElse(
+      Std::is_detected<hasIndices,NodeIndexSet>{},
+      [&]() {
+        nodeIndexSet_.indices(_indices.begin());
+      },
+      [&]() {
+        for (size_type i = 0 ; i < size() ; ++i)
+          indices_[i] = nodeIndexSet_.index(i);
+      });
   }
 
   /** \brief Bind the index set to a SubspaceLocalView
@@ -65,7 +81,7 @@ public:
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   MultiIndex index(size_type i) const
   {
-    return nodeIndexSet_.index(i);
+    return indices_[i];
   }
 
   /** \brief Return the local view that we are attached to
@@ -80,6 +96,7 @@ protected:
   const LocalView* localView_;
 
   NodeIndexSet nodeIndexSet_;
+  std::vector<MultiIndex> indices_;
 };
 
 
