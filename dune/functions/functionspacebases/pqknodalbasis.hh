@@ -344,95 +344,119 @@ public:
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  MultiIndex index(size_type i) const
+  template<typename It>
+  MultiIndex indices(It it) const
   {
     assert(node_ != nullptr);
-    Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
-    const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
-    const auto& element = node_->element();
-
-    // The dimension of the entity that the current dof is related to
-    auto dofDim = dim - localKey.codim();
-
-    if (dofDim==0) {  // vertex dof
-      return {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
-    }
-
-    if (dofDim==1)
-    {  // edge dof
-      if (dim==1)  // element dof -- any local numbering is fine
-        return {{ nodeFactory_->edgeOffset_
-            + nodeFactory_->dofsPerEdge * ((size_type)gridIndexSet.subIndex(element,0,0))
-            + localKey.index() }};
-      else
+    for (size_type i = 0, end = node_->finiteElement().size() ; i < end ; ++it, ++i)
       {
-        const Dune::ReferenceElement<double,dim>& refElement
-            = Dune::ReferenceElements<double,dim>::general(element.type());
+        Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
+        const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
+        const auto& element = node_->element();
 
-        // we have to reverse the numbering if the local triangle edge is
-        // not aligned with the global edge
-        auto v0 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
-        auto v1 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
-        bool flip = (v0 > v1);
-        return {{ (flip)
-              ? nodeFactory_->edgeOffset_
-                + nodeFactory_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
-                + (nodeFactory_->dofsPerEdge-1)-localKey.index()
-              : nodeFactory_->edgeOffset_
-                + nodeFactory_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
-                + localKey.index() }};
-      }
-    }
+        // The dimension of the entity that the current dof is related to
+        auto dofDim = dim - localKey.codim();
 
-    if (dofDim==2)
-    {
-      if (dim==2)   // element dof -- any local numbering is fine
-      {
-        if (element.type().isTriangle())
-        {
-          const int interiorLagrangeNodesPerTriangle = (k-1)*(k-2)/2;
-          return {{ nodeFactory_->triangleOffset_ + interiorLagrangeNodesPerTriangle*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+        if (dofDim==0) {  // vertex dof
+          *it = {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
+          continue;
         }
-        else if (element.type().isQuadrilateral())
-        {
-          const int interiorLagrangeNodesPerQuadrilateral = (k-1)*(k-1);
-          return {{ nodeFactory_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-        }
-        else
-          DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
-      } else
-      {
-        const Dune::ReferenceElement<double,dim>& refElement
-            = Dune::ReferenceElements<double,dim>::general(element.type());
 
-        if (k>3)
-          DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids is only implemented if k<=3");
+        if (dofDim==1)
+          {  // edge dof
+            if (dim==1)  // element dof -- any local numbering is fine
+              {
+                *it = {{ nodeFactory_->edgeOffset_
+                         + nodeFactory_->dofsPerEdge * ((size_type)gridIndexSet.subIndex(element,0,0))
+                         + localKey.index() }};
+                continue;
+              }
+            else
+              {
+                const Dune::ReferenceElement<double,dim>& refElement
+                  = Dune::ReferenceElements<double,dim>::general(element.type());
 
-        if (k==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
-          DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
+                // we have to reverse the numbering if the local triangle edge is
+                // not aligned with the global edge
+                auto v0 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
+                auto v1 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
+                bool flip = (v0 > v1);
+                *it = {{ (flip)
+                         ? nodeFactory_->edgeOffset_
+                         + nodeFactory_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
+                         + (nodeFactory_->dofsPerEdge-1)-localKey.index()
+                         : nodeFactory_->edgeOffset_
+                         + nodeFactory_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
+                         + localKey.index() }};
+                continue;
+              }
+          }
 
-        return {{ nodeFactory_->triangleOffset_ + ((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())) }};
+        if (dofDim==2)
+          {
+            if (dim==2)   // element dof -- any local numbering is fine
+              {
+                if (element.type().isTriangle())
+                  {
+                    const int interiorLagrangeNodesPerTriangle = (k-1)*(k-2)/2;
+                    *it = {{ nodeFactory_->triangleOffset_ + interiorLagrangeNodesPerTriangle*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    continue;
+                  }
+                else if (element.type().isQuadrilateral())
+                  {
+                    const int interiorLagrangeNodesPerQuadrilateral = (k-1)*(k-1);
+                    *it = {{ nodeFactory_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    continue;
+                  }
+                else
+                  DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
+              } else
+              {
+                const Dune::ReferenceElement<double,dim>& refElement
+                  = Dune::ReferenceElements<double,dim>::general(element.type());
+
+                if (k>3)
+                  DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids is only implemented if k<=3");
+
+                if (k==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
+                  DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
+
+                *it = {{ nodeFactory_->triangleOffset_ + ((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())) }};
+                continue;
+              }
+          }
+
+        if (dofDim==3)
+          {
+            if (dim==3)   // element dof -- any local numbering is fine
+              {
+                if (element.type().isTetrahedron())
+                  {
+                    *it = {{ nodeFactory_->tetrahedronOffset_ + NodeFactory::dofsPerTetrahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    continue;
+                  }
+                else if (element.type().isHexahedron())
+                  {
+                    *it = {{ nodeFactory_->hexahedronOffset_ + NodeFactory::dofsPerHexahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    continue;
+                  }
+                else if (element.type().isPrism())
+                  {
+                    *it = {{ nodeFactory_->prismOffset_ + NodeFactory::dofsPerPrism*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    continue;
+                  }
+                else if (element.type().isPyramid())
+                  {
+                    *it = {{ nodeFactory_->pyramidOffset_ + NodeFactory::dofsPerPyramid*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    continue;
+                  }
+                else
+                  DUNE_THROW(Dune::NotImplemented, "3d elements have to be tetrahedra, hexahedra, prisms, or pyramids");
+              } else
+              DUNE_THROW(Dune::NotImplemented, "Grids of dimension larger than 3 are no supported");
+          }
+        DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the PQkNodalBasis");
       }
-    }
-
-    if (dofDim==3)
-    {
-      if (dim==3)   // element dof -- any local numbering is fine
-      {
-        if (element.type().isTetrahedron())
-          return {{ nodeFactory_->tetrahedronOffset_ + NodeFactory::dofsPerTetrahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-        else if (element.type().isHexahedron())
-          return {{ nodeFactory_->hexahedronOffset_ + NodeFactory::dofsPerHexahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-        else if (element.type().isPrism())
-          return {{ nodeFactory_->prismOffset_ + NodeFactory::dofsPerPrism*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-        else if (element.type().isPyramid())
-          return {{ nodeFactory_->pyramidOffset_ + NodeFactory::dofsPerPyramid*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-        else
-          DUNE_THROW(Dune::NotImplemented, "3d elements have to be tetrahedra, hexahedra, prisms, or pyramids");
-      } else
-        DUNE_THROW(Dune::NotImplemented, "Grids of dimension larger than 3 are no supported");
-    }
-    DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the PQkNodalBasis");
   }
 
 protected:
