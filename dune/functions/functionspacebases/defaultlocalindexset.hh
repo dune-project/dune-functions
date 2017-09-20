@@ -53,7 +53,7 @@ public:
         nodeIndexSet_.indices(indices_.begin());
       },
       [&](auto) {
-        for (size_type i = 0 ; i < size() ; ++i)
+        for (size_type i = 0 ; i < this->size() ; ++i)
           indices_[i] = nodeIndexSet_.index(i);
       });
   }
