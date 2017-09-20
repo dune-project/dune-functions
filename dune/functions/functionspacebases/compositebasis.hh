@@ -373,6 +373,13 @@ public:
     return index(localIndex, IndexMergingStrategy{});
   }
 
+  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+  template<typename It>
+  It indices(It it) const
+  {
+    return indices(it, IndexMergingStrategy{});
+  }
+
   struct Lambda_index_flat
   {
     template<class I, class SNIT, class SFT>
@@ -401,6 +408,30 @@ public:
     return mi;
   }
 
+  template<typename It>
+  It indices(It multiIndices, BasisBuilder::FlatLexicographic) const
+  {
+    using namespace Dune::Hybrid;
+    size_type firstComponentOffset = 0;
+    // Loop over all children
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
+      const auto& subNodeIndexSet = elementAt(subNodeIndexSetTuple_, child);
+      const auto& subNodeFactory = elementAt(nodeFactory_->subFactories_, child);
+      size_type subTreeSize = subNodeIndexSet.size();
+      // Fill indices for current child into index buffer starting from current
+      // buffer position and shift first index component of any index for current
+      // child by suitable offset to get lexicographic indices.
+      subNodeIndexSet.indices(multiIndices);
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+        multiIndices[i][0] += firstComponentOffset;
+      // Increment offset by the size for first index component of the current child
+      firstComponentOffset += subNodeFactory.size({});
+      // Increment buffer iterator by the number of indices processed for current child
+      multiIndices += subTreeSize;
+    });
+    return multiIndices;
+  }
+
   struct Lambda_index
   {
     template<class I, class SNIT>
@@ -419,6 +450,14 @@ public:
     }
   };
 
+  static const void multiIndexPushFront(MultiIndex& M, size_type M0)
+  {
+    M.resize(M.size()+1);
+    for(std::size_t i=M.size()-1; i>0; --i)
+      M[i] = M[i-1];
+    M[0] = M0;
+  }
+
   MultiIndex index(const size_type& localIndex, BasisBuilder::BlockedLexicographic) const
   {
     size_type shiftedLocalIndex = localIndex;
@@ -432,6 +471,26 @@ public:
     mi[0] = component;
     return mi;
   }
+
+  template<typename It>
+  It indices(It multiIndices, BasisBuilder::BlockedLexicographic) const
+  {
+    using namespace Dune::Hybrid;
+    // Loop over all children
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
+      const auto& subNodeIndexSet = elementAt(subNodeIndexSetTuple_, child);
+      size_type subTreeSize = subNodeIndexSet.size();
+      // Fill indices for current child into index buffer starting from current position
+      subNodeIndexSet.indices(multiIndices);
+      // Insert child index before first component of all indices of current child.
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+        this->multiIndexPushFront(multiIndices[i], child);
+      // Increment buffer iterator by the number of indices processed for current child
+      multiIndices += subTreeSize;
+    });
+    return multiIndices;
+  }
+
 
 private:
   const NodeFactory* nodeFactory_;

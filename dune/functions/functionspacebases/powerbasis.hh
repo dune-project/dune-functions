@@ -404,7 +404,7 @@ public:
   static const void multiIndexPushFront(MultiIndex& M, size_type M0)
   {
     M.resize(M.size()+1);
-    for(std::size_t i=1; i<M.size(); ++i)
+    for(std::size_t i=M.size()-1; i>0; --i)
       M[i] = M[i-1];
     M[0] = M0;
   }
