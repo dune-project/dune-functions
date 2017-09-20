@@ -1332,7 +1332,7 @@ public:
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   template<typename It>
-  void indices(It it) const
+  It indices(It it) const
   {
     for (size_type i = 0, end = size() ; i < end ; ++i, ++it)
       {
@@ -1353,6 +1353,7 @@ public:
 
         *it = {{globalIdx}};
       }
+    return it;
   }
 
 protected:

@@ -224,7 +224,7 @@ public:
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   template<typename It>
-  void indices(It it) const
+  It indices(It it) const
   {
     const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
     const auto& element = node_->element();
@@ -281,6 +281,7 @@ public:
           }
         DUNE_THROW(Dune::NotImplemented, "No index method for " << dim << "d grids available yet!");
       }
+    return it;
   }
 
 protected:
