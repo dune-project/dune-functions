@@ -142,7 +142,7 @@ struct NodeIndexSet
     const_cast<I&>(indexSet).bind(std::declval<typename I::Node>()),
     const_cast<I&>(indexSet).unbind(),
     requireConvertible<typename I::size_type>(indexSet.size()),
-    requireConvertible<typename I::MultiIndex>(indexSet.index(std::declval<typename I::size_type>()))
+    indexSet.indices(std::declval<const std::vector<typename I::MultiIndex>>().begin())
   );
 };
 
