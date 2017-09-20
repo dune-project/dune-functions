@@ -340,6 +340,12 @@ public:
     return indexImp<useHybridIndices>(localIndex);
   }
 
+  template<typename It>
+  It indices(It multiIndices) const
+  {
+    return indicesImp<useHybridIndices>(multiIndices);
+  }
+
   template<bool hi,
     typename std::enable_if<not hi,int>::type = 0>
   MultiIndex indexImp(size_type localIndex) const
@@ -359,6 +365,37 @@ public:
     if (mi[0] == 1)
       mi[1] = pq1NodeIndexSet_.index(localIndex-pressureOffset)[0];
     return mi;
+  }
+
+  static const void multiIndexPushFront(MultiIndex& M, size_type M0)
+  {
+    M.resize(M.size()+1);
+    for(std::size_t i=M.size()-1; i>0; --i)
+      M[i] = M[i-1];
+    M[0] = M0;
+  }
+
+  template<bool hi, class It,
+    typename std::enable_if<not hi,int>::type = 0>
+  It indicesImp(It multiIndices) const
+  {
+    for(std::size_t child=0; child<dim; ++child)
+    {
+      size_type subTreeSize = pq2NodeIndexSet_.size();
+      pq2NodeIndexSet_.indices(multiIndices);
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+      {
+        multiIndexPushFront(multiIndices[i], 0);
+        multiIndices[i][1] = multiIndices[i][1]*dim + child;
+      }
+      multiIndices += subTreeSize;
+    }
+    pq1NodeIndexSet_.indices(multiIndices);
+    size_type subTreeSize = pq1NodeIndexSet_.size();
+    for (std::size_t i = 0; i<subTreeSize; ++i)
+      multiIndexPushFront(multiIndices[i], 1);
+    multiIndices += subTreeSize;
+    return multiIndices;
   }
 
   template<bool hi,
@@ -381,6 +418,29 @@ public:
     if (mi[0] == 1)
       mi.push_back(pq1NodeIndexSet_.index(localIndex-pressureOffset)[0]);
     return mi;
+  }
+
+  template<bool hi, class It,
+    typename std::enable_if<hi,int>::type = 0>
+  It indicesImp(It multiIndices) const
+  {
+    for(std::size_t child=0; child<dim; ++child)
+    {
+      size_type subTreeSize = pq2NodeIndexSet_.size();
+      pq2NodeIndexSet_.indices(multiIndices);
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+      {
+        multiIndexPushFront(multiIndices[i], 0);
+        multiIndices[i].push_back(i);
+      }
+      multiIndices += subTreeSize;
+    }
+    pq1NodeIndexSet_.indices(multiIndices);
+    size_type subTreeSize = pq1NodeIndexSet_.size();
+    for (std::size_t i = 0; i<subTreeSize; ++i)
+      multiIndexPushFront(multiIndices[i], 1);
+    multiIndices += subTreeSize;
+    return multiIndices;
   }
 
 private:
@@ -419,7 +479,7 @@ private:
  * \endcode
  */
 template<typename GV>
-using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodNodeFactory<GV, std::array<std::size_t, 2>> >;
+using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodNodeFactory<GV, Dune::ReservedVector<std::size_t, 2>> >;
 
 
 
