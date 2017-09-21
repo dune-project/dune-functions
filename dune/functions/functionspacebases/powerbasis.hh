@@ -13,6 +13,7 @@
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
+#include <dune/functions/functionspacebases/concepts.hh>
 
 
 
@@ -105,7 +106,9 @@ public:
     enableIfConstructible<SubFactory, SFArgs...> = 0>
   PowerNodeFactory(SFArgs&&... sfArgs) :
     subFactory_(std::forward<SFArgs>(sfArgs)...)
-  {}
+  {
+    static_assert(models<Concept::NodeFactory<GridView>, SubFactory>(), "Subfactory passed to PowerNodeFactory does not model the NodeFactory concept.");
+  }
 
   //! Initialize the global indices
   void initializeIndices()

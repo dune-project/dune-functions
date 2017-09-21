@@ -19,6 +19,7 @@
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
+#include <dune/functions/functionspacebases/concepts.hh>
 
 
 namespace Dune {
@@ -144,6 +145,10 @@ public:
   CompositeNodeFactory(SFArgs&&... sfArgs) :
     subFactories_(std::forward<SFArgs>(sfArgs)...)
   {
+    using namespace Dune::Hybrid;
+    forEach(subFactories_, [&](const auto& subFactory){
+      static_assert(models<Concept::NodeFactory<GridView>, std::decay_t<decltype(subFactory)>>(), "Subfactory passed to CompositeNodeFactory does not model the NodeFactory concept.");
+    });
   }
 
   //! Initialize the global indices
