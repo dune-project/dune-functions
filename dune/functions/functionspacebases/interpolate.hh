@@ -110,6 +110,7 @@ public:
   {
     using FiniteElement = typename Node::FiniteElement;
     using FiniteElementRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+    using FiniteElementRangeField = typename FiniteElement::Traits::LocalBasisType::Traits::RangeFieldType;
     using FunctionBaseClass = typename Dune::LocalFiniteElementFunctionBase<FiniteElement>::type;
 
     // Note that we capture j by reference. Hence we can switch
@@ -126,7 +127,7 @@ public:
 
     using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<FiniteElementRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
 
-    auto interpolationValues = std::vector<FiniteElementRange>();
+    auto interpolationCoefficients = std::vector<FiniteElementRangeField>();
 
     auto&& fe = node.finiteElement();
 
@@ -139,7 +140,7 @@ public:
     {
 
       // We cannot use localFj directly because interpolate requires a Dune::VirtualFunction like interface
-      fe.localInterpolation().interpolate(FunctionFromCallable(localFj), interpolationValues);
+      fe.localInterpolation().interpolate(FunctionFromCallable(localFj), interpolationCoefficients);
       for (size_t i=0; i<fe.localBasis().size(); ++i)
       {
         auto multiIndex = localIndexSet_.index(node.localIndex(i));
@@ -149,7 +150,7 @@ public:
         if (interpolateHere)
         {
           auto&& vectorBlock = vector_[multiIndex];
-          FlatVectorBackend<CoefficientBlock>::getEntry(vectorBlock, j) = interpolationValues[i];
+          FlatVectorBackend<CoefficientBlock>::getEntry(vectorBlock, j) = interpolationCoefficients[i];
         }
       }
     }
