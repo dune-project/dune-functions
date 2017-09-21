@@ -368,44 +368,11 @@ public:
     return node_->size();
   }
 
-  MultiIndex index(size_type localIndex) const
-  {
-    return index(localIndex, IndexMergingStrategy{});
-  }
-
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   template<typename It>
   It indices(It it) const
   {
     return indices(it, IndexMergingStrategy{});
-  }
-
-  struct Lambda_index_flat
-  {
-    template<class I, class SNIT, class SFT>
-    bool operator()(const I& i, SNIT& subNodeIndexSetTuple, const SFT& subFactories, size_type& localIndex, size_type& rootOffset, MultiIndex& multiIndex)
-    {
-      const auto& subNodeIndexSet = std::get<I::value>(subNodeIndexSetTuple);
-      size_type size = subNodeIndexSet.size();
-      if (localIndex < size)
-      {
-        multiIndex = subNodeIndexSet.index(localIndex);
-        multiIndex[0] += rootOffset;
-        return true;
-      }
-      localIndex -= size;
-      rootOffset += std::get<I::value>(subFactories).size();
-      return false;
-    }
-  };
-
-  MultiIndex index(const size_type& localIndex, BasisBuilder::FlatLexicographic) const
-  {
-    size_type shiftedLocalIndex = localIndex;
-    size_type rootOffset = 0;
-    MultiIndex mi;
-    staticFindInRange<0, sizeof...(SF)>(Lambda_index_flat(), subNodeIndexSetTuple_, nodeFactory_->subFactories_, shiftedLocalIndex, rootOffset, mi);
-    return mi;
   }
 
   template<typename It>
@@ -432,44 +399,12 @@ public:
     return multiIndices;
   }
 
-  struct Lambda_index
-  {
-    template<class I, class SNIT>
-    bool operator()(const I& i, SNIT& subNodeIndexSetTuple, size_type& localIndex, size_type& component, MultiIndex& multiIndex)
-    {
-      const auto& subNodeIndexSet = std::get<I::value>(subNodeIndexSetTuple);
-      size_type size = subNodeIndexSet.size();
-      if (localIndex < size)
-      {
-        multiIndex = subNodeIndexSet.index(localIndex);
-        component = i;
-        return true;
-      }
-      localIndex -= size;
-      return false;
-    }
-  };
-
   static const void multiIndexPushFront(MultiIndex& M, size_type M0)
   {
     M.resize(M.size()+1);
     for(std::size_t i=M.size()-1; i>0; --i)
       M[i] = M[i-1];
     M[0] = M0;
-  }
-
-  MultiIndex index(const size_type& localIndex, BasisBuilder::BlockedLexicographic) const
-  {
-    size_type shiftedLocalIndex = localIndex;
-    size_type component = 0;
-    MultiIndex mi;
-    staticFindInRange<0, sizeof...(SF)>(Lambda_index(), subNodeIndexSetTuple_, shiftedLocalIndex, component, mi);
-    mi.resize(mi.size()+1);
-
-    for(std::size_t i=mi.size()-1; i>0; --i)
-      mi[i] = mi[i-1];
-    mi[0] = component;
-    return mi;
   }
 
   template<typename It>

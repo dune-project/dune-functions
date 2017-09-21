@@ -310,29 +310,11 @@ public:
     return node_->size();
   }
 
-  MultiIndex index(const size_type& localIndex) const
-  {
-    return index(localIndex, IndexMergingStrategy{});
-  }
-
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   template<typename It>
   It indices(It it) const
   {
     return indices(it, IndexMergingStrategy{});
-  }
-
-  MultiIndex index(const size_type& localIndex, BasisBuilder::FlatInterleaved) const
-  {
-    using namespace Dune::TypeTree::Indices;
-    size_type subTreeSize = node_->child(_0).size();
-    size_type subLocalIndex = localIndex % subTreeSize;
-    size_type component = localIndex / subTreeSize;
-
-    MultiIndex mi = subNodeIndexSet_.index(subLocalIndex);
-    mi[0] = mi[0]*children+component;
-
-    return mi;
   }
 
   template<typename It>
@@ -360,21 +342,6 @@ public:
       }
     }
     return next;
-  }
-
-  MultiIndex index(const size_type& localIndex, BasisBuilder::FlatLexicographic) const
-  {
-    using namespace Dune::TypeTree::Indices;
-    size_type subTreeSize = node_->child(_0).size();
-    size_type subLocalIndex = localIndex % subTreeSize;
-    size_type component = localIndex / subTreeSize;
-
-    size_type firstLevelSize = nodeFactory_->subFactory_.size({});
-
-    MultiIndex mi = subNodeIndexSet_.index(subLocalIndex);
-    mi[0] += component*firstLevelSize;
-
-    return mi;
   }
 
   template<typename It>
@@ -409,22 +376,6 @@ public:
     M[0] = M0;
   }
 
-  MultiIndex index(const size_type& localIndex, BasisBuilder::BlockedLexicographic) const
-  {
-    using namespace Dune::TypeTree::Indices;
-    size_type subTreeSize = node_->child(_0).size();
-    size_type subLocalIndex = localIndex % subTreeSize;
-    size_type component = localIndex / subTreeSize;
-
-    auto subTreeMi = subNodeIndexSet_.index(subLocalIndex);
-
-    MultiIndex mi;
-    mi.push_back(component);
-    for(std::size_t i=0; i<subTreeMi.size(); ++i)
-      mi.push_back(subTreeMi[i]);
-    return mi;
-  }
-
   template<typename It>
   It indices(It multiIndices, BasisBuilder::BlockedLexicographic) const
   {
@@ -449,22 +400,6 @@ public:
       }
     }
     return next;
-  }
-
-  MultiIndex index(const size_type& localIndex, BasisBuilder::LeafBlockedInterleaved) const
-  {
-    using namespace Dune::TypeTree::Indices;
-    size_type subTreeSize = node_->child(_0).size();
-    size_type subLocalIndex = localIndex % subTreeSize;
-    size_type component = localIndex / subTreeSize;
-
-    auto subTreeMi = subNodeIndexSet_.index(subLocalIndex);
-
-    MultiIndex mi;
-    for(std::size_t i=0; i<subTreeMi.size(); ++i)
-      mi.push_back(subTreeMi[i]);
-    mi.push_back(component);
-    return mi;
   }
 
   template<typename It>

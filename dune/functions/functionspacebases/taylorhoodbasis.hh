@@ -335,36 +335,10 @@ public:
     return node_->size();
   }
 
-  MultiIndex index(size_type localIndex) const
-  {
-    return indexImp<useHybridIndices>(localIndex);
-  }
-
   template<typename It>
   It indices(It multiIndices) const
   {
     return indicesImp<useHybridIndices>(multiIndices);
-  }
-
-  template<bool hi,
-    typename std::enable_if<not hi,int>::type = 0>
-  MultiIndex indexImp(size_type localIndex) const
-  {
-    MultiIndex mi;
-
-    size_type velocityComponentSize = pq2NodeIndexSet_.size();
-    size_type pressureOffset = velocityComponentSize * dim;
-
-    mi[0] = localIndex / pressureOffset;
-    if (mi[0] == 0)
-    {
-      size_type v_comp = localIndex / velocityComponentSize;
-      size_type v_localIndex = localIndex % velocityComponentSize;
-      mi[1] = pq2NodeIndexSet_.index(v_localIndex)[0] * dim + v_comp;
-    }
-    if (mi[0] == 1)
-      mi[1] = pq1NodeIndexSet_.index(localIndex-pressureOffset)[0];
-    return mi;
   }
 
   static const void multiIndexPushFront(MultiIndex& M, size_type M0)
@@ -396,28 +370,6 @@ public:
       multiIndexPushFront(multiIndices[i], 1);
     multiIndices += subTreeSize;
     return multiIndices;
-  }
-
-  template<bool hi,
-    typename std::enable_if<hi,int>::type = 0>
-  MultiIndex indexImp(size_type localIndex) const
-  {
-    MultiIndex mi;
-
-    size_type velocityComponentSize = pq2NodeIndexSet_.size();
-    size_type pressureOffset = velocityComponentSize * dim;
-
-    mi.push_back(localIndex / pressureOffset);
-    if (mi[0] == 0)
-    {
-      size_type v_comp = localIndex / velocityComponentSize;
-      size_type v_localIndex = localIndex % velocityComponentSize;
-      mi.push_back(pq2NodeIndexSet_.index(v_localIndex)[0]);
-      mi.push_back(v_comp);
-    }
-    if (mi[0] == 1)
-      mi.push_back(pq1NodeIndexSet_.index(localIndex-pressureOffset)[0]);
-    return mi;
   }
 
   template<bool hi, class It,
