@@ -105,6 +105,7 @@
 % For typesetting file names
 \newcommand{\file}[1]{\texttt{#1}}
 
+\newcommand{\todosander}[1]{\todo[inline,color=orange,author=OS]{#1}}
 
 %%  All graphics files must be in this subdirectory
 \graphicspath{{gfx/}}
@@ -171,6 +172,7 @@ from your distribution.  Otherwise, download the source code by
 git clone http://git.dune-project.org/repositories/dune-typetree
 git clone http://git.dune-project.org/repositories/dune-functions
 \end{shellenv}
+\todosander{The URLS need to be updated!}
 Then you can build both modules in the usual way, by calling
 \begin{shellenv}
 dunecontrol all
@@ -250,6 +252,8 @@ and $\R^{m_2}$, respectively, then
  \cup
  \big\{(\underbrace{0}_{\in \R^{m_1}}, c_1), (\underbrace{0}_{\in \R^{m_1}},c_2), \dots, (\underbrace{0}_{\in \R^{m_1}}, c_{n_2})\big\}
 \end{equation*}
+\todosander{These zeros are not elements of $\R^m$.  Rather, the are elements of $(\R^m)^\Omega$,
+the set of functions mapping $\Omega$ to $\R^m$.}
 is again the natural basis of the space $\operatorname{span} B \oplus \operatorname{span} C$.  Its basis functions take values in
 $\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
 
@@ -263,7 +267,7 @@ of a single space can be viewed as the tensor product with $\R^k$, i.e,
     = \underbrace{\op{span}B \times \dots \times \op{span}B}_{k-\text{times}}
     = \underbrace{\op{span}B \oplus \dots \oplus \op{span}B}_{k-\text{times}}
     = \R^k \otimes \op{span} B.
-\end{align*} 
+\end{align*}
 In the following we will simply use the term \emph{product}
 when we talk about the Cartesian product or external sum.
 
@@ -498,12 +502,12 @@ the following:
             The set of all multi-indices is denoted by
             $\mathcal{N} = \bigcup_{k \in \N_0^k} \N_0^k$.
         \item
-            If $I \in \mathcal{N}$ takes the form $I = (I',I'')$ for $I',I'' \in \mathcal{N}$
-            and $|I| = |I'|+|I''|$, then we call $I'$ a prefix of $I$ and write $I = (I',\dots)$.
+            If $I \in \mathcal{N}$ takes the form $I = (I',I'')$ for $I',I'' \in \mathcal{N}$,
+            then we call $I'$ a prefix of $I$ and write $I = (I',\dots)$.
             If additionally $|I''|>0$ we call $I'$ a strict prefix of $I$ and write $I = (I',*,\dots)$.
         \item
             A set $\mathcal{I} \subset \mathcal{N}$ is called an \emph{index tree}
-            if for any $(I,i,\dots) \in \mathcal{I}$ there are also $(I,0,\dots),(I,1,\dots),\dots,(I,i,\dots) \in \mathcal{I}$
+            if for any $(I,i,\dots) \in \mathcal{I}$ there are also $(I,0,\dots),(I,1,\dots),\dots,(I,i-1,\dots) \in \mathcal{I}$
             but $I \notin \mathcal{I}$.
     \end{enumerate}
 \end{definition}
@@ -523,7 +527,7 @@ construction. Let $(I,\dots) \in \mathcal{I}$, i.\,e., $I$ is a
 prefix of multi-indices in $\mathcal{I}$ then the size relative
 to $I$ is given by
 \begin{align*}
-    |\mathcal{I}|_I = \op{max}\{k \st \exists (I,k,\dots) \in \mathcal{I} \}-1.
+    |\mathcal{I}|_I = \op{max}\{k \st \exists (I,k,\dots) \in \mathcal{I} \}+1.
 \end{align*}
 In terms of the ordered tree associated with $\mathcal{I}$ this corresponds
 to the number of direct children of the node indexed by $I$.
@@ -534,8 +538,10 @@ to enumerate the basis functions, there are some important generic constructions
 to derive such index trees from the finite element tree that will be described below.
 
 
-\subsection{Ordering basis functions in a finite element basis tree}
+\subsection{Rule-based construction of multi-indices}
 \label{sec:dune_functions:basis_ordering}
+
+\todosander{Rewrite this section to match the new section title}
 
 To work with the basis of a finite element space, the basis vectors need to be indexed.  Indexing the basis functions
 is what allows to address the corresponding vector and matrix coefficients in suitable vector and matrix data structures.
@@ -633,73 +639,6 @@ In total, for a tree with $N$ power nodes we obtain $2^N$ different ways to orde
 
 
 
-\subsection{Grouping degrees of freedom in blocks}
-\label{sec:dune_functions:blocking}
-
-So far we have not mentioned what what we mean by ``index''.  Certainly it is possible to assign the numbers
-$1, \dots, n$ to the basis vectors of an $n$-dimensional space.  However, such a {\em flat} numbering discards
-quite a bit of information about the structure of the space.
-\begin{enumerate}
- \item Even though stiffness matrices may have a very specific occupation pattern (such as the blocked
-   Taylor--Hood example in Figure~\ref{fig:dune_functions:matrix_occupation_patterns}), it is very difficult
-   to use in a data structure.  For example, quite a lot of memory can be saved if that matrix data
-   structure knows that its entries are grouped in little $3 \times 3$ blocks.
- %
- \item Likewise, the solver can be more efficient when the structure of the matrix is known to it.
-   For example, block variants are frequently more efficient.
- %
- \item Finally, it can ease debugging if the structure of the finite element space is (partially)
-   contained in the number type.
-\end{enumerate}
-For these reasons, \dunemodule{dune-functions} uses multi-indices instead of natural numbers to index
-its global degrees of freedom.
-\todo[inline]{Erklären: Wie kommt man vom Baum zum Multi-Index}
-Even for a fixed global ordering of the basis functions of a finite element tree, there is usually more
-than one way to address the individual basis functions using multi-indices.  Just like for the orderings
-the different ways to construct multi-indices can be read off from the tree structure.%
-%
-\footnote{Note how using a multi-index to address basis functions partitions the basis functions into
-separate blocks.  For example, if a two-digit multi-index is used, all basis functions with first digit $0$
-form one block.  Therefore we sometimes speak of ``blocking'' of basis functions when their assignment
-to certain multi-indices is meant.}
-
-\todo[inline, caption={}]
-{
-  Jetzt haben wir ein Problem.  Man will Multi-Indizes auch für ein paar Unterscheidungen haben, die nicht
-  in der Baumstruktur auftauchen, z.B.
-  \begin{itemize}
-   \item Elementblöcke bei DG-Verfahren
-   \item Unterscheidung der Freiheitsgrade nach Entities / Hierarchische Basen
-   \item XFEM
-  \end{itemize}
- Problem: Das sind alles {\em additive} Zerlegungen des Raums, und die sind bisher in \dunemodule{dune-functions}
- nicht offiziell vorgesehen.
-}
-
-Instead of flat integers, we therefore use a hierarchical numbering scheme that reflects the tree structure
-of the space.  Instead of integer numbers we obtain multi-indices, i.e., certain tuples.
-Consider a tree representing a finite element space like for example the tree for the Taylor--Hood space in
-Figure~\ref{fig:dune_functions:taylor_hood_basis_tree}.
-
-We construct multi-indices for this tree by recursion over the tree depth.  To start the recursion,
-we suppose that each ``simple'' (leaf) basis provides a numbering of its basis vectors.  This numbering is
-a flat numbering of all basis vectors, using a single integer.
-
-Multi-indices for the basis vectors represented by subtrees are now defined recursively.  Let $R$ be the tree root
-of a subtree of the finite element basis tree, and suppose that we can already construct multi-indices
-for all basis vectors of its children.  Then we construct multi-indices for the vectors of $R$ itself
-by first numbering all children of $R$ by a number $0,\dots,n_R-1$.  A vector $b$ in the basis of the
-subtree of $R$ is then constructed by prepending the number of the corresponding child node to the
-multi-index of $b$ in that child.
-
-\todo[inline]{Hier sind wir bisher noch unsauber: wenn $b$ ein Vektor aus einer Blatt-Basis ist,
-so ist er kein Vektor eines inneren Knoten.}
-
-\begin{itemize}
- \item Note that not all multi-indices have the same size
-\end{itemize}
-
-
 \begin{table}
  \begin{center}
  \begin{tabular}{c|c|c|c|c}
@@ -755,6 +694,19 @@ so ist er kein Vektor eines inneren Knoten.}
  }
 \end{table}
 
+\subsection{Localization to single elements}
+
+\begin{itemize}
+ \item We now consider the restriction to a single element $e$
+ \item Basis on $e$: the set of all basis vectors whose supports have non-empty
+   intersection with $e$
+ \item These form a tree that is isomorphic to the original tree.
+ \item The basis functions in the local tree have two numbers:
+   \begin{itemize}
+    \item One flat index the numbers per leaf
+    \item One flat index that numbers across the entire local tree
+   \end{itemize}
+\end{itemize}
 
 
 \section{Programmer interface for function space bases}
