@@ -49,12 +49,12 @@ public:
     indices_.resize(size());
     Hybrid::ifElse(
       Std::is_detected<hasIndices,NodeIndexSet>{},
-      [&](auto) {
-        nodeIndexSet_.indices(indices_.begin());
+      [&](auto id) {
+        id(nodeIndexSet_).indices(indices_.begin());
       },
-      [&](auto) {
+      [&](auto id) {
         for (size_type i = 0 ; i < this->size() ; ++i)
-          indices_[i] = nodeIndexSet_.index(i);
+          indices_[i] = id(nodeIndexSet_).index(i);
       });
   }
 
