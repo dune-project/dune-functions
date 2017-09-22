@@ -13,6 +13,7 @@
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
+#include <dune/functions/functionspacebases/concepts.hh>
 
 
 
@@ -105,7 +106,9 @@ public:
     enableIfConstructible<SubFactory, SFArgs...> = 0>
   PowerNodeFactory(SFArgs&&... sfArgs) :
     subFactory_(std::forward<SFArgs>(sfArgs)...)
-  {}
+  {
+    static_assert(models<Concept::NodeFactory<GridView>, SubFactory>(), "Subfactory passed to PowerNodeFactory does not model the NodeFactory concept.");
+  }
 
   //! Initialize the global indices
   void initializeIndices()
@@ -310,70 +313,120 @@ public:
     return node_->size();
   }
 
-  MultiIndex index(const size_type& localIndex) const
+  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+  template<typename It>
+  It indices(It it) const
   {
-    return index(localIndex, IndexMergingStrategy{});
+    return indices(it, IndexMergingStrategy{});
   }
 
-
-  MultiIndex index(const size_type& localIndex, BasisBuilder::FlatInterleaved) const
+  template<typename It>
+  It indices(It multiIndices, BasisBuilder::FlatInterleaved) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
-    size_type subLocalIndex = localIndex % subTreeSize;
-    size_type component = localIndex / subTreeSize;
-
-    MultiIndex mi = subNodeIndexSet_.index(subLocalIndex);
-    mi[0] = mi[0]*children+component;
-
-    return mi;
+    // Fill indices for first child at the beginning.
+    auto next = subNodeIndexSet_.indices(multiIndices);
+    // Multiply first component of all indices for first child by
+    // number of children to strech the index range for interleaving.
+    for (std::size_t i = 0; i<subTreeSize; ++i)
+      multiIndices[i][0] *= children;
+    for (std::size_t child = 1; child<children; ++child)
+    {
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+      {
+        // Copy indices from first child for all other children
+        // and shift them by child index to interleave indices.
+        //    multiIndices[child*subTreeSize+i] = multiIndices[i];
+        //    multiIndices[child*subTreeSize+i][0] = multiIndices[i][0]+child;
+        (*next) = multiIndices[i];
+        (*next)[0] = multiIndices[i][0]+child;
+        ++next;
+      }
+    }
+    return next;
   }
 
-  MultiIndex index(const size_type& localIndex, BasisBuilder::FlatLexicographic) const
+  template<typename It>
+  It indices(It multiIndices, BasisBuilder::FlatLexicographic) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
-    size_type subLocalIndex = localIndex % subTreeSize;
-    size_type component = localIndex / subTreeSize;
-
-    size_type firstLevelSize = nodeFactory_->subFactory_.size({});
-
-    MultiIndex mi = subNodeIndexSet_.index(subLocalIndex);
-    mi[0] += component*firstLevelSize;
-
-    return mi;
+    size_type firstIndexEntrySize = nodeFactory_->subFactory_.size({});
+    // Fill indices for first child at the beginning.
+    auto next = subNodeIndexSet_.indices(multiIndices);
+    for (std::size_t child = 1; child<children; ++child)
+    {
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+      {
+        // Copy indices from first child for all other children
+        // and shift them by suitable offset to get lexicographic indices.
+        //     multiIndices[child*subTreeSize+i] = multiIndices[i];
+        //     multiIndices[child*subTreeSize+i][0] += child*firstIndexEntrySize;
+        (*next) = multiIndices[i];
+        (*next)[0] += child*firstIndexEntrySize;
+        ++next;
+      }
+    }
+    return next;
   }
 
-  MultiIndex index(const size_type& localIndex, BasisBuilder::BlockedLexicographic) const
+  static const void multiIndexPushFront(MultiIndex& M, size_type M0)
+  {
+    M.resize(M.size()+1);
+    for(std::size_t i=M.size()-1; i>0; --i)
+      M[i] = M[i-1];
+    M[0] = M0;
+  }
+
+  template<typename It>
+  It indices(It multiIndices, BasisBuilder::BlockedLexicographic) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
-    size_type subLocalIndex = localIndex % subTreeSize;
-    size_type component = localIndex / subTreeSize;
-
-    auto subTreeMi = subNodeIndexSet_.index(subLocalIndex);
-
-    MultiIndex mi;
-    mi.push_back(component);
-    for(std::size_t i=0; i<subTreeMi.size(); ++i)
-      mi.push_back(subTreeMi[i]);
-    return mi;
+    // Fill indices for first child at the beginning.
+    auto next = subNodeIndexSet_.indices(multiIndices);
+    // Insert 0 before first component of all indices for first child.
+    for (std::size_t i = 0; i<subTreeSize; ++i)
+      multiIndexPushFront(multiIndices[i], 0);
+    for (std::size_t child = 1; child<children; ++child)
+    {
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+      {
+        // Copy indices from first child for all other children and overwrite
+        // zero in first component as inserted above by child index.
+        //     multiIndices[child*subTreeSize+i] = multiIndices[i];
+        //     multiIndices[child*subTreeSize+i][0] = child;
+        (*next) = multiIndices[i];
+        (*next)[0] = child;
+        ++next;
+      }
+    }
+    return next;
   }
 
-  MultiIndex index(const size_type& localIndex, BasisBuilder::LeafBlockedInterleaved) const
+  template<typename It>
+  It indices(It multiIndices, BasisBuilder::LeafBlockedInterleaved) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
-    size_type subLocalIndex = localIndex % subTreeSize;
-    size_type component = localIndex / subTreeSize;
-
-    auto subTreeMi = subNodeIndexSet_.index(subLocalIndex);
-
-    MultiIndex mi;
-    for(std::size_t i=0; i<subTreeMi.size(); ++i)
-      mi.push_back(subTreeMi[i]);
-    mi.push_back(component);
-    return mi;
+    // Fill indices for first child at the beginning.
+    auto next = subNodeIndexSet_.indices(multiIndices);
+    // Append 0 after last component of all indices for first child.
+    for (std::size_t i = 0; i<subTreeSize; ++i)
+      multiIndices[i].push_back(0);
+    for (std::size_t child = 1; child<children; ++child)
+    {
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+      {
+        // Copy indices from first child for all other children and overwrite
+        // zero in last component as appended above by child index.
+        (*next) = multiIndices[i];
+        (*next).back() = child;
+        ++next;
+      }
+    }
+    return next;
   }
 
 private:

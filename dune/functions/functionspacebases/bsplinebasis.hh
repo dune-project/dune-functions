@@ -1331,24 +1331,29 @@ public:
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  MultiIndex index(size_type i) const
+  template<typename It>
+  It indices(It it) const
   {
-    std::array<unsigned int,dim> localIJK = nodeFactory_->getIJK(i, localSizes_);
+    for (size_type i = 0, end = size() ; i < end ; ++i, ++it)
+      {
+        std::array<unsigned int,dim> localIJK = nodeFactory_->getIJK(i, localSizes_);
 
-    const auto currentKnotSpan = node_->finiteElement().currentKnotSpan_;
-    const auto order = nodeFactory_->order_;
+        const auto currentKnotSpan = node_->finiteElement().currentKnotSpan_;
+        const auto order = nodeFactory_->order_;
 
-    std::array<unsigned int,dim> globalIJK;
-    for (int i=0; i<dim; i++)
-      globalIJK[i] = std::max((int)currentKnotSpan[i] - (int)order[i], 0) + localIJK[i];  // needs to be a signed type!
+        std::array<unsigned int,dim> globalIJK;
+        for (int i=0; i<dim; i++)
+          globalIJK[i] = std::max((int)currentKnotSpan[i] - (int)order[i], 0) + localIJK[i];  // needs to be a signed type!
 
-    // Make one global flat index from the globalIJK tuple
-    size_type globalIdx = globalIJK[dim-1];
+        // Make one global flat index from the globalIJK tuple
+        size_type globalIdx = globalIJK[dim-1];
 
-    for (int i=dim-2; i>=0; i--)
-      globalIdx = globalIdx * nodeFactory_->size(i) + globalIJK[i];
+        for (int i=dim-2; i>=0; i--)
+          globalIdx = globalIdx * nodeFactory_->size(i) + globalIJK[i];
 
-    return { globalIdx };
+        *it = {{globalIdx}};
+      }
+    return it;
   }
 
 protected:

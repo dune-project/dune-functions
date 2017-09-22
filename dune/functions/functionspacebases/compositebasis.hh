@@ -19,6 +19,7 @@
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
+#include <dune/functions/functionspacebases/concepts.hh>
 
 
 namespace Dune {
@@ -144,6 +145,10 @@ public:
   CompositeNodeFactory(SFArgs&&... sfArgs) :
     subFactories_(std::forward<SFArgs>(sfArgs)...)
   {
+    using namespace Dune::Hybrid;
+    forEach(subFactories_, [&](const auto& subFactory){
+      static_assert(models<Concept::NodeFactory<GridView>, std::decay_t<decltype(subFactory)>>(), "Subfactory passed to CompositeNodeFactory does not model the NodeFactory concept.");
+    });
   }
 
   //! Initialize the global indices
@@ -368,70 +373,64 @@ public:
     return node_->size();
   }
 
-  MultiIndex index(size_type localIndex) const
+  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+  template<typename It>
+  It indices(It it) const
   {
-    return index(localIndex, IndexMergingStrategy{});
+    return indices(it, IndexMergingStrategy{});
   }
 
-  struct Lambda_index_flat
+  template<typename It>
+  It indices(It multiIndices, BasisBuilder::FlatLexicographic) const
   {
-    template<class I, class SNIT, class SFT>
-    bool operator()(const I& i, SNIT& subNodeIndexSetTuple, const SFT& subFactories, size_type& localIndex, size_type& rootOffset, MultiIndex& multiIndex)
-    {
-      const auto& subNodeIndexSet = std::get<I::value>(subNodeIndexSetTuple);
-      size_type size = subNodeIndexSet.size();
-      if (localIndex < size)
-      {
-        multiIndex = subNodeIndexSet.index(localIndex);
-        multiIndex[0] += rootOffset;
-        return true;
-      }
-      localIndex -= size;
-      rootOffset += std::get<I::value>(subFactories).size();
-      return false;
-    }
-  };
-
-  MultiIndex index(const size_type& localIndex, BasisBuilder::FlatLexicographic) const
-  {
-    size_type shiftedLocalIndex = localIndex;
-    size_type rootOffset = 0;
-    MultiIndex mi;
-    staticFindInRange<0, sizeof...(SF)>(Lambda_index_flat(), subNodeIndexSetTuple_, nodeFactory_->subFactories_, shiftedLocalIndex, rootOffset, mi);
-    return mi;
+    using namespace Dune::Hybrid;
+    size_type firstComponentOffset = 0;
+    // Loop over all children
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
+      const auto& subNodeIndexSet = elementAt(subNodeIndexSetTuple_, child);
+      const auto& subNodeFactory = elementAt(nodeFactory_->subFactories_, child);
+      size_type subTreeSize = subNodeIndexSet.size();
+      // Fill indices for current child into index buffer starting from current
+      // buffer position and shift first index component of any index for current
+      // child by suitable offset to get lexicographic indices.
+      subNodeIndexSet.indices(multiIndices);
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+        multiIndices[i][0] += firstComponentOffset;
+      // Increment offset by the size for first index component of the current child
+      firstComponentOffset += subNodeFactory.size({});
+      // Increment buffer iterator by the number of indices processed for current child
+      multiIndices += subTreeSize;
+    });
+    return multiIndices;
   }
 
-  struct Lambda_index
+  static const void multiIndexPushFront(MultiIndex& M, size_type M0)
   {
-    template<class I, class SNIT>
-    bool operator()(const I& i, SNIT& subNodeIndexSetTuple, size_type& localIndex, size_type& component, MultiIndex& multiIndex)
-    {
-      const auto& subNodeIndexSet = std::get<I::value>(subNodeIndexSetTuple);
-      size_type size = subNodeIndexSet.size();
-      if (localIndex < size)
-      {
-        multiIndex = subNodeIndexSet.index(localIndex);
-        component = i;
-        return true;
-      }
-      localIndex -= size;
-      return false;
-    }
-  };
-
-  MultiIndex index(const size_type& localIndex, BasisBuilder::BlockedLexicographic) const
-  {
-    size_type shiftedLocalIndex = localIndex;
-    size_type component = 0;
-    MultiIndex mi;
-    staticFindInRange<0, sizeof...(SF)>(Lambda_index(), subNodeIndexSetTuple_, shiftedLocalIndex, component, mi);
-    mi.resize(mi.size()+1);
-
-    for(std::size_t i=mi.size()-1; i>0; --i)
-      mi[i] = mi[i-1];
-    mi[0] = component;
-    return mi;
+    M.resize(M.size()+1);
+    for(std::size_t i=M.size()-1; i>0; --i)
+      M[i] = M[i-1];
+    M[0] = M0;
   }
+
+  template<typename It>
+  It indices(It multiIndices, BasisBuilder::BlockedLexicographic) const
+  {
+    using namespace Dune::Hybrid;
+    // Loop over all children
+    forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
+      const auto& subNodeIndexSet = elementAt(subNodeIndexSetTuple_, child);
+      size_type subTreeSize = subNodeIndexSet.size();
+      // Fill indices for current child into index buffer starting from current position
+      subNodeIndexSet.indices(multiIndices);
+      // Insert child index before first component of all indices of current child.
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+        this->multiIndexPushFront(multiIndices[i], child);
+      // Increment buffer iterator by the number of indices processed for current child
+      multiIndices += subTreeSize;
+    });
+    return multiIndices;
+  }
+
 
 private:
   const NodeFactory* nodeFactory_;

@@ -263,13 +263,18 @@ public:
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  MultiIndex index(size_type i) const
+  template<typename It>
+  It indices(It it) const
   {
-    Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
-    const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
-    const auto& element = node_->element();
+    for (size_type i = 0, end = size() ; i != end ; ++i, ++it)
+      {
+        Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
+        const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
+        const auto& element = node_->element();
 
-    return {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
+        *it = {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
+      }
+    return it;
   }
 
 protected:
