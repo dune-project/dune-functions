@@ -356,26 +356,34 @@ public:
     return node_->finiteElement().size();
   }
 
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  //! Assume dim \in \lbrace 2, 3 \rbrace.
-  MultiIndex index(size_type i) const
+  /**
+   * \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+   *
+   * This assume dim \in \lbrace 2, 3 \rbrace.
+   */
+  template<typename It>
+  It indices(It it) const
   {
-    Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
     const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
     const auto& element = node_->element();
-
-    // The dimension of the entity that the current dof is related to
-    size_t subentity = localKey.subEntity();
-    size_t codim = localKey.codim();
 
     // throw if Element is not of predefined type
     if (not(basic_type==GeometryType::BasicType::cube and element.type().isCube()) and
         not(basic_type==GeometryType::BasicType::simplex and element.type().isSimplex())) DUNE_THROW(Dune::NotImplemented, "RaviartThomasNodalBasis only implemented for cube and simplex elements.");
 
-    if (not(codim==0 or codim==1)) DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasBasis");
+    for(std::size_t i=0, end=size(); i<end; ++i, ++it)
+    {
+      Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
 
-    return { nodeFactory_->codimOffset_[codim] +
-             nodeFactory_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
+      // The dimension of the entity that the current dof is related to
+      size_t subentity = localKey.subEntity();
+      size_t codim = localKey.codim();
+
+      if (not(codim==0 or codim==1)) DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasBasis");
+
+      *it = { nodeFactory_->codimOffset_[codim] +
+        nodeFactory_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
+    }
   }
 
 protected:
