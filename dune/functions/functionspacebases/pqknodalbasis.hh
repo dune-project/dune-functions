@@ -373,8 +373,8 @@ public:
               }
             else
               {
-                const Dune::ReferenceElement<double,dim>& refElement
-                  = Dune::ReferenceElements<double,dim>::general(element.type());
+                const auto refElement
+                  = Dune::referenceElement<double,dim>(element.type());
 
                 // we have to reverse the numbering if the local triangle edge is
                 // not aligned with the global edge
@@ -412,8 +412,8 @@ public:
                   DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
               } else
               {
-                const Dune::ReferenceElement<double,dim>& refElement
-                  = Dune::ReferenceElements<double,dim>::general(element.type());
+                const auto refElement
+                  = Dune::referenceElement<double,dim>(element.type());
 
                 if (k>3)
                   DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids is only implemented if k<=3");
