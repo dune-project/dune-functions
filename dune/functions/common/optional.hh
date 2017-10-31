@@ -6,7 +6,7 @@
 #include <dune/common/std/optional.hh>
 
 namespace Dune {
-namespace Function {
+namespace Functions {
   template< class T >
   using Optional = Std::optional< T >;
 }} // namespace Dune::Functions
