@@ -39,47 +39,47 @@ template<class T, template<class> class ND, bool LO>
 class TreeData
 {
 public:
-  /// Type of tree the data is associated with
+  //! Type of tree the data is associated with
   using Tree = T;
 
-  /// Type used for indices and size information
+  //! Type used for indices and size information
   using size_type = typename Tree::size_type;
 
-  /// Set if data should only be associated to the leafs
+  //! Set if data should only be associated to the leafs
   static const bool leafOnly = LO;
 
-  /// Template to determine the data type for given node type
+  //! Template to determine the data type for given node type
   template<class Node>
   using NodeData = ND<Node>;
 
 public:
-  /// Default constructor
+  //! Default constructor
   TreeData()
     : tree_(nullptr)
   {}
 
   /**
-    * \brief Construct from tree
-    *
-    * This default creates the data object associated to each node in the tree.
-    * A reference to the tree is stored because it's needed for destruction
-    * of the tree data.
-    * See also \ref init.
-    **/
+   * \brief Construct from tree
+   *
+   * This default creates the data object associated to each node in the tree.
+   * A reference to the tree is stored because it's needed for destruction
+   * of the tree data.
+   * See also \ref init.
+   */
   TreeData(const Tree& tree)
     : tree_(&tree)
   {
     initData();
   }
 
-  /// Copy constructor
+  //! Copy constructor
   TreeData(const TreeData& other)
     : TreeData(*other.tree_)
   {
     copyData(other);
   }
 
-  /// Move constructor
+  //! Move constructor
   TreeData(TreeData&& other)
     : TreeData()
   {
@@ -87,12 +87,12 @@ public:
   }
 
   /**
-    * \brief Initialize from tree
-    *
-    * This default creates the data object associated to each node in the tree.
-    * A reference to the tree is stored because it's needed for destruction
-    * of the tree data.
-    **/
+   * \brief Initialize from tree
+   *
+   * This default creates the data object associated to each node in the tree.
+   * A reference to the tree is stored because it's needed for destruction
+   * of the tree data.
+   */
   void init(const Tree& tree)
   {
     destroyData();
@@ -100,40 +100,40 @@ public:
     initData();
   }
 
-  /// Copy and Move assignment
+  //! Copy and Move assignment
   TreeData& operator=(TreeData other)
   {
     swap(other);
     return *this;
   }
 
-  /// Destructor
+  //! Destructor
   ~TreeData()
   {
     destroyData();
   }
 
-  /// Return the attached tree (maybe nullptr)
+  //! Return the attached tree (maybe nullptr)
   Tree const* tree() const
   {
     return tree_;
   }
 
-  /// Get mutable reference to data associated to given node
-  template <class Node>
+  //! Get mutable reference to data associated to given node
+  template<class Node>
   NodeData<Node>& operator[](const Node& node)
   {
     return *(NodeData<Node>*)(data_[node.treeIndex()]);
   }
 
-  /// Get reference to data associated to given node
-  template <class Node>
+  //! Get reference to data associated to given node
+  template<class Node>
   const NodeData<Node>& operator[](const Node& node) const
   {
     return *(NodeData<Node>*)(data_[node.treeIndex()]);
   }
 
-  /// Swap tree and data container with `other`
+  //! Swap tree and data container with `other`
   void swap(TreeData& other)
   {
     using std::swap;
