@@ -12,29 +12,29 @@ namespace Dune {
 namespace Functions {
 
 /**
-* \brief Container allowing to attach data to each node of a tree
-*
-* \ingroup Utility
-*
-* This provides operator[](Node) for accessing the data attached to the node.
-* For storing the data each node is identified via its treeIndex() method
-* which is supposed to return an index which is unique wrt the tree. These
-* indices need not to be consecutive but they are used to access an
-* internal vector<void*>. This may lead to wasted memory if the maximal
-* treeIndex() is much larger then the number of nodes within the tree.
-*
-* Before using the container it must be initialized by providing the
-* tree. The stored data objects will be created on initialization. Hence
-* the type of these data objects must be default constructible.
-*
-* Notice that the data per node can only be interpreted if the
-* node type is known. Hence the tree will be traversed on initilization,
-* copy, assignment, and destruction of a TreeData container.
-*
-* \tparam T Type of the tree
-* \tparam ND The data stored for a node of type Node will be of type ND<Node>
-* \tparam LO Set this flag if data should only be attached to leaf nodes.
-*/
+ * \brief Container allowing to attach data to each node of a tree
+ *
+ * \ingroup Utility
+ *
+ * This provides operator[](Node) for accessing the data attached to the node.
+ * For storing the data each node is identified via its treeIndex() method
+ * which is supposed to return an index which is unique wrt the tree. These
+ * indices need not to be consecutive but they are used to access an
+ * internal vector<void*>. This may lead to wasted memory if the maximal
+ * treeIndex() is much larger then the number of nodes within the tree.
+ *
+ * Before using the container it must be initialized by providing the
+ * tree. The stored data objects will be created on initialization. Hence
+ * the type of these data objects must be default constructible.
+ *
+ * Notice that the data per node can only be interpreted if the
+ * node type is known. Hence the tree will be traversed on initilization,
+ * copy, assignment, and destruction of a TreeData container.
+ *
+ * \tparam T Type of the tree
+ * \tparam ND The data stored for a node of type Node will be of type ND<Node>
+ * \tparam LO Set this flag if data should only be attached to leaf nodes.
+ */
 template<class T, template<class> class ND, bool LO>
 class TreeData
 {
