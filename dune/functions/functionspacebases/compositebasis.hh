@@ -156,6 +156,7 @@ public:
   {
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      using namespace Dune::Hybrid;
       elementAt(subFactories_, i).initializeIndices();
     });
   }
@@ -171,6 +172,7 @@ public:
   {
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      using namespace Dune::Hybrid;
       elementAt(subFactories_, i).update(gv);
     });
   }
@@ -191,6 +193,7 @@ public:
     auto node = Node<TP>(tp);
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      using namespace Dune::Hybrid;
       node.setChild( elementAt(subFactories_, i).node(TypeTree::push_back(tp, i)), i);
     });
     return node;
@@ -268,6 +271,7 @@ private:
     using namespace Dune::Hybrid;
     if (prefix.size() == 0)
       forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+        using namespace Dune::Hybrid;
         r += elementAt(subFactories_, i).size();
       });
     else {
@@ -286,6 +290,7 @@ public:
     // Accumulate dimension() for all subfactories
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      using namespace Dune::Hybrid;
       r += elementAt(subFactories_, i).dimension();
     });
     return r;
@@ -298,6 +303,7 @@ public:
     // Accumulate maxNodeSize() for all subfactories
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      using namespace Dune::Hybrid;
       r += elementAt(subFactories_, i).maxNodeSize();
     });
     return r;
@@ -355,6 +361,7 @@ public:
     node_ = &node;
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      using namespace Dune::Hybrid;
       elementAt(subNodeIndexSetTuple_, i).bind(node.child(i));
     });
   }
@@ -364,6 +371,7 @@ public:
     node_ = nullptr;
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      using namespace Dune::Hybrid;
       elementAt(subNodeIndexSetTuple_, i).unbind();
     });
   }
@@ -387,6 +395,7 @@ public:
     size_type firstComponentOffset = 0;
     // Loop over all children
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
+      using namespace Dune::Hybrid;
       const auto& subNodeIndexSet = elementAt(subNodeIndexSetTuple_, child);
       const auto& subNodeFactory = elementAt(nodeFactory_->subFactories_, child);
       size_type subTreeSize = subNodeIndexSet.size();
@@ -404,7 +413,7 @@ public:
     return multiIndices;
   }
 
-  static const void multiIndexPushFront(MultiIndex& M, size_type M0)
+  static void multiIndexPushFront(MultiIndex& M, size_type M0)
   {
     M.resize(M.size()+1);
     for(std::size_t i=M.size()-1; i>0; --i)
@@ -418,6 +427,7 @@ public:
     using namespace Dune::Hybrid;
     // Loop over all children
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
+      using namespace Dune::Hybrid;
       const auto& subNodeIndexSet = elementAt(subNodeIndexSetTuple_, child);
       size_type subTreeSize = subNodeIndexSet.size();
       // Fill indices for current child into index buffer starting from current position

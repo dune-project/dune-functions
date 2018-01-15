@@ -28,7 +28,7 @@ public:
 private:
 
   template<typename NodeIndexSet>
-  using hasIndices = decltype(std::declval<NodeIndexSet>().indices(std::declval<std::vector<MultiIndex>>().begin()));
+  using hasIndices = decltype(std::declval<NodeIndexSet>().indices(std::declval<std::vector<typename NodeIndexSet::MultiIndex>>().begin()));
 
 public:
 
