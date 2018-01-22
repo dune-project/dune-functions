@@ -384,6 +384,8 @@ public:
       *it = { nodeFactory_->codimOffset_[codim] +
         nodeFactory_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
     }
+
+    return it;
   }
 
 protected:
