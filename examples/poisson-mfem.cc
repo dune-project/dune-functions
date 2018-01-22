@@ -502,7 +502,7 @@ int main (int argc, char *argv[])
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
   //////////////////////////////////////////////////////////////////////////////////////////////
-  SubsamplingVTKWriter<GridView> vtkWriter(gridView,0);
+  SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(0));
   vtkWriter.addVertexData(fluxFunction, VTK::FieldInfo("flux", VTK::FieldInfo::Type::vector, dim));
   if (k==0)
     vtkWriter.addCellData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));

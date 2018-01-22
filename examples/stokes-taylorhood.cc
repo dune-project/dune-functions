@@ -427,7 +427,7 @@ int main (int argc, char *argv[]) try
   //  Write result to VTK file
   //  We need to subsample, because VTK cannot natively display real second-order functions
   //////////////////////////////////////////////////////////////////////////////////////////////
-  SubsamplingVTKWriter<GridView> vtkWriter(gridView,2);
+  SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(2));
   vtkWriter.addVertexData(velocityFunction, VTK::FieldInfo("velocity", VTK::FieldInfo::Type::vector, dim));
   vtkWriter.addVertexData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.write("stokes-taylorhood-result");
