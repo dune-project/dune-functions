@@ -458,7 +458,7 @@ int main (int argc, char *argv[]) try
   MatrixAdapter<MatrixType,VectorType,VectorType> op(stiffnessMatrix);
 
   // Sequential incomplete LU decomposition as the preconditioner
-  SeqILU0<MatrixType,VectorType,VectorType> preconditioner(stiffnessMatrix,1.0);
+  SeqILU<MatrixType,VectorType,VectorType> preconditioner(stiffnessMatrix,1.0);
 
 //  Richardson<VectorType,VectorType> preconditioner(1.0);
 

@@ -365,7 +365,7 @@ int main (int argc, char *argv[]) try
   MatrixAdapter<MatrixType,VectorType,VectorType> op(stiffnessMatrix);
 
   // Sequential incomplete LU decomposition as the preconditioner
-  SeqILU0<MatrixType,VectorType,VectorType> ilu0(stiffnessMatrix,1.0);
+  SeqILU<MatrixType,VectorType,VectorType> ilu0(stiffnessMatrix,1.0);
 
   // Preconditioned conjugate-gradient solver
   CGSolver<VectorType> cg(op,
