@@ -6,6 +6,7 @@
 #include <tuple>
 
 #include <dune/common/indices.hh>
+#include <dune/common/deprecated.hh>
 
 namespace Dune
 {
@@ -18,7 +19,8 @@ namespace Functions
    * \ingroup Utility
    */
   template<class... T>
-  class TupleVector : public std::tuple<T...>
+  class DUNE_DEPRECATED_MSG("Dune::TupleVector form dune-common instead!")
+  TupleVector : public std::tuple<T...>
   {
     using Base = std::tuple<T...>;
 
