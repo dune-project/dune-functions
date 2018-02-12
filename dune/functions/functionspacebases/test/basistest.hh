@@ -50,7 +50,7 @@ bool multiIndicesConsecutive(const MultiIndex& a, const MultiIndex& b)
 
 
 template<class MultiIndexSet>
-Dune::TestSuite checkIndexTreeConsistency(const MultiIndexSet& multiIndexSet)
+Dune::TestSuite checkBasisIndexTreeConsistency(const MultiIndexSet& multiIndexSet)
 {
   Dune::TestSuite test("index tree consistency check");
 
@@ -94,6 +94,41 @@ Dune::TestSuite checkIndexTreeConsistency(const MultiIndexSet& multiIndexSet)
 
 
 
+template<class Basis, class MultiIndexSet>
+Dune::TestSuite checkBasisSizeConsistency(const Basis& basis, const MultiIndexSet& multiIndexSet)
+{
+  Dune::TestSuite test("index size consistency check");
+
+  auto prefix = typename Basis::SizePrefix{};
+
+  for(const auto& index : multiIndexSet)
+  {
+    prefix.clear();
+    for (const auto& i: index)
+    {
+      // All indices i collected so far from the multi-index
+      // refer to a non-empty multi-index subtree. Hence the
+      // size must be nonzero and in fact strictly larger than
+      // the next index.
+      auto prefixSize = basis.size(prefix);
+      test.require(prefixSize > i, "basis.size(prefix) subtree check")
+        << "basis.size(" << prefix << ")=" << prefixSize << " but index " << index << " exists";
+
+      // append next index from multi-index
+      prefix.push_back(i);
+    }
+    auto prefixSize = basis.size(prefix);
+    test.require(prefixSize == 0, "basis.size(prefix) leaf check")
+      << "basis.size(" << prefix << ")=" << prefixSize << " but the prefix exists as index";
+  }
+
+  // ToDo: Add check that for basis.size(prefix)==n with i>0
+  // there exist multi-indices of the form (prefix,0,...)...(prefix,n-1,...)
+
+  return test;
+}
+
+
 
 template<class Basis>
 Dune::TestSuite checkBasisIndices(const Basis& basis)
@@ -124,7 +159,8 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
     }
   }
 
-  test.subTest(checkIndexTreeConsistency(multiIndexSet));
+  test.subTest(checkBasisIndexTreeConsistency(multiIndexSet));
+  test.subTest(checkBasisSizeConsistency(basis, multiIndexSet));
 
   return test;
 }
