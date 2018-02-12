@@ -23,6 +23,8 @@
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/functions/functionspacebases/bsplinebasis.hh>
 
+#include <dune/functions/functionspacebases/test/basistest.hh>
+
 using namespace Dune;
 using namespace Dune::Functions;
 
@@ -237,6 +239,14 @@ void testScalarBasisConst(const Basis& feBasis,
 
   if (!disableInterpolate && std::abs(integral-0.5) > 1e-10)
     DUNE_THROW(Dune::Exception, "Error: integral value is wrong!");
+
+
+  auto checkResult = checkBasis(feBasis);
+  if (not checkResult)
+  {
+    checkResult.report();
+    DUNE_THROW(Dune::Exception, "checkBasis() failed");
+  }
 }
 
 template <typename Basis, typename GV>
