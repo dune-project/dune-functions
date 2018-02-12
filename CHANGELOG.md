@@ -25,6 +25,7 @@ dune-functions 2.6-dev
   Debian 8 is no longer supported and tested.
 - An implementation of a global Raviart-Thomas basis provided by Jakub Both was merged.
   This is still incomplete and considered experimental.
+- `Dune::Functions::TupleVector` was deprecated. Use `Dune::TupleVector` from dune-common instead.
 
 dune-functions 2.5
 ------------
