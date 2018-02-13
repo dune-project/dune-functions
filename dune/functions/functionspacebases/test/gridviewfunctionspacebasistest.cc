@@ -8,9 +8,6 @@
 #include <dune/common/exceptions.hh>
 #include <dune/common/typetraits.hh>
 #include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/fvector.hh>
-
-#include <dune/istl/bvector.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -25,7 +22,6 @@
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/functions/functionspacebases/bsplinebasis.hh>
-#include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 
 using namespace Dune;
 using namespace Dune::Functions;
@@ -127,17 +123,6 @@ void testScalarBasisConst(const Basis& feBasis,
 
   // And this type must be indexable
   static_assert(is_indexable<MultiIndex>(), "MultiIndex must support operator[]");
-
-  // Check if basis is compatible with HierarchicVectorWrapper's resize():
-  {
-    auto vector = BlockVector<FieldVector<double, 1>>();
-    auto backend = Functions::hierarchicVector(vector);
-
-    // resize using the vector backend
-    backend.resize(feBasis);
-
-    assert(vector.size() == feBasis.size());// Test if vector was successfully resized
-  }
 
   ///////////////////////////////////////////////////////////////////////////////////
   //  Check whether the global indices are in the correct range,
