@@ -122,15 +122,18 @@
 
 \maketitle
 
-\tableofcontents
-
 \begin{abstract}
  \dunemodule{dune-functions} is a \dune module that provides interfaces for functions and function space bases.
- It forms one abstraction level above grids, shape functions, and linear algebra, but still sits below
- full discretization frameworks like \dunemodule{dune-pdelab} and \dunemodule{dune-fem}.
- As an example, this document shows how the \dunemodule{dune-functions} module can be used to solve the Stokes
- equation with a Taylor--Hood discretization.
+ It forms one abstraction level above grids, shape functions, and linear algebra, and provides infrastructure
+ for full discretization frameworks like \dunemodule{dune-pdelab} and \dunemodule{dune-fem}.
+ This document describes the function space bases provided by \dunemodule{dune-functions}.  These are
+ based on an abstract description of bases for external sum spaces as trees of simpler bases.
+ From this description, orderings of degrees of freedom and their numbering by multi-indices can be
+ derived in a natural way. We describe the abstract concepts, document the programmer interface,
+ and give a complete example program that solves the stationary Stokes equation using Taylor--Hood elements.
 \end{abstract}
+
+\tableofcontents
 
 \section{Introduction}
 
