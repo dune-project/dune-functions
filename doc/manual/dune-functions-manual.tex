@@ -133,10 +133,40 @@
  and give a complete example program that solves the stationary Stokes equation using Taylor--Hood elements.
 \end{abstract}
 
-\tableofcontents
+\section*{Introduction}
 
-\section{Introduction}
+The core modules of the \dune software system have always focused on low-level infrastructure for
+implementations of simulation algorithms for partial differential equations.  Module like
+\dunemodule{dune-grid} and \dunemodule{dune-istl} provide APIs to finite  element grids
+and sparse linear algebra, respectively, but little more. Actual finite element functions only
+appear in the \dunemodule{dune-localfunctions} module, which deals with discrete function spaces
+on a single grid element exclusively.
 
+On top of these core modules, various other modules implement finite element and finite volume assemblers
+and solvers, and the corresponding discrete function spaces. The most prominent ones are
+\dunemodule{dune-pdelab}%
+\footnote{\url{https://dune-project.org/modules/dune-pdelab}}
+%
+and \dunemodule{dune-fem},%
+\footnote{\url{https://dune-project.org/modules/dune-fem/}}
+%
+but smaller ones like \dunemodule{dune-fufem}%
+\footnote{\url{https://dune-project.org/modules/dune-fufem/}}
+%
+exist as well.  The functionality of these modules overlaps to a considerable extent, even though
+each such module has a different focus.
+
+The \dunemodule{dune-functions}  module was written to partially overcome this fragmentation.
+It picks a well-defined aspect of finite element assembly---finite element spaces and functions---and,
+in the \dune spirit, provides an abstract interface that tries to be both extremely flexibly
+and efficient.  It is hoped for that other implementations of the same functionality will
+eventually replace their implementations by a dependence on \dunemodule{dune-functions}.
+Indeed, at least \dunemodule{dune-pdelab} and \dunemodule{dune-fufem} are already in the process
+of migrating, and have stated their clear intention to complete this migration eventually.
+
+Of the two main partos of \dunemodule{dune-functions} functionality, the API for discrete and
+closed-form functions has already been described in a separate paper~\cite{engwer_graeser_muething_sander:2015}.
+This document focuses on bases of discrete functions.
 
 The main purpose of the \dunemodule{dune-functions} module is to describe discrete function spaces defined on a grid.
 Still, the central concept in the code is not the function space itself, but rather the {\em basis} of the function space.
@@ -153,33 +183,14 @@ written as products of scalar spaces, and the same holds for mixed finite elemen
 have a natural structure as a tree, with scalar-valued or otherwise irreducible spaces forming the leaves, and
 products forming the other nodes.
 
-This abstract construction is described in Chapter~\ref{sec:dune_functions:finite_element_trees}.
-The programmer interface is centered around this notion of trees of finite element spaces, and gains
-much elegance from it.
-Then, Chapter~\ref{sec:dune_functions:function_space_bases_implementation} explains the programmer interface to function space bases.
-
-The \dunemodule{dune-functions} module also contains an the interface for functions.
-This interface is described in a separate paper~\cite{engwer_graeser_muething_sander:2015}.
-
-\subsection{Obtaining and installing the module}
-
-The code for the \dune interface for function spaces and functions
-described in this chapter is contained in a separate \dune module called \dunemodule{dune-functions}.
-Consequently, all header include paths
-start with \cpp{dune/functions/}, and all code is contained in the namespace \cpp{Dune::Functions}.
-In addition, \dunemodule{dune-functions} depends on a library for tree data structures contained in a module
+\dunemodule{dune-functions} depends on a library for tree data structures contained in a module
 called \dunemodule{dune-typetree}, which needs to be available to use \dunemodule{dune-functions}.
-If you have not installed the two modules already, please do so now.  On Linux systems you may get them
-from your distribution.  Otherwise, download the source code by
-\begin{shellenv}
-git clone http://git.dune-project.org/repositories/dune-typetree
-git clone http://git.dune-project.org/repositories/dune-functions
-\end{shellenv}
-\todosander{The URLS need to be updated!}
-Then you can build both modules in the usual way, by calling
-\begin{shellenv}
-dunecontrol all
-\end{shellenv}
+If you have not installed the two modules already, please do so now.
+Installation instructions and a up-to-date class documentation can be found on the \dune
+project homepage \url{www.dune-project.org}.
+
+\setcounter{tocdepth}{2}  % Show only sections and subsections, but no more
+\tableofcontents
 
 
 
@@ -737,6 +748,9 @@ delegated to a separate object called a \cpp{LocalIndexSet}, which you can bind 
 \cpp{LocalView} objects.  Once bound, a \cpp{LocalIndexSet} will provide global (multi-)indices
 for each shape function on this element.  The structure of the interface is visualized in
 Figure~\ref{fig:dune_functions:febasis_interface_schematic}.
+
+All header include paths
+start with \cpp{dune/functions/}, and all code is contained in the namespace \cpp{Dune::Functions}.
 
 \subsection{Function space bases defined on a grid view}
 
