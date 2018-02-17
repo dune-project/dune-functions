@@ -740,7 +740,7 @@ and it provides the mapping from element-local shape function numbers to global 
 \end{figure}
 
 
-To reflect this, the interface of function space bases is divided into two parts.  A \cpp{LocalView} on an
+To reflect this, the user interface of function space bases is divided into two parts.  A \cpp{LocalView} on an
 element allows you to obtain the finite element of that element, which in turn gives you access to all
 shape functions, associations to element subentities, and local interpolation rules provided by
 \dunemodule{dune-localfunctions}.  The mapping of these shape functions to global degrees of freedom is
@@ -752,194 +752,13 @@ Figure~\ref{fig:dune_functions:febasis_interface_schematic}.
 All header include paths
 start with \cpp{dune/functions/}, and all code is contained in the namespace \cpp{Dune::Functions}.
 
-\subsection{Function space bases defined on a grid view}
-
-The basis interface is implemented in a mix of static and dynamic polymorphism.  For each concept
-there is a pure abstract base class in \file{dune/functions/functionspacebases/gridviewfunctionspacebasis.hh},
-and implementations of function space bases should inherit from these classes.  On the other hand,
-objects are usually handed out by-value, and so the classes can be used in a statically polymorphic
-context.
-
-Main interface class is the class \cpp{GridViewFunctionSpaceBasis}, which represents a basis of a
-function space defined on a single grid view.%
-\footnote{As opposed to, say, a basis defined only on parts of a grid view.}
-The class is declared in
-\file{dune/functions/functionspacebases/gridviewfunctionspacebasis.hh}.  The interface of this class
-is fairly short.  Table~\ref{} lists the exported static information,
-and Table~\ref{} lists all public methods.
-As you can see, the class takes four template parameters, which all represent types.  They are
-\begin{description}
- \item [GV] The grid view (i.e., non-hierarchical grid) that the basis is defined on,
- \item [LV] the type implementing the restriction of the basis to a single element,
- \item [IS] the type implementing the basis index set,
- \item [MI] The type used for multi-indices.
-\end{description}
-These types are exported by the interface class as \cpp{GridView}, \cpp{LocalView}, \cpp{IndexSet}, and
-\cpp{MultiIndex}, respectively.  The class has four public methods, all of which are \cpp{const}
-and pure virtual.  The method \cpp{gridView} returns the grid view object that the basis is
-defined on.  The method \cpp{localIndexSet} returns the index set object, which we discuss below.
-
-Finally, the main method is called \cpp{localView}.  It returns the restriction of the basis
-to a single element.  This restriction then provides access to the actual shape functions and
-their numbers.  Note that the method \cpp{localView} does not take any arguments.
-
-\subsection{\texorpdfstring{\cpp{LocalView}}{LocalView} objects and the tree of shape functions}
-
-The \cpp{localView}
-method produces a \cpp{LocalView} object that is {\em free}, i.e., not associated to any
-element of the grid view.  Before being useful it needs to be bound to a particular element.
-
-The interface of the \cpp{LocalView} class is again rather short.  Tables~\ref{}
-and~\ref{} list the exported static data and the public methods, respectively.
-The \cpp{bind} method accepts a grid element and binds the view to the element.  Nothing can be done with a
-\cpp{LocalView} object before it is bound to an element.  This construction allows to perform element-related
-setup tasks once in the \cpp{bind}-method, and obtain faster calls afterwards.
-
-Once the view is bound to an element, you can obtain the tree of finite elements by calling the \cpp{tree}
-method.  The resulting object is a tree as described in Chapter~\ref{}.
-
-Trees are constructed from three parts, corresponding to Chapter~\ref{}.
-Leaf nodes implement scalar local finite elements.  Power nodes are inner tree nodes that combine a number
-of identical subtrees.  Finally, composite nodes combine non-identical subtrees.  Each of the three classes
-has an interface class, and we discuss each of them in turn.  If all you are interested in are
-scalar finite elements, you only have to read about the leaf nodes.
-
-\begin{itemize}
- \item Leaf nodes
- \item Power nodes
- \item Composite nodes
- \item localIndex method
-\end{itemize}
-
-\begin{description}
-\item[CompositeBasis] A \cpp{CompositeBasis} is the product of an arbitrary collection of underlying bases and is the
-most versatile representation of a composite space. We will use this class to create the overall space $V_{TH}$.
-The corresponding C++ class simply takes the list of components as both template and constructor parameters:
-\begin{lstlisting}
-template<typename... Components>
-class CompositeBasis
-{
-  ...
-  // Construct a CompositeBasis from its components
-  CompositeBasis(Components&&... components);
-
-  // Equivalent interface for dynamically allocated components
-  CompositeBasis(shared_ptr<Components>... component_pointers);
-  ...
-};
-\end{lstlisting}
-\item[PowerBasis] While the \cpp/CompositeBasis/ can be used for any kind of product space, it may not always be the most natural
-or efficient model for it. Our velocity space is a good example for this: We can most naturally understand it as a vector-valued
-version of the underlying scalar space $V_v = (P_2)^3$. The \cpp/PowerBasis/ is a direct model of this concept and describes
-a composite space as a combination of a single component space and an integer power $k$:
-  \begin{lstlisting}
-template<typename Component, std::size_t k>
-class PowerBasis
-{
-  ...
-  // This constructor will duplicate its argument k times
-  PowerBasis(Component&& component);
-  // This constructor requires exactly k arguments and should be used
-  // if the components have to be set up individually
-  PowerBasis(Component&... components);
-
-  // Equivalent interface for dynamically allocated components
-  PowerBasis(shared_ptr<Component> component_pointer);
-  PowerBasis(shared_ptr<Component>... component_pointers);
-  ...
-};
-  \end{lstlisting}
-\end{description}
-
-
-\subsection{Global shape function indices}
-
-The basis functions of this tree are numbered, and these numbers are what you use to index rows and columns
-of your element stiffness matrix.  As explained in Chapter~\ref{sec:dune_functions:basis_ordering}, there is a range
-of possibilities to index the basis functions in a finite element tree.  However, for this element-local
-tree, only the flat index is available.  It is our (current) belief that only this
-index is needed for indexing local basis functions, and providing no alternative reduces interface
-complexity considerably.  On the other hand, for the indexing of the global basis functions, having the choice
-between different numberings is definitely useful.
-
-Consider, for example, a $k$-th order DG space on a triangle grid.  It is always reasonable to use a normal
-random access container such as \cpp{std::vector<double>} to store coefficients of finite element functions.
-Such containers are indexed with a flat index.
-
-
-\subsection{Function space bases available in \texorpdfstring{\dunemodule{dune-functions}}{dune-functions}}
-
-The \dunemodule{dune-functions} module contains a collection of finite element bases that implement
-this interface.  At the time of writing these are:
-
-\begin{itemize}
- \item \cpp{PQkNodalBasis}: Lagrangian bases of order $k$, where $k$ is a compile-time parameter.
-   For $k\le 2$, this implementation works on all kinds of conforming grids, including grids with more
-   than one element type.  At the time of writing, higher-order spaces are implemented only partially.
-   Check the online class documentation for the current status.
-
- \item \cpp{PQ1NodalBasis}: Lagrangian nodal bases of first order.  This is a separate implementation of
-   the case $k=1$ of the previous basis.  It exists mainly so that people interested in writing their
-   own bases have a simple example to look at.
-
- \item \cpp{TaylorHoodBasis}: The Taylor--Hood bases described in Chapter~\ref{sec:dune_functions:finite_element_trees}.
-   This is a simple example of basis constructed by building products.
-   A complete example for how to use this basis is given in Chapter~\ref{sec:stokes_example}.
-
- \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
-   The shape functions are the same as for the \cpp{PQkNodalBasis},
-   but the basis functions are not continuous across the element boundaries.  Therefore, this basis also
-   works well on non-conforming grids.  The polynomial order is again a compile-time constant.
-
- \item \cpp{BSplineBasis}:  Implements a $B$-Spline basis on a structured, axis-aligned grid as described,
-   e.g., in~\cite{cottrell_hughes_bazilevs:2009}.  Arbritrary orders, dimensions, and knot vectors are supported,
-   allowing, e.g., to work with $C^1$ elements for fourth-order differential equations.
-
-   Each \cpp{BSplineBasis} object implements a basis on a single patch, and the grid must correspond to this
-   patch. For this to work, several restrictions apply for the grid.  It must be structured and axis-aligned,
-   and consist of (hyper-)cube elements only.  Further, the element indices must be lexicographic and
-   increase from the lower left to the upper right domain corner.  The element spacing must math the knot spans.
-   Unfortunately, not all these requirements can be checked for by the basis, so users have to be a bit
-   careful.  Using a \cpp{YaspGrid} object works well.
-
-   Note that unlike in standard finite element bases, in a B-spline basis basis functions cannot be associated
-   to grid entities such as vertices, edges, or elements.  The interface nevertheless mandates that a
-   \cpp{LocalCoefficient} object must be available, but for the \cpp{BSplineBasis}, the behavior of this
-   object is undefined.
-\end{itemize}
-
-
-
-
-\section{Interfaces for global function space basis}
-
-We will now present the full interface provided by a global basis in
-\dunemodule{dune-functions}. The interface decomposes in two parts:
-The user interface and the implementors interface.
-
-The user interface is what is exposed by an actual basis for use in
-application code. Any basis satisfying this interface is a valid
-global basis in the \dunemodule{dune-functions} sense.
-The implementors interface describes the reusable part of
-a basis which is given by a \emph{node-factory} in the following.
-This interface allows to embed the node-factory into a function space
-basis of a larger space. This can be used, e.g., to compose
-ansatz bases for mixed formulations, multicomponent problems,
-or coupled multi-physic problems.
-
-In the next sections we will first describe the user interface
-of a global basis and related classes. Then we describe the implementors
-interface for node-factories and two special node-factories
-that can be used to compose nested bases.
-Finally we describe some convenience methods that simplify
-the construction of composed bases for the user.
-
+\todosander{We are using duck typing and type erasure.}
 
 
 \subsection{User interface of a \texttt{GlobalBasis}}
 We now describe the user interface provided by global bases and related types.
 Since there may be various implementations of those types, all class names used
-below are auxiliary names.  We will group exported type names and related methods
+below are generic names.  We will group exported type names and related methods
 to simplify the presentation.
 In general each basis implementation may require its own specific data for construction.
 Hence we do not enforce an argument list for this.
@@ -952,7 +771,7 @@ public:
 \end{lstlisting}
 
 As the global basis represents a function space defined on a grid view access to
-the latter is provided by the\texttt{gridView()} method while its type
+the latter is provided by the \texttt{gridView()} method while its type
 is exported as \texttt{GridView}.
 
 \begin{lstlisting}
@@ -1011,6 +830,7 @@ In any case this corresponds to the number of direct children
 of the node $(p_1,\dots,p_k)$ in the index tree.
 For convenience there is also a method \texttt{size()} returning the same
 value the method with an empty prefix, i.e., \texttt{size(\{\})}.
+For a scalar basis, this method again returns the number of basis functions.
 
 Since prefixes may have variable size, it is guaranteed that \texttt{SizePrefix}
 is always a \texttt{Dune::ReservedVector<size\_type,k>} where \texttt{k}
@@ -1028,12 +848,14 @@ type of all size-related methods is exported as \texttt{size\_type}.
 
 Finally, the basis exports its node-factory of type \texttt{NodeFactory}
 via the \texttt{nodeFactory()} method. The concept of a node-factory
-will be discussed below.
+will be discussed in Chapter~\ref{sec:implementation_api}.
 \todo[inline]{Carsten:Do we require that this method exists?}
 \todo[inline]{Carsten:Do we require that each global basis is
   implemented using a factory?}
 \todo[inline]{Carsten:Do we require that GlobalBasis is always
   a DefaultGlobalBasis parametrized with the node factory?}
+\todosander{I'd say we require that any basis can become part of a tree.
+  If that means that each global basis needs to be implemented using a factory: so be it.}
 
 \begin{lstlisting}
   using NodeFactory = <implementation define>;
@@ -1118,18 +940,7 @@ given below.
 The local view provides access to all local basis functions
 by exporting a \texttt{Tree} object. This implements a tree
 data structure using the foundation classes of the
-\dunemodule{dune-typetree} library. Using a tree allows
-to represent basis of spaces that have a nested product
-structure. This is important in many applications, e.g.,
-in elastomechanics where a typical ansatz space is $\mathcal{S}_k^d$
-where $\mathcal{S}_k$ is a $k$-th order scalar Lagrange space,
-for the stokes equation where the classical Taylor-Hood
-space is given by $(\mathcal{S}_{2}^d) \times \mathcal{S}_1$,
-or for multi-physics problems where one uses different
-ansatz spaces for each modeled quantity.
-
-A basis for all these nested product spaces can be represented
-in a tree data structure, where the actual local basis
+\dunemodule{dune-typetree} library, where the actual local basis
 functions for each factor are associated to a leaf node
 in the tree. As a consequence the interface of leaf nodes
 provides some additional features.
@@ -1148,7 +959,7 @@ index of the local basis functions within the subtree
 and the result is the lexicographic index within the full
 tree. Hence the local indices of all basis functions
 within this subtree form a consecutive range. The first
-value in this rage,i.e., the result of \texttt{localIndex(0)}
+value in this range, i.e., the result of \texttt{localIndex(0)}
 is also accessible via the \texttt{offset()} method.
 \todo[inline]{Is the offset() method part of the interface?
 Making it protected seems to be reasonable.}
@@ -1320,6 +1131,57 @@ from the namespace \texttt{TypeTree::Indices}
 to address the velocity node because the
 tree root is a hybrid container whose child nodes
 for velocity and pressure are of different type.
+
+
+\subsection{Function space bases available in \texorpdfstring{\dunemodule{dune-functions}}{dune-functions}}
+
+The \dunemodule{dune-functions} module contains a collection of finite element bases that implement
+this interface.  At the time of writing these are:
+
+\begin{itemize}
+ \item \cpp{PQkNodalBasis}: Lagrangian bases of order $k$, where $k$ is a compile-time parameter.
+   For $k\le 2$, this implementation works on all kinds of conforming grids, including grids with more
+   than one element type.  At the time of writing, higher-order spaces are implemented only partially.
+   Check the online class documentation for the current status.
+
+ \item \cpp{PQ1NodalBasis}: Lagrangian nodal bases of first order.  This is a separate implementation of
+   the case $k=1$ of the previous basis.  It exists mainly so that people interested in writing their
+   own bases have a simple example to look at.
+
+ \item \cpp{TaylorHoodBasis}: The Taylor--Hood bases described in Chapter~\ref{sec:dune_functions:finite_element_trees}.
+   This is a simple example of basis constructed by building products.
+   A complete example for how to use this basis is given in Chapter~\ref{sec:stokes_example}.
+   \todosander{Sollen wir diese Basis komplett entfernen, wo man sie mittlerweile doch
+     einfach aus den Einzelteilen zusammenbasteln kann?}
+
+ \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
+   The shape functions are the same as for the \cpp{PQkNodalBasis},
+   but the basis functions are not continuous across the element boundaries.  Therefore, this basis also
+   works well on non-conforming grids.  The polynomial order is again a compile-time constant.
+
+ \item \todosander{Raviart--Thomas basis}
+
+ \item \todosander{Rannacher--Turek basis}
+
+ \item \todosander{BDM basis}
+
+ \item \cpp{BSplineBasis}:  Implements a $B$-Spline basis on a structured, axis-aligned grid as described,
+   e.g., in~\cite{cottrell_hughes_bazilevs:2009}.  Arbritrary orders, dimensions, and knot vectors are supported,
+   allowing, e.g., to work with $C^1$ elements for fourth-order differential equations.
+
+   Each \cpp{BSplineBasis} object implements a basis on a single patch, and the grid must correspond to this
+   patch. For this to work, several restrictions apply for the grid.  It must be structured and axis-aligned,
+   and consist of (hyper-)cube elements only.  Further, the element indices must be lexicographic and
+   increase from the lower left to the upper right domain corner.  The element spacing must math the knot spans.
+   Unfortunately, not all these requirements can be checked for by the basis, so users have to be a bit
+   careful.  Using a \cpp{YaspGrid} object works well.
+
+   Note that unlike in standard finite element bases, in a B-spline basis basis functions cannot be associated
+   to grid entities such as vertices, edges, or elements.  The interface nevertheless mandates that a
+   \cpp{LocalCoefficient} object must be available, but for the \cpp{BSplineBasis}, the behavior of this
+   object is undefined.
+\end{itemize}
+
 
 
 \section{Solving the Stokes equation with \dunemodule{dune-functions}}
@@ -1815,6 +1677,18 @@ then add the resulting terms to the matrix.
 
 
 \section{Implementor interface}
+\label{sec:implementation_api}
+
+The user interface is what is exposed by an actual basis for use in
+application code. Any basis satisfying this interface is a valid
+global basis in the \dunemodule{dune-functions} sense.
+The implementors interface describes the reusable part of
+a basis which is given by a \emph{node-factory} in the following.
+This interface allows to embed the node-factory into a function space
+basis of a larger space. This can be used, e.g., to compose
+ansatz bases for mixed formulations, multicomponent problems,
+or coupled multi-physic problems.
+
 
 \subsection{Implementor interface of a \texttt{NodeFactory}}
 \subsection{Implementor interface of a \texttt{NodeIndexSet}}
