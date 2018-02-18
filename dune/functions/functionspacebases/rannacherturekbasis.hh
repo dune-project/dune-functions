@@ -307,7 +307,7 @@ struct RannacherTurekNodeFactoryBuilder
 
 
 /**
- * \brief Create a factory builder that can build a PQkNodeFactory
+ * \brief Create a factory builder that can build a RannacherTurek node factory
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
@@ -342,4 +342,4 @@ using RannacherTurekBasis = DefaultGlobalBasis<RannacherTurekNodeFactory<GV, Fla
 } // end namespace Functions
 } // end namespace Dune
 
-#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQ1NODALBASIS_HH
+#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_RANNACHERTUREKBASIS_HH
