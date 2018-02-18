@@ -105,7 +105,10 @@
 % For typesetting file names
 \newcommand{\file}[1]{\texttt{#1}}
 
+\definecolor{lightblue}{HTML}{55AAFF}
+
 \newcommand{\todosander}[1]{\todo[inline,color=orange,author=OS]{#1}}
+\newcommand{\todograeser}[1]{\todo[inline,color=lightblue,author=CG]{#1}}
 
 %%  All graphics files must be in this subdirectory
 \graphicspath{{gfx/}}
@@ -526,7 +529,7 @@ the following:
     \end{enumerate}
 \end{definition}
 
-If $\Lambda$ the set of basis functions of a finite element tree,
+If $\Lambda$ is the set of basis functions of a finite element tree,
 then \dunemodule{dune-functions} allows any indexing scheme that
 is given by an index map $I: \Lambda \to \mathcal{N}$
 whose range $I(\Lambda)$ is an index tree.
@@ -540,9 +543,9 @@ an index tree $\mathcal{I}$ we need a slightly more complicated
 construction. Let $(I,\dots) \in \mathcal{I}$, i.\,e., $I$ is a
 prefix of multi-indices in $\mathcal{I}$ then the size relative
 to $I$ is given by
-\begin{align*}
+\begin{align}\label{eq:prefix_size}
     |\mathcal{I}|_I = \op{max}\{k \st \exists (I,k,\dots) \in \mathcal{I} \}+1.
-\end{align*}
+\end{align}
 In terms of the ordered tree associated with $\mathcal{I}$ this corresponds
 to the number of direct children of the node indexed by $I$.
 
@@ -729,7 +732,7 @@ In total, for a tree with $N$ power nodes we obtain $2^N$ different ways to orde
 The design of the \dunemodule{dune-functions} interfaces for bases of discrete function spaces
 follows the ideas of the previous section.  In a nutshell, a \dunemodule{dune-functions} function space basis
 does two things for you: For each element it gives you access to the (tree of) shape functions there,
-and it provides the mapping from element-local shape function numbers to global basis function numbers.
+and it provides the mapping from element-local shape function indices to global basis function (multi-)indices.
 
 \begin{figure}
  \begin{center}
@@ -741,7 +744,7 @@ and it provides the mapping from element-local shape function numbers to global 
 
 
 To reflect this, the user interface of function space bases is divided into two parts.  A \cpp{LocalView} on an
-element allows you to obtain the finite element of that element, which in turn gives you access to all
+element allows you to obtain the (tree of) finite element(s) of that element, which in turn gives you access to all
 shape functions, associations to element subentities, and local interpolation rules provided by
 \dunemodule{dune-localfunctions}.  The mapping of these shape functions to global degrees of freedom is
 delegated to a separate object called a \cpp{LocalIndexSet}, which you can bind to given
@@ -751,8 +754,22 @@ Figure~\ref{fig:dune_functions:febasis_interface_schematic}.
 
 All header include paths
 start with \cpp{dune/functions/}, and all code is contained in the namespace \cpp{Dune::Functions}.
+The global basis interface described below is not enforced by deriving
+from specific base classes. Instead, \dunemodule{dune-functions} is based on
+so-called duck-typing, i.e., any object providing the required
+interface is a valid global basis. To statically check for the interface
+\dunemodule{dune-functions} provides a concept definition of a global
+basis which can e.g. be used to check validity in a static assertion.
 
-\todosander{We are using duck typing and type erasure.}
+\begin{lstlisting}
+  // The global basis concept for given grid view
+  using GlobalBasisConcept = Dune::Functions::Concept::GlobalBasis<GridView>;
+
+  // Check if Basis models the concept
+  static_assert(Dune::models<GlobalBasisConcept, Basis>(),
+    "Basis does not model the global basis concept.")
+\end{lstlisting}
+
 
 
 \subsection{User interface of a \texttt{GlobalBasis}}
@@ -762,6 +779,8 @@ below are generic names.  We will group exported type names and related methods
 to simplify the presentation.
 In general each basis implementation may require its own specific data for construction.
 Hence we do not enforce an argument list for this.
+In the following interface description such implementation details
+are marked by the placeholder \texttt{<implementation defined>}.
 
 \begin{lstlisting}
 class GlobalBasis
@@ -770,13 +789,17 @@ public:
   GlobalBasis(<implementation defined>);
 \end{lstlisting}
 
-As the global basis represents a function space defined on a grid view access to
+As the global basis represents a function space defined on a grid view, access to
 the latter is provided by the \texttt{gridView()} method while its type
-is exported as \texttt{GridView}.
+is exported as \texttt{GridView}. If the grid view or underlying grid
+was modified (e.g. by adapting the grid), the result of calling any
+method of the basis is undefined until the basis was updated by
+providing a new grid view by the \texttt{update(GridView)} method.
 
 \begin{lstlisting}
   using GridView = <implementation defined>;
   const GridView& gridView() const;
+  void update(const GridView & gv);
 \end{lstlisting}
 
 One of the main functionalities of the global basis is to provide
@@ -821,21 +844,27 @@ e.g., coefficients with respect to all basis functions.
 Because of this, the basis provides access to the structural
 information of those multi-indices via the \texttt{size(SizePrefix)}
 method. The given prefix takes the form of a multi-index itself.
-For a prefix $(p_1,\dots,p_k)$ the method returns the maximal value $q$ such that there
-is a global index of the form $(p_1,\dots,p_k,q-1,\dots)$.
-If there is no such $q$ the result is undefined, unless
-$(p_1,\dots,p_k)$ is itself one of the multi-indices.
-In this case the result is zero.
-In any case this corresponds to the number of direct children
-of the node $(p_1,\dots,p_k)$ in the index tree.
+If $\mathcal{I}$ is the set of all global multi-indices of the
+basis and $P \in \mathcal{N}$ is a prefix for this set,
+i.e. there is a $(P,\dots) \in \mathcal{I}$, then
+\texttt{size($P$)} returns the size $|\mathcal{I}|_P$ of
+$\mathcal{I}$ relative to $P$ defined according to \eqref{eq:prefix_size}.
+%For a prefix $(p_1,\dots,p_k)$ the method returns the maximal value $q$ such that there
+%is a global index of the form $(p_1,\dots,p_k,q-1,\dots)$.
+If $P$ is not a prefix for $\mathcal{I}$ the result is undefined.
+If $P \in \mathcal{I}$, i.e., the prefix is itself one of the multi-indices
+then the result is zero.
+In any case the result corresponds to the number of direct children
+of the node $P$ in the index tree.
 For convenience there is also a method \texttt{size()} returning the same
-value the method with an empty prefix, i.e., \texttt{size(\{\})}.
+value as the method with an empty prefix, i.e., \texttt{size(\{\})}.
 For a scalar basis, this method again returns the number of basis functions.
 
-Since prefixes may have variable size, it is guaranteed that \texttt{SizePrefix}
+Since prefixes may have variable size, it is guaranteed that the type \texttt{SizePrefix}
 is always a \texttt{Dune::ReservedVector<size\_type,k>} where \texttt{k}
 is strictly larger than the maximal length of a multi-index. The result
 type of all size-related methods is exported as \texttt{size\_type}.
+\todograeser{Do we need 'strictly larger'? As far as I can see 'at least' should be OK.}
 
 \begin{lstlisting}
   using size_type = <implementation defined>;
@@ -846,16 +875,40 @@ type of all size-related methods is exported as \texttt{size\_type}.
   size_type size(const SizePrefix& prefix) const;
 \end{lstlisting}
 
+Additionally to the concept of a global basis as defined here, there
+is also the concept of a so called \texttt{SubspaceBasis} reflecting
+the basis of the subtree only spanned by those basis functions
+associated to a subtree of the local ansatz tree of the so-called
+root basis.
+For convenience a global basis behaves like a trivial \texttt{SubspaceBasis},
+i.e., the method \texttt{rootBasis()} returns the basis itself
+and \texttt{prefixPath()} returns an empty tree-path of the
+implementation defined type \texttt{PrefixPath}.
+\todograeser{While describing the interface I had the impression that having
+those methods here is inconsistent and that they should maybe be free functions.}
+
+\begin{lstlisting}
+  using PrefixPath = <implementation defined>;
+  const <implementation defined>& rootBasis() const
+  const PrefixPath& prefixPath() const
+\end{lstlisting}
+
 Finally, the basis exports its node-factory of type \texttt{NodeFactory}
 via the \texttt{nodeFactory()} method. The concept of a node-factory
 will be discussed in Chapter~\ref{sec:implementation_api}.
-\todo[inline]{Carsten:Do we require that this method exists?}
-\todo[inline]{Carsten:Do we require that each global basis is
-  implemented using a factory?}
-\todo[inline]{Carsten:Do we require that GlobalBasis is always
-  a DefaultGlobalBasis parametrized with the node factory?}
+\todograeser{%
+    Do we require that \texttt{nodeFactory()} and \texttt{NodeFactory} exists?
+    Do we require that each global basis is implemented using a factory?
+    Do we require that GlobalBasis is always a DefaultGlobalBasis parametrized with the node factory?
+}
 \todosander{I'd say we require that any basis can become part of a tree.
   If that means that each global basis needs to be implemented using a factory: so be it.}
+\todograeser{Update: The above given questions are the topic of
+\url{https://gitlab.dune-project.org/staging/dune-functions/issues/4}
+and were discussed on the last meeting. There we had some consensus,
+that it would be nice if any global basis is reusable but that we
+do not require this. Hence the answer to all three questions above is 'no'.
+}
 
 \begin{lstlisting}
   using NodeFactory = <implementation define>;
@@ -908,7 +961,7 @@ local view at the currently bound element is returned
 by \texttt{size()}. The result of calling this method in
 unbound state is undefined.
 To allow preallocation of buffers for local functions
-the \texttt{maxSize()} method returns the maximal of the
+the \texttt{maxSize()} method returns the maximum of the
 \texttt{size()} method for all elements in the grid view
 associated to the global basis. This can be called in
 unbound state.
@@ -933,6 +986,16 @@ given below.
 \begin{lstlisting}
   using Tree = <implementation defined>;
   const Tree& tree() const;
+\end{lstlisting}
+
+In order to be consistent with a \texttt{SubspaceBasis::LocalView}
+the additional method \texttt{rootLocalView()} returns the local view
+itself.
+\todograeser{While describing the interface I had the impression that having
+this method here is inconsistent and that it should maybe be a free function.}
+
+\begin{lstlisting}
+  const DefaultLocalView& rootLocalView() const
 }; // end LocalView
 \end{lstlisting}
 
@@ -951,9 +1014,9 @@ and leaf nodes.
 
 The \texttt{size()} method returns the total number of
 local basis functions within the subtree rooted at the
-present node. For each of these local basis functions the
-\texttt{localIndex(size\_type)} method given a unique
-index within all local basis functions within the full
+present node. For each of these local basis functions
+the \texttt{localIndex(size\_type)} method returns a unique
+local index within all local basis functions associated to the full
 tree. The argument to this method is the lexicographic
 index of the local basis functions within the subtree
 and the result is the lexicographic index within the full
@@ -961,11 +1024,11 @@ tree. Hence the local indices of all basis functions
 within this subtree form a consecutive range. The first
 value in this range, i.e., the result of \texttt{localIndex(0)}
 is also accessible via the \texttt{offset()} method.
-\todo[inline]{Is the offset() method part of the interface?
-Making it protected seems to be reasonable.}
 The result of these methods is undefined if the
 local view containing the tree is in unbound state.
 All these indices are of type \texttt{size\_type}.
+\todograeser{Is the offset() method part of the interface?
+Making it protected seems to be reasonable.}
 
 \begin{lstlisting}
 class BasisNode
@@ -985,8 +1048,8 @@ as defined in the \dunemodule{dune-typetree} module.
 It is possible to retrieve the node from the full
 tree by addressing it with its tree path.
 Notice that, to allow this functionality, the
-type \texttt{TreePath} will differ from node to node
-in general. If data needs to be attached to nodes,
+type \texttt{TreePath} will in general differ from one node to the other.
+If data needs to be attached to nodes,
 the \texttt{treeIndex()} can be used. The latter returns
 the lexicographic index of the node within the full
 tree in a fixed type for all nodes.
@@ -1002,14 +1065,14 @@ the tree is in unbound state.
 
 Leaf nodes share the same interface as interior
 nodes. Additionally they provide access to the
-element the local view and thus the tree is bound
+element which the local view and thus the tree is bound
 to via the \texttt{element()} method. Probably most important
 is the \texttt{finiteElement()} method that gives access
 to the local finite element. The finite element
 itself provides access to the local basis functions
 by the finite element interface defined in the
 \dunemodule{dune-localfunctions} module.
-It is important to node that the lexicographic
+It is important to note that the lexicographic
 index of a basis function in a leaf node coincides
 with its number in the local finite element.
 
@@ -1043,8 +1106,11 @@ To this end the \texttt{LocalIndexSet} must
 first be bound to the \texttt{LocalView} using
 the \texttt{bind(LocalView)} method. Similar to the
 local view there is an \texttt{unbind()} method
-and the bound on local view can be accessed
+and the bound-to local view can be accessed
 using the \texttt{localView()} method.
+Notice that the \texttt{bind(LocalView)} operation
+can be costly, because it pre-computes
+all global indices and stores them in an internal cache.
 
 \begin{lstlisting}
 class LocalIndexSet
@@ -1067,6 +1133,9 @@ method. The argument for this method is the local
 index of the basis function within the tree as
 returned by the \texttt{BasisNode::localIndex(size\_type)}
 method.
+Accessing the same global index multiple times
+is cheap, because global indices are pre-computed
+and cached during \texttt{bind(LocalView)}.
 
 \begin{lstlisting}
   using MultiIndex = <implementation defined>;
@@ -1099,7 +1168,7 @@ const auto& node = localView.tree();
 auto localIndex = node.localIndex(i);
 
 // compute global index of local basis function
-auto globalIndex = localIndex.index(i);
+auto globalIndex = localIndex.index(localIndex);
 \end{lstlisting}
 
 Here we assumed that we do not have a nested local ansatz tree
@@ -1117,7 +1186,7 @@ component can be obtained by the following.
 
 \begin{lstlisting}
 // import namespace with index constants
-using namespace TypeTree::Indices;
+using namespace Indices;
 
 // generate tree path for 2nd component of the velocity tree
 auto treePath = TypeTree::hybridTreePath(_0, 1);
@@ -1131,9 +1200,22 @@ from the namespace \texttt{TypeTree::Indices}
 to address the velocity node because the
 tree root is a hybrid container whose child nodes
 for velocity and pressure are of different type.
+The same result can be achieved by the following
+slightly more compact code.
+
+\begin{lstlisting}
+// import namespace with index constants
+using namespace Indices;
+
+// obtain the desired leaf node in the basis tree
+const auto& node = localView.tree().child(_0, 1);
+\end{lstlisting}
+
+
 
 
 \subsection{Function space bases available in \texorpdfstring{\dunemodule{dune-functions}}{dune-functions}}
+\label{subsec:available_bases}
 
 The \dunemodule{dune-functions} module contains a collection of finite element bases that implement
 this interface.  At the time of writing these are:
@@ -1153,6 +1235,9 @@ this interface.  At the time of writing these are:
    A complete example for how to use this basis is given in Chapter~\ref{sec:stokes_example}.
    \todosander{Sollen wir diese Basis komplett entfernen, wo man sie mittlerweile doch
      einfach aus den Einzelteilen zusammenbasteln kann?}
+   \todograeser{Es war Christian wichtig, dass man nicht-triviale Basen auch manuell,
+    d.h. ohne \texttt{PowerNodeFactory}, implementieren kann. Für diesen Fall taugt
+    das noch als Beispiel.}
 
  \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
    The shape functions are the same as for the \cpp{PQkNodalBasis},
@@ -1172,15 +1257,20 @@ this interface.  At the time of writing these are:
    Each \cpp{BSplineBasis} object implements a basis on a single patch, and the grid must correspond to this
    patch. For this to work, several restrictions apply for the grid.  It must be structured and axis-aligned,
    and consist of (hyper-)cube elements only.  Further, the element indices must be lexicographic and
-   increase from the lower left to the upper right domain corner.  The element spacing must math the knot spans.
+   increase from the lower left to the upper right domain corner.  The element spacing must match the knot spans.
    Unfortunately, not all these requirements can be checked for by the basis, so users have to be a bit
    careful.  Using a \cpp{YaspGrid} object works well.
 
-   Note that unlike in standard finite element bases, in a B-spline basis basis functions cannot be associated
+   Note that unlike in standard finite element bases, in a B-spline basis the basis functions cannot be associated
    to grid entities such as vertices, edges, or elements.  The interface nevertheless mandates that a
    \cpp{LocalCoefficient} object must be available, but for the \cpp{BSplineBasis}, the behavior of this
    object is undefined.
 \end{itemize}
+
+
+
+
+\subsection{Construction of non-trivial bases trees from existing bases}
 
 
 
