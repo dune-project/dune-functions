@@ -11,7 +11,13 @@ dune_add_test(SOURCES rannacherturekbasistest.cc)
 
 dune_add_test(SOURCES hierarchicvectorwrappertest.cc)
 
+dune_add_test(SOURCES hierarchicwrappertest.cc)
+
 dune_add_test(SOURCES compositebasistest.cc)
+
+dune_add_test(SOURCES blockingtest.cc)
+
+dune_add_test(SOURCES matrixvectorgeneratortest.cc)
 
 install(
   FILES
