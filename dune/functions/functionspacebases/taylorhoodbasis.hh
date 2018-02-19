@@ -21,12 +21,12 @@ namespace Functions {
 // *****************************************************************************
 // This is the reusable part of the basis. It contains
 //
-//   TaylorHoodNodeFactory
+//   TaylorHoodPreBasis
 //   TaylorHoodNodeIndexSet
 //   TaylorHoodBasisTree
 //   TaylorHoodVelocityTree
 //
-// The factory allows to create the others and is the owner of possible shared
+// The pre-basis allows to create the others and is the owner of possible shared
 // state. These three components do _not_ depend on the global basis or index
 // set and can be used without a global basis.
 // *****************************************************************************
@@ -43,7 +43,7 @@ class TaylorHoodNodeIndexSet;
 
 
 /**
- * \brief Factory for lowest order Taylor-Hood basis
+ * \brief Pre-basis for lowest order Taylor-Hood basis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
@@ -51,19 +51,19 @@ class TaylorHoodNodeIndexSet;
  * \tparam MI Type to be used for multi-indices
  * \tparam HI Flag to select hybrid indices
  *
- * \note This mainly serves as an example, since you can construct a factory with
+ * \note This mainly serves as an example, since you can construct a pre-basis with
  * the same functionality manually using
  * \code
  * static const int k = 1;
- * using VelocityFactory = PowerNodeFactory<MI,IMS,PQkNodeFactory<GV,k+1,MI>,dim>;
- * using PressureFactory = PQkNodeFactory<GV,k,MI>;
- * using TaylorHoodKNodeFactory = CompositeNodeFactory<MI, BlockedLexicographic, VelocityFactory, PressureFactory>;
+ * using VelocityPreBasis = PowerPreBasis<MI,IMS,PQkPreBasis<GV,k+1,MI>,dim>;
+ * using PressurePreBasis = PQkPreBasis<GV,k,MI>;
+ * using TaylorHoodKPreBasis = CompositePreBasis<MI, BlockedLexicographic, VelocityPreBasis, PressurePreBasis>;
  * \endcode
  * Where IMS is LeafBlockedInterleaved if HI is set and
  * FlatInterleaved otherwise.
  */
 template<typename GV, class MI, bool HI=false>
-class TaylorHoodNodeFactory
+class TaylorHoodPreBasis
 {
   static const bool useHybridIndices = HI;
 
@@ -97,23 +97,23 @@ public:
 private:
 
   using PQMultiIndex = std::array<size_type, 1>;
-  using PQ1Factory = PQkNodeFactory<GV,1,PQMultiIndex>;
-  using PQ2Factory = PQkNodeFactory<GV,2,PQMultiIndex>;
+  using PQ1PreBasis = PQkPreBasis<GV,1,PQMultiIndex>;
+  using PQ2PreBasis = PQkPreBasis<GV,2,PQMultiIndex>;
 
 public:
 
   //! Constructor for a given grid view object
-  TaylorHoodNodeFactory(const GridView& gv) :
+  TaylorHoodPreBasis(const GridView& gv) :
     gridView_(gv),
-    pq1Factory_(gv),
-    pq2Factory_(gv)
+    pq1PreBasis_(gv),
+    pq2PreBasis_(gv)
   {}
 
   //! Initialize the global indices
   void initializeIndices()
   {
-    pq1Factory_.initializeIndices();
-    pq2Factory_.initializeIndices();
+    pq1PreBasis_.initializeIndices();
+    pq2PreBasis_.initializeIndices();
   }
 
   //! Obtain the grid view that the basis is defined on
@@ -125,8 +125,8 @@ public:
   //! Update the stored grid view, to be called if the grid has changed
   void update (const GridView& gv)
   {
-    pq1Factory_.update(gv);
-    pq2Factory_.update(gv);
+    pq1PreBasis_.update(gv);
+    pq2PreBasis_.update(gv);
   }
 
   /**
@@ -183,9 +183,9 @@ private:
     if (prefix.size() == 1)
     {
       if (prefix[0] == 0)
-        return dim * pq2Factory_.size();
+        return dim * pq2PreBasis_.size();
       if (prefix[0] == 1)
-        return pq1Factory_.size();
+        return pq1PreBasis_.size();
     }
     if (prefix.size() == 2)
       return 0;
@@ -201,9 +201,9 @@ private:
     if (prefix.size() == 1)
     {
       if (prefix[0] == 0)
-        return pq2Factory_.size();
+        return pq2PreBasis_.size();
       if (prefix[0] == 1)
-        return pq1Factory_.size();
+        return pq1PreBasis_.size();
     }
     if (prefix.size() == 2)
     {
@@ -222,20 +222,20 @@ public:
   //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
-    return dim * pq2Factory_.size() + pq1Factory_.size();
+    return dim * pq2PreBasis_.size() + pq1PreBasis_.size();
   }
 
   //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
-    return dim * pq2Factory_.maxNodeSize() + pq1Factory_.maxNodeSize();
+    return dim * pq2PreBasis_.maxNodeSize() + pq1PreBasis_.maxNodeSize();
   }
 
 protected:
   GridView gridView_;
 
-  PQ1Factory pq1Factory_;
-  PQ2Factory pq2Factory_;
+  PQ1PreBasis pq1PreBasis_;
+  PQ2PreBasis pq2PreBasis_;
 };
 
 
@@ -299,20 +299,20 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = TaylorHoodNodeFactory<GV, MI, HI>;
+  using PreBasis = TaylorHoodPreBasis<GV, MI, HI>;
 
-  using Node = typename NodeFactory::template Node<TP>;
+  using Node = typename PreBasis::template Node<TP>;
 
   using PQ1TreePath = typename TypeTree::Child<Node,1>::TreePath;
   using PQ2TreePath = typename TypeTree::Child<Node,0,0>::TreePath;
 
-  using PQ1NodeIndexSet = typename NodeFactory::PQ1Factory::template IndexSet<PQ1TreePath>;
-  using PQ2NodeIndexSet = typename NodeFactory::PQ2Factory::template IndexSet<PQ2TreePath>;
+  using PQ1NodeIndexSet = typename PreBasis::PQ1PreBasis::template IndexSet<PQ1TreePath>;
+  using PQ2NodeIndexSet = typename PreBasis::PQ2PreBasis::template IndexSet<PQ2TreePath>;
 
-  TaylorHoodNodeIndexSet(const NodeFactory & nodeFactory) :
-    nodeFactory_(&nodeFactory),
-    pq1NodeIndexSet_(nodeFactory_->pq1Factory_.template indexSet<PQ1TreePath>()),
-    pq2NodeIndexSet_(nodeFactory_->pq2Factory_.template indexSet<PQ2TreePath>())
+  TaylorHoodNodeIndexSet(const PreBasis & preBasis) :
+    preBasis_(&preBasis),
+    pq1NodeIndexSet_(preBasis_->pq1PreBasis_.template indexSet<PQ1TreePath>()),
+    pq2NodeIndexSet_(preBasis_->pq2PreBasis_.template indexSet<PQ2TreePath>())
   {}
 
   void bind(const Node& node)
@@ -396,7 +396,7 @@ public:
   }
 
 private:
-  const NodeFactory* nodeFactory_;
+  const PreBasis* preBasis_;
   PQ1NodeIndexSet pq1NodeIndexSet_;
   PQ2NodeIndexSet pq2NodeIndexSet_;
 
@@ -431,7 +431,7 @@ private:
  * \endcode
  */
 template<typename GV>
-using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodNodeFactory<GV, Dune::ReservedVector<std::size_t, 2>> >;
+using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodPreBasis<GV, Dune::ReservedVector<std::size_t, 2>> >;
 
 
 

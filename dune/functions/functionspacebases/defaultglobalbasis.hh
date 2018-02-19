@@ -20,52 +20,52 @@ namespace Functions {
 
 
 /**
- * \brief Global basis for given node factory
+ * \brief Global basis for given pre-basis
  *
  * This class implements the interface of a global basis
- * using the details from a given node factory. Hence
+ * using the details from a given pre-basis. Hence
  * it serves as an example for this interface.
  *
  * If you want to implement your own global basis, it may be
- * better to implement a node factory instead. On the one hand
+ * better to implement a pre-basis instead. On the one hand
  * this needs less boiler-plate code. On the other hand
  * it makes your implementation composable and thus much
- * more flexible. That is, you can reuse your factory
+ * more flexible. That is, you can reuse your pre-basis
  * as one part in a larger product space by plugging it
- * e.g. into a CompositeNodeFactory of PowerNodeFactory.
- * The actual global basis for your FooNodeFactory is
- * then obtained by using DefaultGlobalBasis<FooNodeFactory>.
+ * e.g. into a CompositePreBasis of PowerPreBasis.
+ * The actual global basis for your FooPreBasis is
+ * then obtained by using DefaultGlobalBasis<FooPreBasis>.
  *
- * \tparam NF  Node factory providing the implementation details
+ * \tparam PB  Pre-basis providing the implementation details
  */
-template<class NF>
+template<class PB>
 class DefaultGlobalBasis
 {
 public:
 
-  //! Node factory providing the implementation details
-  using NodeFactory = NF;
+  //! Pre-basis providing the implementation details
+  using PreBasis = PB;
 
   //! The empty prefix path that identifies the root in the local ansatz tree
   using PrefixPath = TypeTree::HybridTreePath<>;
 
   //! The grid view that the FE space is defined on
-  using GridView = typename NodeFactory::GridView;
+  using GridView = typename PreBasis::GridView;
 
   //! Type used for global numbering of the basis vectors
-  using MultiIndex = typename NodeFactory::MultiIndex;
+  using MultiIndex = typename PreBasis::MultiIndex;
 
   //! Type used for indices and size information
   using size_type = std::size_t;
 
   //! Type of the local view on the restriction of the basis to a single element
-  using LocalView = DefaultLocalView<DefaultGlobalBasis<NodeFactory>>;
+  using LocalView = DefaultLocalView<DefaultGlobalBasis<PreBasis>>;
 
-  //! Node index set provided by NodeFactory
-  using NodeIndexSet = typename NodeFactory::template IndexSet<PrefixPath>;
+  //! Node index set provided by PreBasis
+  using NodeIndexSet = typename PreBasis::template IndexSet<PrefixPath>;
 
   //! Type used for prefixes handed to the size() method
-  using SizePrefix = typename NodeFactory::SizePrefix;
+  using SizePrefix = typename PreBasis::SizePrefix;
 
   //! Type of local indixes set exported by localIndexSet()
   using LocalIndexSet = DefaultLocalIndexSet<LocalView, NodeIndexSet>;
@@ -74,32 +74,32 @@ public:
   /**
    * \brief Constructor
    *
-   * \tparam T Argument list for NodeFactory
-   * \param t Argument list for NodeFactory
+   * \tparam T Argument list for PreBasis
+   * \param t Argument list for PreBasis
    *
-   * This will forward all arguments to the constructor of NodeFactory
+   * This will forward all arguments to the constructor of PreBasis
    */
   template<class... T,
     disableCopyMove<DefaultGlobalBasis, T...> = 0,
-    enableIfConstructible<NodeFactory, T...> = 0>
+    enableIfConstructible<PreBasis, T...> = 0>
   DefaultGlobalBasis(T&&... t) :
-    nodeFactory_(std::forward<T>(t)...),
+    preBasis_(std::forward<T>(t)...),
     prefixPath_()
   {
-    static_assert(models<Concept::NodeFactory<GridView>, NodeFactory>(), "Type passed to DefaultGlobalBasis does not model the NodeFactory concept.");
-    nodeFactory_.initializeIndices();
+    static_assert(models<Concept::PreBasis<GridView>, PreBasis>(), "Type passed to DefaultGlobalBasis does not model the PreBasis concept.");
+    preBasis_.initializeIndices();
   }
 
   //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
-    return nodeFactory_.gridView();
+    return preBasis_.gridView();
   }
 
-  //! Obtain the node factory providing the implementation details
-  const NodeFactory& nodeFactory() const
+  //! Obtain the pre-basis providing the implementation details
+  const PreBasis& preBasis() const
   {
-    return nodeFactory_;
+    return preBasis_;
   }
 
   /**
@@ -110,26 +110,26 @@ public:
    */
   void update(const GridView & gv)
   {
-    nodeFactory_.update(gv);
-    nodeFactory_.initializeIndices();
+    preBasis_.update(gv);
+    preBasis_.initializeIndices();
   }
 
   //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
-    return nodeFactory_.dimension();
+    return preBasis_.dimension();
   }
 
   //! Return number of possible values for next position in empty multi index
   size_type size() const
   {
-    return nodeFactory_.size();
+    return preBasis_.size();
   }
 
   //! Return number of possible values for next position in multi index
   size_type size(const SizePrefix& prefix) const
   {
-    return nodeFactory_.size(prefix);
+    return preBasis_.size(prefix);
   }
 
   //! Return local view for basis
@@ -141,7 +141,7 @@ public:
   //! Return local index set for basis
   LocalIndexSet localIndexSet() const
   {
-    return LocalIndexSet(nodeFactory_.template indexSet<PrefixPath>());
+    return LocalIndexSet(preBasis_.template indexSet<PrefixPath>());
   }
 
   //! Return *this because we are not embedded in a larger basis
@@ -157,7 +157,7 @@ public:
   }
 
 protected:
-  NodeFactory nodeFactory_;
+  PreBasis preBasis_;
   PrefixPath prefixPath_;
 };
 
