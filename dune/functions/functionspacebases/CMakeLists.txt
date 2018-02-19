@@ -10,6 +10,8 @@ install(FILES
         defaultlocalindexset.hh
         defaultlocalview.hh
         defaultnodetorangemap.hh
+        dynamicdgbasis.hh
+        dynamicordernode.hh
         flatmultiindex.hh
         flatvectorbackend.hh
         hierarchicvectorwrapper.hh
@@ -19,6 +21,7 @@ install(FILES
         powerbasis.hh
         pq1nodalbasis.hh
         pqknodalbasis.hh
+        qkdynamicordercache.hh
         rannacherturekbasis.hh
         nodes.hh
         sizeinfo.hh
