@@ -22,11 +22,11 @@ namespace Functions {
 // *****************************************************************************
 // This is the reusable part of the basis. It contains
 //
-//   LagrangeDGNodeFactory
+//   LagrangeDGPreBasis
 //   LagrangeDGNodeIndexSet
 //   LagrangeDGNode
 //
-// The factory allows to create the others and is the owner of possible shared
+// The pre-basis allows to create the others and is the owner of possible shared
 // state. These three components do _not_ depend on the global basis or index
 // set and can be used without a global basis.
 // *****************************************************************************
@@ -39,7 +39,7 @@ class LagrangeDGNodeIndexSet;
 
 
 template<typename GV, int k, class MI>
-class LagrangeDGNodeFactory
+class LagrangeDGPreBasis
 {
   static const int dim = GV::dimension;
 
@@ -72,7 +72,7 @@ public:
   using SizePrefix = Dune::ReservedVector<size_type, 2>;
 
   /** \brief Constructor for a given grid view object */
-  LagrangeDGNodeFactory(const GridView& gv) :
+  LagrangeDGPreBasis(const GridView& gv) :
     gridView_(gv)
   {}
 
@@ -189,12 +189,12 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = LagrangeDGNodeFactory<GV, k, MI>;
+  using PreBasis = LagrangeDGPreBasis<GV, k, MI>;
 
-  using Node = typename NodeFactory::template Node<TP>;
+  using Node = typename PreBasis::template Node<TP>;
 
-  LagrangeDGNodeIndexSet(const NodeFactory& nodeFactory) :
-    nodeFactory_(&nodeFactory)
+  LagrangeDGNodeIndexSet(const PreBasis& preBasis) :
+    preBasis_(&preBasis)
   {}
 
   /** \brief Bind the view to a grid element
@@ -225,7 +225,7 @@ public:
   template<typename It>
   It indices(It it) const
   {
-    const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
+    const auto& gridIndexSet = preBasis_->gridView().indexSet();
     const auto& element = node_->element();
 
     for (size_type i = 0, end = size() ; i < end ; ++i, ++it)
@@ -234,19 +234,19 @@ public:
           {
           case 1:
             {
-              *it = {nodeFactory_->dofsPerEdge*gridIndexSet.subIndex(element,0,0) + i};
+              *it = {preBasis_->dofsPerEdge*gridIndexSet.subIndex(element,0,0) + i};
               continue;
             }
           case 2:
             {
               if (element.type().isTriangle())
                 {
-                  *it = {nodeFactory_->dofsPerTriangle*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = {preBasis_->dofsPerTriangle*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isQuadrilateral())
                 {
-                  *it = { nodeFactory_->quadrilateralOffset_ + nodeFactory_->dofsPerQuad*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { preBasis_->quadrilateralOffset_ + preBasis_->dofsPerQuad*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else
@@ -256,22 +256,22 @@ public:
             {
               if (element.type().isTetrahedron())
                 {
-                  *it = {nodeFactory_->dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = {preBasis_->dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isPrism())
                 {
-                  *it = { nodeFactory_->prismOffset_ + nodeFactory_->dofsPerPrism*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { preBasis_->prismOffset_ + preBasis_->dofsPerPrism*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isHexahedron())
                 {
-                  *it = { nodeFactory_->hexahedronOffset_ + nodeFactory_->dofsPerHexahedron*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { preBasis_->hexahedronOffset_ + preBasis_->dofsPerHexahedron*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isPyramid())
                 {
-                  *it = { nodeFactory_->pyramidOffset_ + nodeFactory_->dofsPerPyramid*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { preBasis_->pyramidOffset_ + preBasis_->dofsPerPyramid*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else
@@ -284,7 +284,7 @@ public:
   }
 
 protected:
-  const NodeFactory* nodeFactory_;
+  const PreBasis* preBasis_;
 
   const Node* node_;
 };
@@ -303,7 +303,7 @@ protected:
  * \tparam k The order of the basis
  */
 template<typename GV, int k>
-using LagrangeDGBasis = DefaultGlobalBasis<LagrangeDGNodeFactory<GV, k, FlatMultiIndex<std::size_t>> >;
+using LagrangeDGBasis = DefaultGlobalBasis<LagrangeDGPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
 
 
 
