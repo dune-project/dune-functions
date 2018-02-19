@@ -198,7 +198,7 @@ project homepage \url{www.dune-project.org}.
 
 
 \section{Function space bases}
-\label{sec:dune_functions:finite_element_trees}
+\label{sec:finite_element_trees}
 
 
 Before we can explain the implementation of bases for discrete function spaces in Chapter~\ref{sec:dune_functions:function_space_bases_implementation},
@@ -1230,7 +1230,7 @@ this interface.  At the time of writing these are:
    the case $k=1$ of the previous basis.  It exists mainly so that people interested in writing their
    own bases have a simple example to look at.
 
- \item \cpp{TaylorHoodBasis}: The Taylor--Hood bases described in Chapter~\ref{sec:dune_functions:finite_element_trees}.
+ \item \cpp{TaylorHoodBasis}: The Taylor--Hood bases described in Chapter~\ref{sec:finite_element_trees}.
    This is a simple example of basis constructed by building products.
    A complete example for how to use this basis is given in Chapter~\ref{sec:stokes_example}.
    \todosander{Sollen wir diese Basis komplett entfernen, wo man sie mittlerweile doch
@@ -1268,6 +1268,291 @@ this interface.  At the time of writing these are:
 \end{itemize}
 
 
+\subsection{Combining bases into trees}
+
+The basis implementations of the previous section can be combined by external summation to form new bases.
+This produces the tree structure described in Section~\ref{sec:finite_element_trees}.
+The code for this resides in the \cpp{BasisBuilder} namespace, which is a nested namespace
+within \cpp{Dune::Functions::}. Therefore, the examples of this section need a
+\begin{lstlisting}
+using namespace Dune::Functions::BasisBuilder;
+\end{lstlisting}
+to compile.
+
+The methods to combine bases into trees do not operate on the basis classes of the previous section
+directly.  Rather, they combine so-called \emph{node factories}, of which there is one for each basis.
+The reason for this is
+that it is technically very challenging to combine the actual user-visible basis types in a
+tree hierarchy that itself again implements the interface of a hierarchical function space basis.
+The factory of the final bases tree can then be turned into an actual basis by a call to
+\begin{lstlisting}
+template <class GridView, class FactoryTag>
+auto makeBasis(const GridView& gridView, FactoryTag&& factoryTag);
+\end{lstlisting}
+This method takes a basis factory, and produces a complete basis from it.
+
+In the simple-most case, the tree consists of a single basis. That means that in particular
+you can write
+\todosander{\cpp{rt} ist als Abkürzung arg kurz -- sollten wir ändern!}
+\todosander{Darf nicht mehr \cpp{BasisType} benutzen!}
+\begin{lstlisting}
+auto raviartThomasBasis = makeBasis(gridView, rt<k, GeometryType::BasicType::cube>());
+\end{lstlisting}
+to obtain a Raviart--Thomas basis for the given grid view.  This is equivalent to constructing
+the basis directly:
+\todosander{Ja, das Ding hat tatsächlich ``\emph{nodal}'' im Namen.  Sollten wir die Basis-Klasse
+nicht einfach \cpp{RaviartThomasBasis} nennen?}
+\begin{lstlisting}
+RaviartThomasNodalBasis<GridView,k,GeometryType::BasicType::cube> raviartThomasBasis;
+\end{lstlisting}
+\todosander{Was passiert wenn ich eine Basis nicht mit dem Default-Konstruktor erzeugen möchte?
+  Kann ich dem \cpp{FactoryTag} dann Argumente mitgeben?}
+
+Each basis implementation listed above has a corresponding factory tag, defined in the same header.
+Some of them have template parameters to transmit compile-time information.  The tags are
+\todosander{Die folgende Liste muss noch vervollständigt werden.}
+\begin{center}
+ \begin{tabular}{r|r}
+  Basis & tag \\
+  \hline
+  \cpp{RaviartThomasNodalBasis} & \cpp{rt} \\
+  \dots & \dots
+ \end{tabular}
+\end{center}
+
+The general mechanism to combine bases in a tree is called \cpp{composite},
+defined in the header \file{dune/functions/functionspacebases/compositebasis.hh}.
+The composite mechanism consists of a single method
+\begin{lstlisting}
+template <typename... Args>
+auto composite(Args&&... args);
+\end{lstlisting}
+The method has an unspecified number of arguments, of unspecified type. The arguments are expected
+to be either factory tags for basis objects, like \cpp{lagrange<1>()}, \cpp{rt<k, GeometryType::BasicType::cube>()},
+or they can be the return value of another call to the \cpp{composite} method (or the \cpp{power} method,
+see below).  They are the subtrees of a new function space basis tree, and the call to \cpp{composite}
+adds the new tree root.
+
+As an example, to combine a Raviart--Thomas basis with a zero-order Lagrange basis (for solving
+the mixed formulation of the Poisson equation, say), the appropriate call is
+\todosander{\cpp{pq} sieht auch blöd aus.  Können wir das, z.B., \cpp{lagrange} nennen?
+  Update: Oh, scheint irgendwie auch zu gehen.}
+\begin{lstlisting}
+auto mixedBasis = makeBasis(
+  gridView,
+  composite(
+    rt<0, GeometryType::BasicType::cube>(),
+    pq<0>()
+  ));
+\end{lstlisting}
+Combining three copies of a Lagrange basis for a displacement field in elasticity theory is
+\begin{lstlisting}
+auto displacementBasis = makeBasis(
+  gridView,
+  composite(
+    pq<1>(),
+    pq<1>(),
+    pq<1>()
+  ));
+\end{lstlisting}
+The examples produce the trees shown in Figure~\ref{fig:composite_example_bases}.
+
+That last example is not as elegant as it could be.  First of all, it is inconvenient and unnecessarily
+wordy to list the same scalar Lagrange basis three times.  Also, the required number may depend on
+a compile-time parameter. Thirdly, in that case
+more ways of degree-of-freedom numbering is possible. For these reasons, \dunemodule{dune-functions}
+offers a second way to combine bases called \cpp{power}.  The interface is again a single method
+\begin{lstlisting}
+template<std::size_t k, class SubFactoryTag>
+auto power(SubFactoryTag&& tag)
+\end{lstlisting}
+provided in the file \file{dune/functions/functionspacebases/powerbasis.hh}.
+It combines \cpp{k} copies of a subtree of type \cpp{SubFactoryTag} in a new tree.  Therefore, the
+displacement vector field from above is more easily written as
+\begin{lstlisting}
+auto displacementBasis = makeBasis(
+  gridView,
+  power<3>(
+    pq<1>()
+  ));
+\end{lstlisting}
+Of course, all these techniques can be combined. To obtain the \cpp{p}-th order Taylor--Hood basis,
+write
+\begin{lstlisting}
+auto taylorHoodBasis = makeBasis(
+  gridView,
+  composite(
+    power<dim>(
+      lagrange<p+1>()),
+    lagrange<p>()
+  ));
+\end{lstlisting}
+The call to \cpp{power} produces the \cpp{dim}-component velocity basis of order \cpp{p+1},
+and the call to \cpp{composite} combines this with a \cpp{p}-th order Lagrange basis for the pressure.
+
+The previous discussion has left out the question of how the degrees of freedom in the combined tree
+are numbered.  In Section~\ref{} it was explained how the indices
+of the degrees of freedom form a separate tree by their multi-index structure, and how this tree
+is constructed from the basis tree by a set of rules.  First of all, each of the bases of
+Section~\ref{subsec:available_bases} implements a numbering of its degrees of freedom,
+and generally these numberings cannot be changed.
+To select a degree of freedom numbering for a nontrivial basis,
+each call to \cpp{composite} or \cpp{power} can be augmented by an additional
+tag class called \cpp{IndexMergingStrategy}. Four merging strategies are possible.  They differ by the ordering
+(\emph{interleaved} or \emph{lexicographic}), and by whether a new node should be added to the
+index tree (in other words, whether a new digit will get added to the multi-indices that
+distinguishes between the subtrees.
+
+There are four possible strategies: \cpp{FlatLexicographic} and \cpp{FlatInterleaved} do not
+introduce a new multi-index digit, whereas \cpp{BlockedLexicographic} and \cpp{LeafBlockedInterleaved}
+do.
+
+The defauls are \cpp{LeafBlockedInterleaved} for \cpp{power} nodes, and \cpp{BlockedLexicographic}
+for \cpp{composite} nodes.
+\todosander{Irgendwo erklären, was der Typ der Multi-Indizes ist, und wie man ihn mit \cpp{makeBasis}
+ von Hand setzen kann.}
+
+\paragraph{FlatLexicographic}
+This merges the subtree numbers lexicographically, i.e., all degrees of freedom of subtree~0
+appear before all degrees of freedom of subtree~1, which in turn precede those in the later subtrees.
+The fact that the merging strategy is \emph{flat} means that no additional multi-index digit
+is appended to address the different subtrees.
+
+As an example, for two childen $\{f\}$ and $\{g\}$ with multi-indices
+(all $i*$, $k*$ can be multi-indices themselves):
+
+\begin{tabular}{l|r}
+   function in $\{f\}$ & index \\
+   \hline
+   $f_0$  & $(0,i0)$ \\
+   $f_1$  & $(0,i1)$ \\
+   $f_2$  & $(1,i2)$
+\end{tabular}
+
+\begin{tabular}{l|r}
+   function in $\{g\}$ & index \\
+   \hline
+   $g_0$  & $(0,k0)$ \\
+   $g_1$  & $(1,k1)$ \\
+   $g_2$  & $(2,k2)$
+\end{tabular}
+
+The merged indices will be
+
+\begin{tabular}{l|r}
+   function in $\{f,g\}$ & index \\
+   \hline
+   $f_0$  & $(0,i0)$ \\
+   $f_1$  & $(0,i1)$ \\
+   $f_2$  & $(1,i2)$ \\
+   $g_0$  & $(2,k0)$ \\
+   $g_1$  & $(3,k1)$ \\
+   $g_2$  & $(4,k2)$
+\end{tabular}
+
+\todosander{Was passiert wenn die unterschiedlichen Teilbäume nicht die gleiche Art von Indizes verwenden?}
+
+\paragraph{FlatInterleaved}
+does not add a new digit either, but it interleaves the degrees of the different subtrees.
+\todosander{Was passiert wenn man \cpp{composite} und \cpp{FlatInterleaved} zusammen verwendet,
+ die Teilbäume aber nicht alle die gleiche Anzahl von Basisfunktionen haben?}
+
+\begin{tabular}{l|r}
+   function in $\{f\}$ & index \\
+   \hline
+   $f_0$  & $(0,i0)$ \\
+   $f_1$  & $(1,i1)$ \\
+   $f_2$  & $(2,i2)$
+\end{tabular}
+
+\begin{tabular}{l|r}
+   function in $\{g\}$ & index \\
+   \hline
+   $g_0$  & $(0,i0)$ \\
+   $g_1$  & $(1,i1)$ \\
+   $g_2$  & $(2,i2)$
+\end{tabular}
+
+The merged indices will be
+
+\begin{tabular}{l|r}
+   function in $\{f,g\}$ & index \\
+   \hline
+   $f_0$  & $(0,i0)$ \\
+   $g_0$  & $(1,i0)$ \\
+   $f_1$  & $(2,i1)$ \\
+   $g_1$  & $(3,i1)$ \\
+   $f_2$  & $(4,i2)$ \\
+   $g_2$  & $(5,i2)$
+\end{tabular}
+
+\paragraph{BlockedLexicographic}
+uses lexicographic ordering.  Degrees of freedom of the different subtrees are addressed
+by a new multi-index digit with value that range from 0 to \#subtrees$-1$.
+In a \cpp{power} node, that index is a run-time value.  If the node is \cpp{composite},
+then it is a \cpp{std::integral_constant}.
+
+
+\begin{tabular}{l|r}
+   function in $\{f\}$ & index \\
+   \hline
+   $f_0$  & $(i0)$ \\
+   $f_1$  & $(i1)$ \\
+   $f_2$  & $(i2)$
+\end{tabular}
+
+\begin{tabular}{l|r}
+   function in $\{g\}$ & index \\
+   \hline
+   $g_0$  & $(k0)$ \\
+   $g_1$  & $(k1)$ \\
+   $g_2$  & $(k2)$
+\end{tabular}
+
+The merged indices will be
+
+\begin{tabular}{l|r}
+   function in $\{f,g\}$ & index \\
+   \hline
+   $f_0$  & $(0,i0)$ \\
+   $f_1$  & $(0,i1)$ \\
+   $f_2$  & $(0,i2)$ \\
+   $g_0$  & $(1,k0)$ \\
+   $g_1$  & $(1,k1)$ \\
+   $g_2$  & $(1,k2)$
+\end{tabular}
+
+\paragraph{LeafBlockedInterleaved}
+Interleaved merging of direct children with blocking (i.e. creating blocks at the leaves containing one leaf per child each).
+
+\begin{tabular}{l|r}
+   function in $\{f\}$ & index \\
+   \hline
+   $f_0$  & $(i0)$ \\
+   $f_1$  & $(i1)$ \\
+   $f_2$  & $(i2)$
+\end{tabular}
+
+\begin{tabular}{l|r}
+   function in $\{g\}$ & index \\
+   \hline
+   $g_0$  & $(k0)$ \\
+   $g_1$  & $(k1)$ \\
+   $g_2$  & $(k2)$
+\end{tabular}
+
+The merged indices will be
+
+\begin{tabular}{l|r}
+   function in $\{f,g\}$ & index \\
+   \hline
+   $f_0$  & $(i0,0)$ \\
+   $g_0$  & $(i0,1)$ \\
+   $f_1$  & $(i1,0)$ \\
+   $g_1$  & $(i1,1)$ \\
+   $f_2$  & $(i2,0)$ \\
+   $g_2$  & $(i2,1)$
+\end{tabular}
 
 
 \subsection{Construction of non-trivial basis trees from existing bases}
