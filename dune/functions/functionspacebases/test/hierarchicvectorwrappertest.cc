@@ -9,6 +9,7 @@
 #include <dune/common/reservedvector.hh>
 #include <dune/common/classname.hh>
 #include <dune/common/fvector.hh>
+#include <dune/common/tuplevector.hh>
 #include <dune/common/test/testsuite.hh>
 
 #include <dune/istl/bvector.hh>
@@ -17,7 +18,6 @@
 #include <dune/typetree/utility.hh>
 
 #include <dune/functions/common/type_traits.hh>
-#include <dune/functions/common/tuplevector.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 
 
@@ -201,7 +201,7 @@ int main (int argc, char *argv[]) try
     using VelocityVector = std::vector<std::vector<double>>;
     using PressureVector = std::vector<double>;
     using Coefficient = double;
-    using Vector = Functions::TupleVector<VelocityVector, PressureVector>;
+    using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
     test.subTest(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>("TV<V<V<double>>, V<double>>"));
   }
@@ -210,7 +210,7 @@ int main (int argc, char *argv[]) try
     using VelocityVector = std::vector<Dune::BlockVector<Dune::FieldVector<double,1>>>;
     using PressureVector = std::vector<Dune::FieldVector<double,1>>;
     using Coefficient = double;
-    using Vector = Functions::TupleVector<VelocityVector, PressureVector>;
+    using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
     test.subTest(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>("TV<V<BV<FV<double,1>>>, V<FV<doule,1>>>"));
   }
@@ -219,7 +219,7 @@ int main (int argc, char *argv[]) try
     using VelocityVector = std::vector<std::vector<Dune::FieldVector<double,3>>>;
     using PressureVector = std::vector<Dune::FieldVector<double,3>>;
     using Coefficient = Dune::FieldVector<double,3>;
-    using Vector = Functions::TupleVector<VelocityVector, PressureVector>;
+    using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
     test.subTest(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>("TV<V<V<FV<double,3>>>, V<FV<double,3>>>"));
   }
@@ -229,7 +229,7 @@ int main (int argc, char *argv[]) try
     using VelocityVector = std::vector<std::array<Dune::FieldVector<double,1>,dim>>;
     using PressureVector = std::vector<double>;
     using Coefficient = double;
-    using Vector = Functions::TupleVector<VelocityVector, PressureVector>;
+    using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
     test.subTest(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>("TV<V<A<FV<double,1>,5>>, V<double>>"));
   }
