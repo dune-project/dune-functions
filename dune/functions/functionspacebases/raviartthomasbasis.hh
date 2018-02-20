@@ -399,25 +399,34 @@ namespace BasisBuilder {
 
 namespace Imp {
 
-template<std::size_t k, GeometryType::BasicType basic_type>
-struct RaviartThomasNodeFactoryBuilder
+template<std::size_t k, GeometryType::BasicType basic_type, class size_type=std::size_t>
+class RaviartThomasPreBasisFactory
 {
+public:
   static const std::size_t requiredMultiIndexSize=1;
 
-  template<class MultiIndex, class GridView, class size_type=std::size_t>
-  auto build(const GridView& gridView)
-    -> RaviartThomasPreBasis<GridView, k, MultiIndex, size_type, basic_type>
+  template<class MultiIndex, class GridView>
+  auto makeBasis(const GridView& gridView) const
   {
-    return {gridView};
+    return RaviartThomasPreBasis<GridView, k, MultiIndex, size_type, basic_type>(gridView);
   }
+
 };
 
 } // end namespace BasisBuilder::Imp
 
-template<std::size_t k, GeometryType::BasicType basic_type>
-Imp::RaviartThomasNodeFactoryBuilder<k, basic_type> rt()
+/**
+ * \brief Create a pre-basis factory that can create a Raviart-Thomas pre-basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam k Order of the Raviart-Thomas element
+ * \tparam basic_type Basic geometry type
+ */
+template<std::size_t k, GeometryType::BasicType basic_type, class size_type=std::size_t>>
+auto rt()
 {
-  return{};
+  return Imp::RaviartThomasPreBasisFactory<k, basic_type, size_type>();
 }
 
 } // end namespace BasisBuilder

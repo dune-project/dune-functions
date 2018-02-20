@@ -441,19 +441,36 @@ namespace BasisBuilder {
 
 namespace Imp {
 
-template<std::size_t k, class IndexMergingStrategy, class SubFactoryTag>
-struct PowerNodeFactoryBuilder
+template<std::size_t k, class IndexMergingStrategy, class ChildPreBasisFactory>
+class PowerPreBasisFactory
 {
   static const bool isBlocked = std::is_same<IndexMergingStrategy,BlockedLexicographic>::value or std::is_same<IndexMergingStrategy,LeafBlockedInterleaved>::value;
 
-  static const std::size_t requiredMultiIndexSize=SubFactoryTag::requiredMultiIndexSize + (std::size_t)(isBlocked);
+  static const std::size_t maxChildIndexSize = ChildPreBasisFactory::requiredMultiIndexSize;
+
+public:
+
+  static const std::size_t requiredMultiIndexSize = isBlocked ? (maxChildIndexSize+1) : maxChildIndexSize;
+
+  PowerPreBasis(const ChildPreBasisFactory& childPreBasisFactory) :
+    childPreBasisFactory_(childPreBasisFactory)
+  {}
+
+  PowerPreBasis(ChildPreBasisFactory&& childPreBasisFactory) :
+    childPreBasisFactory_(std::move(childPreBasisFactory))
+  {}
 
   template<class MultiIndex, class GridView>
-  auto build(const GridView& gridView)
-    -> PowerPreBasis<MultiIndex,  IndexMergingStrategy, decltype(SubFactoryTag().template build<MultiIndex, GridView>(std::declval<GridView>())), k>
+  auto makeBasis(const GridView& gridView) const
   {
-    return {SubFactoryTag().template build<MultiIndex, GridView>(gridView)};
+    auto childPreBasis = childPreBasisFactory_.makeBasis<MultiIndex>(gridView);
+    using ChildPreBasis = decltype(childPreBasis);
+
+    return PowerPreBasis<MultiIndex,  IndexMergingStrategy, ChildPreBasis, k>(std::move(childPreBasis));
   }
+
+private:
+  ChildPreBasisFactory childPreBasisFactory_;
 };
 
 } // end namespace BasisBuilder::Imp
@@ -461,22 +478,21 @@ struct PowerNodeFactoryBuilder
 
 
 /**
- * \brief Create a factory builder that can build a PowerPreBasis
+ * \brief Create a pre-basis factory that can build a PowerPreBasis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
- * \tparam SubFactoryTag Types of child factory builder and IndexMergingStrategy type
+ * \tparam ChildPreBasisFactory Types of child pre-basis factory
  * \tparam IndexMergingStrategy An IndexMergingStrategy type
- * \param tag Child factory builder objects and an IndexMergingStrategy
+ * \param childPreBasisFactory Child pre-basis factory
  * \param ims IndexMergingStrategy to be used
  *
  * This overload can be used to explicitly supply an IndexMergingStrategy.
  */
-template<std::size_t k, class SubFactoryTag, class IndexMergingStrategy>
-Imp::PowerNodeFactoryBuilder<k, IndexMergingStrategy, SubFactoryTag>
-  power(SubFactoryTag&& tag, const IndexMergingStrategy& ims)
+template<std::size_t k, class ChildPreBasisFactory, class IndexMergingStrategy>
+auto power(ChildPreBasisFactory&& childPreBasisFactory, const IndexMergingStrategy& ims)
 {
-  return{};
+  return Imp::PowerPreBasisFactory<k, IndexMergingStrategy, ChildPreBasisFactory>(std::forward(childPreBasisFactory));
 }
 
 /**
@@ -484,16 +500,15 @@ Imp::PowerNodeFactoryBuilder<k, IndexMergingStrategy, SubFactoryTag>
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
- * \tparam SubFactoryTag Types of child factory builder and IndexMergingStrategy type
- * \param tag Child factory builder objects and an IndexMergingStrategy
+ * \tparam ChildPreBasisFactory Types of child pre-basis factory
+ * \param childPreBasisFactory Child pre-basis factory
  *
  * This overload will select the BasisBuilder::LeafBlockedInterleaved strategy.
  */
-template<std::size_t k, class SubFactoryTag>
-Imp::PowerNodeFactoryBuilder<k, LeafBlockedInterleaved, SubFactoryTag>
-  power(SubFactoryTag&& tag)
+template<std::size_t k, class ChildPreBasisFactory>
+auto power(ChildPreBasisFactory&& childPreBasisFactory)
 {
-  return{};
+  return Imp::PowerPreBasisFactory<k, LeafBlockedInterleaved, ChildPreBasisFactory>(std::forward(childPreBasisFactory));
 }
 
 } // end namespace BasisBuilder
