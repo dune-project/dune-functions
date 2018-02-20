@@ -39,54 +39,54 @@ namespace Imp {
 // *****************************************************************************
 // This is the reusable part of the composite bases. It contains
 //
-//   CompositeNodeFactory
+//   CompositePreBasis
 //   CompositeNodeIndexSet
 //
-// The factory allows to create the others and is the owner of possible shared
+// The pre-basis allows to create the others and is the owner of possible shared
 // state. These components do _not_ depend on the global basis or index
 // set and can be used without a global basis.
 // *****************************************************************************
 
 
-template<class MI, class TP, class IT, class... SF>
+template<class MI, class TP, class IT, class... SPB>
 class CompositeNodeIndexSet;
 
 /**
- * \brief A factory for composite bases
+ * \brief A pre-basis for composite bases
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
- * This node factory represente a composition of several given node factories.
+ * This pre-basis represente a composition of several given pre-bases.
  * Its node type is a CompositeBasisNodes for the given subnodes.
  *
  * \tparam MI  Type to be used for global multi-indices
- * \tparam IMS An IndexMergingStrategy used to merge the global indices of the child factories
- * \tparam SF  The child factories
+ * \tparam IMS An IndexMergingStrategy used to merge the global indices of the child pre-bases
+ * \tparam SPB  The child pre-bases
  */
-template<class MI, class IMS, class... SF>
-class CompositeNodeFactory
+template<class MI, class IMS, class... SPB>
+class CompositePreBasis
 {
 public:
 
-  //! Tuple of child factories
-  using SubFactories = std::tuple<SF...>;
+  //! Tuple of child pre-bases
+  using SubPreBases = std::tuple<SPB...>;
 
   //! The grid view that the FE basis is defined on
-  using GridView = typename std::tuple_element<0, SubFactories>::type::GridView;
+  using GridView = typename std::tuple_element<0, SubPreBases>::type::GridView;
 
   //! Type used for indices and size information
   using size_type = std::size_t;
 
-  //! Strategy used to merge the global indices of the child factories
+  //! Strategy used to merge the global indices of the child pre-bases
   using IndexMergingStrategy = IMS;
 
 protected:
-  static const std::size_t children = sizeof...(SF);
+  static const std::size_t children = sizeof...(SPB);
 
   template<class, class, class, class...>
   friend class CompositeNodeIndexSet;
 
-  using ChildIndexTuple = IntegerSequenceTuple<Imp::index_sequence_for<SF...>>;
+  using ChildIndexTuple = IntegerSequenceTuple<Imp::index_sequence_for<SPB...>>;
 
   template<class TP>
   struct FixedTP
@@ -98,14 +98,14 @@ protected:
     using SubTreePaths = TransformTuple<IndexToSubTreePath, ChildIndexTuple>;
 
     template<class F, class SubTP>
-    using FactoryToSubNode = typename F::template Node<SubTP>;
+    using PreBasisToSubNode = typename F::template Node<SubTP>;
 
-    using SubNodes = TransformTuple<FactoryToSubNode, SubFactories, SubTreePaths>;
+    using SubNodes = TransformTuple<PreBasisToSubNode, SubPreBases, SubTreePaths>;
 
     template<class F, class SubTP>
-    using FactoryToSubIndexSet = typename F::template IndexSet<SubTP>;
+    using PreBasisToSubIndexSet = typename F::template IndexSet<SubTP>;
 
-    using SubIndexSets = TransformTuple<FactoryToSubIndexSet, SubFactories, SubTreePaths>;
+    using SubIndexSets = TransformTuple<PreBasisToSubIndexSet, SubPreBases, SubTreePaths>;
 
     template<class... N>
     using SubNodesToNode = CompositeBasisNode<size_type, TP, N... >;
@@ -116,9 +116,9 @@ protected:
 
 public:
 
-  //! Template mapping index of child to its factory type
+  //! Template mapping index of child to its pre-basis type
   template<std::size_t k>
-  using SubFactory = typename std::tuple_element<k, std::tuple<SF...>>::type;
+  using SubPreBasis = typename std::tuple_element<k, std::tuple<SPB...>>::type;
 
   //! Template mapping root tree path to type of created tree node
   template<class TP>
@@ -126,7 +126,7 @@ public:
 
   //! Template mapping root tree path to type of created tree node index set
   template<class TP>
-  using IndexSet = CompositeNodeIndexSet<MI, TP, IMS, SF...>;
+  using IndexSet = CompositeNodeIndexSet<MI, TP, IMS, SPB...>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -135,19 +135,19 @@ public:
   using SizePrefix = Dune::ReservedVector<size_type, MultiIndex::max_size()+1>;
 
   /**
-   * \brief Constructor for given child factory objects
+   * \brief Constructor for given child pre-basis objects
    *
-   * The child factories will be stored as copies
+   * The child pre-basis will be stored as copies
    */
   template<class... SFArgs,
-    disableCopyMove<CompositeNodeFactory, SFArgs...> = 0,
-    enableIfConstructible<std::tuple<SF...>, SFArgs...> = 0>
-  CompositeNodeFactory(SFArgs&&... sfArgs) :
-    subFactories_(std::forward<SFArgs>(sfArgs)...)
+    disableCopyMove<CompositePreBasis, SFArgs...> = 0,
+    enableIfConstructible<std::tuple<SPB...>, SFArgs...> = 0>
+  CompositePreBasis(SFArgs&&... sfArgs) :
+    subPreBases_(std::forward<SFArgs>(sfArgs)...)
   {
     using namespace Dune::Hybrid;
-    forEach(subFactories_, [&](const auto& subFactory){
-      static_assert(models<Concept::NodeFactory<GridView>, std::decay_t<decltype(subFactory)>>(), "Subfactory passed to CompositeNodeFactory does not model the NodeFactory concept.");
+    forEach(subPreBases_, [&](const auto& subPreBasis){
+      static_assert(models<Concept::PreBasis<GridView>, std::decay_t<decltype(subPreBasis)>>(), "Subprebases passed to CompositePreBasis does not model the PreBasis concept.");
     });
   }
 
@@ -156,14 +156,14 @@ public:
   {
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      elementAt(subFactories_, i).initializeIndices();
+      elementAt(subPreBases_, i).initializeIndices();
     });
   }
 
   //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
-    return std::get<0>(subFactories_).gridView();
+    return std::get<0>(subPreBases_).gridView();
   }
 
   //! Update the stored grid view, to be called if the grid has changed
@@ -171,7 +171,7 @@ public:
   {
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      elementAt(subFactories_, i).update(gv);
+      elementAt(subPreBases_, i).update(gv);
     });
   }
 
@@ -191,7 +191,7 @@ public:
     auto node = Node<TP>(tp);
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      node.setChild( elementAt(subFactories_, i).node(TypeTree::push_back(tp, i)), i);
+      node.setChild( elementAt(subPreBases_, i).node(TypeTree::push_back(tp, i)), i);
     });
     return node;
   }
@@ -231,11 +231,11 @@ private:
       return children;
 
     return Hybrid::switchCases(std::make_index_sequence<children>(), prefix[0], [&] (auto i) {
-      const auto& subFactory = std::get<i.value>(subFactories_);
-      typename std::decay<decltype(subFactory)>::type::SizePrefix subPrefix;
+      const auto& subPreBasis = std::get<i.value>(subPreBases_);
+      typename std::decay<decltype(subPreBasis)>::type::SizePrefix subPrefix;
       for(std::size_t i=1; i<prefix.size(); ++i)
         subPrefix.push_back(prefix[i]);
-      return subFactory.size(subPrefix);
+      return subPreBasis.size(subPrefix);
     }, []() {
       return size_type(0);
     });
@@ -243,21 +243,21 @@ private:
 
   struct Lambda_size_flat_sizeInSubtree
   {
-    template<class I, class SFT>
-    size_type operator()(const I&, const SFT& subFactories, const SizePrefix& prefix, size_type& shiftedFirst, size_type& r)
+    template<class I, class PB>
+    size_type operator()(const I&, const PB& subPreBases, const SizePrefix& prefix, size_type& shiftedFirst, size_type& r)
     {
-      using SubFactory = typename std::tuple_element<I::value, SFT>::type;
-      const SubFactory& subFactory = std::get<I::value>(subFactories);
-      if (shiftedFirst < subFactory.size())
+      using SubPreBasis = typename std::tuple_element<I::value, PB>::type;
+      const SubPreBasis& subPreBasis = std::get<I::value>(subPreBases);
+      if (shiftedFirst < subPreBasis.size())
       {
-        typename SubFactory::SizePrefix subPrefix;
+        typename SubPreBasis::SizePrefix subPrefix;
         subPrefix.push_back(shiftedFirst);
         for(std::size_t i=1; i<prefix.size(); ++i)
           subPrefix.push_back(prefix[i]);
-        r = subFactory.size(subPrefix);
+        r = subPreBasis.size(subPrefix);
         return true;
       }
-      shiftedFirst -= subFactory.size();
+      shiftedFirst -= subPreBasis.size();
       return false;
     }
   };
@@ -268,11 +268,11 @@ private:
     using namespace Dune::Hybrid;
     if (prefix.size() == 0)
       forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-        r += elementAt(subFactories_, i).size();
+        r += elementAt(subPreBases_, i).size();
       });
     else {
       size_type shiftedFirst = prefix[0];
-      staticFindInRange<0, sizeof...(SF)>(Lambda_size_flat_sizeInSubtree(), subFactories_, prefix, shiftedFirst, r);
+      staticFindInRange<0, sizeof...(SPB)>(Lambda_size_flat_sizeInSubtree(), subPreBases_, prefix, shiftedFirst, r);
     }
     return r;
   }
@@ -283,10 +283,10 @@ public:
   size_type dimension() const
   {
     size_type r=0;
-    // Accumulate dimension() for all subfactories
+    // Accumulate dimension() for all subprebases
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      r += elementAt(subFactories_, i).dimension();
+      r += elementAt(subPreBases_, i).dimension();
     });
     return r;
   }
@@ -295,59 +295,59 @@ public:
   size_type maxNodeSize() const
   {
     size_type r=0;
-    // Accumulate maxNodeSize() for all subfactories
+    // Accumulate maxNodeSize() for all subprebases
     using namespace Dune::Hybrid;
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      r += elementAt(subFactories_, i).maxNodeSize();
+      r += elementAt(subPreBases_, i).maxNodeSize();
     });
     return r;
   }
 
 protected:
-  std::tuple<SF...> subFactories_;
+  std::tuple<SPB...> subPreBases_;
 };
 
 
 
-template<class MI, class TP, class IMS, class... SF>
+template<class MI, class TP, class IMS, class... SPB>
 class CompositeNodeIndexSet
 {
-  static const std::size_t children = sizeof...(SF);
+  static const std::size_t children = sizeof...(SPB);
 
 public:
 
   template<std::size_t k>
-  using SubFactory = typename std::tuple_element<k, std::tuple<SF...>>::type;
+  using SubPreBasis = typename std::tuple_element<k, std::tuple<SPB...>>::type;
 
-  using GridView = typename SubFactory<0>::GridView;
+  using GridView = typename SubPreBasis<0>::GridView;
   using size_type = std::size_t;
   using IndexMergingStrategy = IMS;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = CompositeNodeFactory<MI, IMS, SF...>;
+  using PreBasis = CompositePreBasis<MI, IMS, SPB...>;
 
-  using Node = typename NodeFactory::template Node<TP>;
+  using Node = typename PreBasis::template Node<TP>;
 
-  using SubTreePaths = typename NodeFactory::template FixedTP<TP>::SubTreePaths;
-  using SubIndexSets = typename NodeFactory::template FixedTP<TP>::SubIndexSets;
+  using SubTreePaths = typename PreBasis::template FixedTP<TP>::SubTreePaths;
+  using SubIndexSets = typename PreBasis::template FixedTP<TP>::SubIndexSets;
 
 
-  struct Lambda_FactoryToSubIndexSet
+  struct Lambda_PreBasisToSubIndexSet
   {
-    // transform a single (factory,subTreePath) pair to subIndexSet
-    template<class Factory, class SubTP>
-    auto operator()(const Factory& factory, const SubTP& subTP)
-      ->decltype(factory.template indexSet<SubTP>())
+    // transform a single (preBasis,subTreePath) pair to subIndexSet
+    template<class SubPreBasis, class SubTP>
+    auto operator()(const SubPreBasis& preBasis, const SubTP& subTP)
+      ->decltype(preBasis.template indexSet<SubTP>())
     {
-      return factory.template indexSet<SubTP>();
+      return preBasis.template indexSet<SubTP>();
     }
   };
 
-  CompositeNodeIndexSet(const NodeFactory & nodeFactory) :
-    nodeFactory_(&nodeFactory),
-    subNodeIndexSetTuple_(transformTuple(Lambda_FactoryToSubIndexSet(), nodeFactory_->subFactories_, SubTreePaths()))
+  CompositeNodeIndexSet(const PreBasis & preBasis) :
+    preBasis_(&preBasis),
+    subNodeIndexSetTuple_(transformTuple(Lambda_PreBasisToSubIndexSet(), preBasis_->subPreBases_, SubTreePaths()))
   {}
 
   void bind(const Node& node)
@@ -388,7 +388,7 @@ public:
     // Loop over all children
     forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
       const auto& subNodeIndexSet = elementAt(subNodeIndexSetTuple_, child);
-      const auto& subNodeFactory = elementAt(nodeFactory_->subFactories_, child);
+      const auto& subPreBasis = elementAt(preBasis_->subPreBases_, child);
       size_type subTreeSize = subNodeIndexSet.size();
       // Fill indices for current child into index buffer starting from current
       // buffer position and shift first index component of any index for current
@@ -397,7 +397,7 @@ public:
       for (std::size_t i = 0; i<subTreeSize; ++i)
         multiIndices[i][0] += firstComponentOffset;
       // Increment offset by the size for first index component of the current child
-      firstComponentOffset += subNodeFactory.size({});
+      firstComponentOffset += subPreBasis.size({});
       // Increment buffer iterator by the number of indices processed for current child
       multiIndices += subTreeSize;
     });
@@ -433,7 +433,7 @@ public:
 
 
 private:
-  const NodeFactory* nodeFactory_;
+  const PreBasis* preBasis_;
   SubIndexSets subNodeIndexSetTuple_;
   const Node* node_;
 };
@@ -465,7 +465,7 @@ struct CompositeNodeFactoryBuilder
 
   template<class MultiIndex, class GridView>
   auto build(const GridView& gridView)
-    -> CompositeNodeFactory<MultiIndex,  IndexTag, decltype(SubFactoryTags().template build<MultiIndex, GridView>(gridView))...>
+    -> CompositePreBasis<MultiIndex,  IndexTag, decltype(SubFactoryTags().template build<MultiIndex, GridView>(gridView))...>
   {
     return {SubFactoryTags().template build<MultiIndex, GridView>(gridView)...};
   }
@@ -483,7 +483,7 @@ auto compositeImp(std::tuple<Args...>)
 
 
 /**
- * \brief Create a factory builder that can build a CompositeNodeFactory
+ * \brief Create a factory builder that can build a CompositePreBasis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
@@ -501,7 +501,7 @@ auto composite(Args&&... args)
 }
 
 /**
- * \brief Create a factory builder that can build a CompositeNodeFactory
+ * \brief Create a factory builder that can build a CompositePreBasis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *

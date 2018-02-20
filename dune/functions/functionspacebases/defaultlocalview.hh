@@ -38,12 +38,12 @@ public:
   using size_type = std::size_t;
 
   //! Tree of local finite elements / local shape function sets
-  using Tree = typename GlobalBasis::NodeFactory::template Node<PrefixPath>;
+  using Tree = typename GlobalBasis::PreBasis::template Node<PrefixPath>;
 
   /** \brief Construct local view for a given global finite element basis */
   DefaultLocalView(const GlobalBasis& globalBasis) :
     globalBasis_(&globalBasis),
-    tree_(globalBasis_->nodeFactory().node(PrefixPath()))
+    tree_(globalBasis_->preBasis().node(PrefixPath()))
   {
     static_assert(models<Concept::BasisTree<GridView>, Tree>(), "Tree type passed to DefaultLocalView does not model the BasisNode concept.");
     initializeTree(tree_);
@@ -100,7 +100,7 @@ public:
    */
   size_type maxSize() const
   {
-    return globalBasis_->nodeFactory().maxNodeSize();
+    return globalBasis_->preBasis().maxNodeSize();
   }
 
   /** \brief Return the global basis that we are a view on

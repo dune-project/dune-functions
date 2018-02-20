@@ -129,16 +129,16 @@ struct BasisTree : Refines<BasisNode>
 
 
 // Concept for a NodeIndexSet
-template<class NodeFactory>
+template<class PreBasis>
 struct NodeIndexSet
 {
   template<class I>
   auto require(const I& indexSet) -> decltype(
     requireType<typename I::size_type>(),
     requireType<typename I::MultiIndex>(),
-    requireType<typename I::NodeFactory>(),
+    requireType<typename I::PreBasis>(),
     requireType<typename I::Node>(),
-    requireSameType<typename I::NodeFactory, NodeFactory>(),
+    requireSameType<typename I::PreBasis, PreBasis>(),
     const_cast<I&>(indexSet).bind(std::declval<typename I::Node>()),
     const_cast<I&>(indexSet).unbind(),
     requireConvertible<typename I::size_type>(indexSet.size()),
@@ -148,31 +148,31 @@ struct NodeIndexSet
 };
 
 
-// Concept for a NodeFactory
+// Concept for a PreBasis
 template<class GridView>
-struct NodeFactory
+struct PreBasis
 {
   using RootTreePath = decltype(TypeTree::hybridTreePath());
 
-  template<class F>
-  auto require(const F& factory) -> decltype(
-    requireType<typename F::GridView>(),
-    requireType<typename F::size_type>(),
-    requireType<typename F::MultiIndex>(),
-    requireType<typename F::SizePrefix>(),
-    requireType<typename F::template Node<RootTreePath>>(),
-    requireType<typename F::template IndexSet<RootTreePath>>(),
-    requireSameType<typename F::GridView, GridView>(),
-    const_cast<F&>(factory).initializeIndices(),
-    requireConvertible<typename F::GridView>(factory.gridView()),
-    requireConvertible<typename F::template Node<RootTreePath>>(factory.node(RootTreePath())),
-    requireConvertible<typename F::template IndexSet<RootTreePath>>(factory.template indexSet<RootTreePath>()),
-    requireConvertible<typename F::size_type>(factory.size()),
-    requireConvertible<typename F::size_type>(factory.size(std::declval<typename F::SizePrefix>())),
-    requireConvertible<typename F::size_type>(factory.dimension()),
-    requireConvertible<typename F::size_type>(factory.maxNodeSize()),
-    requireConcept<BasisTree<typename F::GridView>>(factory.node(RootTreePath())),
-    requireConcept<NodeIndexSet<F>>(factory.template indexSet<RootTreePath>())
+  template<class PB>
+  auto require(const PB& preBasis) -> decltype(
+    requireType<typename PB::GridView>(),
+    requireType<typename PB::size_type>(),
+    requireType<typename PB::MultiIndex>(),
+    requireType<typename PB::SizePrefix>(),
+    requireType<typename PB::template Node<RootTreePath>>(),
+    requireType<typename PB::template IndexSet<RootTreePath>>(),
+    requireSameType<typename PB::GridView, GridView>(),
+    const_cast<PB&>(preBasis).initializeIndices(),
+    requireConvertible<typename PB::GridView>(preBasis.gridView()),
+    requireConvertible<typename PB::template Node<RootTreePath>>(preBasis.node(RootTreePath())),
+    requireConvertible<typename PB::template IndexSet<RootTreePath>>(preBasis.template indexSet<RootTreePath>()),
+    requireConvertible<typename PB::size_type>(preBasis.size()),
+    requireConvertible<typename PB::size_type>(preBasis.size(std::declval<typename PB::SizePrefix>())),
+    requireConvertible<typename PB::size_type>(preBasis.dimension()),
+    requireConvertible<typename PB::size_type>(preBasis.maxNodeSize()),
+    requireConcept<BasisTree<typename PB::GridView>>(preBasis.node(RootTreePath())),
+    requireConcept<NodeIndexSet<PB>>(preBasis.template indexSet<RootTreePath>())
   );
 };
 

@@ -21,11 +21,11 @@ namespace Functions {
 // *****************************************************************************
 // This is the reusable part of the basis. It contains
 //
-//   PQ1NodeFactory
+//   PQ1PreBasis
 //   PQ1NodeIndexSet
 //   PQ1Node
 //
-// The factory allows to create the others and is the owner of possible shared
+// The pre-basis allows to create the others and is the owner of possible shared
 // state. These three components do _not_ depend on the global basis or index
 // set and can be used without a global basis.
 // *****************************************************************************
@@ -37,21 +37,21 @@ template<typename GV, class MI, class TP>
 class PQ1NodeIndexSet;
 
 template<typename GV, class MI>
-class PQ1NodeFactory;
+class PQ1PreBasis;
 
 /**
- * \brief Factory for a first order PQ-lagrange basis
+ * \brief Pre-basis for a first order PQ-lagrange basis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV  The grid view that the FE basis is defined on
  * \tparam MI  Type to be used for multi-indices
  *
- * \note This mainly serves as an example, since PQkNodeFactory<GV,1,MI>
+ * \note This mainly serves as an example, since PQkPreBasis<GV,1,MI>
  * provides the same functionality.
  */
 template<typename GV, class MI>
-class PQ1NodeFactory
+class PQ1PreBasis
 {
   static const int dim = GV::dimension;
 
@@ -78,7 +78,7 @@ public:
   using SizePrefix = Dune::ReservedVector<size_type, 2>;
 
   //! Constructor for a given grid view object
-  PQ1NodeFactory(const GridView& gv) :
+  PQ1PreBasis(const GridView& gv) :
     gridView_(gv)
   {}
 
@@ -230,12 +230,12 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = PQ1NodeFactory<GV, MI>;
+  using PreBasis = PQ1PreBasis<GV, MI>;
 
-  using Node = typename NodeFactory::template Node<TP>;
+  using Node = typename PreBasis::template Node<TP>;
 
-  PQ1NodeIndexSet(const NodeFactory& nodeFactory) :
-    nodeFactory_(&nodeFactory)
+  PQ1NodeIndexSet(const PreBasis& preBasis) :
+    preBasis_(&preBasis)
   {}
 
   /** \brief Bind the view to a grid element
@@ -269,7 +269,7 @@ public:
     for (size_type i = 0, end = size() ; i != end ; ++i, ++it)
       {
         Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
-        const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
+        const auto& gridIndexSet = preBasis_->gridView().indexSet();
         const auto& element = node_->element();
 
         *it = {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
@@ -278,7 +278,7 @@ public:
   }
 
 protected:
-  const NodeFactory* nodeFactory_;
+  const PreBasis* preBasis_;
 
   const Node* node_;
 };
@@ -295,7 +295,7 @@ protected:
  * provides the same functionality.
  */
 template<typename GV>
-using PQ1NodalBasis = DefaultGlobalBasis<PQ1NodeFactory<GV, FlatMultiIndex<std::size_t>> >;
+using PQ1NodalBasis = DefaultGlobalBasis<PQ1PreBasis<GV, FlatMultiIndex<std::size_t>> >;
 
 } // end namespace Functions
 } // end namespace Dune
