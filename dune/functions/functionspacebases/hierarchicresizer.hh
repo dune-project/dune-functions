@@ -14,7 +14,7 @@ namespace Dune { namespace Functions
   namespace Impl
   {
     template <class V, class BlockingTag, class SizeInfo, class Prefix>
-    void resizeVector(V& vec, BlockingTag b, SizeInfo const& sizeInfo, Prefix prefix)
+    void resizeVector(V&& vec, BlockingTag b, SizeInfo const& sizeInfo, Prefix prefix)
     {
       auto s = sizeInfo.size(prefix);
       using VectorResizable = Std::bool_constant<Concept::VectorResizable<V>()>;
@@ -79,7 +79,7 @@ namespace Dune { namespace Functions
   {
     template <class M, class RowBlocking, class ColBlocking,
               class RowSize, class RowPrefix, class ColSize, class ColPrefix>
-    void resizeMatrix(M& mat, RowBlocking br, ColBlocking bc,
+    void resizeMatrix(M&& mat, RowBlocking br, ColBlocking bc,
                       RowSize const& rows, RowPrefix rowPrefix,
                       ColSize const& cols, ColPrefix colPrefix)
     {

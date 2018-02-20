@@ -4,8 +4,10 @@
 
 #include <vector>
 #include <array>
+#include <bitset>
 
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/bitsetvector.hh>
 #include <dune/common/reservedvector.hh>
 #include <dune/common/classname.hh>
 #include <dune/common/fvector.hh>
@@ -335,6 +337,28 @@ int main (int argc, char *argv[]) try
     using Blocking = Blocked<Blocked<Flat>,Flat>;
     using MultiIndex = Dune::ReservedVector<std::size_t, 3>;
     test.subTest(checkHierarchicVector<Vector, Blocking, bool, 2, MultiIndex>("TV<V<V<bool>>, V<bool>>"));
+  }
+
+  {
+    static const std::size_t dim = 5;
+    using VelocityVector = Dune::BitSetVector<dim>;
+    using PressureVector = std::vector<bool>;
+    using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
+    using Blocking = Blocked<LeafBlocked<dim>,Flat>;
+    using MultiIndex = Dune::ReservedVector<std::size_t, 3>;
+    test.subTest(checkHierarchicVector<Vector, Blocking, bool, dim, MultiIndex>("TV<V<V<bool>>, V<bool>>"));
+  }
+
+  { // does not yet work
+#if 0
+    static const std::size_t dim = 5;
+    using VelocityVector = std::vector<std::bitset<dim>>;
+    using PressureVector = std::vector<bool>;
+    using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
+    using Blocking = Blocked<LeafBlocked<dim>,Flat>;
+    using MultiIndex = Dune::ReservedVector<std::size_t, 3>;
+    test.subTest(checkHierarchicVector<Vector, Blocking, bool, dim, MultiIndex>("TV<V<V<bool>>, V<bool>>"));
+#endif
   }
 
   {
