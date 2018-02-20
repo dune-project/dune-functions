@@ -1,4 +1,7 @@
-#pragma once
+// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+// vi: set et ts=4 sw=2 sts=2:
+#ifndef DUNE_FUNCTIONS_COMMON_ACCESS_HH
+#define DUNE_FUNCTIONS_COMMON_ACCESS_HH
 
 #include <utility>
 #include <dune/functions/common/functionconcepts.hh>
@@ -29,7 +32,7 @@ namespace Dune { namespace Functions
 
 
 #ifdef DOXYGEN
-  /// \brief Uniform vec access using [.]
+  /// \brief Uniform vector access using [.]
   template <class Vector, class I>
   decltype(auto) access(Vector&& vec, I const& i);
 
@@ -66,4 +69,7 @@ namespace Dune { namespace Functions
 
 #endif
 
-}} // end namespace Dune::Functions
+} // end namespace Functions
+} // end namespace Dune
+
+#endif // DUNE_FUNCTIONS_COMMON_ACCESS_HH

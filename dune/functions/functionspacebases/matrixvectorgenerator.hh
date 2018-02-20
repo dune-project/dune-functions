@@ -1,4 +1,7 @@
-#pragma once
+// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+// vi: set et ts=4 sw=2 sts=2:
+#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_MATRIXVECTORGENERATOR_HH
+#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_MATRIXVECTORGENERATOR_HH
 
 #include <memory>
 #include <utility>
@@ -157,4 +160,8 @@ namespace Dune { namespace Functions
     };
 
   } // end namespace Impl
-}} // end namespace Dune::Functions
+
+} // end namespace Functions
+} // end namespace Dune
+
+#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_MATRIXVECTORGENERATOR_HH

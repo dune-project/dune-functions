@@ -32,12 +32,12 @@ int main(int argc, char** argv)
 {
   Dune::MPIHelper::instance(argc, argv);
 
-  TaylorHoodBases tester{};
+  TaylorHoodBases<2> tester{};
 
-  static const std::size_t K = 1; // pressure order for Taylor-Hood
+  using namespace Dune::Indices;
 
   { // Root: blockedLexicographic, Velocity: flatLexicographic
-    auto taylorHoodBasis = tester.basis1();
+    auto taylorHoodBasis = tester.basis(_0);
     using GlobalBasis = decltype(taylorHoodBasis);
     using Blocking = Blocking_t<GlobalBasis>;
 
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 
 
   { // Root: blockedLexicographic, Velocity: flatInterleaved
-    auto taylorHoodBasis = tester.basis2();
+    auto taylorHoodBasis = tester.basis(_1);
     using GlobalBasis = decltype(taylorHoodBasis);
     using Blocking = Blocking_t<GlobalBasis>;
 
@@ -56,7 +56,7 @@ int main(int argc, char** argv)
   }
 
   { // Root: blockedLexicographic, Velocity: blockedLexicographic
-    auto taylorHoodBasis = tester.basis3();
+    auto taylorHoodBasis = tester.basis(_2);
     using GlobalBasis = decltype(taylorHoodBasis);
     using Blocking = Blocking_t<GlobalBasis>;
 
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
   }
 
   { // Root: blockedLexicographic, Velocity: leafBlockedInterleaved
-    auto taylorHoodBasis = tester.basis4();
+    auto taylorHoodBasis = tester.basis(_3);
     using GlobalBasis = decltype(taylorHoodBasis);
     using Blocking = Blocking_t<GlobalBasis>;
 
@@ -73,22 +73,22 @@ int main(int argc, char** argv)
     printType(taylorHoodBasis);
   }
 
-  { // Root: flatLexicographic, Velocity/Pressure: blockedLexicographic
-    auto taylorHoodBasis = tester.basis5();
-    using GlobalBasis = decltype(taylorHoodBasis);
-    using Blocking = Blocking_t<GlobalBasis>;
-
-    static_assert(std::is_same<Blocking, Unknown>::value, "");
-    printType(taylorHoodBasis);
-  }
-
-
   { // Root: flatLexicographic, Velocity/Pressure: flatLexicographic
-    auto taylorHoodBasis = tester.basis6();
+    auto taylorHoodBasis = tester.basis(_4);
     using GlobalBasis = decltype(taylorHoodBasis);
     using Blocking = Blocking_t<GlobalBasis>;
 
     static_assert(std::is_same<Blocking, Flat>::value, "");
+    printType(taylorHoodBasis);
+  }
+
+
+  { // Root: flatLexicographic, Velocity/Pressure: blockedLexicographic
+    auto taylorHoodBasis = tester.false_basis(_0);
+    using GlobalBasis = decltype(taylorHoodBasis);
+    using Blocking = Blocking_t<GlobalBasis>;
+
+    static_assert(std::is_same<Blocking, Unknown>::value, "");
     printType(taylorHoodBasis);
   }
 }

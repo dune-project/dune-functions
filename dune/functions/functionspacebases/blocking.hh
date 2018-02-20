@@ -1,4 +1,7 @@
-#pragma once
+// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+// vi: set et ts=4 sw=2 sts=2:
+#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_BLOCKING_HH
+#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_BLOCKING_HH
 
 #include <tuple>
 #include <utility>
@@ -18,12 +21,14 @@ namespace Dune { namespace Functions
   {
     struct Unknown {};
 
+    /// \brief Blocking structure corresponding to IndexMergingStrategies \ref FlatLexicographic and \ref FlatInterleaved
     struct Flat
     {
       template <class Index>
       Flat operator[](const Index&) const { return {}; }
     };
 
+    /// \brief Blocking structure corresponding to IndexMergingStrategy \ref LeafBlockedInterleaved
     template <std::size_t N>
     struct LeafBlocked
     {
@@ -31,17 +36,14 @@ namespace Dune { namespace Functions
       Flat operator[](const Index&) const { return {}; }
     };
 
+    /// \brief Blocking structure corresponding to IndexMergingStrategy \ref BlockedLexicographic
     template <class Tag0, class... Tags>
     struct Blocked
     {
       template <std::size_t i>
       auto operator[](const index_constant<i>&) const { return std::get<i>(t); }
 
-      Tag0 operator[](std::size_t /*i*/) const
-      {
-        static_assert(Std::conjunction<std::is_same<Tag0,Tags>...>::value,"");
-        return {};
-      }
+      Tag0 operator[](std::size_t /*i*/) const { return {}; }
 
       std::tuple<Tag0,Tags...> t;
     };
@@ -68,7 +70,8 @@ namespace Dune { namespace Functions
 
     template <class T>
     static constexpr bool Blocked() { return IsBlocked<T>::value; }
-  }
+
+  } // end namespace Concept
 
 
   namespace Impl
@@ -177,4 +180,8 @@ namespace Dune { namespace Functions
     };
 
   } // end namespace Impl
-}} // end namespace Dune::Functions
+
+} // end namespace Functions
+} // end namespace Dune
+
+#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_BLOCKING_HH

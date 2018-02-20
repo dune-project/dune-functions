@@ -13,6 +13,8 @@ dune_add_test(SOURCES hierarchicvectorwrappertest.cc)
 
 dune_add_test(SOURCES hierarchicwrappertest.cc)
 
+dune_add_test(SOURCES hierarchicresizertest.cc)
+
 dune_add_test(SOURCES compositebasistest.cc)
 
 dune_add_test(SOURCES blockingtest.cc)

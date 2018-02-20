@@ -1,4 +1,7 @@
-#pragma once
+// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+// vi: set et ts=4 sw=2 sts=2:
+#ifndef DUNE_FUNCTIONS_COMMON_RESIZE_HH
+#define DUNE_FUNCTIONS_COMMON_RESIZE_HH
 
 #include <utility>
 #include <type_traits>
@@ -40,7 +43,9 @@ namespace Dune { namespace Functions
 
     template <class Vector>
     static constexpr bool VectorResizable() { return VectorResizableImpl<Vector>::value; }
-  }
+
+  } // end namespace Concept
+
 
 #ifdef DOXYGEN
   /// \brief Uniform vector resize, using either vector.resize() or vector.change_dim()
@@ -92,7 +97,9 @@ namespace Dune { namespace Functions
 
     template <class Matrix>
     static constexpr bool MatrixResizable() { return MatrixResizableImpl<Matrix>::value; }
-  }
+
+  } // end namespace Concept
+
 
 #ifdef DOXYGEN
   /// \brief Uniform matrix resize, using either matrix.resize() or matrix.change_dim()
@@ -105,3 +112,5 @@ namespace Dune { namespace Functions
 
 } // end namespace Functions
 } // end namespace Dune
+
+#endif // DUNE_FUNCTIONS_COMMON_RESIZE_HH
