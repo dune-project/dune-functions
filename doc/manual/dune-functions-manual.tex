@@ -893,13 +893,13 @@ those methods here is inconsistent and that they should maybe be free functions.
   const PrefixPath& prefixPath() const
 \end{lstlisting}
 
-Finally, the basis exports its node-factory of type \texttt{NodeFactory}
-via the \texttt{nodeFactory()} method. The concept of a node-factory
+Finally, the basis exports its pre-basis of type \texttt{PreBasis}
+via the \texttt{preBasis()} method. The concept of a pre-basis
 will be discussed in Chapter~\ref{sec:implementation_api}.
 \todograeser{%
-    Do we require that \texttt{nodeFactory()} and \texttt{NodeFactory} exists?
-    Do we require that each global basis is implemented using a factory?
-    Do we require that GlobalBasis is always a DefaultGlobalBasis parametrized with the node factory?
+    Do we require that \texttt{preBasis()} and \texttt{PreBasis} exists?
+    Do we require that each global basis is implemented using a pre-basis?
+    Do we require that GlobalBasis is always a DefaultGlobalBasis parametrized with the pre-basis?
 }
 \todosander{I'd say we require that any basis can become part of a tree.
   If that means that each global basis needs to be implemented using a factory: so be it.}
@@ -911,8 +911,8 @@ do not require this. Hence the answer to all three questions above is 'no'.
 }
 
 \begin{lstlisting}
-  using NodeFactory = <implementation define>;
-  const NodeFactory& nodeFactory() const;
+  using PreBasis = <implementation define>;
+  const PreBasis& preBasis() const;
 }; // end GlobalBasis
 \end{lstlisting}
 
@@ -1236,7 +1236,7 @@ this interface.  At the time of writing these are:
    \todosander{Sollen wir diese Basis komplett entfernen, wo man sie mittlerweile doch
      einfach aus den Einzelteilen zusammenbasteln kann?}
    \todograeser{Es war Christian wichtig, dass man nicht-triviale Basen auch manuell,
-    d.h. ohne \texttt{PowerNodeFactory}, implementieren kann. Für diesen Fall taugt
+    d.h. ohne \texttt{PowerPreBasis}, implementieren kann. Für diesen Fall taugt
     das noch als Beispiel.}
 
  \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
@@ -1280,16 +1280,16 @@ using namespace Dune::Functions::BasisBuilder;
 to compile.
 
 The methods to combine bases into trees do not operate on the basis classes of the previous section
-directly.  Rather, they combine so-called \emph{node factories}, of which there is one for each basis.
+directly.  Rather, they combine so-called \emph{pre-bases}, of which there is one for each basis.
 The reason for this is
 that it is technically very challenging to combine the actual user-visible basis types in a
 tree hierarchy that itself again implements the interface of a hierarchical function space basis.
-The factory of the final bases tree can then be turned into an actual basis by a call to
+The pre-basis of the final basis tree can then be turned into an actual basis by a call to
 \begin{lstlisting}
-template <class GridView, class FactoryTag>
-auto makeBasis(const GridView& gridView, FactoryTag&& factoryTag);
+template <class GridView, class PreBasisFactory>
+auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
 \end{lstlisting}
-This method takes a basis factory, and produces a complete basis from it.
+This method takes a pre-basis factory, and produces a complete basis from it.
 
 In the simple-most case, the tree consists of a single basis. That means that in particular
 you can write
@@ -1306,10 +1306,14 @@ nicht einfach \cpp{RaviartThomasBasis} nennen?}
 RaviartThomasNodalBasis<GridView,k,GeometryType::BasicType::cube> raviartThomasBasis;
 \end{lstlisting}
 \todosander{Was passiert wenn ich eine Basis nicht mit dem Default-Konstruktor erzeugen möchte?
-  Kann ich dem \cpp{FactoryTag} dann Argumente mitgeben?}
+  Kann ich der \cpp{PreBasisFactory} dann Argumente mitgeben?}
+\todograeser{Genau, die \cpp{PreBasisFactory} bekommt alle Basis-spezifischen Argumente aber
+ verzögert die Erzeugung der \cpp{PreBasis}. \cpp{makeBasis()} reicht dann die fehlenden Argumente weiter
+ und erzeugt mit \cpp{PreBasisFactory::makePreBasis<MultiIndex>(gridView)} die \cpp{PreBasis}. D.h. Unterstützung für
+ zusätzliche Argumente muß man in \cpp{FooPreBasisFactory} und \cpp{foo()} implementieren.}
 
-Each basis implementation listed above has a corresponding factory tag, defined in the same header.
-Some of them have template parameters to transmit compile-time information.  The tags are
+Each basis implementation listed above has a corresponding pre-basis factory, defined in the same header.
+Some of them have template parameters to transmit compile-time information.  The factories are
 \todosander{Die folgende Liste muss noch vervollständigt werden.}
 \begin{center}
  \begin{tabular}{r|r}
@@ -1363,11 +1367,11 @@ a compile-time parameter. Thirdly, in that case
 more ways of degree-of-freedom numbering is possible. For these reasons, \dunemodule{dune-functions}
 offers a second way to combine bases called \cpp{power}.  The interface is again a single method
 \begin{lstlisting}
-template<std::size_t k, class SubFactoryTag>
-auto power(SubFactoryTag&& tag)
+template<std::size_t k, class ChildPreBasisFactory>
+auto power(ChildPreBasisFactory&& childPreBasisFactory)
 \end{lstlisting}
 provided in the file \file{dune/functions/functionspacebases/powerbasis.hh}.
-It combines \cpp{k} copies of a subtree of type \cpp{SubFactoryTag} in a new tree.  Therefore, the
+It combines \cpp{k} copies of a subtree of type \cpp{ChildPreBasisFactory} in a new tree.  Therefore, the
 displacement vector field from above is more easily written as
 \begin{lstlisting}
 auto displacementBasis = makeBasis(
@@ -1560,7 +1564,8 @@ In order to simplify the construction of nontrivial product spaces,
 \dunemodule{dune-functions} provides an additional interface for the
 implementation of composable bases. More precisely, a composable
 basis is implemented by providing a so-called pre-basis
-(formally known as node-factory). A pre-basis can be
+\footnote{Up to the 2.5 release the pre-bases were called node-factory.}.
+A pre-basis can be
 turned into a basis providing the interface described above by
 using it through the \texttt{DefaultGlobalBasis} wrapper class
 provided by \dunemodule{dune-functions}.
@@ -1588,7 +1593,7 @@ tree has 3 children of the same type.
 
   // Create a new pre-basis for a homogeneous product space
   // with 3 components each taking the form of ChildPreBasis
-  using PreBasis = PowerNodeFactory<MI, S, ChildPreBasis, 3>;
+  using PreBasis = PowerPreBasis<MI, S, ChildPreBasis, 3>;
 
   // Turn PreBasis into a global basis.
   // The local ansatz tree will contain 3 children, each
@@ -1615,7 +1620,7 @@ per-bases where each child has a different type.
 
   // Create a new pre-basis for a non-homogeneous product space
   // with first child ChildPreBasis1 and second child ChildPreBasis2
-  using PreBasis = CompositeNodeFactory<MI, S, ChildPreBasis1, ChildPreBasis2>;
+  using PreBasis = CompositePreBasis<MI, S, ChildPreBasis1, ChildPreBasis2>;
 
   // Turn PreBasis into a global basis.
   // The local ansatz tree will contain 2 children, having
@@ -1626,14 +1631,14 @@ per-bases where each child has a different type.
   Basis basis(ChildPreBasis1([args]), ChildPreBasis2([args]));
 \end{lstlisting}
 
-Of course \texttt{PowerNodeFactory} and \texttt{CompositeNodeFactory}
+Of course \texttt{PowerPreBasis} and \texttt{CompositePreBasis}
 can be nested which allows to construct more complex spaces.
-As a basis for the construction of these spaces, the bases
+To provide building blocks for the construction of these spaces, the bases
 described in Subsection \ref{subsec:available_bases} are
 all implemented as pre-basis and the global basis types
 listed above are just type aliases to \texttt{DefaultGlobalBasis<PreBasis>}
 with the corresponding pre-bases.
-Combining different \texttt{PQkNodeFactory}'s one can for
+Combining different \texttt{PQkPreBasis}'s one can for
 example create a Taylor--Hood global basis.
 
 \begin{lstlisting}
@@ -1648,13 +1653,13 @@ example create a Taylor--Hood global basis.
   using SVCPrebasis = PQkNodalBasis<GridView, 2, MI>;
 
   // Pre-basis for the velocity vector field
-  using VelocityPreBasis = PowerNodeFactory<MI, S, SVCPrebasis, dim>;
+  using VelocityPreBasis = PowerPreBasis<MI, S, SVCPrebasis, dim>;
 
   // Pre-basis for the pressure
-  using PressurePreBasis = PQkNodalBasis<GridView, 1, MI>;
+  using PressurePreBasis = PQkPreBasis<GridView, 1, MI>;
 
   // Taylor-Hood pre-basis
-  using TaylorHoodPreBasis = CompositeNodeFactory<MI, S, VelocityPreBasis, PressurePreBasis>;
+  using TaylorHoodPreBasis = CompositePreBasis<MI, S, VelocityPreBasis, PressurePreBasis>;
 
   // Taylor-Hood global basis
   using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodPreBasis>;
@@ -1726,10 +1731,10 @@ and handed out by \texttt{makeBasis()}.
 
 The detailed interface of a \texttt{PreBasis} as well as the
 interface of the \texttt{PreBasisFactory} needed to hook into
-the \texttt{makeBasis()} are only needed for implementors providing
+the \texttt{makeBasis()} mechanism are only needed for implementors providing
 a new composable global basis and are thus covered in a later section.
 
-The implemented methods for creating \texttt{PreBasisFactory}'s are
+The implemented methods for creating \texttt{PreBasisFactory}'s are:
 
 \begin{lstlisting}
   namespace BasisBuilder {
@@ -1744,29 +1749,28 @@ The implemented methods for creating \texttt{PreBasisFactory}'s are
 
     // Create PreBasisFactory for product space with k-times
     // the same child and given index merging strategy
-    template<std::size_t k, class SubPreBasisFactory, class Strategy>
-    auto power(SubPreBasisFactory&&, const Strategy&);
+    template<std::size_t k, class ChildPreBasisFactory, class Strategy>
+    auto power(ChildPreBasisFactory&&, const Strategy&);
 
     // Create PreBasisFactory for product space with k-times
     // the same child and given default index merging strategy
-    template<std::size_t k, class SubPreBasisFactory>
-    auto power(SubPreBasisFactory&& subFactory);
+    template<std::size_t k, class ChildPreBasisFactory>
+    auto power(ChildPreBasisFactory&& subFactory);
 
     // Create PreBasisFactory for product space with different
     // children and given index merging strategy
-    template<class SubPreBasisFactory1, class SubPreBasisFactory2, ..., class Strategy>
-    auto composite(const SubPreBasisFactory2&&, SubPreBasisFactory2&&, ..., const Strategy&);
+    template<class ChildPreBasisFactory1, class ChildPreBasisFactory2, ..., class Strategy>
+    auto composite(const ChildPreBasisFactory1&&, ChildPreBasisFactory2&&, ..., const Strategy&);
 
     // Create PreBasisFactory for product space with different
     // children and default index merging strategy
-    template<class SubPreBasisFactory1, class SubPreBasisFactory2, ...>
-    auto composite(const SubPreBasisFactory2&&, SubPreBasisFactory2&&, ...);
+    template<class ChildPreBasisFactory1, class ChildPreBasisFactory2, ...>
+    auto composite(const ChildPreBasisFactory1&&, ChildPreBasisFactory2&&, ...);
 
   }
 \end{lstlisting}
 
 \todograeser{Describe available index merging strategies}
-\todograeser{Rename classes according to naming convention in manual.}
 \todograeser{Should \texttt{namespace BasisBuilder} better be called \texttt{namespace BasisFactory}?}
 \todograeser{Describe Rannacher-Turek}
 \todograeser{Implement and describe missing hooks for the other bases}
@@ -2279,14 +2283,14 @@ The user interface is what is exposed by an actual basis for use in
 application code. Any basis satisfying this interface is a valid
 global basis in the \dunemodule{dune-functions} sense.
 The implementors interface describes the reusable part of
-a basis which is given by a \emph{node-factory} in the following.
-This interface allows to embed the node-factory into a function space
+a basis which is given by a \emph{pre-basis} in the following.
+This interface allows to embed the pre-basis into a function space
 basis of a larger space. This can be used, e.g., to compose
 ansatz bases for mixed formulations, multicomponent problems,
 or coupled multi-physic problems.
 
 
-\subsection{Implementor interface of a \texttt{NodeFactory}}
+\subsection{Implementor interface of a \texttt{PreBasis}}
 \subsection{Implementor interface of a \texttt{NodeIndexSet}}
 
 
