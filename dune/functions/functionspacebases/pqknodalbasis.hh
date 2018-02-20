@@ -471,16 +471,17 @@ namespace BasisBuilder {
 namespace Imp {
 
 template<std::size_t k>
-struct PQkNodeFactoryBuilder
+class PQkPreBasisFactory
 {
-  static const std::size_t requiredMultiIndexSize=1;
+public:
+  static const std::size_t requiredMultiIndexSize = 1;
 
   template<class MultiIndex, class GridView>
-  auto build(const GridView& gridView)
-    -> PQkPreBasis<GridView, k, MultiIndex>
+  auto makePreBasis(const GridView& gridView) const
   {
-    return {gridView};
+    return PQkPreBasis<GridView, k, MultiIndex>(gridView);
   }
+
 };
 
 } // end namespace BasisBuilder::Imp
@@ -488,16 +489,16 @@ struct PQkNodeFactoryBuilder
 
 
 /**
- * \brief Create a factory builder that can build a PQkPreBasis
+ * \brief Create a pre-basis factory that can create a PQ_k pre-basis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam k   The polynomial order of ansatz functions
  */
 template<std::size_t k>
-Imp::PQkNodeFactoryBuilder<k> pq()
+auto pq()
 {
-  return{};
+  return Imp::PQkPreBasisFactory<k>();
 }
 
 } // end namespace BasisBuilder
