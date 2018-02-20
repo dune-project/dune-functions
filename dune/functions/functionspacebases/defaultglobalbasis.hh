@@ -165,19 +165,23 @@ protected:
 
 namespace BasisBuilder {
 
-template<class GridView, class FactoryTag>
-auto makeBasis(const GridView& gridView, FactoryTag&& factoryTag)
-  -> DefaultGlobalBasis<decltype(factoryTag.template build<typename Dune::ReservedVector<std::size_t, FactoryTag::requiredMultiIndexSize> >(gridView))>
+template<class GridView, class PreBasisFactory>
+auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory)
 {
-  using MultiIndex = typename Dune::ReservedVector<std::size_t, FactoryTag::requiredMultiIndexSize>;
-  return {factoryTag.template build<MultiIndex>(gridView)};
+  using MultiIndex = typename Dune::ReservedVector<std::size_t, PreBasisFactory::requiredMultiIndexSize>;
+  auto preBasis = preBasisFactory.template makePreBasis<MultiIndex>(gridView);
+  using PreBasis = std::decay_t<decltype(preBasis)>;
+
+  return DefaultGlobalBasis<PreBasis>(std::move(preBasis));
 }
 
-template<class MultiIndex, class GridView, class FactoryTag>
-auto makeBasis(const GridView& gridView, FactoryTag&& factoryTag)
-  -> DefaultGlobalBasis<decltype(factoryTag.template build<MultiIndex>(gridView))>
+template<class MultiIndex, class GridView, class PreBasisFactory>
+auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory)
 {
-  return {factoryTag.template build<MultiIndex>(gridView)};
+  auto preBasis = preBasisFactory.template makePreBasis<MultiIndex>(gridView);
+  using PreBasis = std::decay_t<decltype(preBasis)>;
+
+  return DefaultGlobalBasis<PreBasis>(std::move(preBasis));
 }
 
 } // end namespace BasisBuilder
