@@ -7,6 +7,7 @@
 #include <utility>
 
 #include <dune/common/std/utility.hh>
+#include <dune/common/std/apply.hh>
 #include <dune/common/hybridutilities.hh>
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
@@ -17,6 +18,7 @@
 
 #include <dune/functions/common/staticforloop.hh>
 #include <dune/functions/common/type_traits.hh>
+#include <dune/functions/common/utility.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
@@ -456,27 +458,43 @@ constexpr std::size_t maxHelper(ST0&& i0, ST&&... i)
   return (i0 > maxHelper(i...)) ? i0 : maxHelper(i...);
 }
 
-template<class IndexTag, class... SubFactoryTags>
-struct CompositeNodeFactoryBuilder
+template<class IndexMergingStrategy, class... ChildPreBasisFactory>
+class CompositePreBasisFactory
 {
-  static const bool isBlocked = std::is_same<IndexTag,BlockedLexicographic>::value or std::is_same<IndexTag,LeafBlockedInterleaved>::value;
+  static const bool isBlocked = std::is_same<IndexMergingStrategy,BlockedLexicographic>::value or std::is_same<IndexMergingStrategy,LeafBlockedInterleaved>::value;
 
-  static const std::size_t requiredMultiIndexSize=maxHelper(SubFactoryTags::requiredMultiIndexSize...) + (std::size_t)(isBlocked);
+  static const std::size_t maxChildIndexSize = maxHelper(ChildPreBasisFactory::requiredMultiIndexSize...);
+
+  template<class MultiIndex, class GridView, class... ChildPreBasis>
+  auto makePreBasisFromChildPreBases(const GridView&, ChildPreBasis&&... childPreBasis) const
+  {
+    return CompositePreBasis<MultiIndex, IndexMergingStrategy, std::decay_t<ChildPreBasis>...>(std::forward<ChildPreBasis>(childPreBasis)...);
+  }
+
+public:
+
+  static const std::size_t requiredMultiIndexSize = isBlocked ? (maxChildIndexSize+1) : maxChildIndexSize;
+
+  CompositePreBasisFactory(const ChildPreBasisFactory&... childPreBasisFactory) :
+    childPreBasisFactories_(childPreBasisFactory...)
+  {}
+
+  CompositePreBasisFactory(ChildPreBasisFactory&&... childPreBasisFactory) :
+    childPreBasisFactories_(std::move(childPreBasisFactory)...)
+  {}
 
   template<class MultiIndex, class GridView>
-  auto build(const GridView& gridView)
-    -> CompositePreBasis<MultiIndex,  IndexTag, decltype(SubFactoryTags().template build<MultiIndex, GridView>(gridView))...>
+  auto makePreBasis(const GridView& gridView) const
   {
-    return {SubFactoryTags().template build<MultiIndex, GridView>(gridView)...};
+    // Use Std::apply to unpack the tuple childPreBasisFactories_
+    return Std::apply([&](const auto&... childPreBasisFactory) {
+        return this->makePreBasisFromChildPreBases<MultiIndex>(gridView, childPreBasisFactory.template makePreBasis<MultiIndex>(gridView)...);
+      }, childPreBasisFactories_);
   }
-};
 
-template<class... Args>
-auto compositeImp(std::tuple<Args...>)
-  -> Imp::CompositeNodeFactoryBuilder<Args...>
-{
-  return {};
-}
+private:
+  std::tuple<ChildPreBasisFactory...> childPreBasisFactories_;
+};
 
 } // end namespace BasisBuilder::Imp
 
@@ -497,7 +515,26 @@ template<
   std::enable_if_t<Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
 auto composite(Args&&... args)
 {
-  return Imp::compositeImp(typename RotateTuple<Args...>::type{});
+  // We have to separate the last entry which is the IndexMergingStrategy
+  // and the preceding ones, which are the ChildPreBasisFactories
+
+  using ArgTuple = std::tuple<std::decay_t<Args>...>;
+
+  // Compute number of children and index of the IndexMergingStrategy argument
+  constexpr std::size_t children = Dune::SizeOf<Args...>::value-1;
+
+  // Use last type as IndexMergingStrategy
+  using IndexMergingStrategy = std::tuple_element_t<children, ArgTuple>;
+
+  // Index sequence for all but the last entry for partial tuple unpacking
+  auto childIndices = std::make_index_sequence<children>{};
+
+  // Unpack tuple only for those entries related to children
+  return applyPartial([&](auto&&... childPreBasisFactory){
+    return Imp::CompositePreBasisFactory<IndexMergingStrategy, std::decay_t<decltype(childPreBasisFactory)>...>(std::forward<decltype(childPreBasisFactory)>(childPreBasisFactory)...);
+  },
+  std::forward_as_tuple(std::forward<Args>(args)...),
+  childIndices);
 }
 
 /**
@@ -516,7 +553,7 @@ template<
   std::enable_if_t<not Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
 auto composite(Args&&... args)
 {
-  return Imp::compositeImp(std::tuple<BasisBuilder::BlockedLexicographic,Args...>{});
+  return Imp::CompositePreBasisFactory<BasisBuilder::BlockedLexicographic, std::decay_t<Args>...>(std::forward<Args>(args)...);
 }
 
 } // end namespace BasisBuilder

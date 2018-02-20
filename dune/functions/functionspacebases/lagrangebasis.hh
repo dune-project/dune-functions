@@ -15,10 +15,17 @@ namespace Functions {
 
 namespace BasisBuilder {
 
+/**
+ * \brief Create a pre-basis factory that can create a PQ_k pre-basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam k   The polynomial order of ansatz functions
+ */
 template<std::size_t k>
-Imp::PQkNodeFactoryBuilder<k> lagrange()
+auto lagrange()
 {
-  return{};
+  return Imp::PQkPreBasisFactory<k>();
 }
 
 } // end namespace BasisBuilder
