@@ -508,7 +508,7 @@ auto power(ChildPreBasisFactory&& childPreBasisFactory, const IndexMergingStrate
 template<std::size_t k, class ChildPreBasisFactory>
 auto power(ChildPreBasisFactory&& childPreBasisFactory)
 {
-  return Imp::PowerPreBasisFactory<k, LeafBlockedInterleaved, ChildPreBasisFactory>(std::forward(childPreBasisFactory));
+  return Imp::PowerPreBasisFactory<k, LeafBlockedInterleaved, ChildPreBasisFactory>(std::forward<ChildPreBasisFactory>(childPreBasisFactory));
 }
 
 } // end namespace BasisBuilder
