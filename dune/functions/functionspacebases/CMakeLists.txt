@@ -2,6 +2,7 @@ add_subdirectory("test")
 
 install(FILES
         basistags.hh
+        brezzidouglasmarinibasis.hh
         bsplinebasis.hh
         compositebasis.hh
         concepts.hh
