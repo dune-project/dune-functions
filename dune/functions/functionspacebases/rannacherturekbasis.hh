@@ -289,17 +289,18 @@ namespace BasisBuilder {
 
 namespace Imp {
 
-template<class Dummy=void*>
-struct RannacherTurekNodeFactoryBuilder
+template<class Dummy=void>
+class RannacherTurekPreBasisFactory
 {
-  static const std::size_t requiredMultiIndexSize=1;
+public:
+  static const std::size_t requiredMultiIndexSize = 1;
 
   template<class MultiIndex, class GridView>
-  auto build(const GridView& gridView)
-    -> RannacherTurekPreBasis<GridView, MultiIndex>
+  auto makePreBasis(const GridView& gridView) const
   {
-    return {gridView};
+    return RannacherTurekPreBasis<GridView, MultiIndex>(gridView);
   }
+
 };
 
 } // end namespace BasisBuilder::Imp
@@ -307,16 +308,14 @@ struct RannacherTurekNodeFactoryBuilder
 
 
 /**
- * \brief Create a factory builder that can build a RannacherTurek pre-basis
+ * \brief Create a pre-basis factory that can create a Rannacher-Turek pre-basis
  *
  * \ingroup FunctionSpaceBasesImplementations
- *
- * \tparam k   The polynomial order of ansatz functions
  */
-template<class Dummy=void*>
-Imp::RannacherTurekNodeFactoryBuilder<void> rannacherTurek()
+template<class Dummy=void>
+auto rannacherTurek()
 {
-  return{};
+  return Imp::RannacherTurekPreBasisFactory<void>();
 }
 
 } // end namespace BasisBuilder
