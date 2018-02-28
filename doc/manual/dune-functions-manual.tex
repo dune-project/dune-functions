@@ -167,9 +167,9 @@ eventually replace their implementations by a dependence on \dunemodule{dune-fun
 Indeed, at least \dunemodule{dune-pdelab} and \dunemodule{dune-fufem} are already in the process
 of migrating, and have stated their clear intention to complete this migration eventually.
 
-Of the two main partos of \dunemodule{dune-functions} functionality, the API for discrete and
+Of the two main parts of \dunemodule{dune-functions} functionality, the API for discrete and
 closed-form functions has already been described in a separate paper~\cite{engwer_graeser_muething_sander:2015}.
-This document focuses on bases of discrete functions.
+The present document focuses on bases of discrete functions.
 
 The main purpose of the \dunemodule{dune-functions} module is to describe discrete function spaces defined on a grid.
 Still, the central concept in the code is not the function space itself, but rather the {\em basis} of the function space.
@@ -186,9 +186,28 @@ written as products of scalar spaces, and the same holds for mixed finite elemen
 have a natural structure as a tree, with scalar-valued or otherwise irreducible spaces forming the leaves, and
 products forming the other nodes.
 
+Given one or several finite element bases with basis functions taking values in different Euclidean spaces,
+\dunemodule{dune-functions} allows to systematically construct bases for function spaces with a
+higher-dimensional range.  These include vector-valued functions, mixed finite elements, and spaces
+for multi-physics.  The building blocks are typically scalar-valued basis functions, but sometimes vector-valued
+ones like the N\'ed\'elec basis are used as well. The constructions are systematically described as tree structures.
+This tree construction of finite element spaces has first been systematically worked out in~\cite{muething:2015}.
+
+For the basis functions in such a non-trivial tree structure, there is no single canonical way
+to index them.  Keeping all degrees of freedom in a single standard array would require indexing
+by a contiguous, zero-starting set of natural numbers. On the other hand, from the tree structure
+of the basis follows a natural indexing by multi-indices, which can be used to address nested
+vector and matrix data types, like the ones provided by \dunemodule{dune-istl}. Closer inspection
+reveals that these two possibilities are just two extreme cases of a wider scale of indexing rules.
+The \dunemodule{dune-functions} module therefore provides a systematic way to construct all these
+rules.  Many of the really are useful in applications.
+
+\todosander{Ich bin mir nicht ganz sicher ob man die folgende Information hier oder irgendwo sonst
+überhaupt haben will.  Ganz weglassen und darauf spekulieren dass die Leute das auf der Homepage
+finden?  Oder alles an den Anfang von Kapitel~\ref{sec:dune_functions:function_space_bases_implementation} schieben?}
+
 \dunemodule{dune-functions} depends on a library for tree data structures contained in a module
 called \dunemodule{dune-typetree}, which needs to be available to use \dunemodule{dune-functions}.
-If you have not installed the two modules already, please do so now.
 Installation instructions and a up-to-date class documentation can be found on the \dune
 project homepage \url{www.dune-project.org}.
 
@@ -202,13 +221,7 @@ project homepage \url{www.dune-project.org}.
 
 
 Before we can explain the implementation of bases for discrete function spaces in Chapter~\ref{sec:dune_functions:function_space_bases_implementation},
-we need to say a few words about the general structure of such spaces.  Given one or several finite element bases
-with basis functions taking values in different Euclidean spaces,
-\dunemodule{dune-functions} allows to systematically construct bases for function spaces with a
-higher-dimensional range.  These include vector-valued functions, mixed finite elements, and spaces
-for multi-physics.  The building blocks are typically scalar-valued basis functions, but sometimes vector-valued
-ones like the N\'ed\'elec basis are used as well. The constructions are systematically described as tree structures.
-This tree construction of finite element spaces has first been systematically worked out in~\cite{muething:2015}.
+we need to say a few words about the general structure of such spaces.
 
 Readers who are only interested in scalar finite element spaces may try to proceed directly to
 Chapter~\ref{sec:dune_functions:function_space_bases_implementation}.  They should only know that whenever a tree
