@@ -67,7 +67,7 @@ Dune::TestSuite checkBasisIndexTreeConsistency(const MultiIndexSet& multiIndexSe
     << "empty multi-index found";
 
   // check if first multi-index is [0,...,0]
-  for (int i = 0; i<lastMultiIndex.size(); ++i)
+  for (decltype(lastMultiIndex.size()) i = 0; i<lastMultiIndex.size(); ++i)
   {
     test.require(lastMultiIndex[i] == 0, "smallest index check")
       << "smallest index contains non-zero entry " << lastMultiIndex[i] << " in position " << i;
@@ -152,7 +152,7 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
     test.require(localIndexSet.size() <= localView.maxSize(), "localIndexSet.size() check")
       << "localIndexSet.size() is " << localIndexSet.size() << " but localView.maxSize() is " << localView.maxSize();
 
-    for(int i=0; i< localIndexSet.size(); ++i)
+    for (decltype(localIndexSet.size()) i=0; i< localIndexSet.size(); ++i)
     {
       auto multiIndex = localIndexSet.index(i);
       multiIndexSet.insert(multiIndex);
