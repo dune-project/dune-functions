@@ -373,25 +373,47 @@ reuse existing algorithms that expect to operate on those subtrees in more compl
 
 
 
-\subsection{Indexing basis functions in a finite element basis tree}
+\subsection{Indexing basis functions by multi-indices}
 \label{sec:dune_functions:basis_ordering}
 
 To work with the basis of a finite element space, the basis vectors need to be indexed.  Indexing the basis functions
 is what allows to address the corresponding vector and matrix coefficients in suitable vector and matrix data structures.
 In simple cases, indexing means simply enumerating the basis functions with natural numbers, but for many applications
-hierarchically structured matrix and vector data structures are more natural or efficient leading to the need
+hierarchically structured matrix and vector data structures are more natural or efficient.  This leads to the need
 for hierarchically structured multi-indices.
 
-One way to construct such multi-indices would be to directly use the tree of finite element spaces.
-Assuming that a flat indexing with natural numbers is given for each leaf FE space in the tree,
-a unique hierarchical index for all basis functions in the tree can be obtained by simply
-enumerating all children of any node and prepending the index of the child tree to the index
-within the child tree.
-We will illustrate this for the Taylor--Hood tree $(P_2 \times P_2 \times P_2) \times P_1$.
+\begin{definition}
+    \begin{enumerate}
+        \item
+            A tuple $I \in \N_0^k$ for some $k \in \N_0$ is called a multi-index of length $k$
+            and we write $|I|=k$.
+            The set of all multi-indices is denoted by
+            $\mathcal{N} = \bigcup_{k \in \N_0^k} \N_0^k$.
+        \item
+            If $I \in \mathcal{N}$ takes the form $I = (I',I'')$ for $I',I'' \in \mathcal{N}$,
+            then we call $I'$ a prefix of $I$ and write $I = (I',\dots)$.
+            If additionally $|I''|>0$ we call $I'$ a strict prefix of $I$ and write $I = (I',*,\dots)$.
+    \end{enumerate}
+\end{definition}
 
+Sets of multi-indices form trees as long as they are consistent in the sense that they
+can be viewed as the paths to the leafs in an ordered tree.
+%Consistency here means that the multi-indices should form an index tree.
+That is, the children of each node are enumerated using consecutive zero-based
+indices and paths to the leafs (i.e. the multi-indices) are build by concatenating
+those indices starting from the root and ending in a leaf.
+
+\begin{definition}
+ A set $\mathcal{I} \subset \mathcal{N}$ is called an \emph{index tree}
+ if for any $(I,i,\dots) \in \mathcal{I}$ there are also $(I,0,\dots),(I,1,\dots),\dots,(I,i-1,\dots) \in \mathcal{I}$
+ but $I \notin \mathcal{I}$.
+\end{definition}
+
+
+We will illustrate this for the Taylor--Hood tree $(P_2 \times P_2 \times P_2) \times P_1$.
 We start by assuming that the finite element basis functions $\lambda_i^2$ and $\lambda_k^1$
 of $P_2$ and $P_1$ both
-both have a flat indexing by natural numbers $i=0,\dots,n_2$ and $k=0,\dots,n_1$,
+have a flat indexing by natural numbers $i=0,\dots,n_2$ and $k=0,\dots,n_1$,
 respectively.
 Then we enumerate the three children $P_2$, $P_2$, $P_2$
 in the velocity subtree $P_2 \times P_2 \times P_2$
@@ -399,28 +421,34 @@ with the numbers $0$, $1$ and $2$.
 Finally we enumerate the two children $(P_2 \times P_2 \times P_2)$ (for the velocity)
 and $P_1$ (for the pressure) in the overall tree $(P_2 \times P_2 \times P_2) \times P_1$
 with the numbers $0$ and $1$.
-This construction leads to multi-indices indices of the form $[0,i,j]$ and $[1,k]$.
-The component of the multi-index determines if the basis function
-belongs to the velocity or pressure degrees of freedom by being either $0$ or $1$.
+This construction leads to multi-indices of the form $[0,i,j]$ for velocity components, and $[1,k]$
+for pressure components.
+The left-most digit of the multi-index determines if the basis function
+belongs to the velocity or pressure degrees of freedom.
 For the velocity multi-indices $[0,i,j]$ the $i$ determines the component
-of the velocity vector field and the $j$ determines the number of the $P_2$ basis
-function for scalar $P_2$ function that determines this component.
+of the velocity vector field and the $j$ determines the number of the scalar $P_2$ basis
+function that determines this component.
 For the pressure multi-indices $[0,k]$ the $k$ determines the number of the $P_1$ basis
 function for the scalar $P_1$ function that determines the pressure.
 
+It is important to note that the multi-indices for a given basis do not necessarily
+have a fixed length.
+
 If all basis functions $\lambda_I$ of the whole finite element tree are
-indexed by multi-indices of the above given form
-and if $X$ is a coefficient vector which has a compatible hierarchical structure,
-then the velocity vector field $u$ and the pressure $p$ are given by
+indexed by multi-indices of the above given form,
+and if $X$ is a coefficient vector that has a compatible hierarchical structure,
+then the velocity vector field $u_h$ and the pressure field $p_h$ are given by
 \begin{align*}
-    u &= (\sum_{j=0}^{n_2} X_{(0,i,j)}\lambda_{(0,i,j)})_{i=1,\dots,3},  &
-    p &= \sum_{k=0}^{n_1} X_{(1,k)}\lambda_{(1,j)}
+    u_h &= \bigg( \sum_{j=0}^{n_2} X_{(0,i,j)}\lambda_{(0,i,j)}\bigg)_{i=0,\dots,2},
+    &
+    p_h &= \sum_{k=0}^{n_1} X_{(1,k)}\lambda_{(1,k)}
 \end{align*}
 with basis functions
-\begin{align*}
-    \lambda_{(0,i,j)} &= \lambda^2_j \qquad i=0,1,2, &
-    \lambda_{(1,k)} &= \lambda^1_k.
-\end{align*}
+\begin{equation*}
+    \lambda_{(0,i,j)} = \lambda^2_j \qquad i=0,1,2,
+    \qquad \text{and} \qquad
+    \lambda_{(1,k)} \lambda^1_k.
+\end{equation*}
 
 This index construction is illustrated in Figure~\ref{fig:dune_functions:taylor_hood_index_tree}
 where the Taylor--Hood finite element tree is extended with individual basis functions,
@@ -469,10 +497,9 @@ what the corresponding subtree represents.
     \label{fig:dune_functions:taylor_hood_index_tree}
 \end{figure}
 
-This example already demonstrates two important requirements:
-On the one hand natural multi-indices do not necessarily have
-a fixed length.
-On the other hand it shows that one may be interested to construct multi-indices
+In the previous example, the inner nodes of the index tree have formed a tree that was
+isomorphic to the original basis tree.
+However, one may also be interested in constructing multi-indices
 that do not mimic the structure of the finite element tree:
 To increase data locality in assembled matrices for the Taylor--Hood basis it may be
 preferable to group all velocity degrees of freedom corresponding to a single
@@ -480,6 +507,7 @@ $P_2$ basis function together, i.\,e., to use the index $[0,j,i]$
 for the $j$-the $P_2$ basis function for the $i$-th component.
 The corresponding alternative index tree is illustrated in
 Figure~\ref{fig:dune_functions:taylor_hood_index_blocked_tree}.
+Figure~\ref{} shows the corresponding layouts of a hierarchical stiffness matrix.
 
 \begin{figure}
     \begin{center}
@@ -518,34 +546,21 @@ Figure~\ref{fig:dune_functions:taylor_hood_index_blocked_tree}.
     \label{fig:dune_functions:taylor_hood_index_blocked_tree}
 \end{figure}
 
-To reflect this \dunemodule{dune-functions} essentially allows arbitrary
-multi-indices as long as they are consistent in the sense that they
-can be viewed as the paths to the leafs in an ordered tree.
-%Consistency here means that the multi-indices should form an index tree.
-That is, the children of each node are enumerated using consecutive zero-based
-indices and paths to the leafs (i.e. the multi-indices) are build by concatenating
-those indices starting from the root and ending in a leaf.
-As motivated above, it is important to note, that this tree does not need to
-coincide with the FE tree. A precise definition of such an index tree is given by
-the following:
+\begin{figure}
+ \begin{center}
+   \includegraphics[width=0.4\textwidth]{taylor-hood-matrix-lexicographic}
+   \qquad
+   \includegraphics[width=0.4\textwidth]{taylor-hood-matrix-interleaved}
+ \end{center}
+ \caption{Two matrix occupation patterns.  Left: ordering the basis vectors of $B_x$, $B_y$, $B_z$, $B_p$
+   one after the other gives a stiffness matrix with $4 \times 4$ sparse blocks.
+   Right: interleaving the entries of $B_x$, $B_y$, $B_z$ gives a $2 \times 2$ block structure, where
+   the entries are small blocks themselves.
+   }
+ \label{fig:dune_functions:matrix_occupation_patterns}
+\end{figure}
 
-\begin{definition}
-    \begin{enumerate}
-        \item
-            A tuple $I \in \N_0^k$ for some $k \in \N_0$ is called a multi-index of length $k$
-            and we write $|I|=k$.
-            The set of all multi-indices is denoted by
-            $\mathcal{N} = \bigcup_{k \in \N_0^k} \N_0^k$.
-        \item
-            If $I \in \mathcal{N}$ takes the form $I = (I',I'')$ for $I',I'' \in \mathcal{N}$,
-            then we call $I'$ a prefix of $I$ and write $I = (I',\dots)$.
-            If additionally $|I''|>0$ we call $I'$ a strict prefix of $I$ and write $I = (I',*,\dots)$.
-        \item
-            A set $\mathcal{I} \subset \mathcal{N}$ is called an \emph{index tree}
-            if for any $(I,i,\dots) \in \mathcal{I}$ there are also $(I,0,\dots),(I,1,\dots),\dots,(I,i-1,\dots) \in \mathcal{I}$
-            but $I \notin \mathcal{I}$.
-    \end{enumerate}
-\end{definition}
+
 
 If $\Lambda$ is the set of basis functions of a finite element tree,
 then \dunemodule{dune-functions} allows any indexing scheme that
@@ -568,13 +583,14 @@ In terms of the ordered tree associated with $\mathcal{I}$ this corresponds
 to the number of direct children of the node indexed by $I$.
 
 
-While \dunemodule{dune-functions} allows to use arbitrary index trees
-to enumerate the basis functions, there are some important generic constructions
-to derive such index trees from the finite element tree that will be described below.
-
 
 \subsection{Rule-based construction of multi-indices}
 \label{sec:dune_functions:basis_ordering}
+
+While \dunemodule{dune-functions} allows to use arbitrary index trees
+to enumerate the basis functions, there are some important generic constructions
+to derive such index trees from the finite element tree.
+
 
 \todosander{Rewrite this section to match the new section title}
 
@@ -624,20 +640,6 @@ basis function $b_{x,i}$ with all of its vector-values variants.)
 This is certainly a reasonable ordering.  Used in a finite element computation it will lead to a stiffness
 matrix which, conceptually, consists of $4 \times 4$ large sparse blocks (Figure~\ref{fig:dune_functions:matrix_occupation_patterns}).
 We call this the {\em lexicographic} ordering.
-
-\begin{figure}
- \begin{center}
-   \includegraphics[width=0.4\textwidth]{taylor-hood-matrix-lexicographic}
-   \qquad
-   \includegraphics[width=0.4\textwidth]{taylor-hood-matrix-interleaved}
- \end{center}
- \caption{Two matrix occupation patterns.  Left: ordering the basis vectors of $B_x$, $B_y$, $B_z$, $B_p$
-   one after the other gives a stiffness matrix with $4 \times 4$ sparse blocks.
-   Right: interleaving the entries of $B_x$, $B_y$, $B_z$ gives a $2 \times 2$ block structure, where
-   the entries are small blocks themselves.
-   }
- \label{fig:dune_functions:matrix_occupation_patterns}
-\end{figure}
 
 However, there is one important alternative.  Since, for the standard applications of the Taylor--Hood element,
 the $B_x$, $B_y$, $B_z$ bases are used to discretize the $x, y, z$ components of a velocity vector field,
@@ -781,7 +783,6 @@ and it provides the mapping from element-local shape function indices to global 
  \caption{Overview of the classes making up the interface to finite element space bases}
  \label{fig:dune_functions:febasis_interface_schematic}
 \end{figure}
-
 
 To reflect this, the user interface of function space bases is divided into two parts.  A \cpp{LocalView} on an
 element allows you to obtain the (tree of) finite element(s) of that element, which in turn gives you access to all
