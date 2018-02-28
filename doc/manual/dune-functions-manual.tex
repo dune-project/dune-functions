@@ -594,23 +594,15 @@ to derive such index trees from the finite element tree.
 
 \todosander{Rewrite this section to match the new section title}
 
-To work with the basis of a finite element space, the basis vectors need to be indexed.  Indexing the basis functions
-is what allows to address the corresponding vector and matrix coefficients in suitable vector and matrix data structures.
-In simple cases, indexing means simply enumerating the basis functions with natural numbers, but for hierarchically
-constructed spaces more general ways to index are possible.
-
 There are two aspects to what we just have loosely called ``indexing''.  The first is that the set of all basis functions
 in the tree need to be given a global order.  There are several reasonable choices to do this, which we discuss
 in this section.
 Given an order of the basis functions, there is then a natural indexing by simply enumerating the basis functions in
-their specific order.
-This is what we call the {\em flat} numbering, and very often this is what we want to use.  However, as the FE basis
-is constructed hierarchically (and so may be the linear algebra data structures; see Chapter~\ref{sec:dune_istl:dune_istl}),
-it may make sense to use hierarchical indices as well.  We discuss this in Section~\ref{sec:dune_functions:blocking}.
+their specific order. This can be flat or hierarchical.
 
 Consider first a leaf basis consisting of $n$ basis functions.  We suppose that these basis functions are given in a fixed
 order (even though being able to change this ordering can improve the performance of a numerical
-algorithm, see for example \cite{space_filling_curves,ordering_for_gauss_seidel} for more on this).
+algorithm, see for example \cite{bader:2013,ordering_for_gauss_seidel} for more on this).
 Consider now a tree of finite element bases with a given root $R$.  This root has $m$ children, and suppose that for
 each of the subtrees rooted in these children we have already chosen an ordering.  Suppose further that the children themselves are given
 in a fixed ordering (One may of course create different overall orderings by permuting the children, but in our view
