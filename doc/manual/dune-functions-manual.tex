@@ -713,17 +713,39 @@ In total, for a tree with $N$ power nodes we obtain $2^N$ different ways to orde
 
 \subsection{Localization to single elements}
 
-\begin{itemize}
- \item We now consider the restriction to a single element $e$
- \item Basis on $e$: the set of all basis vectors whose supports have non-empty
-   intersection with $e$
- \item These form a tree that is isomorphic to the original tree.
- \item The basis functions in the local tree have two numbers:
-   \begin{itemize}
-    \item One flat index the numbers per leaf
-    \item One flat index that numbers across the entire local tree
-   \end{itemize}
-\end{itemize}
+For the most part, access to finite element bases happens element by element.  It is therefore important
+to consider the restrictions of bases to single grid elements.  In contrast to the previous sections
+we now require that all bases in a given tree are defined with respect to the same grid.
+\todosander{Ist das übertrieben restriktiv? Es würde ja reichen wenn es ein ausgezeichnetes Gitter gäbe,
+  bzgl.\ dem man lokalisieren kann. Den Fall hätte man zum Beispiel wenn man normale FE mit
+  Fourier-Basen kombinieren will.}
+
+We now consider the restrictions of all basis functions of a given tree to a single fixed grid element $e$.
+Of these restricted functions, we discard all those that are constant zero functions on $e$.
+All others form the \emph{local basis} on $e$
+\begin{equation*}
+ \Lambda_\text{local}
+ \colonequals
+ \{ \lambda|_e \; : \; \lambda \in \Lambda \}.
+\end{equation*}
+The local basis forms a tree that is isomorphic to the full global basis tree.
+\todosander{Das ist unpräzise: Die Aussage gilt nur, wenn man den Baum betrachtet, in dem
+  die Blätter die irreduziblen Basen sind, \emph{nicht} die einzelnen Basisfunktionen.}
+
+The basis functions in the local tree have two indices in addition to the global one.
+First, each local basis function has an index to distinguish it from other functions in the
+same leaf node.  As there is no hierarchical structure involved, this index is simply a
+natural number.
+\todosander{Hat diese Nummer einen Namen?}
+Secondly, each local basis has an index for the entire local tree.  This is what is used to address
+the element stiffness matrix.
+\todosander{Hat diese Nummer einen Namen?}
+In principle, this indexing can use another general index tree, which does not have to coincide
+with the index tree for the global basis.
+\todosander{Die Implementierung nimmt zwar aktuell immer nur flache Indizes, aber ich bin dennoch
+ versucht das hier in voller Allgemeinheit aufzuschreiben.  Er im Kapitel zum API würde ich dann
+ sagen dass der Index immer flach ist.  Ein Grund ist, dass wir ja selbst ab und zu noch mit
+ der Festlegung auf flache Indizes hadern.}
 
 
 \section{Programmer interface for function space bases}
