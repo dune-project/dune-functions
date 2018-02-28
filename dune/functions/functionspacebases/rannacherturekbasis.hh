@@ -20,11 +20,11 @@ namespace Functions {
 // *****************************************************************************
 // This is the reusable part of the basis. It contains
 //
-//   RannacherTurekNodeFactory
+//   RannacherTurekPreBasis
 //   RannacherTurekNodeIndexSet
 //   RannacherTurekNode
 //
-// The factory allows to create the others and is the owner of possible shared
+// The pre-basis allows to create the others and is the owner of possible shared
 // state. These three components do _not_ depend on the global basis or index
 // set and can be used without a global basis.
 // *****************************************************************************
@@ -36,10 +36,10 @@ template<typename GV, class MI, class TP>
 class RannacherTurekNodeIndexSet;
 
 template<typename GV, class MI>
-class RannacherTurekNodeFactory;
+class RannacherTurekPreBasis;
 
 /**
- * \brief Factory for a Rannacher-Turek basis
+ * \brief Pre-basis for a Rannacher-Turek basis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
@@ -52,7 +52,7 @@ class RannacherTurekNodeFactory;
  * \tparam MI  Type to be used for multi-indices
  */
 template<typename GV, class MI>
-class RannacherTurekNodeFactory
+class RannacherTurekPreBasis
 {
   static const int dim = GV::dimension;
 
@@ -79,7 +79,7 @@ public:
   using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
   //! Constructor for a given grid view object
-  RannacherTurekNodeFactory(const GridView& gv) :
+  RannacherTurekPreBasis(const GridView& gv) :
     gridView_(gv)
   {}
 
@@ -230,12 +230,12 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = RannacherTurekNodeFactory<GV, MI>;
+  using PreBasis = RannacherTurekPreBasis<GV, MI>;
 
-  using Node = typename NodeFactory::template Node<TP>;
+  using Node = typename PreBasis::template Node<TP>;
 
-  RannacherTurekNodeIndexSet(const NodeFactory& nodeFactory) :
-    nodeFactory_(&nodeFactory)
+  RannacherTurekNodeIndexSet(const PreBasis& preBasis) :
+    preBasis_(&preBasis)
   {}
 
   /** \brief Bind the view to a grid element
@@ -269,7 +269,7 @@ public:
     for (size_type i = 0, end = size() ; i < end ; ++i, ++it)
       {
         Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
-        const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
+        const auto& gridIndexSet = preBasis_->gridView().indexSet();
         const auto& element = node_->element();
 
         *it = {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),1)) }};
@@ -278,7 +278,7 @@ public:
   }
 
 protected:
-  const NodeFactory* nodeFactory_;
+  const PreBasis* preBasis_;
 
   const Node* node_;
 };
@@ -296,7 +296,7 @@ struct RannacherTurekNodeFactoryBuilder
 
   template<class MultiIndex, class GridView>
   auto build(const GridView& gridView)
-    -> RannacherTurekNodeFactory<GridView, MultiIndex>
+    -> RannacherTurekPreBasis<GridView, MultiIndex>
   {
     return {gridView};
   }
@@ -307,7 +307,7 @@ struct RannacherTurekNodeFactoryBuilder
 
 
 /**
- * \brief Create a factory builder that can build a PQkNodeFactory
+ * \brief Create a factory builder that can build a RannacherTurek pre-basis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
@@ -337,7 +337,7 @@ Imp::RannacherTurekNodeFactoryBuilder<void> rannacherTurek()
  * \tparam GV The GridView that the space is defined on
  */
 template<typename GV>
-using RannacherTurekBasis = DefaultGlobalBasis<RannacherTurekNodeFactory<GV, FlatMultiIndex<std::size_t> > >;
+using RannacherTurekBasis = DefaultGlobalBasis<RannacherTurekPreBasis<GV, FlatMultiIndex<std::size_t> > >;
 
 } // end namespace Functions
 } // end namespace Dune

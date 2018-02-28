@@ -23,11 +23,11 @@ namespace Functions {
 // *****************************************************************************
 // This is the reusable part of the basis. It contains
 //
-//   PQkNodeFactory
+//   PQkPreBasis
 //   PQkNodeIndexSet
 //   PQkNode
 //
-// The factory allows to create the others and is the owner of possible shared
+// The pre-basis allows to create the others and is the owner of possible shared
 // state. These three components do _not_ depend on the global basis or index
 // set and can be used without a global basis.
 // *****************************************************************************
@@ -39,12 +39,10 @@ template<typename GV, int k, class MI, class TP>
 class PQkNodeIndexSet;
 
 template<typename GV, int k, class MI>
-class PQkNodeFactory;
-
-
+class PQkPreBasis;
 
 /**
- * \brief A factory for PQ-lagrange bases with given order
+ * \brief A pre-basis for PQ-lagrange bases with given order
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
@@ -58,7 +56,7 @@ class PQkNodeFactory;
  * - If k is 3, then the grid can be 3d *if* it is a simplex grid
  */
 template<typename GV, int k, class MI>
-class PQkNodeFactory
+class PQkPreBasis
 {
   static const int dim = GV::dimension;
 
@@ -110,7 +108,7 @@ public:
   using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
   //! Constructor for a given grid view object
-  PQkNodeFactory(const GridView& gv) :
+  PQkPreBasis(const GridView& gv) :
     gridView_(gv)
   {}
 
@@ -309,12 +307,12 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = PQkNodeFactory<GV, k, MI>;
+  using PreBasis = PQkPreBasis<GV, k, MI>;
 
-  using Node = typename NodeFactory::template Node<TP>;
+  using Node = typename PreBasis::template Node<TP>;
 
-  PQkNodeIndexSet(const NodeFactory& nodeFactory) :
-    nodeFactory_(&nodeFactory),
+  PQkNodeIndexSet(const PreBasis& preBasis) :
+    preBasis_(&preBasis),
     node_(nullptr)
   {}
 
@@ -351,7 +349,7 @@ public:
     for (size_type i = 0, end = node_->finiteElement().size() ; i < end ; ++it, ++i)
       {
         Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
-        const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
+        const auto& gridIndexSet = preBasis_->gridView().indexSet();
         const auto& element = node_->element();
 
         // The dimension of the entity that the current dof is related to
@@ -366,8 +364,8 @@ public:
           {  // edge dof
             if (dim==1)  // element dof -- any local numbering is fine
               {
-                *it = {{ nodeFactory_->edgeOffset_
-                         + nodeFactory_->dofsPerEdge * ((size_type)gridIndexSet.subIndex(element,0,0))
+                *it = {{ preBasis_->edgeOffset_
+                         + preBasis_->dofsPerEdge * ((size_type)gridIndexSet.subIndex(element,0,0))
                          + localKey.index() }};
                 continue;
               }
@@ -382,11 +380,11 @@ public:
                 auto v1 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
                 bool flip = (v0 > v1);
                 *it = {{ (flip)
-                         ? nodeFactory_->edgeOffset_
-                         + nodeFactory_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
-                         + (nodeFactory_->dofsPerEdge-1)-localKey.index()
-                         : nodeFactory_->edgeOffset_
-                         + nodeFactory_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
+                         ? preBasis_->edgeOffset_
+                         + preBasis_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
+                         + (preBasis_->dofsPerEdge-1)-localKey.index()
+                         : preBasis_->edgeOffset_
+                         + preBasis_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
                          + localKey.index() }};
                 continue;
               }
@@ -399,13 +397,13 @@ public:
                 if (element.type().isTriangle())
                   {
                     const int interiorLagrangeNodesPerTriangle = (k-1)*(k-2)/2;
-                    *it = {{ nodeFactory_->triangleOffset_ + interiorLagrangeNodesPerTriangle*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->triangleOffset_ + interiorLagrangeNodesPerTriangle*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else if (element.type().isQuadrilateral())
                   {
                     const int interiorLagrangeNodesPerQuadrilateral = (k-1)*(k-1);
-                    *it = {{ nodeFactory_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else
@@ -421,7 +419,7 @@ public:
                 if (k==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
                   DUNE_THROW(Dune::NotImplemented, "PQkNodalBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
 
-                *it = {{ nodeFactory_->triangleOffset_ + ((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())) }};
+                *it = {{ preBasis_->triangleOffset_ + ((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())) }};
                 continue;
               }
           }
@@ -432,22 +430,22 @@ public:
               {
                 if (element.type().isTetrahedron())
                   {
-                    *it = {{ nodeFactory_->tetrahedronOffset_ + NodeFactory::dofsPerTetrahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->tetrahedronOffset_ + PreBasis::dofsPerTetrahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else if (element.type().isHexahedron())
                   {
-                    *it = {{ nodeFactory_->hexahedronOffset_ + NodeFactory::dofsPerHexahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->hexahedronOffset_ + PreBasis::dofsPerHexahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else if (element.type().isPrism())
                   {
-                    *it = {{ nodeFactory_->prismOffset_ + NodeFactory::dofsPerPrism*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->prismOffset_ + PreBasis::dofsPerPrism*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else if (element.type().isPyramid())
                   {
-                    *it = {{ nodeFactory_->pyramidOffset_ + NodeFactory::dofsPerPyramid*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->pyramidOffset_ + PreBasis::dofsPerPyramid*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else
@@ -461,7 +459,7 @@ public:
   }
 
 protected:
-  const NodeFactory* nodeFactory_;
+  const PreBasis* preBasis_;
 
   const Node* node_;
 };
@@ -479,7 +477,7 @@ struct PQkNodeFactoryBuilder
 
   template<class MultiIndex, class GridView>
   auto build(const GridView& gridView)
-    -> PQkNodeFactory<GridView, k, MultiIndex>
+    -> PQkPreBasis<GridView, k, MultiIndex>
   {
     return {gridView};
   }
@@ -490,7 +488,7 @@ struct PQkNodeFactoryBuilder
 
 
 /**
- * \brief Create a factory builder that can build a PQkNodeFactory
+ * \brief Create a factory builder that can build a PQkPreBasis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
@@ -520,13 +518,13 @@ Imp::PQkNodeFactoryBuilder<k> pq()
  * - If k is 3, then the grid can be 3d *if* it is a simplex grid
  *
  * All arguments passed to the constructor will be forwarded to the constructor
- * of PQkNodeFactory.
+ * of PQkPreBasis.
  *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
 template<typename GV, int k>
-using PQkNodalBasis = DefaultGlobalBasis<PQkNodeFactory<GV, k, FlatMultiIndex<std::size_t>> >;
+using PQkNodalBasis = DefaultGlobalBasis<PQkPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
 
 
 

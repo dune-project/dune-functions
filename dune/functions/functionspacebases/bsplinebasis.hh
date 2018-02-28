@@ -29,7 +29,7 @@ template<typename GV, typename R>
 class BSplineLocalFiniteElement;
 
 template<typename GV, class MI>
-class BSplineNodeFactory;
+class BSplinePreBasis;
 
 
 /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
@@ -57,9 +57,9 @@ public:
    *
    * The patch object does all the work.
    */
-  BSplineLocalBasis(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory,
+  BSplineLocalBasis(const BSplinePreBasis<GV,FlatMultiIndex<std::size_t>>& preBasis,
                     const BSplineLocalFiniteElement<GV,R>& lFE)
-  : nodeFactory_(nodeFactory),
+  : preBasis_(preBasis),
     lFE_(lFE)
   {}
 
@@ -72,7 +72,7 @@ public:
     FieldVector<D,dim> globalIn = offset_;
     scaling_.umv(in,globalIn);
 
-    nodeFactory_.evaluateFunction(globalIn, out, lFE_.currentKnotSpan_);
+    preBasis_.evaluateFunction(globalIn, out, lFE_.currentKnotSpan_);
   }
 
   /** \brief Evaluate Jacobian of all shape functions
@@ -84,7 +84,7 @@ public:
     FieldVector<D,dim> globalIn = offset_;
     scaling_.umv(in,globalIn);
 
-    nodeFactory_.evaluateJacobian(globalIn, out, lFE_.currentKnotSpan_);
+    preBasis_.evaluateJacobian(globalIn, out, lFE_.currentKnotSpan_);
 
     for (size_t i=0; i<out.size(); i++)
       for (int j=0; j<dim; j++)
@@ -107,7 +107,7 @@ public:
       FieldVector<D,dim> globalIn = offset_;
       scaling_.umv(in,globalIn);
 
-      nodeFactory_.evaluate(directions, globalIn, out, lFE_.currentKnotSpan_);
+      preBasis_.evaluate(directions, globalIn, out, lFE_.currentKnotSpan_);
 
       for (size_t i=0; i<out.size(); i++)
         out[i][0] *= scaling_[directions[0]][directions[0]];
@@ -118,7 +118,7 @@ public:
       FieldVector<D,dim> globalIn = offset_;
       scaling_.umv(in,globalIn);
 
-      nodeFactory_.evaluate(directions, globalIn, out, lFE_.currentKnotSpan_);
+      preBasis_.evaluate(directions, globalIn, out, lFE_.currentKnotSpan_);
 
       for (size_t i=0; i<out.size(); i++)
         out[i][0] *= scaling_[directions[0]][directions[0]]*scaling_[directions[1]][directions[1]];
@@ -138,7 +138,7 @@ public:
    */
   unsigned int order () const
   {
-    return *std::max_element(nodeFactory_.order_.begin(), nodeFactory_.order_.end());
+    return *std::max_element(preBasis_.order_.begin(), preBasis_.order_.end());
   }
 
   /** \brief Return the number of basis functions on the current knot span
@@ -149,7 +149,7 @@ public:
   }
 
 private:
-  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory_;
+  const BSplinePreBasis<GV,FlatMultiIndex<std::size_t>>& preBasis_;
 
   const BSplineLocalFiniteElement<GV,R>& lFE_;
 
@@ -373,9 +373,9 @@ public:
 
   /** \brief Constructor with a given B-spline basis
    */
-  BSplineLocalFiniteElement(const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory)
-  : nodeFactory_(nodeFactory),
-    localBasis_(nodeFactory,*this)
+  BSplineLocalFiniteElement(const BSplinePreBasis<GV,FlatMultiIndex<std::size_t>>& preBasis)
+  : preBasis_(preBasis),
+    localBasis_(preBasis,*this)
   {}
 
   /** \brief Bind LocalFiniteElement to a specific knot span of the spline patch
@@ -392,7 +392,7 @@ public:
       currentKnotSpan_[i] = 0;
 
       // Skip over degenerate knot spans
-      while (nodeFactory_.knotVectors_[i][currentKnotSpan_[i]+1] < nodeFactory_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
+      while (preBasis_.knotVectors_[i][currentKnotSpan_[i]+1] < preBasis_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
         currentKnotSpan_[i]++;
 
       for (size_t j=0; j<elementIdx[i]; j++)
@@ -400,13 +400,13 @@ public:
         currentKnotSpan_[i]++;
 
         // Skip over degenerate knot spans
-        while (nodeFactory_.knotVectors_[i][currentKnotSpan_[i]+1] < nodeFactory_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
+        while (preBasis_.knotVectors_[i][currentKnotSpan_[i]+1] < preBasis_.knotVectors_[i][currentKnotSpan_[i]]+1e-8)
           currentKnotSpan_[i]++;
       }
 
       // Compute the geometric transformation from knotspan-local to global coordinates
-      localBasis_.offset_[i] = nodeFactory_.knotVectors_[i][currentKnotSpan_[i]];
-      localBasis_.scaling_[i][i] = nodeFactory_.knotVectors_[i][currentKnotSpan_[i]+1] - nodeFactory_.knotVectors_[i][currentKnotSpan_[i]];
+      localBasis_.offset_[i] = preBasis_.knotVectors_[i][currentKnotSpan_[i]];
+      localBasis_.scaling_[i][i] = preBasis_.knotVectors_[i][currentKnotSpan_[i]+1] - preBasis_.knotVectors_[i][currentKnotSpan_[i]];
     }
 
     // Set up the LocalCoefficients object
@@ -455,16 +455,16 @@ public:
   /** \brief Number of degrees of freedom for one coordinate direction */
   unsigned int size(int i) const
   {
-    const auto& order = nodeFactory_.order_;
+    const auto& order = preBasis_.order_;
     unsigned int r = order[i]+1;   // The 'normal' value
     if (currentKnotSpan_[i]<order[i])   // Less near the left end of the knot vector
       r -= (order[i] - currentKnotSpan_[i]);
-    if ( order[i] > (nodeFactory_.knotVectors_[i].size() - currentKnotSpan_[i] - 2) )
-      r -= order[i] - (nodeFactory_.knotVectors_[i].size() - currentKnotSpan_[i] - 2);
+    if ( order[i] > (preBasis_.knotVectors_[i].size() - currentKnotSpan_[i] - 2) )
+      r -= order[i] - (preBasis_.knotVectors_[i].size() - currentKnotSpan_[i] - 2);
     return r;
   }
 
-  const BSplineNodeFactory<GV,FlatMultiIndex<std::size_t>>& nodeFactory_;
+  const BSplinePreBasis<GV,FlatMultiIndex<std::size_t>>& preBasis_;
 
   BSplineLocalBasis<GV,R> localBasis_;
   BSplineLocalCoefficients<dim> localCoefficients_;
@@ -481,18 +481,18 @@ class BSplineNode;
 template<typename GV, class MI, class TP>
 class BSplineNodeIndexSet;
 
-/** \brief Node factory for B-spline basis
+/** \brief Pre-basis for B-spline basis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV The GridView that the space is defined on
  * \tparam MI Type to be used for multi-indices
  *
- * The BSplineNodeFactory can be used to embed a BSplineBasis
+ * The BSplinePreBasis can be used to embed a BSplineBasis
  * in a larger basis for the construction of product spaces.
  */
 template<typename GV, class MI>
-class BSplineNodeFactory
+class BSplinePreBasis
 {
   static const int dim = GV::dimension;
 
@@ -589,7 +589,7 @@ public:
    *        i.e., start and end with 'order+1' identical knots.  Basis functions from such knot vectors are interpolatory at
    *        the end of the parameter interval.
    */
-  BSplineNodeFactory(const GridView& gridView,
+  BSplinePreBasis(const GridView& gridView,
                      const std::vector<double>& knotVector,
                      unsigned int order,
                      bool makeOpen = true)
@@ -641,7 +641,7 @@ public:
    *        i.e., start and end with 'order+1' identical knots.  Basis functions from such knot vectors are interpolatory at
    *        the end of the parameter interval.
    */
-  BSplineNodeFactory(const GridView& gridView,
+  BSplinePreBasis(const GridView& gridView,
                      const FieldVector<double,dim>& lowerLeft,
                      const FieldVector<double,dim>& upperRight,
                      const std::array<unsigned int,dim>& elements,
@@ -1241,10 +1241,10 @@ public:
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElement = BSplineLocalFiniteElement<GV,double>;
 
-  BSplineNode(const TreePath& treePath, const BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>>* nodeFactory) :
+  BSplineNode(const TreePath& treePath, const BSplinePreBasis<GV, FlatMultiIndex<std::size_t>>* preBasis) :
     Base(treePath),
-    nodeFactory_(nodeFactory),
-    finiteElement_(*nodeFactory)
+    preBasis_(preBasis),
+    finiteElement_(*preBasis)
   {}
 
   //! Return current element, throw if unbound
@@ -1266,14 +1266,14 @@ public:
   void bind(const Element& e)
   {
     element_ = e;
-    auto elementIndex = nodeFactory_->gridView().indexSet().index(e);
-    finiteElement_.bind(nodeFactory_->getIJK(elementIndex,nodeFactory_->elements_));
+    auto elementIndex = preBasis_->gridView().indexSet().index(e);
+    finiteElement_.bind(preBasis_->getIJK(elementIndex,preBasis_->elements_));
     this->setSize(finiteElement_.size());
   }
 
 protected:
 
-  const BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>>* nodeFactory_;
+  const BSplinePreBasis<GV, FlatMultiIndex<std::size_t>>* preBasis_;
 
   FiniteElement finiteElement_;
   Element element_;
@@ -1293,12 +1293,12 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = BSplineNodeFactory<GV, MI>;
+  using PreBasis = BSplinePreBasis<GV, MI>;
 
-  using Node = typename NodeFactory::template Node<TP>;
+  using Node = typename PreBasis::template Node<TP>;
 
-  BSplineNodeIndexSet(const NodeFactory& nodeFactory) :
-    nodeFactory_(&nodeFactory)
+  BSplineNodeIndexSet(const PreBasis& preBasis) :
+    preBasis_(&preBasis)
   {}
 
   /** \brief Bind the view to a grid element
@@ -1335,10 +1335,10 @@ public:
   {
     for (size_type i = 0, end = size() ; i < end ; ++i, ++it)
       {
-        std::array<unsigned int,dim> localIJK = nodeFactory_->getIJK(i, localSizes_);
+        std::array<unsigned int,dim> localIJK = preBasis_->getIJK(i, localSizes_);
 
         const auto currentKnotSpan = node_->finiteElement().currentKnotSpan_;
-        const auto order = nodeFactory_->order_;
+        const auto order = preBasis_->order_;
 
         std::array<unsigned int,dim> globalIJK;
         for (int i=0; i<dim; i++)
@@ -1348,7 +1348,7 @@ public:
         size_type globalIdx = globalIJK[dim-1];
 
         for (int i=dim-2; i>=0; i--)
-          globalIdx = globalIdx * nodeFactory_->size(i) + globalIJK[i];
+          globalIdx = globalIdx * preBasis_->size(i) + globalIJK[i];
 
         *it = {{globalIdx}};
       }
@@ -1356,7 +1356,7 @@ public:
   }
 
 protected:
-  const NodeFactory* nodeFactory_;
+  const PreBasis* preBasis_;
 
   const Node* node_;
 
@@ -1376,7 +1376,7 @@ protected:
  * \tparam GV The GridView that the space is defined on
  */
 template<typename GV>
-using BSplineBasis = DefaultGlobalBasis<BSplineNodeFactory<GV, FlatMultiIndex<std::size_t>> >;
+using BSplineBasis = DefaultGlobalBasis<BSplinePreBasis<GV, FlatMultiIndex<std::size_t>> >;
 
 
 }   // namespace Functions

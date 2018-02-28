@@ -35,13 +35,13 @@ Imp::PQkNodeFactoryBuilder<k> lagrange()
  * - If k is 3, then the grid can be 3d *if* it is a simplex grid
  *
  * All arguments passed to the constructor will be forwarded to the constructor
- * of PQkNodeFactory.
+ * of PQkPreBasis.
  *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
 template<typename GV, int k>
-using LagrangeBasis = DefaultGlobalBasis<PQkNodeFactory<GV, k, FlatMultiIndex<std::size_t>> >;
+using LagrangeBasis = DefaultGlobalBasis<PQkPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
 
 
 

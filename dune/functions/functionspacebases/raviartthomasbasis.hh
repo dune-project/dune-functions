@@ -133,11 +133,11 @@ namespace Impl {
 // *****************************************************************************
 // This is the reusable part of the basis. It contains
 //
-//   RaviartThomasNodeFactory
+//   RaviartThomasPreBasis
 //   RaviartThomasNodeIndexSet
 //   RaviartThomasNode
 //
-// The factory allows to create the others and is the owner of possible shared
+// The pre-basis allows to create the others and is the owner of possible shared
 // state. These three components do _not_ depend on the global basis or index
 // set and can be used without a global basis.
 // *****************************************************************************
@@ -149,10 +149,10 @@ template<typename GV, int k, class MI, class TP, class ST, GeometryType::BasicTy
 class RaviartThomasNodeIndexSet;
 
 template<typename GV, int k, class MI, class ST, GeometryType::BasicType basic_type>
-class RaviartThomasNodeFactory;
+class RaviartThomasPreBasis;
 
 template<typename GV, int k, class MI, class ST, GeometryType::BasicType basic_type>
-class RaviartThomasNodeFactory
+class RaviartThomasPreBasis
 {
   static const int dim = GV::dimension;
   using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, basic_type, typename GV::ctype, double, k>;
@@ -190,7 +190,7 @@ public:
   using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
   /** \brief Constructor for a given grid view object */
-  RaviartThomasNodeFactory(const GridView& gv) :
+  RaviartThomasPreBasis(const GridView& gv) :
     gridView_(gv),
     finiteElementMap_(gv)
   { }
@@ -324,12 +324,12 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = RaviartThomasNodeFactory<GV, k, MI, ST, basic_type>;
+  using PreBasis = RaviartThomasPreBasis<GV, k, MI, ST, basic_type>;
 
-  using Node = typename NodeFactory::template Node<TP>;
+  using Node = typename PreBasis::template Node<TP>;
 
-  RaviartThomasNodeIndexSet(const NodeFactory& nodeFactory) :
-    nodeFactory_(&nodeFactory)
+  RaviartThomasNodeIndexSet(const PreBasis& preBasis) :
+    preBasis_(&preBasis)
   {}
 
   /** \brief Bind the view to a grid element
@@ -364,7 +364,7 @@ public:
   template<typename It>
   It indices(It it) const
   {
-    const auto& gridIndexSet = nodeFactory_->gridView().indexSet();
+    const auto& gridIndexSet = preBasis_->gridView().indexSet();
     const auto& element = node_->element();
 
     // throw if Element is not of predefined type
@@ -381,15 +381,15 @@ public:
 
       if (not(codim==0 or codim==1)) DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasBasis");
 
-      *it = { nodeFactory_->codimOffset_[codim] +
-        nodeFactory_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
+      *it = { preBasis_->codimOffset_[codim] +
+        preBasis_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
     }
 
     return it;
   }
 
 protected:
-  const NodeFactory* nodeFactory_;
+  const PreBasis* preBasis_;
   const Node* node_;
 };
 
@@ -406,7 +406,7 @@ struct RaviartThomasNodeFactoryBuilder
 
   template<class MultiIndex, class GridView, class size_type=std::size_t>
   auto build(const GridView& gridView)
-    -> RaviartThomasNodeFactory<GridView, k, MultiIndex, size_type, basic_type>
+    -> RaviartThomasPreBasis<GridView, k, MultiIndex, size_type, basic_type>
   {
     return {gridView};
   }
@@ -436,7 +436,7 @@ Imp::RaviartThomasNodeFactoryBuilder<k, basic_type> rt()
  * \tparam k The order of the basis
  */
 template<typename GV, int k, GeometryType::BasicType basic_type, class ST = std::size_t>
-using RaviartThomasNodalBasis = DefaultGlobalBasis<RaviartThomasNodeFactory<GV, k, FlatMultiIndex<ST>, ST, basic_type> >;
+using RaviartThomasNodalBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<ST>, ST, basic_type> >;
 
 } // end namespace Functions
 } // end namespace Dune

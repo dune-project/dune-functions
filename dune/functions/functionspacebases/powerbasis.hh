@@ -24,32 +24,32 @@ namespace Functions {
 // *****************************************************************************
 // This is the reusable part of the power bases. It contains
 //
-//   PowerNodeFactory
+//   PowerPreBasis
 //   PowerNodeIndexSet
 //
-// The factory allows to create the others and is the owner of possible shared
+// The pre-basis allows to create the others and is the owner of possible shared
 // state. These components do _not_ depend on the global basis or index
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<class MI, class TP, class IMS, class SF, std::size_t C>
+template<class MI, class TP, class IMS, class SPB, std::size_t C>
 class PowerNodeIndexSet;
 
 
 
 /**
- * \brief A factory for power bases
+ * \brief A pre-basis for power bases
  *
- * This node factory represente a power of a given node factory.
+ * This pre-basis represents a power of a given pre-basis.
  * Its node type is a PowerBasisNodes for the given subnode.
  *
  * \tparam MI  Type to be used for multi-indices
  * \tparam IMS An IndexMergingStrategy used to merge the global indices of the child factories
- * \tparam SF  The child factory
+ * \tparam SPB  The child pre-basis
  * \tparam C   The exponent of the power node
  */
-template<class MI, class IMS, class SF, std::size_t C>
-class PowerNodeFactory
+template<class MI, class IMS, class SPB, std::size_t C>
+class PowerPreBasis
 {
   static const std::size_t children = C;
 
@@ -58,11 +58,11 @@ class PowerNodeFactory
 
 public:
 
-  //! The child factory
-  using SubFactory = SF;
+  //! The child pre-basis
+  using SubPreBasis = SPB;
 
   //! The grid view that the FE basis is defined on
-  using GridView = typename SF::GridView;
+  using GridView = typename SPB::GridView;
 
   //! Type used for indices and size information
   using size_type = std::size_t;
@@ -71,10 +71,10 @@ public:
   using IndexMergingStrategy = IMS;
 
   template<class TP>
-  using SubNode = typename SubFactory::template Node<decltype(TypeTree::push_back(TP(), 0))>;
+  using SubNode = typename SubPreBasis::template Node<decltype(TypeTree::push_back(TP(), 0))>;
 
   template<class TP>
-  using SubIndexSet = typename SubFactory::template IndexSet<decltype(TypeTree::push_back(TP(), 0))>;
+  using SubIndexSet = typename SubPreBasis::template IndexSet<decltype(TypeTree::push_back(TP(), 0))>;
 
   //! Template mapping root tree path to type of created tree node
   template<class TP>
@@ -82,13 +82,13 @@ public:
 
   //! Template mapping root tree path to type of created tree node index set
   template<class TP>
-  using IndexSet = PowerNodeIndexSet<MI, TP, IMS, SF, C>;
+  using IndexSet = PowerNodeIndexSet<MI, TP, IMS, SPB, C>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
   //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, SubFactory::SizePrefix::max_size()+1>;
+  using SizePrefix = Dune::ReservedVector<size_type, SubPreBasis::SizePrefix::max_size()+1>;
 
 private:
 
@@ -97,35 +97,35 @@ private:
 public:
 
   /**
-   * \brief Constructor for given child factory objects
+   * \brief Constructor for given child pre-basis objects
    *
    * The child factories will be stored as copies
    */
   template<class... SFArgs,
-    disableCopyMove<PowerNodeFactory, SFArgs...> = 0,
-    enableIfConstructible<SubFactory, SFArgs...> = 0>
-  PowerNodeFactory(SFArgs&&... sfArgs) :
-    subFactory_(std::forward<SFArgs>(sfArgs)...)
+    disableCopyMove<PowerPreBasis, SFArgs...> = 0,
+    enableIfConstructible<SubPreBasis, SFArgs...> = 0>
+  PowerPreBasis(SFArgs&&... sfArgs) :
+    subPreBasis_(std::forward<SFArgs>(sfArgs)...)
   {
-    static_assert(models<Concept::NodeFactory<GridView>, SubFactory>(), "Subfactory passed to PowerNodeFactory does not model the NodeFactory concept.");
+    static_assert(models<Concept::PreBasis<GridView>, SubPreBasis>(), "Subprebasis passed to PowerPreBasis does not model the PreBasis concept.");
   }
 
   //! Initialize the global indices
   void initializeIndices()
   {
-    subFactory_.initializeIndices();
+    subPreBasis_.initializeIndices();
   }
 
   //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
-    return subFactory_.gridView();
+    return subPreBasis_.gridView();
   }
 
   //! Update the stored grid view, to be called if the grid has changed
   void update(const GridView& gv)
   {
-    subFactory_.update(gv);
+    subPreBasis_.update(gv);
   }
 
   /**
@@ -143,7 +143,7 @@ public:
   {
     auto node = Node<TP>(tp);
     for (std::size_t i=0; i<children; ++i)
-      node.setChild(i, subFactory_.node(TypeTree::push_back(tp, i)));
+      node.setChild(i, subPreBasis_.node(TypeTree::push_back(tp, i)));
     return node;
   }
 
@@ -182,18 +182,18 @@ private:
     // multiplied by the number of subnodes because we enumerate all
     // child indices in a row.
     if (prefix.size() == 0)
-      return children*subFactory_.size({});
+      return children*subPreBasis_.size({});
 
     // The first prefix entry refers to one of the (root index size)
     // subindex trees. Hence we have to first compute the corresponding
     // prefix entry for a single subnode subnode. The we can append
     // the other prefix entries unmodified, because the index tree
     // looks the same after the first level.
-    typename SubFactory::SizePrefix subPrefix;
+    typename SubPreBasis::SizePrefix subPrefix;
     subPrefix.push_back(prefix[0] / children);
     for(std::size_t i=1; i<prefix.size(); ++i)
       subPrefix.push_back(prefix[i]);
-    return subFactory_.size(subPrefix);
+    return subPreBasis_.size(subPrefix);
   }
 
   size_type size(const SizePrefix& prefix, BasisBuilder::FlatLexicographic) const
@@ -202,44 +202,44 @@ private:
     // root of a single subnode multiplied by the number of subnodes
     // because we enumerate all child indices in a row.
     if (prefix.size() == 0)
-      return children*subFactory_.size({});
+      return children*subPreBasis_.size({});
 
     // The first prefix entry refers to one of the (root index size)
     // subindex trees. Hence we have to first compute the corresponding
     // prefix entry for a single subnode subnode. The we can append
     // the other prefix entries unmodified, because the index tree
     // looks the same after the first level.
-    typename SubFactory::SizePrefix subPrefix;
+    typename SubPreBasis::SizePrefix subPrefix;
     subPrefix.push_back(prefix[0] % children);
     for(std::size_t i=1; i<prefix.size(); ++i)
       subPrefix.push_back(prefix[i]);
-    return subFactory_.size(subPrefix);
+    return subPreBasis_.size(subPrefix);
   }
 
   size_type size(const SizePrefix& prefix, BasisBuilder::BlockedLexicographic) const
   {
     if (prefix.size() == 0)
       return children;
-    typename SubFactory::SizePrefix subPrefix;
+    typename SubPreBasis::SizePrefix subPrefix;
     for(std::size_t i=1; i<prefix.size(); ++i)
       subPrefix.push_back(prefix[i]);
-    return subFactory_.size(subPrefix);
+    return subPreBasis_.size(subPrefix);
   }
 
   size_type size(const SizePrefix& prefix, BasisBuilder::LeafBlockedInterleaved) const
   {
     if (prefix.size() == 0)
-      return subFactory_.size();
+      return subPreBasis_.size();
 
-    typename SubFactory::SizePrefix subPrefix;
+    typename SubPreBasis::SizePrefix subPrefix;
     for(std::size_t i=0; i<prefix.size()-1; ++i)
       subPrefix.push_back(prefix[i]);
 
-    size_type r = subFactory_.size(subPrefix);
+    size_type r = subPreBasis_.size(subPrefix);
     if (r==0)
       return 0;
     subPrefix.push_back(prefix.back());
-    r = subFactory_.size(subPrefix);
+    r = subPreBasis_.size(subPrefix);
     if (r==0)
       return children;
     return r;
@@ -250,49 +250,49 @@ public:
   //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
-    return subFactory_.dimension() * children;
+    return subPreBasis_.dimension() * children;
   }
 
   //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
-    return subFactory_.maxNodeSize() * children;
+    return subPreBasis_.maxNodeSize() * children;
   }
 
 protected:
-  SubFactory subFactory_;
+  SubPreBasis subPreBasis_;
 };
 
 
 
-template<class MI, class TP, class IMS, class SF, std::size_t C>
+template<class MI, class TP, class IMS, class SPB, std::size_t C>
 class PowerNodeIndexSet
 {
   static const std::size_t children = C;
 
 public:
 
-  using SubFactory = SF;
+  using SubPreBasis = SPB;
 
   /** \brief The grid view that the FE space is defined on */
-  using GridView = typename SF::GridView;
+  using GridView = typename SPB::GridView;
   using size_type = std::size_t;
   using IndexMergingStrategy = IMS;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using NodeFactory = PowerNodeFactory<MI, IMS, SF, C>;
+  using PreBasis = PowerPreBasis<MI, IMS, SPB, C>;
 
-  using Node = typename NodeFactory::template Node<TP>;
+  using Node = typename PreBasis::template Node<TP>;
 
   using SubTreePath = typename TypeTree::Child<Node,0>::TreePath;
 
-  using SubNodeIndexSet = typename NodeFactory::SubFactory::template IndexSet<SubTreePath>;
+  using SubNodeIndexSet = typename PreBasis::SubPreBasis::template IndexSet<SubTreePath>;
 
-  PowerNodeIndexSet(const NodeFactory & nodeFactory) :
-    nodeFactory_(&nodeFactory),
-    subNodeIndexSet_(nodeFactory_->subFactory_.template indexSet<SubTreePath>())
+  PowerNodeIndexSet(const PreBasis & preBasis) :
+    preBasis_(&preBasis),
+    subNodeIndexSet_(preBasis_->subPreBasis_.template indexSet<SubTreePath>())
   {}
 
   void bind(const Node& node)
@@ -352,7 +352,7 @@ public:
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
-    size_type firstIndexEntrySize = nodeFactory_->subFactory_.size({});
+    size_type firstIndexEntrySize = preBasis_->subPreBasis_.size({});
     // Fill indices for first child at the beginning.
     auto next = subNodeIndexSet_.indices(multiIndices);
     for (std::size_t child = 1; child<children; ++child)
@@ -430,7 +430,7 @@ public:
   }
 
 private:
-  const NodeFactory* nodeFactory_;
+  const PreBasis* preBasis_;
   SubNodeIndexSet subNodeIndexSet_;
   const Node* node_;
 };
@@ -450,7 +450,7 @@ struct PowerNodeFactoryBuilder
 
   template<class MultiIndex, class GridView>
   auto build(const GridView& gridView)
-    -> PowerNodeFactory<MultiIndex,  IndexMergingStrategy, decltype(SubFactoryTag().template build<MultiIndex, GridView>(std::declval<GridView>())), k>
+    -> PowerPreBasis<MultiIndex,  IndexMergingStrategy, decltype(SubFactoryTag().template build<MultiIndex, GridView>(std::declval<GridView>())), k>
   {
     return {SubFactoryTag().template build<MultiIndex, GridView>(gridView)};
   }
@@ -461,7 +461,7 @@ struct PowerNodeFactoryBuilder
 
 
 /**
- * \brief Create a factory builder that can build a PowerNodeFactory
+ * \brief Create a factory builder that can build a PowerPreBasis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
@@ -480,7 +480,7 @@ Imp::PowerNodeFactoryBuilder<k, IndexMergingStrategy, SubFactoryTag>
 }
 
 /**
- * \brief Create a factory builder that can build a PowerNodeFactory
+ * \brief Create a factory builder that can build a PowerPreBasis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
