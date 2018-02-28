@@ -222,44 +222,53 @@ project homepage \url{www.dune-project.org}.
 
 Before we can explain the implementation of bases for discrete function spaces in Chapter~\ref{sec:dune_functions:function_space_bases_implementation},
 we need to say a few words about the general structure of such spaces.
-
 Readers who are only interested in scalar finite element spaces may try to proceed directly to
 Chapter~\ref{sec:dune_functions:function_space_bases_implementation}.  They should only know that whenever a tree
-is mentioned there, this tree consists of a single node only, which is the FE basis.
+is mentioned there, this tree consists of a single node only, which is the finite element basis.
 
 \subsection{Trees of finite element spaces}
 
 Throughout this chapter we assume that we have a single fixed domain $\Omega$, and all function spaces
-that we consider are defined on this domain.
+that we consider are defined on this domain.  We are mainly thinking of spaces of functions that are
+piecewise polynomial with respect to a grid, but we don't actually require that yet.
+
+Some finite element spaces arise naturally as a combination of simpler ones.
 There are primarily two ways how two bases can be combined to form a new one:
 Internal sums and external sums.
-
-Some finite element spaces arise naturally as the internal sum of two simpler ones.
-I.\,e., both have the same range space $R$ and are thus subspaces of the space $R^\Omega$
-of all functions mapping from $\Omega$ to $R$. Then the internal sum is just the classic
-sum in $R^\Omega$.  The sum space will have that same range space.
+\todosander{Gibt es eine schöne Referenz für diese zwei Arten der Summation?}
+For internal sums, both spaces
+have the same range space $R$ and are thus subspaces of the space $R^\Omega$
+of all functions mapping from $\Omega$ to $R$. The internal sum is then just the classic
+sum in $R^\Omega$, i.e.,
+\begin{equation*}
+ V + W
+ \colonequals
+ \{ v + w \; : \; v \in V, w \in W \}.
+\end{equation*}
+The sum space will have that same range space.
 If the sum is direct, then a basis of the sum is given by the union of the bases of
-the simpler ones.
-For example,
-a $P_2$-space can be viewed as a $P_1$-space plus a hierarchical extension consisting of bubble functions.
-XFEM spaces~\cite{moes_dolbow_belytschko:1999} are constructed by adding special basis functions to a basic space to capture
-free discontinuities.
+the simpler ones. For example, a $P_2$-space (i.e., a second order Lagrange space)
+can be viewed as a $P_1$-space plus a hierarchical extension spanned by bubble functions.
+XFEM spaces~\cite{moes_dolbow_belytschko:1999} are constructed by adding particular weighted Heaviside
+functions to a basic space to capture free discontinuities.
+\todosander{Brauchen wir den folgenden Satz?}
 If an internal sum is direct, then it can, up to an isomorphism, also be written as
 an external sum as described below.
-%The two spaces in such a sum must have the same range space.
-The \dunemodule{dune-functions} module does not currently support marking the sum
-of finite element bases to be internal.
+The \dunemodule{dune-functions} module does not currently support constructing internal sum
+of finite element bases, but this may be added in later versions.
 
-The second way to construct FE spaces from simpler ones is by building external sums or,
-equivalently, Cartesian products of FE spaces.  This is what
+The second way to construct finite element spaces from simpler ones uses external summation or,
+equivalently, Cartesian products.  This is what
 \dunemodule{dune-functions} focuses on, and we will describe it in a bit more detail.
 Let $B = \{b_i\}_{i=1}^{n_1}$ and $C = \{c_i\}_{i=1}^{n_2}$ be two scalar function space bases and let $\mathbf{e}_1$, $\mathbf{e}_2$ be the canonical
 basis vectors in $\R^2$.
 Then we define the external sum or Cartesian product of the spanned spaces $\op{span}B$ and $\op{span} C$ as
+\todosander{Sollten wir uns konsequenter auf eine Notation einigen?  Aktuell nennen wir die Operation
+primär \emph{Summe}, benutzen dann aber ein Multiplikationssymbol.}
 \begin{align*}
     \operatorname{span} B \oplus \operatorname{span} C
     = \operatorname{span} B \times \operatorname{span} C
-    = \big\{ (v,w) \st v \in \op{span} B, w \in \op{span} C \big\}.
+    \colonequals \big\{ (v,w) \st v \in \op{span} B, w \in \op{span} C \big\}.
 \end{align*}
 A natural basis of this space is given by the concatenation
 of the bases $B$ and $C$ defined by
@@ -278,16 +287,16 @@ and $\R^{m_2}$, respectively, then
 \begin{equation*}
     (B,C)
  \colonequals
- \big\{(b_1,\underbrace{0}_{\in \R^{m_2}}), (b_2,\underbrace{0}_{\in \R^{m_2}}), \dots, (b_{n_1},\underbrace{0}_{\in \R^{m_2}})\big\}
+ \big\{(b_1,\mathbf{0}), (b_2,\mathbf{0}), \dots, (b_{n_1},\mathbf{0})\big\}
  \cup
- \big\{(\underbrace{0}_{\in \R^{m_1}}, c_1), (\underbrace{0}_{\in \R^{m_1}},c_2), \dots, (\underbrace{0}_{\in \R^{m_1}}, c_{n_2})\big\}
+ \big\{(\mathbf{0}, c_1), (\mathbf{0},c_2), \dots, (\mathbf{0}, c_{n_2})\big\}
 \end{equation*}
-\todosander{These zeros are not elements of $\R^m$.  Rather, the are elements of $(\R^m)^\Omega$,
-the set of functions mapping $\Omega$ to $\R^m$.}
-is again the natural basis of the space $\operatorname{span} B \oplus \operatorname{span} C$.  Its basis functions take values in
-$\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
+is again the natural basis of the space $\operatorname{span} B \oplus \operatorname{span} C$.  Its basis functions take values in $\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
+In particular, the symbol $\mathbf{0}$ in the formula above denotes the constant $\R^{m_1}$ and
+$\R^{m_2}$-valued zero functions.
+\todosander{Sollten wir hier explizit auch die externe Summe von Basen einführen?}
 
-It is important to note that building the external sum of vector spaces
+It should be noted that building the external sum of vector spaces
 corresponds to building the Cartesian product of the sets which should not
 be confused with building the tensor product of these spaces.
 It is however true, that the $k$-fold product or $k$-th power
@@ -304,18 +313,14 @@ when we talk about the Cartesian product or external sum.
 The construction via products (external sums) allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
 For example, the space of
 first-order Lagrangian finite elements with values in $\R^3$ can be seen as the product $P_1 \times P_1 \times P_1$.
-The simplest Taylor--Hood element is the product $(P_2)^3 \times P_1$
-of $(P_2)^3 = P_2 \times P_2 \times P_2$ for the velocities with $P_1$ for the pressure.
-If more physical quantities need to be dealt with, more factor bases can be included easily.  Note also that we have not
-required that these spaces be defined with respect to the same grid (or any grid at all, for that matter).
+The simplest Taylor--Hood element is the product $P_2 \times P_2 \times P_2 \times P_1$
+of $P_2 \times P_2 \times P_2$ for the velocities with $P_1$ for the pressure.
+If additional variables need to be dealt with, more factor bases can be included easily.
 
-For any spaces used in FE simulations that can be written as a product, there is an order of the factors that appears more natural
-than others.  For example, the Taylor--Hood space is usually written as $P_2 \times P_2 \times P_2 \times P_1$,
-even though $P_2 \times P_1 \times P_2 \times P_2$ would work as well.  The reason is that the triple
+In the Taylor--Hood basis, the triple
 $P_2 \times P_2 \times P_2$ forms a semantic unit---it contains the components of a velocity field.
-This, together with the associativity of the product of spaces, allows to even write this
-as $(P_2 \times P_2 \times P_2) \times P_1$.  This grouping makes the semantic relationship even clearer.
-
+The associativity of the external sum allows to write it
+as $(P_2 \times P_2 \times P_2) \times P_1$, which makes the semantic relationship clearer.
 Grouped expressions of this type are conveniently visualized as tree structures.  This
 suggests to interpret composite
 finite element spaces as tree structures.  In this structure, leaf nodes represent scalar or otherwise irreducible spaces,
