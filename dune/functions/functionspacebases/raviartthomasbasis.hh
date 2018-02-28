@@ -247,7 +247,11 @@ public:
 
   size_type maxNodeSize() const
   {
-    return StaticPower<(k+1),GV::dimension>::power;
+    // The implementation currently only supports grids with a single element type.
+    // We can therefore return the actual number of dofs here.
+    GeometryType elementType = *(gridView_.indexSet().types(0).begin());
+    size_t numFaces = ReferenceElements<double,dim>::general(elementType).size(1);
+    return dofsPerCodim[0] + dofsPerCodim[1] * numFaces;
   }
 
 protected:
