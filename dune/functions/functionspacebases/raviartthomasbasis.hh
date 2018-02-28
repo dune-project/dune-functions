@@ -149,15 +149,10 @@ template<typename GV, int k, class MI, class TP, class ST, GeometryType::BasicTy
 class RaviartThomasNodeIndexSet;
 
 template<typename GV, int k, class MI, class ST, GeometryType::BasicType basic_type>
-class RaviartThomasPreBasis;
-
-template<typename GV, int k, class MI, class ST, GeometryType::BasicType basic_type>
 class RaviartThomasPreBasis
 {
   static const int dim = GV::dimension;
   using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, basic_type, typename GV::ctype, double, k>;
-
-private:
 
   template<typename, int, class, class, class, GeometryType::BasicType>
   friend class RaviartThomasNodeIndexSet;
@@ -267,7 +262,6 @@ class RaviartThomasNode :
   public LeafBasisNode<ST, TP>
 {
   static const int dim = GV::dimension;
-  static const int maxSize = StaticPower<(k+1),GV::dimension>::power;
 
   using Base = LeafBasisNode<ST,TP>;
 
@@ -383,7 +377,8 @@ public:
       size_t subentity = localKey.subEntity();
       size_t codim = localKey.codim();
 
-      if (not(codim==0 or codim==1)) DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasBasis");
+      if (not(codim==0 or codim==1))
+        DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasBasis");
 
       *it = { preBasis_->codimOffset_[codim] +
         preBasis_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
