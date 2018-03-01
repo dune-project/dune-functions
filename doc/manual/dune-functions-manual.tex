@@ -139,7 +139,7 @@
  It forms one abstraction level above grids, shape functions, and linear algebra, and provides infrastructure
  for full discretization frameworks like \dunemodule{dune-pdelab} and \dunemodule{dune-fem}.
  This document describes the function space bases provided by \dunemodule{dune-functions}.  These are
- based on an abstract description of bases for external sum spaces as trees of simpler bases.
+ based on an abstract description of bases for product spaces as trees of simpler bases.
  From this description, orderings of degrees of freedom and their numbering by multi-indices can be
  derived in a natural way. We describe the abstract concepts, document the programmer interface,
  and give a complete example program that solves the stationary Stokes equation using Taylor--Hood elements.
@@ -275,41 +275,39 @@ that we consider are defined on this domain.  We are mainly thinking of spaces o
 piecewise polynomial with respect to a grid, but we don't actually require that yet.
 
 Some finite element spaces arise naturally as a combination of simpler ones.
-There are primarily two ways how two bases can be combined to form a new one:
-Internal sums and external sums.
-\todosander{Gibt es eine schöne Referenz für diese zwei Arten der Summation?}
-For internal sums, both spaces
+There are primarily two ways how two vector spaces $V$ and $W$ can be combined
+to form a new one: Sums and products. While these are also called
+internal and external sums, respectively, we stick to the notation
+sum and product in the following.
+
+For sums, both spaces
 have the same range space $R$ and are thus subspaces of the space $R^\Omega$
-of all functions mapping from $\Omega$ to $R$. The internal sum is then just the classic
-sum in $R^\Omega$, i.e.,
+of all functions mapping from $\Omega$ to $R$. Then the vector space sum
 \begin{equation*}
- V + W
- \colonequals
- \{ v + w \; : \; v \in V, w \in W \}.
+  V + W
+  \colonequals
+  \{ v + w \; : \; v \in V, w \in W \}
 \end{equation*}
-The sum space will have that same range space.
+in $R^\Omega$ will have that same range space.
 If the sum is direct, then a basis of the sum is given by the union of the bases of
 the simpler ones. For example, a $P_2$-space (i.e., a second order Lagrange space)
 can be viewed as a $P_1$-space plus a hierarchical extension spanned by bubble functions.
 XFEM spaces~\cite{moes_dolbow_belytschko:1999} are constructed by adding particular weighted Heaviside
 functions to a basic space to capture free discontinuities.
-\todosander{Brauchen wir den folgenden Satz?}
-If an internal sum is direct, then it can, up to an isomorphism, also be written as
-an external sum as described below.
-The \dunemodule{dune-functions} module does not currently support constructing internal sum
+The \dunemodule{dune-functions} module does not currently support constructing sums
 of finite element bases, but this may be added in later versions.
 
-The second way to construct finite element spaces from simpler ones uses external summation or,
-equivalently, Cartesian products.  This is what
-\dunemodule{dune-functions} focuses on, and we will describe it in a bit more detail.
+The second way to construct finite element spaces from simpler ones uses (Cartesian) products.
+While \dunemodule{dune-functions} focuses on products, it does not actually use
+function spaces but function space bases as constituting entities.
+We will now describe in a bit more detail, how the product construction carries
+over to the bases of spaces.
+
 Let $B = \{b_i\}_{i=1}^{n_1}$ and $C = \{c_i\}_{i=1}^{n_2}$ be two scalar function space bases and let $\mathbf{e}_1$, $\mathbf{e}_2$ be the canonical
 basis vectors in $\R^2$.
-Then we define the external sum or Cartesian product of the spanned spaces $\op{span}B$ and $\op{span} C$ as
-\todosander{Sollten wir uns konsequenter auf eine Notation einigen?  Aktuell nennen wir die Operation
-primär \emph{Summe}, benutzen dann aber ein Multiplikationssymbol.}
+Then we define the product of the spanned spaces $\op{span}B$ and $\op{span} C$ as
 \begin{align*}
-    \operatorname{span} B \oplus \operatorname{span} C
-    = \operatorname{span} B \times \operatorname{span} C
+  \operatorname{span} B \times \operatorname{span} C
     \colonequals \big\{ (v,w) \st v \in \op{span} B, w \in \op{span} C \big\}.
 \end{align*}
 A natural basis of this space is given by the concatenation
@@ -333,26 +331,22 @@ and $\R^{m_2}$, respectively, then
  \cup
  \big\{(\mathbf{0}, c_1), (\mathbf{0},c_2), \dots, (\mathbf{0}, c_{n_2})\big\}
 \end{equation*}
-is again the natural basis of the space $\operatorname{span} B \oplus \operatorname{span} C$.  Its basis functions take values in $\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
+is again the natural basis of the space $\operatorname{span} B \times \operatorname{span} C$.  Its basis functions take values in $\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
 In particular, the symbol $\mathbf{0}$ in the formula above denotes the constant $\R^{m_1}$ and
 $\R^{m_2}$-valued zero functions.
 \todosander{Sollten wir hier explizit auch die externe Summe von Basen einführen?}
 
-It should be noted that building the external sum of vector spaces
-corresponds to building the Cartesian product of the sets which should not
-be confused with building the tensor product of these spaces.
+It should be noted that building the (Cartesian) product or external sum of 
+vector spaces should not be confused with building the tensor product of these spaces.
 It is however true, that the $k$-fold product or $k$-th power
 of a single space can be viewed as the tensor product with $\R^k$, i.e,
 \begin{align*}
     (\op{span} B)^k
     = \underbrace{\op{span}B \times \dots \times \op{span}B}_{k-\text{times}}
-    = \underbrace{\op{span}B \oplus \dots \oplus \op{span}B}_{k-\text{times}}
     = \R^k \otimes \op{span} B.
 \end{align*}
-In the following we will simply use the term \emph{product}
-when we talk about the Cartesian product or external sum.
 
-The construction via products (external sums) allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
+The construction via products allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
 For example, the space of
 first-order Lagrangian finite elements with values in $\R^3$ can be seen as the product $P_1 \times P_1 \times P_1$.
 The simplest Taylor--Hood element is the product $P_2 \times P_2 \times P_2 \times P_1$
@@ -361,7 +355,7 @@ If additional variables need to be dealt with, more factor bases can be included
 
 In the Taylor--Hood basis, the triple
 $P_2 \times P_2 \times P_2$ forms a semantic unit---it contains the components of a velocity field.
-The associativity of the external sum allows to write it
+The associativity of the product allows to write it
 as $(P_2 \times P_2 \times P_2) \times P_1$, which makes the semantic relationship clearer.
 Grouped expressions of this type are conveniently visualized as tree structures.  This
 suggests to interpret composite
@@ -1392,7 +1386,7 @@ this interface.  At the time of writing these are:
 
 \subsection{Combining bases into trees}
 
-The basis implementations of the previous section can be combined by external summation to form new bases.
+The basis implementations of the previous section can be combined by building products to form new bases.
 This produces the tree structure described in Section~\ref{sec:finite_element_trees}.
 The code for this resides in the \cpp{BasisBuilder} namespace, which is a nested namespace
 within \cpp{Dune::Functions::}. Therefore, the examples of this section need a
