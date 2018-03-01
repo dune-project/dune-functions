@@ -852,8 +852,9 @@ We start by describing the user interface of global bases.  Since we are discuss
 all class names used below are generic. Trees of global bases are implemented by classes that implement
 the \cpp{GlobalBasis} interface. In the following, we will call the generic such class \cpp{GlobalBasis}.
 It can have an arbitrary number of template parameters.
-In the following interface description such implementation details
-are marked by the placeholder \cpp{@@<implementation defined>@@}.
+All types, templates, and functions listed in the following are public members of
+the generic class \cpp{GlobalBasis}. Implementation details are marked
+by placeholders of the form \cpp{@@<implementation defined>@@}.
 
 In general each basis implementation may require its own specific data for construction.
 Hence we do not enforce an argument list for this.
