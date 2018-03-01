@@ -1,3 +1,5 @@
+% -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+% vi: set et ts=4 sw=2 sts=2:
 \documentclass[a4paper,10pt,headings=normal,bibliography=totoc]{scrartcl}
 
 \usepackage{scrhack}  % Fix a LaTeX warning
@@ -430,8 +432,23 @@ for hierarchically structured multi-indices.
             $\mathcal{N} = \bigcup_{k \in \N_0^k} \N_0^k$.
         \item
             If $I \in \mathcal{N}$ takes the form $I = (I',I'')$ for $I',I'' \in \mathcal{N}$,
-            then we call $I'$ a prefix of $I$ and write $I = (I',\dots)$.
-            If additionally $|I''|>0$ we call $I'$ a strict prefix of $I$ and write $I = (I',*,\dots)$.
+            then we call $I'$ a prefix of $I$.
+            If additionally $|I''|>0$, then we call $I'$ a strict prefix of $I$.
+        \item
+            For $I,I' \in \mathcal{N}$ and a set $\mathcal{M} \subset \mathcal{N}$
+            we use the following notation:
+            \begin{enumerate}
+              \item
+                We write $I=(I',\dots)$, if $I'$ is a prefix of $I$.
+              \item
+                We write $I=(I',\cdot,\dots)$, if $I'$ is a strict prefix of $I$.
+              \item
+                We write $(I',\dots) \in \mathcal{M}$, if $I'$ is a prefix of some
+                $I \in \mathcal{M}$.
+              \item
+                We write $(I',\cdot,\dots) \in \mathcal{M}$, if $I'$ is a strict prefix of some
+                $I \in \mathcal{M}$.
+            \end{enumerate}
     \end{enumerate}
 \end{definition}
 
@@ -448,6 +465,11 @@ those indices starting from the root and ending in a leaf.
  but $I \notin \mathcal{I}$.
 \end{definition}
 
+\begin{definition}
+  Let $M$ a finite set and $I:M \to \mathcal{N}$. Then we call $I$ an index-map, if
+  it is injective and if its range $I(M)$ is an index tree.
+\end{definition}
+
 
 We will illustrate this for the Taylor--Hood tree $(P_2 \times P_2 \times P_2) \times P_1$.
 We start by assuming that the finite element basis functions $\lambda_i^2$ and $\lambda_k^1$
@@ -456,7 +478,7 @@ have a flat indexing by natural numbers $i=0,\dots,n_2$ and $k=0,\dots,n_1$,
 respectively.
 Then we enumerate the three children $P_2$, $P_2$, $P_2$
 in the velocity subtree $P_2 \times P_2 \times P_2$
-with the numbers $0$, $1$ and $2$.
+with the numbers $0$, $1$, and $2$.
 Finally we enumerate the two children $(P_2 \times P_2 \times P_2)$ (for the velocity)
 and $P_1$ (for the pressure) in the overall tree $(P_2 \times P_2 \times P_2) \times P_1$
 with the numbers $0$ and $1$.
