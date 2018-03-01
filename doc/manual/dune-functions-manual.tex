@@ -58,11 +58,13 @@
 %%%%%%%%%%%%     Settings for the listings package
 \lstset{language={c++},
          basicstyle=\ttfamily\small,
-%         basicstyle=\small,
-         commentstyle=\textit,
+         keepspaces=true,
+%         commentstyle=\textit,
+         commentstyle=\rmfamily\textit,
 %         columns=fixed,
          columns=flexible,
-         escapeinside={/*@}{@*/}
+         escapeinside={/*@}{@*/},
+         moredelim=**[is][\color{blue}]{@@}{@@},
         }
 
 % How to include ranges of an external source code file
@@ -71,7 +73,12 @@
         numberstyle=\footnotesize,  % font size for numbers
         includerangemarker=false}  % Do not show the range markers
 
+
+\lstdefinestyle{Example}{}
+\lstdefinestyle{Interface}{backgroundcolor=\color{lightblue},frame=single}
+
 \newcommand{\cpp}[1]{\lstinline[basicstyle=\ttfamily]!#1!}
+
 
 
 \newtheorem{definition}{Definition}
@@ -213,6 +220,41 @@ project homepage \url{www.dune-project.org}.
 \tableofcontents
 
 
+\section*{Notation}
+Througout this text we will introduce interfaces
+by presenting the interface declaration, explaining
+its meaning, and giving examples on its usage.
+In order to distinguish interface declaration
+and code examples, both are formated differently.
+Furthermore implementation defined types, arguments,
+and other omitted code fragments are highlighted.
+Interface declarations are formated like this:
+\begin{lstlisting}[style=Interface]
+// Declaration of the typedef T referring to an implementation defined type
+using T = @@<implementation defined>@@;
+
+// Declaration of the function foo
+T foo(int);
+
+// Declaration of class Bar with implementation defined constructor arguments
+class Bar {
+public:
+  Bar(@@<args>@@);
+};
+\end{lstlisting}
+An example for using this interface would be formated like this:
+\begin{lstlisting}[style=Example]
+// Call foo() and store result
+T t = foo(1);
+
+// Construct a Bar
+auto bar = Bar(t, @@<more args>@@);
+\end{lstlisting}
+
+
+
+
+\label{sec:notation}
 
 \section{Function space bases}
 \label{sec:finite_element_trees}
@@ -811,16 +853,16 @@ all class names used below are generic. Trees of global bases are implemented by
 the \cpp{GlobalBasis} interface. In the following, we will call the generic such class \cpp{GlobalBasis}.
 It can have an arbitrary number of template parameters.
 In the following interface description such implementation details
-are marked by the placeholder \cpp{<implementation defined>}.
+are marked by the placeholder \cpp{@@<implementation defined>@@}.
 
 In general each basis implementation may require its own specific data for construction.
 Hence we do not enforce an argument list for this.
-\begin{lstlisting}
-GlobalBasis(<implementation defined>);
+\begin{lstlisting}[style=Interface]
+GlobalBasis(@@<implementation defined>@@);
 \end{lstlisting}
 The global basis represents a function space defined on a grid view, and access to
 this view is provided by the
-\begin{lstlisting}
+\begin{lstlisting}[style=Interface]
 const GridView& gridView() const;
 \end{lstlisting}
 method. The corresponding type
@@ -828,16 +870,16 @@ is exported as \cpp{GridView}. If the grid view
 was modified (e.g., by local grid refinement), the result of calling any
 method of the basis is undefined until the basis was updated by
 providing a new grid view by the method
-\begin{lstlisting}
+\begin{lstlisting}[style=Interface]
 void update(const GridView & gv);
 \end{lstlisting}
 \todosander{Die \cpp{update}-Methode wird noch nicht vom Standard-Test getestet!}
 
 Access to the basis functions is available via the
 local view interface.
-\begin{lstlisting}
-  using LocalView = <implementation defined>;
-  LocalView localView() const;
+\begin{lstlisting}[style=Interface]
+using LocalView = @@<implementation defined>@@;
+LocalView localView() const;
 \end{lstlisting}
 The \cpp{localView()} method returns a new object that implements the \cpp{LocalView} interface.
 After binding this object to a
@@ -845,7 +887,7 @@ grid element from the respective grid view, it provides access
 to the restriction of all basis functions whose support has a
 nontrivial intersection with this element.  With a global basis given in an object called \cpp{basis},
 the corresponding code is
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 auto localView = basis.localView();
 localView.bind(element);
 \end{lstlisting}
@@ -859,9 +901,9 @@ returns a new object of type \cpp{LocalIndexSet} that, after
 binding it to a local view, allows to map the local indices
 of all basis functions appearing in this local view to those
 global multi-indices.
-\begin{lstlisting}
-  using LocalIndexSet = <implementation defined>;
-  LocalIndexSet localIndexSet() const;
+\begin{lstlisting}[style=Interface]
+using LocalIndexSet = @@<implementation defined>@@;
+LocalIndexSet localIndexSet() const;
 \end{lstlisting}
 The interface of the \cpp{LocalIndexSet} is discussed in Section~\ref{sec:localindexset_interface}.
 
@@ -903,13 +945,13 @@ type of all size-related methods is exported as \cpp{size\_type}.
 Länge des längsten MultiIndex (zB \cpp{LagrangeDGBasis}).  Darüber habe ich mich auch
 schon gewundert.}
 
-\begin{lstlisting}
-  using size_type = <implementation defined>;
-  using SizePrefix = <implementation defined>;
-  using MultiIndex = <implementation defined>;
-  size_type dimension() const;
-  size_type size() const;
-  size_type size(const SizePrefix& prefix) const;
+\begin{lstlisting}[style=Interface]
+using size_type = @@<implementation defined>@@;
+using SizePrefix = @@<implementation defined>@@;
+using MultiIndex = @@<implementation defined>@@;
+size_type dimension() const;
+size_type size() const;
+size_type size(const SizePrefix& prefix) const;
 \end{lstlisting}
 
 \todosander{Wollen wir eventuell ein separates Unterkapitel für diese Teilbaumkonstruktionen
@@ -928,10 +970,10 @@ implementation defined type \cpp{PrefixPath}.
 those methods here is inconsistent and that they should maybe be free functions.}
 \todosander{Könnte man tatsächlich in Betracht ziehen.}
 
-\begin{lstlisting}
-  using PrefixPath = <implementation defined>;
-  const <implementation defined>& rootBasis() const
-  const PrefixPath& prefixPath() const
+\begin{lstlisting}[style=Interface]
+using PrefixPath = @@<implementation defined>@@;
+const @@<implementation defined>@@& rootBasis() const
+const PrefixPath& prefixPath() const
 \end{lstlisting}
 
 Finally, the basis exports its pre-basis of type \cpp{PreBasis}
@@ -951,9 +993,9 @@ that it would be nice if any global basis is reusable but that we
 do not require this. Hence the answer to all three questions above is 'no'.
 }
 
-\begin{lstlisting}
-  using PreBasis = <implementation define>;
-  const PreBasis& preBasis() const;
+\begin{lstlisting}[style=Interface]
+using PreBasis = <implementation define>;
+const PreBasis& preBasis() const;
 \end{lstlisting}
 
 
@@ -961,13 +1003,13 @@ To statically check for the interface,
 \dunemodule{dune-functions} provides a concept definition of a global
 basis which can, e.g., be used to check validity in a static assertion.
 
-\begin{lstlisting}
-  // The global basis concept for given grid view
-  using GlobalBasisConcept = Dune::Functions::Concept::GlobalBasis<GridView>;
+\begin{lstlisting}[style=Example]
+// The global basis concept for given grid view
+using GlobalBasisConcept = Dune::Functions::Concept::GlobalBasis<GridView>;
 
-  // Check if Basis models the concept
-  static_assert(Dune::models<GlobalBasisConcept, Basis>(),
-    "Basis does not model the global basis concept.")
+// Check if Basis models the concept
+static_assert(Dune::models<GlobalBasisConcept, Basis>(),
+  "Basis does not model the global basis concept.")
 \end{lstlisting}
 
 \subsection{User interface of a \cpp{LocalView}}
@@ -977,9 +1019,9 @@ The \cpp{LocalView} concept represents the localization of a basis tree to a sin
 There is no way to construct such objects directly.
 The global basis of type \cpp{GlobalBasis}
 is known by the \cpp{LocalView} object, and exported by the \cpp{globalBasis()} method.
-\begin{lstlisting}
-  using GlobalBasis = <implementation defined>;
-  const GlobalBasis& globalBasis() const;
+\begin{lstlisting}[style=Interface]
+using GlobalBasis = @@<implementation defined>@@;
+const GlobalBasis& globalBasis() const;
 \end{lstlisting}
 
 A local view provides access to all basis
@@ -987,25 +1029,25 @@ functions whose support has nontrivial intersection with
 a given element (the \emph{local basis functions}).
 To achieve this, the local view must
 first be bound to this element by calling
-\begin{lstlisting}
-  using GridView = typename GlobalBasis::GridView;
-  using Element = typename GridView::template Codim<0>::Entity;
-  void bind(const Element& e);
+\begin{lstlisting}[style=Interface]
+using GridView = typename GlobalBasis::GridView;
+using Element = typename GridView::template Codim<0>::Entity;
+void bind(const Element& e);
 \end{lstlisting}
 This call may incorporate expensive computations needed to
 setup the those local basis functions. The local view can be
 bound to another element by calling this method again.
 To set the local view to unbound state again, you
 can call the
-\begin{lstlisting}
+\begin{lstlisting}[style=Interface]
 void unbind();
 \end{lstlisting}
 method.
 Notice that the local view will store a copy of the bound
 element that is accessible via \cpp{element()}.
-\begin{lstlisting}
-  using Element = typename GridView::template Codim<0>::Entity;
-  const Element& element() const;
+\begin{lstlisting}[style=Interface]
+using Element = typename GridView::template Codim<0>::Entity;
+const Element& element() const;
 \end{lstlisting}
 
 The total number of basis functions associated to the
@@ -1018,10 +1060,10 @@ the \cpp{maxSize()} method returns the maximum of the
 associated to the global basis. This can be called in
 unbound state.
 
-\begin{lstlisting}
-  using size_type = typename GlobalBasis::size_type;
-  size_type size() const;
-  size_type maxSize() const;
+\begin{lstlisting}[style=Interface]
+using size_type = typename GlobalBasis::size_type;
+size_type size() const;
+size_type maxSize() const;
 \end{lstlisting}
 
 Finally access to the actual local basis functions are provided
@@ -1035,9 +1077,9 @@ trees methods.
 A detailed discussion of the interface of the tree object is
 given below.
 
-\begin{lstlisting}
-  using Tree = <implementation defined>;
-  const Tree& tree() const;
+\begin{lstlisting}[style=Interface]
+using Tree = @@<implementation defined>@@;
+const Tree& tree() const;
 \end{lstlisting}
 
 \todosander{Siehe oben: Für den Krams zu Teilraumbasen würde ich ein separates Unterkapitel einführen.}
@@ -1047,8 +1089,8 @@ itself.
 \todograeser{While describing the interface I had the impression that having
 this method here is inconsistent and that it should maybe be a free function.}
 
-\begin{lstlisting}
-  const DefaultLocalView& rootLocalView() const
+\begin{lstlisting}[style=Interface]
+const DefaultLocalView& rootLocalView() const
 }; // end LocalView
 \end{lstlisting}
 
@@ -1083,14 +1125,14 @@ All these indices are of type \cpp{size\_type}.
 \todograeser{Is the offset() method part of the interface?
 Making it protected seems to be reasonable.}
 
-\begin{lstlisting}
+\begin{lstlisting}[style=Interface]
 class BasisNode
 {
 public:
-  using size_type = <implementation defined>;
-  size_type size() const;
-  size_type offset() const;
-  size_type localIndex(size_type i) const;
+using size_type = @@<implementation defined>@@;
+size_type size() const;
+size_type offset() const;
+size_type localIndex(size_type i) const;
 \end{lstlisting}
 
 For some computations it is important to identify
@@ -1109,10 +1151,10 @@ tree in a fixed type for all nodes.
 These methods can also be used if the local view containing
 the tree is in unbound state.
 
-\begin{lstlisting}
-  using TreePath = <implementation defined>;
-  const TreePath& treePath() const;
-  size_type treeIndex() const;
+\begin{lstlisting}[style=Interface]
+using TreePath = @@<implementation defined>@@;
+const TreePath& treePath() const;
+size_type treeIndex() const;
 }; // end BasisNode
 \end{lstlisting}
 
@@ -1129,23 +1171,23 @@ It is important to note that the lexicographic
 index of a basis function in a leaf node coincides
 with its number in the local finite element.
 
-\begin{lstlisting}
+\begin{lstlisting}[style=Interface]
 class LeafBasisNode
 {
 public:
-  // interface common with interior nodes
-  using size_type = <implementation defined>;
-  size_type size() const;
-  size_type offset() const;
-  size_type localIndex(size_type i) const;
-  using TreePath = <implementation defined>;
-  const TreePath& treePath() const;
-  size_type treeIndex() const;
+// interface common with interior nodes
+using size_type = @@<implementation defined>@@;
+size_type size() const;
+size_type offset() const;
+size_type localIndex(size_type i) const;
+using TreePath = @@<implementation defined>@@;
+const TreePath& treePath() const;
+size_type treeIndex() const;
 
-  using Element = <implementation defined>;
-  using FiniteElement = <implementation defined>;
-  const Element& element() const = 0;
-  const FiniteElement& finiteElement() const = 0;
+using Element = @@<implementation defined>@@;
+using FiniteElement = @@<implementation defined>@@;
+const Element& element() const = 0;
+const FiniteElement& finiteElement() const = 0;
 }; // end LeafBasisNode
 \end{lstlisting}
 
@@ -1167,14 +1209,14 @@ Notice that the \cpp{bind(LocalView)} operation
 can be costly, because it pre-computes
 all global indices and stores them in an internal cache.
 
-\begin{lstlisting}
+\begin{lstlisting}[style=Interface]
 class LocalIndexSet
 {
 public:
-  using LocalView = <implementation defined>;
-  const LocalView& localView() const;
-  void bind(const LocalView& localView);
-  void unbind();
+using LocalView = @@<implementation defined>@@;
+const LocalView& localView() const;
+void bind(const LocalView& localView);
+void unbind();
 \end{lstlisting}
 
 If the local index set is in bound state
@@ -1192,11 +1234,11 @@ Accessing the same global index multiple times
 is cheap, because global indices are pre-computed
 and cached during \cpp{bind(LocalView)}.
 
-\begin{lstlisting}
-  using MultiIndex = <implementation defined>;
-  using size_type = <implementation defined>;
-  size_type size() const;
-  MultiIndex index(size_type i) const;
+\begin{lstlisting}[style=Interface]
+using MultiIndex = @@<implementation defined>@@;
+using size_type = @@<implementation defined>@@;
+size_type size() const;
+MultiIndex index(size_type i) const;
 }; // end LocalIndexSet
 \end{lstlisting}
 
@@ -1207,7 +1249,7 @@ If we want to compute the global index of the \cpp{i}-th
 local basis function in the finite element attached to
 a leaf node this can be done by the following snippet.
 
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 // create a LocalView and a LocalIndexSet
 auto localView = basis.localView();
 auto localIndexSet = basis.localIndexSet();
@@ -1239,7 +1281,7 @@ which itself has $dim$ children for the velocity
 components, the leaf node for the second velocity
 component can be obtained by the following.
 
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 // import namespace with index constants
 using namespace Indices;
 
@@ -1258,7 +1300,7 @@ for velocity and pressure are of different type.
 The same result can be achieved by the following
 slightly more compact code.
 
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 // import namespace with index constants
 using namespace Indices;
 
@@ -1331,7 +1373,7 @@ The basis implementations of the previous section can be combined by external su
 This produces the tree structure described in Section~\ref{sec:finite_element_trees}.
 The code for this resides in the \cpp{BasisBuilder} namespace, which is a nested namespace
 within \cpp{Dune::Functions::}. Therefore, the examples of this section need a
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 using namespace Dune::Functions::BasisBuilder;
 \end{lstlisting}
 to compile.
@@ -1342,7 +1384,7 @@ The reason for this is
 that it is technically very challenging to combine the actual user-visible basis types in a
 tree hierarchy that itself again implements the interface of a hierarchical function space basis.
 The pre-basis of the final basis tree can then be turned into an actual basis by a call to
-\begin{lstlisting}
+\begin{lstlisting}[style=Interface]
 template <class GridView, class PreBasisFactory>
 auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
 \end{lstlisting}
@@ -1352,14 +1394,14 @@ In the simple-most case, the tree consists of a single basis. That means that in
 you can write
 \todosander{\cpp{rt} ist als Abkürzung arg kurz -- sollten wir ändern!}
 \todosander{Darf nicht mehr \cpp{BasisType} benutzen!}
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 auto raviartThomasBasis = makeBasis(gridView, rt<k, GeometryType::BasicType::cube>());
 \end{lstlisting}
 to obtain a Raviart--Thomas basis for the given grid view.  This is equivalent to constructing
 the basis directly:
 \todosander{Ja, das Ding hat tatsächlich ``\emph{nodal}'' im Namen.  Sollten wir die Basis-Klasse
 nicht einfach \cpp{RaviartThomasBasis} nennen?}
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 RaviartThomasNodalBasis<GridView,k,GeometryType::BasicType::cube> raviartThomasBasis;
 \end{lstlisting}
 \todosander{Was passiert wenn ich eine Basis nicht mit dem Default-Konstruktor erzeugen möchte?
@@ -1384,7 +1426,7 @@ Some of them have template parameters to transmit compile-time information.  The
 The general mechanism to combine bases in a tree is called \cpp{composite},
 defined in the header \file{dune/functions/functionspacebases/compositebasis.hh}.
 The composite mechanism consists of a single method
-\begin{lstlisting}
+\begin{lstlisting}[style=Interface]
 template <typename... Args>
 auto composite(Args&&... args);
 \end{lstlisting}
@@ -1398,7 +1440,7 @@ As an example, to combine a Raviart--Thomas basis with a zero-order Lagrange bas
 the mixed formulation of the Poisson equation, say), the appropriate call is
 \todosander{\cpp{pq} sieht auch blöd aus.  Können wir das, z.B., \cpp{lagrange} nennen?
   Update: Oh, scheint irgendwie auch zu gehen.}
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 auto mixedBasis = makeBasis(
   gridView,
   composite(
@@ -1407,7 +1449,7 @@ auto mixedBasis = makeBasis(
   ));
 \end{lstlisting}
 Combining three copies of a Lagrange basis for a displacement field in elasticity theory is
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 auto displacementBasis = makeBasis(
   gridView,
   composite(
@@ -1423,14 +1465,14 @@ wordy to list the same scalar Lagrange basis three times.  Also, the required nu
 a compile-time parameter. Thirdly, in that case
 more ways of degree-of-freedom numbering is possible. For these reasons, \dunemodule{dune-functions}
 offers a second way to combine bases called \cpp{power}.  The interface is again a single method
-\begin{lstlisting}
+\begin{lstlisting}[style=Interface]
 template<std::size_t k, class ChildPreBasisFactory>
 auto power(ChildPreBasisFactory&& childPreBasisFactory)
 \end{lstlisting}
 provided in the file \file{dune/functions/functionspacebases/powerbasis.hh}.
 It combines \cpp{k} copies of a subtree of type \cpp{ChildPreBasisFactory} in a new tree.  Therefore, the
 displacement vector field from above is more easily written as
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 auto displacementBasis = makeBasis(
   gridView,
   power<3>(
@@ -1439,7 +1481,7 @@ auto displacementBasis = makeBasis(
 \end{lstlisting}
 Of course, all these techniques can be combined. To obtain the \cpp{p}-th order Taylor--Hood basis,
 write
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 auto taylorHoodBasis = makeBasis(
   gridView,
   composite(
@@ -1627,15 +1669,15 @@ turned into a basis providing the interface described above by
 using it through the \cpp{DefaultGlobalBasis} wrapper class
 provided by \dunemodule{dune-functions}.
 
-\begin{lstlisting}
-  // For simplicity: Define type alias to specific pre-basis
-  using PreBasis = FooPreBasis<GridView, [additional template parameters]>;
+\begin{lstlisting}[style=Example]
+// For simplicity: Define type alias to specific pre-basis
+using PreBasis = FooPreBasis<GridView, [additional template parameters]>;
 
-  // Turn PreBasis into a global basis
-  using Basis = DefaultGlobalBasis<PreBasis>;
+// Turn PreBasis into a global basis
+using Basis = DefaultGlobalBasis<PreBasis>;
 
-  // Create global basis
-  Basis basis([constructor arguments of PreBasis]);
+// Create global basis
+Basis basis([constructor arguments of PreBasis]);
 \end{lstlisting}
 
 The benefit of this construction is, that a pre-basis can not
@@ -1644,21 +1686,21 @@ become a subtree in a nontrivial nested global basis. For example
 the following allows to construct a basis, where the local ansatz
 tree has 3 children of the same type.
 
-\begin{lstlisting}
-  // For simplicity: Define type alias to specific child pre-basis
-  using ChildPreBasis = FooPreBasis<GridView, [additional template parameters]>;
+\begin{lstlisting}[style=Example]
+// For simplicity: Define type alias to specific child pre-basis
+using ChildPreBasis = FooPreBasis<GridView, [additional template parameters]>;
 
-  // Create a new pre-basis for a homogeneous product space
-  // with 3 components each taking the form of ChildPreBasis
-  using PreBasis = PowerPreBasis<MI, S, ChildPreBasis, 3>;
+// Create a new pre-basis for a homogeneous product space
+// with 3 components each taking the form of ChildPreBasis
+using PreBasis = PowerPreBasis<MI, S, ChildPreBasis, 3>;
 
-  // Turn PreBasis into a global basis.
-  // The local ansatz tree will contain 3 children, each
-  // having the form of the ansatz tree of ChildPreBasis.
-  using Basis = DefaultGlobalBasis<PreBasis>;
+// Turn PreBasis into a global basis.
+// The local ansatz tree will contain 3 children, each
+// having the form of the ansatz tree of ChildPreBasis.
+using Basis = DefaultGlobalBasis<PreBasis>;
 
-  // Create global basis
-  Basis basis([constructor arguments of ChildPreBasis]);
+// Create global basis
+Basis basis([constructor arguments of ChildPreBasis]);
 \end{lstlisting}
 
 Any pre-basis provides some global index strategy. In the
@@ -1670,22 +1712,22 @@ of the type \cpp{ChildPreBasis}. The template parameter
 multi-indices. Similar to the above example, one can construct
 per-bases where each child has a different type.
 
-\begin{lstlisting}
-  // For simplicity: Define type alias to specific child pre-bases
-  using ChildPreBasis1 = FooPreBasis<GridView, [additional template parameters]>;
-  using ChildPreBasis2 = BarPreBasis<GridView, [additional template parameters]>;
+\begin{lstlisting}[style=Example]
+// For simplicity: Define type alias to specific child pre-bases
+using ChildPreBasis1 = FooPreBasis<GridView, @@[additional template parameters]@@>;
+using ChildPreBasis2 = BarPreBasis<GridView, [additional template parameters]>;
 
-  // Create a new pre-basis for a non-homogeneous product space
-  // with first child ChildPreBasis1 and second child ChildPreBasis2
-  using PreBasis = CompositePreBasis<MI, S, ChildPreBasis1, ChildPreBasis2>;
+// Create a new pre-basis for a non-homogeneous product space
+// with first child ChildPreBasis1 and second child ChildPreBasis2
+using PreBasis = CompositePreBasis<MI, S, ChildPreBasis1, ChildPreBasis2>;
 
-  // Turn PreBasis into a global basis.
-  // The local ansatz tree will contain 2 children, having
-  // the form of the ansatz trees of ChildPreBasis1 and ChildPreBasis2.
-  using Basis = DefaultGlobalBasis<PreBasis>;
+// Turn PreBasis into a global basis.
+// The local ansatz tree will contain 2 children, having
+// the form of the ansatz trees of ChildPreBasis1 and ChildPreBasis2.
+using Basis = DefaultGlobalBasis<PreBasis>;
 
-  // Create global basis
-  Basis basis(ChildPreBasis1([args]), ChildPreBasis2([args]));
+// Create global basis
+Basis basis(ChildPreBasis1([args]), ChildPreBasis2([args]));
 \end{lstlisting}
 
 Of course \cpp{PowerPreBasis} and \cpp{CompositePreBasis}
@@ -1698,31 +1740,31 @@ with the corresponding pre-bases.
 Combining different \cpp{PQkPreBasis}'s one can for
 example create a Taylor--Hood global basis.
 
-\begin{lstlisting}
-  // Define suitable type for multi-indices up to length 3
-  using MI = ReservedVector<std::size_t, 3>;
+\begin{lstlisting}[style=Example]
+// Define suitable type for multi-indices up to length 3
+using MI = ReservedVector<std::size_t, 3>;
 
-  // A simple index merging strategy pre-pending the
-  // index of the child to the index within the child.
-  using S = BasisBuilder::BlockedLexicographic;
+// A simple index merging strategy pre-pending the
+// index of the child to the index within the child.
+using S = BasisBuilder::BlockedLexicographic;
 
-  // Pre-basis for a single component of the velocity
-  using SVCPrebasis = PQkNodalBasis<GridView, 2, MI>;
+// Pre-basis for a single component of the velocity
+using SVCPrebasis = PQkNodalBasis<GridView, 2, MI>;
 
-  // Pre-basis for the velocity vector field
-  using VelocityPreBasis = PowerPreBasis<MI, S, SVCPrebasis, dim>;
+// Pre-basis for the velocity vector field
+using VelocityPreBasis = PowerPreBasis<MI, S, SVCPrebasis, dim>;
 
-  // Pre-basis for the pressure
-  using PressurePreBasis = PQkPreBasis<GridView, 1, MI>;
+// Pre-basis for the pressure
+using PressurePreBasis = PQkPreBasis<GridView, 1, MI>;
 
-  // Taylor-Hood pre-basis
-  using TaylorHoodPreBasis = CompositePreBasis<MI, S, VelocityPreBasis, PressurePreBasis>;
+// Taylor-Hood pre-basis
+using TaylorHoodPreBasis = CompositePreBasis<MI, S, VelocityPreBasis, PressurePreBasis>;
 
-  // Taylor-Hood global basis
-  using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodPreBasis>;
+// Taylor-Hood global basis
+using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodPreBasis>;
 
-  // Create global basis
-  TaylorHoodBasis taylorHoodBasis(VelocityPreBasis(gridView), PressurePreBasis(gridView));
+// Create global basis
+TaylorHoodBasis taylorHoodBasis(VelocityPreBasis(gridView), PressurePreBasis(gridView));
 \end{lstlisting}
 
 In this example the indices of children are merged by prepending
@@ -1750,7 +1792,7 @@ the information specific to this one.
 Using this mechanism the Taylor-Hood basis can alternatively
 be constructed as follows.
 
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
   // import namespace
   using namespace Functions::BasisBuilder;
 
@@ -1769,13 +1811,13 @@ At the heart of this mechanism is the \cpp{makeBasis()} functions
 that takes the grid view as first argument and a factory for the
 construction of a pre-basis as second argument.
 
-\begin{lstlisting}
-  namespace BasisBuilder {
+\begin{lstlisting}[style=Interface]
+namespace BasisBuilder {
 
-    template<class GridView, class PreBasisFactory>
-    auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
+  template<class GridView, class PreBasisFactory>
+  auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
 
-  }
+}
 \end{lstlisting}
 
 Here, the \cpp{preBasisFactory} encapsulates all requirements
@@ -1793,38 +1835,38 @@ a new composable global basis and are thus covered in a later section.
 
 The implemented methods for creating \cpp{PreBasisFactory}'s are:
 
-\begin{lstlisting}
-  namespace BasisBuilder {
+\begin{lstlisting}[style=Interface]
+namespace BasisBuilder {
 
-    // Create PreBasisFactory for a PQ_k basis
-    template<std::size_t k>
-    auto pq();
+  // Create PreBasisFactory for a PQ_k basis
+  template<std::size_t k>
+  auto pq();
 
-    // Create PreBasisFactory for a PQ_k basis (same as pq<k>())
-    template<std::size_t k>
-    auto lagrange();
+  // Create PreBasisFactory for a PQ_k basis (same as pq<k>())
+  template<std::size_t k>
+  auto lagrange();
 
-    // Create PreBasisFactory for product space with k-times
-    // the same child and given index merging strategy
-    template<std::size_t k, class ChildPreBasisFactory, class Strategy>
-    auto power(ChildPreBasisFactory&&, const Strategy&);
+  // Create PreBasisFactory for product space with k-times
+  // the same child and given index merging strategy
+  template<std::size_t k, class ChildPreBasisFactory, class Strategy>
+  auto power(ChildPreBasisFactory&&, const Strategy&);
 
-    // Create PreBasisFactory for product space with k-times
-    // the same child and given default index merging strategy
-    template<std::size_t k, class ChildPreBasisFactory>
-    auto power(ChildPreBasisFactory&& subFactory);
+  // Create PreBasisFactory for product space with k-times
+  // the same child and given default index merging strategy
+  template<std::size_t k, class ChildPreBasisFactory>
+  auto power(ChildPreBasisFactory&& subFactory);
 
-    // Create PreBasisFactory for product space with different
-    // children and given index merging strategy
-    template<class ChildPreBasisFactory1, class ChildPreBasisFactory2, ..., class Strategy>
-    auto composite(const ChildPreBasisFactory1&&, ChildPreBasisFactory2&&, ..., const Strategy&);
+  // Create PreBasisFactory for product space with different
+  // children and given index merging strategy
+  template<class ChildPreBasisFactory1, class ChildPreBasisFactory2, ..., class Strategy>
+  auto composite(const ChildPreBasisFactory1&&, ChildPreBasisFactory2&&, ..., const Strategy&);
 
-    // Create PreBasisFactory for product space with different
-    // children and default index merging strategy
-    template<class ChildPreBasisFactory1, class ChildPreBasisFactory2, ...>
-    auto composite(const ChildPreBasisFactory1&&, ChildPreBasisFactory2&&, ...);
+  // Create PreBasisFactory for product space with different
+  // children and default index merging strategy
+  template<class ChildPreBasisFactory1, class ChildPreBasisFactory2, ...>
+  auto composite(const ChildPreBasisFactory1&&, ChildPreBasisFactory2&&, ...);
 
-  }
+}
 \end{lstlisting}
 
 \todograeser{Describe available index merging strategies}
@@ -2067,7 +2109,7 @@ As the bases for the velocity components are all the same, an ordinary integer \
 one of them.  In contrast, the velocity and pressure bases are different C++ types, and a compile-time
 construction is needed to choose between them.  The object \cpp{_0} is defined in
 \file{dune/typetree/utility.hh} as (roughly)
-\begin{lstlisting}
+\begin{lstlisting}[style=Interface]
 std::integer_constant<std::size_t, 0> _0;
 \end{lstlisting}
 In the \cpp{TaylorHoodBasis} implementation, \cpp{_0} selects the velocity subtree and \cpp{_1} selects
@@ -2223,12 +2265,12 @@ because the Taylor--Hood basis implementation accommodates grids with more than 
 
 In Lines~\ref{li:stokes_taylorhood_get_velocity_lfe}--\ref{li:stokes_taylorhood_get_pressure_lfe} you see the tree structure of the Taylor--Hood basis in action again:
 The expression
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 localView.tree().child(_0,0)
 \end{lstlisting}
 returns the first child of the first child of the root, i.e., the basis for the $x_0$-component of the velocity field,
 and
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 localView.tree().child(_1)
 \end{lstlisting}
 is the basis for the pressure space.
@@ -2286,7 +2328,7 @@ for two given shape functions from the finite element basis tree, compute the fl
 used to index the element stiffness matrix.  The expression \cpp{child(_0,k)} singles out the tree leaf
 for the \cpp{k}-th component of the velocity basis.  The loop variables \cpp{i} and \cpp{j} run over
 the shape functions in this set, and
-\begin{lstlisting}
+\begin{lstlisting}[style=Example]
 localView.tree().child(_0,k).localIndex(i);
 \end{lstlisting}
 returns the corresponding scalar index for this shape function in the set of {\em all} shape functions
