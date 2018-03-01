@@ -971,41 +971,41 @@ basis which can, e.g., be used to check validity in a static assertion.
 \end{lstlisting}
 
 \subsection{User interface of a \cpp{LocalView}}
-We will now continue with the description of the interface
-of a local view as returned by \cpp{GlobalBasis::localView()}.
-Since a \cpp{LocalView} is not meant to be constructed
-manually, there is no interface for this. Instead, a \cpp{LocalView}
-can be obtained from the global basis via the \cpp{localView()}
-method. As a consequence the global basis of type \cpp{GlobalBasis}
-is known and exported by the \cpp{globalBasis()} method.
 
+The \cpp{LocalView} concept represents the localization of a basis tree to a single element.
+\cpp{LocalView} objects are returned by the method \cpp{GlobalBasis::localView()}.
+There is no way to construct such objects directly.
+The global basis of type \cpp{GlobalBasis}
+is known by the \cpp{LocalView} object, and exported by the \cpp{globalBasis()} method.
 \begin{lstlisting}
-class LocalView
-{
-public:
   using GlobalBasis = <implementation defined>;
   const GlobalBasis& globalBasis() const;
 \end{lstlisting}
 
-A local view is meant to provides access to all basis
+A local view provides access to all basis
 functions whose support has nontrivial intersection with
-a given element. These will be called \emph{local basis functions}
-in the following. To achieve this, the local view must
-first be bound to this element by calling \cpp{bind(Element)}.
-This call may incorporate expensive computations needed to
-setup the those local basis functions. The local view can be
-bound to another element by calling this method again.
-To set the local view to unbound state again, you
-can call the \cpp{unbind()} method.
-Notice that the local view will store a copy of the bound
-element that is accessible via \cpp{element()}.
-
+a given element (the \emph{local basis functions}).
+To achieve this, the local view must
+first be bound to this element by calling
 \begin{lstlisting}
   using GridView = typename GlobalBasis::GridView;
   using Element = typename GridView::template Codim<0>::Entity;
   void bind(const Element& e);
+\end{lstlisting}
+This call may incorporate expensive computations needed to
+setup the those local basis functions. The local view can be
+bound to another element by calling this method again.
+To set the local view to unbound state again, you
+can call the
+\begin{lstlisting}
+void unbind();
+\end{lstlisting}
+method.
+Notice that the local view will store a copy of the bound
+element that is accessible via \cpp{element()}.
+\begin{lstlisting}
+  using Element = typename GridView::template Codim<0>::Entity;
   const Element& element() const;
-  void unbind();
 \end{lstlisting}
 
 The total number of basis functions associated to the
@@ -1040,6 +1040,7 @@ given below.
   const Tree& tree() const;
 \end{lstlisting}
 
+\todosander{Siehe oben: Für den Krams zu Teilraumbasen würde ich ein separates Unterkapitel einführen.}
 In order to be consistent with a \cpp{SubspaceBasis::LocalView}
 the additional method \cpp{rootLocalView()} returns the local view
 itself.
