@@ -812,7 +812,7 @@ basis which can e.g. be used to check validity in a static assertion.
 
 
 
-\subsection{User interface of a \texttt{GlobalBasis}}
+\subsection{User interface of a \cpp{GlobalBasis}}
 We now describe the user interface provided by global bases and related types.
 Since there may be various implementations of those types, all class names used
 below are generic names.  We will group exported type names and related methods
@@ -820,7 +820,7 @@ to simplify the presentation.
 In general each basis implementation may require its own specific data for construction.
 Hence we do not enforce an argument list for this.
 In the following interface description such implementation details
-are marked by the placeholder \texttt{<implementation defined>}.
+are marked by the placeholder \cpp{<implementation defined>}.
 
 \begin{lstlisting}
 class GlobalBasis
@@ -830,11 +830,11 @@ public:
 \end{lstlisting}
 
 As the global basis represents a function space defined on a grid view, access to
-the latter is provided by the \texttt{gridView()} method while its type
-is exported as \texttt{GridView}. If the grid view or underlying grid
+the latter is provided by the \cpp{gridView()} method while its type
+is exported as \cpp{GridView}. If the grid view or underlying grid
 was modified (e.g. by adapting the grid), the result of calling any
 method of the basis is undefined until the basis was updated by
-providing a new grid view by the \texttt{update(GridView)} method.
+providing a new grid view by the \cpp{update(GridView)} method.
 
 \begin{lstlisting}
   using GridView = <implementation defined>;
@@ -844,12 +844,12 @@ providing a new grid view by the \texttt{update(GridView)} method.
 
 One of the main functionalities of the global basis is to provide
 access to the basis functions. The latter are available via the
-local view interface. The \texttt{localView()} method returns a new
-object of type \texttt{LocalView}. After binding this object to a
+local view interface. The \cpp{localView()} method returns a new
+object of type \cpp{LocalView}. After binding this object to a
 grid element from the respective grid view, it provides access
 to the restriction of all basis functions whose support has a
 nontrivial intersection with this element. For details on the
-\texttt{LocalView} interface see below.
+\cpp{LocalView} interface see below.
 
 \begin{lstlisting}
   using LocalView = <implementation defined>;
@@ -862,11 +862,11 @@ consecutive, and unique within the respective element.
 In order to  associate global degrees of freedom to basis functions
 the local indices can be mapped to global indices. To facilitate
 hierarchical representations of the basis these global indices
-are in general multi-indices. The \texttt{localIndexSet()} method
-returns a new object of type \texttt{LocalIndexSet} that, after
+are in general multi-indices. The \cpp{localIndexSet()} method
+returns a new object of type \cpp{LocalIndexSet} that, after
 binding it to a local view, allows to map the local indices
 of all basis functions appearing in this local view to those
-global multi-indices. The interface of the \texttt{LocalIndexSet}
+global multi-indices. The interface of the \cpp{LocalIndexSet}
 is defined below.
 
 \begin{lstlisting}
@@ -875,19 +875,19 @@ is defined below.
 \end{lstlisting}
 
 The total number of basis functions of the global basis is
-exported via the \texttt{dimension()} method. However, since
+exported via the \cpp{dimension()} method. However, since
 the global indices are hierarchically structured multi-indices
-of type \texttt{MultiIndex}, this information is in general not
+of type \cpp{MultiIndex}, this information is in general not
 sufficient to allocate hierarchical containers for storing,
 e.g., coefficients with respect to all basis functions.
 
 Because of this, the basis provides access to the structural
-information of those multi-indices via the \texttt{size(SizePrefix)}
+information of those multi-indices via the \cpp{size(SizePrefix)}
 method. The given prefix takes the form of a multi-index itself.
 If $\mathcal{I}$ is the set of all global multi-indices of the
 basis and $P \in \mathcal{N}$ is a prefix for this set,
 i.e. there is a $(P,\dots) \in \mathcal{I}$, then
-\texttt{size($P$)} returns the size $|\mathcal{I}|_P$ of
+\cpp{size($P$)} returns the size $|\mathcal{I}|_P$ of
 $\mathcal{I}$ relative to $P$ defined according to \eqref{eq:prefix_size}.
 %For a prefix $(p_1,\dots,p_k)$ the method returns the maximal value $q$ such that there
 %is a global index of the form $(p_1,\dots,p_k,q-1,\dots)$.
@@ -896,14 +896,14 @@ If $P \in \mathcal{I}$, i.e., the prefix is itself one of the multi-indices
 then the result is zero.
 In any case the result corresponds to the number of direct children
 of the node $P$ in the index tree.
-For convenience there is also a method \texttt{size()} returning the same
-value as the method with an empty prefix, i.e., \texttt{size(\{\})}.
+For convenience there is also a method \cpp{size()} returning the same
+value as the method with an empty prefix, i.e., \cpp{size(\{\})}.
 For a scalar basis, this method again returns the number of basis functions.
 
-Since prefixes may have variable size, it is guaranteed that the type \texttt{SizePrefix}
-is always a \texttt{Dune::ReservedVector<size\_type,k>} where \texttt{k}
+Since prefixes may have variable size, it is guaranteed that the type \cpp{SizePrefix}
+is always a \cpp{Dune::ReservedVector<size\_type,k>} where \cpp{k}
 is strictly larger than the maximal length of a multi-index. The result
-type of all size-related methods is exported as \texttt{size\_type}.
+type of all size-related methods is exported as \cpp{size\_type}.
 \todograeser{Do we need 'strictly larger'? As far as I can see 'at least' should be OK.}
 
 \begin{lstlisting}
@@ -916,14 +916,14 @@ type of all size-related methods is exported as \texttt{size\_type}.
 \end{lstlisting}
 
 Additionally to the concept of a global basis as defined here, there
-is also the concept of a so called \texttt{SubspaceBasis} reflecting
+is also the concept of a so called \cpp{SubspaceBasis} reflecting
 the basis of the subtree only spanned by those basis functions
 associated to a subtree of the local ansatz tree of the so-called
 root basis.
-For convenience a global basis behaves like a trivial \texttt{SubspaceBasis},
-i.e., the method \texttt{rootBasis()} returns the basis itself
-and \texttt{prefixPath()} returns an empty tree-path of the
-implementation defined type \texttt{PrefixPath}.
+For convenience a global basis behaves like a trivial \cpp{SubspaceBasis},
+i.e., the method \cpp{rootBasis()} returns the basis itself
+and \cpp{prefixPath()} returns an empty tree-path of the
+implementation defined type \cpp{PrefixPath}.
 \todograeser{While describing the interface I had the impression that having
 those methods here is inconsistent and that they should maybe be free functions.}
 
@@ -933,11 +933,11 @@ those methods here is inconsistent and that they should maybe be free functions.
   const PrefixPath& prefixPath() const
 \end{lstlisting}
 
-Finally, the basis exports its pre-basis of type \texttt{PreBasis}
-via the \texttt{preBasis()} method. The concept of a pre-basis
+Finally, the basis exports its pre-basis of type \cpp{PreBasis}
+via the \cpp{preBasis()} method. The concept of a pre-basis
 will be discussed in Chapter~\ref{sec:implementation_api}.
 \todograeser{%
-    Do we require that \texttt{preBasis()} and \texttt{PreBasis} exists?
+    Do we require that \cpp{preBasis()} and \cpp{PreBasis} exists?
     Do we require that each global basis is implemented using a pre-basis?
     Do we require that GlobalBasis is always a DefaultGlobalBasis parametrized with the pre-basis?
 }
@@ -958,14 +958,14 @@ do not require this. Hence the answer to all three questions above is 'no'.
 
 
 
-\subsection{User interface of a \texttt{LocalView}}
+\subsection{User interface of a \cpp{LocalView}}
 We will now continue with the description of the interface
-of a local view as returned by \texttt{GlobalBasis::localView()}.
-Since a \texttt{LocalView} is not meant to be constructed
-manually, there is no interface for this. Instead, a \texttt{LocalView}
-can be obtained from the global basis via the \texttt{localView()}
-method. As a consequence the global basis of type \texttt{GlobalBasis}
-is known and exported by the \texttt{globalBasis()} method.
+of a local view as returned by \cpp{GlobalBasis::localView()}.
+Since a \cpp{LocalView} is not meant to be constructed
+manually, there is no interface for this. Instead, a \cpp{LocalView}
+can be obtained from the global basis via the \cpp{localView()}
+method. As a consequence the global basis of type \cpp{GlobalBasis}
+is known and exported by the \cpp{globalBasis()} method.
 
 \begin{lstlisting}
 class LocalView
@@ -979,14 +979,14 @@ A local view is meant to provides access to all basis
 functions whose support has nontrivial intersection with
 a given element. These will be called \emph{local basis functions}
 in the following. To achieve this, the local view must
-first be bound to this element by calling \texttt{bind(Element)}.
+first be bound to this element by calling \cpp{bind(Element)}.
 This call may incorporate expensive computations needed to
 setup the those local basis functions. The local view can be
 bound to another element by calling this method again.
 To set the local view to unbound state again, you
-can call the \texttt{unbind()} method.
+can call the \cpp{unbind()} method.
 Notice that the local view will store a copy of the bound
-element that is accessible via \texttt{element()}.
+element that is accessible via \cpp{element()}.
 
 \begin{lstlisting}
   using GridView = typename GlobalBasis::GridView;
@@ -998,11 +998,11 @@ element that is accessible via \texttt{element()}.
 
 The total number of basis functions associated to the
 local view at the currently bound element is returned
-by \texttt{size()}. The result of calling this method in
+by \cpp{size()}. The result of calling this method in
 unbound state is undefined.
 To allow preallocation of buffers for local functions
-the \texttt{maxSize()} method returns the maximum of the
-\texttt{size()} method for all elements in the grid view
+the \cpp{maxSize()} method returns the maximum of the
+\cpp{size()} method for all elements in the grid view
 associated to the global basis. This can be called in
 unbound state.
 
@@ -1013,8 +1013,8 @@ unbound state.
 \end{lstlisting}
 
 Finally access to the actual local basis functions are provided
-by the \texttt{tree()} method returning a reference to a
-\texttt{Tree} object. This encapsulates the basis functions
+by the \cpp{tree()} method returning a reference to a
+\cpp{Tree} object. This encapsulates the basis functions
 in a hierarchical tree structure to also represent structured
 function spaces.
 While the tree  itself can be queried in unbound state,
@@ -1028,8 +1028,8 @@ given below.
   const Tree& tree() const;
 \end{lstlisting}
 
-In order to be consistent with a \texttt{SubspaceBasis::LocalView}
-the additional method \texttt{rootLocalView()} returns the local view
+In order to be consistent with a \cpp{SubspaceBasis::LocalView}
+the additional method \cpp{rootLocalView()} returns the local view
 itself.
 \todograeser{While describing the interface I had the impression that having
 this method here is inconsistent and that it should maybe be a free function.}
@@ -1039,9 +1039,9 @@ this method here is inconsistent and that it should maybe be a free function.}
 }; // end LocalView
 \end{lstlisting}
 
-\subsection{User interface of a local ansatz \texttt{Tree}}
+\subsection{User interface of a local ansatz \cpp{Tree}}
 The local view provides access to all local basis functions
-by exporting a \texttt{Tree} object. This implements a tree
+by exporting a \cpp{Tree} object. This implements a tree
 data structure using the foundation classes of the
 \dunemodule{dune-typetree} library, where the actual local basis
 functions for each factor are associated to a leaf node
@@ -1052,21 +1052,21 @@ user so there is no constructor in the interface.
 First we describe the interface shared by interior
 and leaf nodes.
 
-The \texttt{size()} method returns the total number of
+The \cpp{size()} method returns the total number of
 local basis functions within the subtree rooted at the
 present node. For each of these local basis functions
-the \texttt{localIndex(size\_type)} method returns a unique
+the \cpp{localIndex(size\_type)} method returns a unique
 local index within all local basis functions associated to the full
 tree. The argument to this method is the lexicographic
 index of the local basis functions within the subtree
 and the result is the lexicographic index within the full
 tree. Hence the local indices of all basis functions
 within this subtree form a consecutive range. The first
-value in this range, i.e., the result of \texttt{localIndex(0)}
-is also accessible via the \texttt{offset()} method.
+value in this range, i.e., the result of \cpp{localIndex(0)}
+is also accessible via the \cpp{offset()} method.
 The result of these methods is undefined if the
 local view containing the tree is in unbound state.
-All these indices are of type \texttt{size\_type}.
+All these indices are of type \cpp{size\_type}.
 \todograeser{Is the offset() method part of the interface?
 Making it protected seems to be reasonable.}
 
@@ -1082,15 +1082,15 @@ public:
 
 For some computations it is important to identify
 individual nodes in the tree. To this end the node
-exports its path in the full tree via the \texttt{treePath()}
+exports its path in the full tree via the \cpp{treePath()}
 method. The result is a tree path
 as defined in the \dunemodule{dune-typetree} module.
 It is possible to retrieve the node from the full
 tree by addressing it with its tree path.
 Notice that, to allow this functionality, the
-type \texttt{TreePath} will in general differ from one node to the other.
+type \cpp{TreePath} will in general differ from one node to the other.
 If data needs to be attached to nodes,
-the \texttt{treeIndex()} can be used. The latter returns
+the \cpp{treeIndex()} can be used. The latter returns
 the lexicographic index of the node within the full
 tree in a fixed type for all nodes.
 These methods can also be used if the local view containing
@@ -1106,8 +1106,8 @@ the tree is in unbound state.
 Leaf nodes share the same interface as interior
 nodes. Additionally they provide access to the
 element which the local view and thus the tree is bound
-to via the \texttt{element()} method. Probably most important
-is the \texttt{finiteElement()} method that gives access
+to via the \cpp{element()} method. Probably most important
+is the \cpp{finiteElement()} method that gives access
 to the local finite element. The finite element
 itself provides access to the local basis functions
 by the finite element interface defined in the
@@ -1138,17 +1138,17 @@ public:
 
 
 
-\subsection{User interface of a \texttt{LocalIndexSet}}
-The \texttt{LocalIndexSet} as returned by \texttt{GlobalBasis::localIndexSet()}
+\subsection{User interface of a \cpp{LocalIndexSet}}
+The \cpp{LocalIndexSet} as returned by \cpp{GlobalBasis::localIndexSet()}
 provides access to global multi-indices for the
 local basis functions reachable from a local view.
-To this end the \texttt{LocalIndexSet} must
-first be bound to the \texttt{LocalView} using
-the \texttt{bind(LocalView)} method. Similar to the
-local view there is an \texttt{unbind()} method
+To this end the \cpp{LocalIndexSet} must
+first be bound to the \cpp{LocalView} using
+the \cpp{bind(LocalView)} method. Similar to the
+local view there is an \cpp{unbind()} method
 and the bound-to local view can be accessed
-using the \texttt{localView()} method.
-Notice that the \texttt{bind(LocalView)} operation
+using the \cpp{localView()} method.
+Notice that the \cpp{bind(LocalView)} operation
 can be costly, because it pre-computes
 all global indices and stores them in an internal cache.
 
@@ -1163,19 +1163,19 @@ public:
 \end{lstlisting}
 
 If the local index set is in bound state
-the \texttt{size()} method can be used to query
+the \cpp{size()} method can be used to query
 the number of local basis functions in the
 bound local view. This is a simple shortcut for
-\texttt{localView().size()} and \texttt{localView().tree().size()}.
+\cpp{localView().size()} and \cpp{localView().tree().size()}.
 For any of these local basis functions the global
-multi-index is provided by the \texttt{index(size\_type)}
+multi-index is provided by the \cpp{index(size\_type)}
 method. The argument for this method is the local
 index of the basis function within the tree as
-returned by the \texttt{BasisNode::localIndex(size\_type)}
+returned by the \cpp{BasisNode::localIndex(size\_type)}
 method.
 Accessing the same global index multiple times
 is cheap, because global indices are pre-computed
-and cached during \texttt{bind(LocalView)}.
+and cached during \cpp{bind(LocalView)}.
 
 \begin{lstlisting}
   using MultiIndex = <implementation defined>;
@@ -1187,8 +1187,8 @@ and cached during \texttt{bind(LocalView)}.
 
 We now give a short example on how to use the interface
 to compute global indices for local basis functions
-of a given \texttt{globalBasis} at a given \texttt{element}.
-If we want to compute the global index of the \texttt{i}-th
+of a given \cpp{globalBasis} at a given \cpp{element}.
+If we want to compute the global index of the \cpp{i}-th
 local basis function in the finite element attached to
 a leaf node this can be done by the following snippet.
 
@@ -1212,8 +1212,8 @@ auto globalIndex = localIndex.index(localIndex);
 \end{lstlisting}
 
 Here we assumed that we do not have a nested local ansatz tree
-such that the \texttt{tree()} method directly returns a \texttt{LeafBasisNode}.
-In this case \texttt{localIndex} coincides with \texttt{i}.
+such that the \cpp{tree()} method directly returns a \cpp{LeafBasisNode}.
+In this case \cpp{localIndex} coincides with \cpp{i}.
 In the more general case of a nontrivial product space
 we must first retrieve the leaf node corresponding to
 the desired factor in the product space. This can be done
@@ -1235,8 +1235,8 @@ auto treePath = TypeTree::hybridTreePath(_0, 1);
 const auto& node = TypeTree::child(localView.tree(), treePath);
 \end{lstlisting}
 
-Notice that we used the index constants \texttt{\_0}
-from the namespace \texttt{TypeTree::Indices}
+Notice that we used the index constants \cpp{\_0}
+from the namespace \cpp{TypeTree::Indices}
 to address the velocity node because the
 tree root is a hybrid container whose child nodes
 for velocity and pressure are of different type.
@@ -1276,7 +1276,7 @@ this interface.  At the time of writing these are:
    \todosander{Sollen wir diese Basis komplett entfernen, wo man sie mittlerweile doch
      einfach aus den Einzelteilen zusammenbasteln kann?}
    \todograeser{Es war Christian wichtig, dass man nicht-triviale Basen auch manuell,
-    d.h. ohne \texttt{PowerPreBasis}, implementieren kann. Für diesen Fall taugt
+    d.h. ohne \cpp{PowerPreBasis}, implementieren kann. Für diesen Fall taugt
     das noch als Beispiel.}
 
  \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
@@ -1609,7 +1609,7 @@ basis is implemented by providing a so-called pre-basis
 \footnote{Up to the 2.5 release the pre-bases were called node-factory.}.
 A pre-basis can be
 turned into a basis providing the interface described above by
-using it through the \texttt{DefaultGlobalBasis} wrapper class
+using it through the \cpp{DefaultGlobalBasis} wrapper class
 provided by \dunemodule{dune-functions}.
 
 \begin{lstlisting}
@@ -1647,11 +1647,11 @@ tree has 3 children of the same type.
 \end{lstlisting}
 
 Any pre-basis provides some global index strategy. In the
-above example, the template parameter \texttt{S} describes
+above example, the template parameter \cpp{S} describes
 a strategy to construct global indices for the power-pre-basis
-\texttt{PreBasis} from the global indices of its children
-of the type \texttt{ChildPreBasis}. The template parameter
-\texttt{MI} should be a type capable of storing the resulting
+\cpp{PreBasis} from the global indices of its children
+of the type \cpp{ChildPreBasis}. The template parameter
+\cpp{MI} should be a type capable of storing the resulting
 multi-indices. Similar to the above example, one can construct
 per-bases where each child has a different type.
 
@@ -1673,14 +1673,14 @@ per-bases where each child has a different type.
   Basis basis(ChildPreBasis1([args]), ChildPreBasis2([args]));
 \end{lstlisting}
 
-Of course \texttt{PowerPreBasis} and \texttt{CompositePreBasis}
+Of course \cpp{PowerPreBasis} and \cpp{CompositePreBasis}
 can be nested which allows to construct more complex spaces.
 To provide building blocks for the construction of these spaces, the bases
 described in Subsection \ref{subsec:available_bases} are
 all implemented as pre-basis and the global basis types
-listed above are just type aliases to \texttt{DefaultGlobalBasis<PreBasis>}
+listed above are just type aliases to \cpp{DefaultGlobalBasis<PreBasis>}
 with the corresponding pre-bases.
-Combining different \texttt{PQkPreBasis}'s one can for
+Combining different \cpp{PQkPreBasis}'s one can for
 example create a Taylor--Hood global basis.
 
 \begin{lstlisting}
@@ -1712,7 +1712,7 @@ example create a Taylor--Hood global basis.
 
 In this example the indices of children are merged by prepending
 the index of the child to the index within a child. If the global
-indices of the \texttt{PQkNodalBasis<GridView,k,MI>} take the form
+indices of the \cpp{PQkNodalBasis<GridView,k,MI>} take the form
 $0,\dots,n_k$, then the degree of freedom associated to the
 $i$-th $P_2$ basis function for the $j$-the velocity component
 has the multi-index $(0,j,i)$ with $j=0,dots,dim-1$, $i=0,\dots,n_2$.
@@ -1750,7 +1750,7 @@ be constructed as follows.
       blockedLexicographic));      // strategy for merging velocity and pressure indices
 \end{lstlisting}
 
-At the heart of this mechanism is the \texttt{makeBasis()} functions
+At the heart of this mechanism is the \cpp{makeBasis()} functions
 that takes the grid view as first argument and a factory for the
 construction of a pre-basis as second argument.
 
@@ -1763,20 +1763,20 @@ construction of a pre-basis as second argument.
   }
 \end{lstlisting}
 
-Here, the \texttt{preBasisFactory} encapsulates all requirements
+Here, the \cpp{preBasisFactory} encapsulates all requirements
 for the multi-indices provided by the pre-basis and additionally
-all information specific to the latter. Using this the \texttt{makeBasis()}
+all information specific to the latter. Using this the \cpp{makeBasis()}
 function can determine a suitable multi-index type and pass the
 multi-index type along with the grid view to the factory which
-then creates a pre-basis. This is wrapped in a \texttt{DefaultGlobalBasis}
-and handed out by \texttt{makeBasis()}.
+then creates a pre-basis. This is wrapped in a \cpp{DefaultGlobalBasis}
+and handed out by \cpp{makeBasis()}.
 
-The detailed interface of a \texttt{PreBasis} as well as the
-interface of the \texttt{PreBasisFactory} needed to hook into
-the \texttt{makeBasis()} mechanism are only needed for implementors providing
+The detailed interface of a \cpp{PreBasis} as well as the
+interface of the \cpp{PreBasisFactory} needed to hook into
+the \cpp{makeBasis()} mechanism are only needed for implementors providing
 a new composable global basis and are thus covered in a later section.
 
-The implemented methods for creating \texttt{PreBasisFactory}'s are:
+The implemented methods for creating \cpp{PreBasisFactory}'s are:
 
 \begin{lstlisting}
   namespace BasisBuilder {
@@ -1813,7 +1813,7 @@ The implemented methods for creating \texttt{PreBasisFactory}'s are:
 \end{lstlisting}
 
 \todograeser{Describe available index merging strategies}
-\todograeser{Should \texttt{namespace BasisBuilder} better be called \texttt{namespace BasisFactory}?}
+\todograeser{Should \cpp{namespace BasisBuilder} better be called \cpp{namespace BasisFactory}?}
 \todograeser{Describe Rannacher-Turek}
 \todograeser{Implement and describe missing hooks for the other bases}
 
@@ -2332,8 +2332,8 @@ ansatz bases for mixed formulations, multicomponent problems,
 or coupled multi-physic problems.
 
 
-\subsection{Implementor interface of a \texttt{PreBasis}}
-\subsection{Implementor interface of a \texttt{NodeIndexSet}}
+\subsection{Implementor interface of a \cpp{PreBasis}}
+\subsection{Implementor interface of a \cpp{NodeIndexSet}}
 
 
 
