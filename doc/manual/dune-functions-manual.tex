@@ -204,7 +204,7 @@ rules.  Many of the really are useful in applications.
 
 \todosander{Ich bin mir nicht ganz sicher ob man die folgende Information hier oder irgendwo sonst
 überhaupt haben will.  Ganz weglassen und darauf spekulieren dass die Leute das auf der Homepage
-finden?  Oder alles an den Anfang von Kapitel~\ref{sec:dune_functions:function_space_bases_implementation} schieben?}
+finden?  Oder alles an den Anfang von Kapitel~\ref{sec:function_space_bases_implementation} schieben?}
 
 Installation instructions and a up-to-date class documentation can be found on the \dune
 project homepage \url{www.dune-project.org}.
@@ -218,10 +218,10 @@ project homepage \url{www.dune-project.org}.
 \label{sec:finite_element_trees}
 
 
-Before we can explain the implementation of bases for discrete function spaces in Chapter~\ref{sec:dune_functions:function_space_bases_implementation},
+Before we can explain the implementation of bases for discrete function spaces in Chapter~\ref{sec:function_space_bases_implementation},
 we need to say a few words about the general structure of such spaces.
 Readers who are only interested in scalar finite element spaces may try to proceed directly to
-Chapter~\ref{sec:dune_functions:function_space_bases_implementation}.  They should only know that whenever a tree
+Chapter~\ref{sec:function_space_bases_implementation}.  They should only know that whenever a tree
 is mentioned there, this tree consists of a single node only, which is the finite element basis.
 
 \subsection{Trees of finite element spaces}
@@ -323,7 +323,7 @@ Grouped expressions of this type are conveniently visualized as tree structures.
 suggests to interpret composite
 finite element spaces as tree structures.  In this structure, leaf nodes represent scalar or otherwise irreducible spaces,
 and inner nodes represent products of their children.  Subtrees then represent composite
-finite element spaces.  Figure~\ref{fig:dune_functions:taylor_hood_basis_tree} shows the Tayor--Hood finite element
+finite element spaces.  Figure~\ref{fig:taylor_hood_basis_tree} shows the Tayor--Hood finite element
 space in such a tree representation.
 
 \begin{figure}
@@ -344,7 +344,7 @@ space in such a tree representation.
         \end{tikzpicture}
     \end{center}
     \caption{Finite element tree of the Taylor--Hood space $(P_2 \times P_2 \times P_2)\times P_1$}
-    \label{fig:dune_functions:taylor_hood_basis_tree}
+    \label{fig:taylor_hood_basis_tree}
 \end{figure}
 
 %\begin{figure}
@@ -361,7 +361,7 @@ space in such a tree representation.
 %   \end{overpic}
 %  \end{center}
 %  \caption{Taylor--Hood basis $P_2 \times P_2 \times P_2 \times P_1$ in a tree representation}
-%    \label{fig:dune_functions:taylor_hood_basis_tree}
+%    \label{fig:taylor_hood_basis_tree}
 %\end{figure}
 
 While these extra nodes might initially appear like useless artifacts of the tree representation, they are often extremely useful
@@ -372,7 +372,7 @@ reuse existing algorithms that expect to operate on those subtrees in more compl
 
 
 \subsection{Indexing basis functions by multi-indices}
-\label{sec:dune_functions:basis_ordering}
+\label{sec:basis_ordering}
 
 To work with the basis of a finite element space, the basis vectors need to be indexed.  Indexing the basis functions
 is what allows to address the corresponding vector and matrix coefficients in suitable vector and matrix data structures.
@@ -448,7 +448,7 @@ with basis functions
     \lambda_{(1,k)} \lambda^1_k.
 \end{equation*}
 
-This index construction is illustrated in Figure~\ref{fig:dune_functions:taylor_hood_index_tree}
+This index construction is illustrated in Figure~\ref{fig:taylor_hood_index_tree}
 where the Taylor--Hood finite element tree is extended with individual basis functions,
 edges are labels with corresponding multi-index entries, and node labels indicate
 what the corresponding subtree represents.
@@ -492,7 +492,7 @@ what the corresponding subtree represents.
         \end{tikzpicture}
     \end{center}
     \caption{Index tree for Taylor--Hood with indices inherited from FE tree}
-    \label{fig:dune_functions:taylor_hood_index_tree}
+    \label{fig:taylor_hood_index_tree}
 \end{figure}
 
 In the previous example, the inner nodes of the index tree have formed a tree that was
@@ -504,7 +504,7 @@ preferable to group all velocity degrees of freedom corresponding to a single
 $P_2$ basis function together, i.\,e., to use the index $[0,j,i]$
 for the $j$-the $P_2$ basis function for the $i$-th component.
 The corresponding alternative index tree is illustrated in
-Figure~\ref{fig:dune_functions:taylor_hood_index_blocked_tree}.
+Figure~\ref{fig:taylor_hood_index_blocked_tree}.
 Figure~\ref{} shows the corresponding layouts of a hierarchical stiffness matrix.
 
 \begin{figure}
@@ -541,7 +541,7 @@ Figure~\ref{} shows the corresponding layouts of a hierarchical stiffness matrix
         \end{tikzpicture}
     \end{center}
     \caption{Index tree for Taylor--Hood with blocking of local velocity components}
-    \label{fig:dune_functions:taylor_hood_index_blocked_tree}
+    \label{fig:taylor_hood_index_blocked_tree}
 \end{figure}
 
 \begin{figure}
@@ -555,7 +555,7 @@ Figure~\ref{} shows the corresponding layouts of a hierarchical stiffness matrix
    Right: interleaving the entries of $B_x$, $B_y$, $B_z$ gives a $2 \times 2$ block structure, where
    the entries are small blocks themselves.
    }
- \label{fig:dune_functions:matrix_occupation_patterns}
+ \label{fig:matrix_occupation_patterns}
 \end{figure}
 
 
@@ -583,7 +583,7 @@ to the number of direct children of the node indexed by $I$.
 
 
 \subsection{Rule-based construction of multi-indices}
-\label{sec:dune_functions:basis_ordering}
+\label{sec:basis_ordering}
 
 While \dunemodule{dune-functions} allows to use arbitrary index trees
 to enumerate the basis functions, there are some important generic constructions
@@ -628,7 +628,7 @@ $\tilde{\mathbf{e}}_1 b_{x,i} = (b_{x,i},0,0,0)^T$.  For the sake of the discuss
 basis function $b_{x,i}$ with all of its vector-values variants.)
 
 This is certainly a reasonable ordering.  Used in a finite element computation it will lead to a stiffness
-matrix which, conceptually, consists of $4 \times 4$ large sparse blocks (Figure~\ref{fig:dune_functions:matrix_occupation_patterns}).
+matrix which, conceptually, consists of $4 \times 4$ large sparse blocks (Figure~\ref{fig:matrix_occupation_patterns}).
 We call this the {\em lexicographic} ordering.
 
 However, there is one important alternative.  Since, for the standard applications of the Taylor--Hood element,
@@ -646,7 +646,7 @@ the basis functions of the Taylor--Hood basis appear in the order
 \end{equation*}
 In this case, the stiffness matrix only has $2 \times 2$ large sparse blocks, but each entry of the uppler left
 block will be a $3 \times 3$ matrix, each entry of the lower right block will be a scalar, and the off-diagonal
-blocks will have a corresponding rectangular structure (Figure~\ref{fig:dune_functions:matrix_occupation_patterns}).
+blocks will have a corresponding rectangular structure (Figure~\ref{fig:matrix_occupation_patterns}).
 
 To deduce such possibilities from the tree structure we now divide the inner tree nodes into two classes.
 An inner node will be called {\em power node}, if all of its children are identical subtrees.
@@ -689,7 +689,7 @@ In total, for a tree with $N$ power nodes we obtain $2^N$ different ways to orde
  \end{tabular}
  \end{center}
  \caption{Possible index types for a Taylor--Hood basis with lexicographic ordering of the velocity basis functions}
- \label{tbl:dune_functions:th_multiindices_lexicographic}
+ \label{tbl:th_multiindices_lexicographic}
 \end{table}
 
 \begin{table}
@@ -717,7 +717,7 @@ In total, for a tree with $N$ power nodes we obtain $2^N$ different ways to orde
    Aus Sicht der Baumkonstruktion ist er allerdings inkonsequent.  Der skalare Index in einer einzelnen Blatt-Basis
     erscheint nicht als letzte Stelle im Multi-Index, sondern als {\em vorletzte}.  Das muss man ordentlich
     begründen, und schauen was in allgemeineren Bäumen passiert.}
- \label{tbl:dune_functions:th_multiindices_interleaved}
+ \label{tbl:th_multiindices_interleaved}
  }
 \end{table}
 
@@ -759,7 +759,7 @@ with the index tree for the global basis.
 
 
 \section{Programmer interface for function space bases}
-\label{sec:dune_functions:function_space_bases_implementation}
+\label{sec:function_space_bases_implementation}
 
 The design of the \dunemodule{dune-functions} interfaces for bases of discrete function spaces
 follows the ideas of the previous section. The main interface concept are global basis objects
@@ -779,7 +779,7 @@ and it provides the three types of shape-function indices.
   \end{overpic}
  \end{center}
  \caption{Overview of the classes making up the interface to finite element space bases}
- \label{fig:dune_functions:febasis_interface_schematic}
+ \label{fig:febasis_interface_schematic}
 \end{figure}
 
 The user interface of localized function space bases is divided into two parts.  A \cpp{LocalView} on an
@@ -792,7 +792,7 @@ delegated to a separate object called a \cpp{LocalIndexSet}, which you can bind 
 \cpp{LocalView} objects.  Once bound, a \cpp{LocalIndexSet} will provide global (multi-)indices
 for each shape function on this element, and flat indices with respect to the local tree.
 The structure of the interface is visualized in
-Figure~\ref{fig:dune_functions:febasis_interface_schematic}.
+Figure~\ref{fig:febasis_interface_schematic}.
 
 All header include paths
 start with \cpp{dune/functions/}, and all code is contained in the namespace \cpp{Dune::Functions}.
@@ -1848,7 +1848,7 @@ The implemented methods for creating \cpp{PreBasisFactory}'s are:
   \includegraphics[height=0.3\textheight]{driven_cavity_result}
  \end{center}
  \caption{Driven cavity. Left: setting, right: simulation result.  The arrows show the {\em normalized} velocity.}
- \label{fig:dune_functions:driven_cavity}
+ \label{fig:driven_cavity}
 \end{figure}
 
 The Stokes equation models a viscous incompressible
@@ -1901,7 +1901,7 @@ boundary conditions for the velocity $\mathbf{u}$ to
 \end{equation*}
 The interpretation of this is a fluid container that is closed on all but one side.  While the fluid remains
 motionless on the closed sides, an external agent drives a constant upward motion on the left vertical side.
-The domain and boundary conditions are depicted in Figure~\ref{fig:dune_functions:driven_cavity}, left.
+The domain and boundary conditions are depicted in Figure~\ref{fig:driven_cavity}, left.
 The corresponding solution is shown on the right side of the same figure.  The velocity forms a vortex,
 while the pressure forms extrema in the two left corners.
 
@@ -2114,7 +2114,7 @@ class natively only displays piecewise linear functions.
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 When run, this program produces a file called \file{function-stokes-result.vtu}.  The file can be opened in
-\program{ParaView}, and the outcome looks like the image on the right in Figure~\ref{fig:dune_functions:driven_cavity}.
+\program{ParaView}, and the outcome looks like the image on the right in Figure~\ref{fig:driven_cavity}.
 
 \subsubsection{The global assembler}
 
