@@ -206,8 +206,6 @@ rules.  Many of the really are useful in applications.
 überhaupt haben will.  Ganz weglassen und darauf spekulieren dass die Leute das auf der Homepage
 finden?  Oder alles an den Anfang von Kapitel~\ref{sec:dune_functions:function_space_bases_implementation} schieben?}
 
-\dunemodule{dune-functions} depends on a library for tree data structures contained in a module
-called \dunemodule{dune-typetree}, which needs to be available to use \dunemodule{dune-functions}.
 Installation instructions and a up-to-date class documentation can be found on the \dune
 project homepage \url{www.dune-project.org}.
 
@@ -764,9 +762,10 @@ with the index tree for the global basis.
 \label{sec:dune_functions:function_space_bases_implementation}
 
 The design of the \dunemodule{dune-functions} interfaces for bases of discrete function spaces
-follows the ideas of the previous section.  In a nutshell, a \dunemodule{dune-functions} function space basis
-does two things for you: For each element it gives you access to the (tree of) shape functions there,
-and it provides the mapping from element-local shape function indices to global basis function (multi-)indices.
+follows the ideas of the previous section. The main interface concept are global basis objects
+that represent trees of function space bases. These trees can be localized to individual elements
+of the grid.  Such a localization gives you access to the (tree of) shape functions there,
+and it provides the three types of shape-function indices.
 
 \begin{figure}
  \begin{center}
@@ -783,111 +782,106 @@ and it provides the mapping from element-local shape function indices to global 
  \label{fig:dune_functions:febasis_interface_schematic}
 \end{figure}
 
-To reflect this, the user interface of function space bases is divided into two parts.  A \cpp{LocalView} on an
-element allows you to obtain the (tree of) finite element(s) of that element, which in turn gives you access to all
+The user interface of localized function space bases is divided into two parts.  A \cpp{LocalView} on an
+element allows you to obtain the (tree of) local basis functions of that element, which in turn gives you access to all
 shape functions, associations to element subentities, and local interpolation rules provided by
-\dunemodule{dune-localfunctions}.  The mapping of these shape functions to global degrees of freedom is
+\dunemodule{dune-localfunctions}.  A local view is attached to a particular grid element by an
+action called \emph{binding}.
+The mapping of these shape functions to global degrees of freedom is
 delegated to a separate object called a \cpp{LocalIndexSet}, which you can bind to given
 \cpp{LocalView} objects.  Once bound, a \cpp{LocalIndexSet} will provide global (multi-)indices
-for each shape function on this element.  The structure of the interface is visualized in
+for each shape function on this element, and flat indices with respect to the local tree.
+The structure of the interface is visualized in
 Figure~\ref{fig:dune_functions:febasis_interface_schematic}.
 
 All header include paths
 start with \cpp{dune/functions/}, and all code is contained in the namespace \cpp{Dune::Functions}.
+Internally, \dunemodule{dune-functions} depends on the \dunemodule{dune-typetree} module,
+which implements abstract compile-time tree data structures.
 The global basis interface described below is not enforced by deriving
 from specific base classes. Instead, \dunemodule{dune-functions} is based on
-so-called duck-typing, i.e., any object providing the required
-interface is a valid global basis. To statically check for the interface
-\dunemodule{dune-functions} provides a concept definition of a global
-basis which can e.g. be used to check validity in a static assertion.
-
-\begin{lstlisting}
-  // The global basis concept for given grid view
-  using GlobalBasisConcept = Dune::Functions::Concept::GlobalBasis<GridView>;
-
-  // Check if Basis models the concept
-  static_assert(Dune::models<GlobalBasisConcept, Basis>(),
-    "Basis does not model the global basis concept.")
-\end{lstlisting}
+duck-typing,
+\todosander{Referenz}
+i.e., any object providing the required
+interface is a valid global basis.
 
 
 
 \subsection{User interface of a \cpp{GlobalBasis}}
-We now describe the user interface provided by global bases and related types.
-Since there may be various implementations of those types, all class names used
-below are generic names.  We will group exported type names and related methods
-to simplify the presentation.
-In general each basis implementation may require its own specific data for construction.
-Hence we do not enforce an argument list for this.
+We start by describing the user interface of global bases.  Since we are discussing duck-typing interfaces,
+all class names used below are generic. Trees of global bases are implemented by classes that implement
+the \cpp{GlobalBasis} interface. In the following, we will call the generic such class \cpp{GlobalBasis}.
+It can have an arbitrary number of template parameters.
 In the following interface description such implementation details
 are marked by the placeholder \cpp{<implementation defined>}.
 
+In general each basis implementation may require its own specific data for construction.
+Hence we do not enforce an argument list for this.
 \begin{lstlisting}
-class GlobalBasis
-{
-public:
-  GlobalBasis(<implementation defined>);
+GlobalBasis(<implementation defined>);
 \end{lstlisting}
-
-As the global basis represents a function space defined on a grid view, access to
-the latter is provided by the \cpp{gridView()} method while its type
-is exported as \cpp{GridView}. If the grid view or underlying grid
-was modified (e.g. by adapting the grid), the result of calling any
+The global basis represents a function space defined on a grid view, and access to
+this view is provided by the
+\begin{lstlisting}
+const GridView& gridView() const;
+\end{lstlisting}
+method. The corresponding type
+is exported as \cpp{GridView}. If the grid view
+was modified (e.g., by local grid refinement), the result of calling any
 method of the basis is undefined until the basis was updated by
-providing a new grid view by the \cpp{update(GridView)} method.
-
+providing a new grid view by the method
 \begin{lstlisting}
-  using GridView = <implementation defined>;
-  const GridView& gridView() const;
-  void update(const GridView & gv);
+void update(const GridView & gv);
 \end{lstlisting}
+\todosander{Die \cpp{update}-Methode wird noch nicht vom Standard-Test getestet!}
 
-One of the main functionalities of the global basis is to provide
-access to the basis functions. The latter are available via the
-local view interface. The \cpp{localView()} method returns a new
-object of type \cpp{LocalView}. After binding this object to a
-grid element from the respective grid view, it provides access
-to the restriction of all basis functions whose support has a
-nontrivial intersection with this element. For details on the
-\cpp{LocalView} interface see below.
-
+Access to the basis functions is available via the
+local view interface.
 \begin{lstlisting}
   using LocalView = <implementation defined>;
   LocalView localView() const;
 \end{lstlisting}
+The \cpp{localView()} method returns a new object that implements the \cpp{LocalView} interface.
+After binding this object to a
+grid element from the respective grid view, it provides access
+to the restriction of all basis functions whose support has a
+nontrivial intersection with this element.  With a global basis given in an object called \cpp{basis},
+the corresponding code is
+\begin{lstlisting}
+auto localView = basis.localView();
+localView.bind(element);
+\end{lstlisting}
+where \cpp{element} is an element from the grid view.
+For details on the
+\cpp{LocalView} interface see below.
 
-All basis functions accessible via a bound local view have a
-local index assigned to them. These local indices are zero-based,
-consecutive, and unique within the respective element.
-In order to  associate global degrees of freedom to basis functions
-the local indices can be mapped to global indices. To facilitate
-hierarchical representations of the basis these global indices
-are in general multi-indices. The \cpp{localIndexSet()} method
+To access the various types of indices of a shape function,
+the \cpp{localIndexSet()} method
 returns a new object of type \cpp{LocalIndexSet} that, after
 binding it to a local view, allows to map the local indices
 of all basis functions appearing in this local view to those
-global multi-indices. The interface of the \cpp{LocalIndexSet}
-is defined below.
-
+global multi-indices.
 \begin{lstlisting}
   using LocalIndexSet = <implementation defined>;
   LocalIndexSet localIndexSet() const;
 \end{lstlisting}
+The interface of the \cpp{LocalIndexSet} is discussed in Section~\ref{sec:localindexset_interface}.
 
+An additional group of methods provides information on the sizes of the bases
+contained in the tree.
 The total number of basis functions of the global basis is
 exported via the \cpp{dimension()} method. However, since
-the global indices are hierarchically structured multi-indices
-of type \cpp{MultiIndex}, this information is in general not
+the global indices are hierarchically structured multi-indices,
+this information is generally not
 sufficient to allocate hierarchical containers for storing,
 e.g., coefficients with respect to all basis functions.
-
-Because of this, the basis provides access to the structural
+Therefore, the basis provides access to the structural
 information of those multi-indices via the \cpp{size(SizePrefix)}
 method. The given prefix takes the form of a multi-index itself.
 If $\mathcal{I}$ is the set of all global multi-indices of the
 basis and $P \in \mathcal{N}$ is a prefix for this set,
 i.e. there is a $(P,\dots) \in \mathcal{I}$, then
-\cpp{size($P$)} returns the size $|\mathcal{I}|_P$ of
+\cpp{size(P)} returns the size $|\mathcal{I}|_P$ of
 $\mathcal{I}$ relative to $P$ defined according to \eqref{eq:prefix_size}.
 %For a prefix $(p_1,\dots,p_k)$ the method returns the maximal value $q$ such that there
 %is a global index of the form $(p_1,\dots,p_k,q-1,\dots)$.
@@ -900,11 +894,16 @@ For convenience there is also a method \cpp{size()} returning the same
 value as the method with an empty prefix, i.e., \cpp{size(\{\})}.
 For a scalar basis, this method again returns the number of basis functions.
 
+\todosander{Irgendwo muss der Typ (bzw.\ das Konzept) \cpp{MultiIndex} erklärt werden.}
+
 Since prefixes may have variable size, it is guaranteed that the type \cpp{SizePrefix}
 is always a \cpp{Dune::ReservedVector<size\_type,k>} where \cpp{k}
 is strictly larger than the maximal length of a multi-index. The result
 type of all size-related methods is exported as \cpp{size\_type}.
 \todograeser{Do we need 'strictly larger'? As far as I can see 'at least' should be OK.}
+\todosander{An manchen Stellen im Code hat man tatsächlich eine Stelle mehr als die
+Länge des längsten MultiIndex (zB \cpp{LagrangeDGBasis}).  Darüber habe ich mich auch
+schon gewundert.}
 
 \begin{lstlisting}
   using size_type = <implementation defined>;
@@ -914,6 +913,9 @@ type of all size-related methods is exported as \cpp{size\_type}.
   size_type size() const;
   size_type size(const SizePrefix& prefix) const;
 \end{lstlisting}
+
+\todosander{Wollen wir eventuell ein separates Unterkapitel für diese Teilbaumkonstruktionen
+machen?  Hier an dieser Stelle finde ich die Erklärungen etwas verwirrend.}
 
 Additionally to the concept of a global basis as defined here, there
 is also the concept of a so called \cpp{SubspaceBasis} reflecting
@@ -926,6 +928,7 @@ and \cpp{prefixPath()} returns an empty tree-path of the
 implementation defined type \cpp{PrefixPath}.
 \todograeser{While describing the interface I had the impression that having
 those methods here is inconsistent and that they should maybe be free functions.}
+\todosander{Könnte man tatsächlich in Betracht ziehen.}
 
 \begin{lstlisting}
   using PrefixPath = <implementation defined>;
@@ -953,10 +956,21 @@ do not require this. Hence the answer to all three questions above is 'no'.
 \begin{lstlisting}
   using PreBasis = <implementation define>;
   const PreBasis& preBasis() const;
-}; // end GlobalBasis
 \end{lstlisting}
 
 
+To statically check for the interface,
+\dunemodule{dune-functions} provides a concept definition of a global
+basis which can, e.g., be used to check validity in a static assertion.
+
+\begin{lstlisting}
+  // The global basis concept for given grid view
+  using GlobalBasisConcept = Dune::Functions::Concept::GlobalBasis<GridView>;
+
+  // Check if Basis models the concept
+  static_assert(Dune::models<GlobalBasisConcept, Basis>(),
+    "Basis does not model the global basis concept.")
+\end{lstlisting}
 
 \subsection{User interface of a \cpp{LocalView}}
 We will now continue with the description of the interface
@@ -1139,6 +1153,8 @@ public:
 
 
 \subsection{User interface of a \cpp{LocalIndexSet}}
+\label{sec:localindexset_interface}
+
 The \cpp{LocalIndexSet} as returned by \cpp{GlobalBasis::localIndexSet()}
 provides access to global multi-indices for the
 local basis functions reachable from a local view.
