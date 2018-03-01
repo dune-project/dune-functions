@@ -995,7 +995,7 @@ do not require this. Hence the answer to all three questions above is 'no'.
 }
 
 \begin{lstlisting}[style=Interface]
-using PreBasis = <implementation define>;
+using PreBasis = @@<implementation define>@@;
 const PreBasis& preBasis() const;
 \end{lstlisting}
 
@@ -1672,13 +1672,13 @@ provided by \dunemodule{dune-functions}.
 
 \begin{lstlisting}[style=Example]
 // For simplicity: Define type alias to specific pre-basis
-using PreBasis = FooPreBasis<GridView, [additional template parameters]>;
+using PreBasis = FooPreBasis<GridView, @@<additional template parameters>@@>;
 
 // Turn PreBasis into a global basis
 using Basis = DefaultGlobalBasis<PreBasis>;
 
 // Create global basis
-Basis basis([constructor arguments of PreBasis]);
+Basis basis(@@<constructor arguments of PreBasis>@@);
 \end{lstlisting}
 
 The benefit of this construction is, that a pre-basis can not
@@ -1689,7 +1689,7 @@ tree has 3 children of the same type.
 
 \begin{lstlisting}[style=Example]
 // For simplicity: Define type alias to specific child pre-basis
-using ChildPreBasis = FooPreBasis<GridView, [additional template parameters]>;
+using ChildPreBasis = FooPreBasis<GridView, @@<additional template parameters>@@>;
 
 // Create a new pre-basis for a homogeneous product space
 // with 3 components each taking the form of ChildPreBasis
@@ -1701,7 +1701,7 @@ using PreBasis = PowerPreBasis<MI, S, ChildPreBasis, 3>;
 using Basis = DefaultGlobalBasis<PreBasis>;
 
 // Create global basis
-Basis basis([constructor arguments of ChildPreBasis]);
+Basis basis(@@<constructor arguments of ChildPreBasis>@@);
 \end{lstlisting}
 
 Any pre-basis provides some global index strategy. In the
@@ -1715,8 +1715,8 @@ per-bases where each child has a different type.
 
 \begin{lstlisting}[style=Example]
 // For simplicity: Define type alias to specific child pre-bases
-using ChildPreBasis1 = FooPreBasis<GridView, @@[additional template parameters]@@>;
-using ChildPreBasis2 = BarPreBasis<GridView, [additional template parameters]>;
+using ChildPreBasis1 = FooPreBasis<GridView, @@<additional template parameters>@@>;
+using ChildPreBasis2 = BarPreBasis<GridView, @@<additional template parameters>@@>;
 
 // Create a new pre-basis for a non-homogeneous product space
 // with first child ChildPreBasis1 and second child ChildPreBasis2
@@ -1728,7 +1728,7 @@ using PreBasis = CompositePreBasis<MI, S, ChildPreBasis1, ChildPreBasis2>;
 using Basis = DefaultGlobalBasis<PreBasis>;
 
 // Create global basis
-Basis basis(ChildPreBasis1([args]), ChildPreBasis2([args]));
+Basis basis(ChildPreBasis1(@@<args>@@), ChildPreBasis2(@@<args>@@));
 \end{lstlisting}
 
 Of course \cpp{PowerPreBasis} and \cpp{CompositePreBasis}
