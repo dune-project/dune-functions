@@ -367,7 +367,7 @@ public:
 
     // throw if Element is not of predefined type
     if (not(basic_type==GeometryType::BasicType::cube and element.type().isCube()) and
-        not(basic_type==GeometryType::BasicType::simplex and element.type().isSimplex())) DUNE_THROW(Dune::NotImplemented, "RaviartThomasNodalBasis only implemented for cube and simplex elements.");
+        not(basic_type==GeometryType::BasicType::simplex and element.type().isSimplex())) DUNE_THROW(Dune::NotImplemented, "RaviartThomasBasis only implemented for cube and simplex elements.");
 
     for(std::size_t i=0, end=size(); i<end; ++i, ++it)
     {
@@ -436,7 +436,7 @@ auto rt()
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************
 
-/** \brief Nodal basis of a scalar k-th-order Raviart Thomas finite element space
+/** \brief Basis of a k-th-order Raviart Thomas finite element space
  *
  * TODO
  *
@@ -444,7 +444,7 @@ auto rt()
  * \tparam k The order of the basis
  */
 template<typename GV, int k, GeometryType::BasicType basic_type, class ST = std::size_t>
-using RaviartThomasNodalBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<ST>, ST, basic_type> >;
+using RaviartThomasBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<ST>, ST, basic_type> >;
 
 } // end namespace Functions
 } // end namespace Dune
