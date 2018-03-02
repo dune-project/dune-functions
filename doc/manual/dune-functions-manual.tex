@@ -808,11 +808,9 @@ The local basis forms a tree that is isomorphic to the full global basis tree.
 The basis functions in the local tree have two indices in addition to the global one.
 First, each local basis function has an index to distinguish it from other functions in the
 same leaf node.  As there is no hierarchical structure involved, this index is simply a
-natural number.
-\todosander{Hat diese Nummer einen Namen?}
+natural number.  It is called the \emph{leaf-local index}.
 Secondly, each local basis has an index for the entire local tree.  This is what is used to address
-the element stiffness matrix.
-\todosander{Hat diese Nummer einen Namen?}
+the element stiffness matrix.  This is the \emph{local index}.
 In principle, this indexing can use another general index tree, which does not have to coincide
 with the index tree for the global basis.
 \todosander{Die Implementierung nimmt zwar aktuell immer nur flache Indizes, aber ich bin dennoch
