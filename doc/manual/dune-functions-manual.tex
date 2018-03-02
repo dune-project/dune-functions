@@ -1331,13 +1331,17 @@ const auto& node = localView.tree().child(_0, 1);
 \end{lstlisting}
 
 
+\section{Constructing trees of finite element bases}
 
+There are various ways to construct finite element bases in \dunemodule{dune-functions}.
+A set of standard bases is provided directly.  These can then be combined to form trees.
+Conversely, subtrees can be extracted, and they act like complete bases in their own right.
 
-\subsection{Function space bases available in \texorpdfstring{\dunemodule{dune-functions}}{dune-functions}}
+\subsection{Function space basis implementations provided by \texorpdfstring{\dunemodule{dune-functions}}{dune-functions}}
 \label{subsec:available_bases}
 
-The \dunemodule{dune-functions} module contains a collection of finite element bases that implement
-this interface.  At the time of writing these are:
+The \dunemodule{dune-functions} module contains a collection of standard finite element bases.
+These can be directly used in finite element simulation codes. At the time of writing there is:
 
 \begin{itemize}
  \item \cpp{PQkNodalBasis}: Lagrangian bases of order $k$, where $k$ is a compile-time parameter.
@@ -1345,7 +1349,10 @@ this interface.  At the time of writing these are:
    than one element type.  At the time of writing, higher-order spaces are implemented only partially.
    Check the online class documentation for the current status.
 
- \item \cpp{PQ1NodalBasis}: Lagrangian nodal bases of first order.  This is a separate implementation of
+ \item \cpp{PQ1NodalBasis}:
+ \todosander{Würde ich gerne rausschmeißen, da die Funktionalität durch \cpp{PQKNodalBasis}
+   abgedeckt ist.  Den didaktischen Wert halte ich für überschätzt.}
+   Lagrangian nodal bases of first order.  This is a separate implementation of
    the case $k=1$ of the previous basis.  It exists mainly so that people interested in writing their
    own bases have a simple example to look at.
 
@@ -1357,17 +1364,20 @@ this interface.  At the time of writing these are:
    \todograeser{Es war Christian wichtig, dass man nicht-triviale Basen auch manuell,
     d.h. ohne \cpp{PowerPreBasis}, implementieren kann. Für diesen Fall taugt
     das noch als Beispiel.}
+    \todosander{Ist das noch aktuell?}
 
  \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
-   The shape functions are the same as for the \cpp{PQkNodalBasis},
-   but the basis functions are not continuous across the element boundaries.  Therefore, this basis also
+   Therefore, this basis also
    works well on non-conforming grids.  The polynomial order is again a compile-time constant.
 
- \item \todosander{Raviart--Thomas basis}
+ \item \cpp{RannacherTurekBasis}: An $H^1$-nonconforming scalar basis, which adapts the idea
+   of the Crouzeix--Raviart basis to cube grids~\cite{rannacher_turek:1992}.
 
- \item \todosander{Rannacher--Turek basis}
+ \item \cpp{RaviartThomasBasis}: The standard Raviart--Thomas basis for problems in
+  $H(\text{div})$~\cite{boffi_brezzi_fortin:2013}.  Available for different orders and element types.
 
- \item \todosander{BDM basis}
+ \item \cpp{BrezziDouglasMariniBasis}: The standard Brezzi--Douglas--Marini basis, which is an
+  alternative basis for $H(\text{div})$-conforming problems~\cite{boffi_brezzi_fortin:2013}.
 
  \item \cpp{BSplineBasis}:  Implements a $B$-Spline basis on a structured, axis-aligned grid as described,
    e.g., in~\cite{cottrell_hughes_bazilevs:2009}.  Arbitrary orders, dimensions, and knot vectors are supported,
@@ -1380,9 +1390,10 @@ this interface.  At the time of writing these are:
    Unfortunately, not all these requirements can be checked for by the basis, so users have to be a bit
    careful.  Using a \cpp{YaspGrid} object works well.
 
-   Note that unlike in standard finite element bases, in a B-spline basis the basis functions cannot be associated
+   Unlike in standard finite element bases, in a B-spline basis the basis functions cannot be associated
    to grid entities such as vertices, edges, or elements.  The interface nevertheless mandates that a
-   \cpp{LocalCoefficient} object must be available, but for the \cpp{BSplineBasis}, the behavior of this
+   \cpp{LocalCoefficient} object must be available on each element, that assigns shape functions
+   to faces of the reference elements. For the \cpp{BSplineBasis}, the behavior of this
    object is undefined.
 \end{itemize}
 
