@@ -410,6 +410,7 @@ reuse existing algorithms that expect to operate on those subtrees in more compl
 
 
 \subsection{Indexing basis functions by multi-indices}
+\label{sec:index_trees}
 
 To work with the basis of a finite element space, the basis vectors need to be indexed.  Indexing the basis functions
 is what allows to address the corresponding vector and matrix coefficients in suitable vector and matrix data structures.
@@ -1397,13 +1398,16 @@ These can be directly used in finite element simulation codes. At the time of wr
    object is undefined.
 \end{itemize}
 
+\todosander{Außerdem haben wir noch \cpp{LagrangeBasis} als Alias für \cpp{PQkNodalBasis}.
+ Das sollten wir mal aufräumen.}
+
 \todosander{Wir müssen hier beschreiben dass selbst Basen für nicht-affine FE immer nur
   Größen zurückgeben, die sich auf das Referenzelement beziehen.}
 
 \subsection{Combining bases into trees}
 
-The basis implementations of the previous section can be combined by building products to form new bases.
-This produces the tree structure described in Section~\ref{sec:finite_element_trees}.
+The basis implementations of the previous section can be combined by multiplication to form new bases.
+This produces the tree structures described in Section~\ref{sec:finite_element_trees}.
 The code for this resides in the \cpp{BasisBuilder} namespace, which is a nested namespace
 within \cpp{Dune::Functions::}. Therefore, the examples of this section need a
 \begin{lstlisting}[style=Example]
@@ -1419,26 +1423,30 @@ directly.  Rather, they combine so-called \emph{pre-bases}, of which there is on
 The reason for this is
 that it is technically very challenging to combine the actual user-visible basis types in a
 tree hierarchy that itself again implements the interface of a hierarchical function space basis.
+Therefore, the multiplication operators are applied to pre-basis objects, and return pre-basis
+objects of the resulting tree.
 The pre-basis of the final basis tree can then be turned into an actual basis by a call to
 \begin{lstlisting}[style=Interface]
 template <class GridView, class PreBasisFactory>
 auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
 \end{lstlisting}
 This method takes a pre-basis factory, and produces a complete basis from it.
+\todosander{Hmm, was war noch mal genau der Unterschied zwischen einer PreBasis und einer
+  PreBasisFactory?  Will man das wirklich hier erklären müssen?}
 
 In the simple-most case, the tree consists of a single basis. That means that in particular
 you can write
-\todosander{\cpp{rt} ist als Abkürzung arg kurz -- sollten wir ändern!}
+\todosander{\cpp{rt} ist als Abkürzung arg kurz -- sollten wir ändern! \\
+  Genaugenommen sollten wir eine Regel für die Namensgebung angeben:  Zum Beispiel immer
+  ``Name der Basis mit kleinem Anfangsbuchstaben und ohne den \cpp{Basis}-Suffix.}
 \todosander{Darf nicht mehr \cpp{BasisType} benutzen!}
 \begin{lstlisting}[style=Example]
 auto raviartThomasBasis = makeBasis(gridView, rt<k, GeometryType::BasicType::cube>());
 \end{lstlisting}
 to obtain a Raviart--Thomas basis for the given grid view.  This is equivalent to constructing
 the basis directly:
-\todosander{Ja, das Ding hat tatsächlich ``\emph{nodal}'' im Namen.  Sollten wir die Basis-Klasse
-nicht einfach \cpp{RaviartThomasBasis} nennen?}
 \begin{lstlisting}[style=Example]
-RaviartThomasNodalBasis<GridView,k,GeometryType::BasicType::cube> raviartThomasBasis;
+RaviartThomasBasis<GridView,k,GeometryType::BasicType::cube> raviartThomasBasis;
 \end{lstlisting}
 \todosander{Was passiert wenn ich eine Basis nicht mit dem Default-Konstruktor erzeugen möchte?
   Kann ich der \cpp{PreBasisFactory} dann Argumente mitgeben?}
@@ -1446,18 +1454,32 @@ RaviartThomasNodalBasis<GridView,k,GeometryType::BasicType::cube> raviartThomasB
  verzögert die Erzeugung der \cpp{PreBasis}. \cpp{makeBasis()} reicht dann die fehlenden Argumente weiter
  und erzeugt mit \cpp{PreBasisFactory::makePreBasis<MultiIndex>(gridView)} die \cpp{PreBasis}. D.h. Unterstützung für
  zusätzliche Argumente muß man in \cpp{FooPreBasisFactory} und \cpp{foo()} implementieren.}
+\todosander{Was passiert dann mit dem \cpp{gridView}-Argument?  Das muss ja jeder Basis-Konstruktor
+ haben.  Gebe ich den \cpp{gridView} hier zweimal an, oder fügt \cpp{makeBasis} den auch in
+ diesem Fall automatisch hinzu?  Vielleicht wäre an dieser Stelle ein Beispiel gut.}
 
 Each basis implementation listed above has a corresponding pre-basis factory, defined in the same header.
 Some of them have template parameters to transmit compile-time information.  The factories are
-\todosander{Die folgende Liste muss noch vervollständigt werden.}
 \begin{center}
- \begin{tabular}{r|r}
+ \begin{tabular}{r|l}
   Basis & tag \\
   \hline
-  \cpp{RaviartThomasNodalBasis} & \cpp{rt} \\
-  \dots & \dots
+  \cpp{PQkNodalBasis} & \cpp{pq<std::size_t k>} \\
+  \cpp{PQ1NodalBasis} & MISSING! \\
+  \cpp{LagrangeBasis} & \cpp{lagrange<std::size_t k>} \\
+  \cpp{TaylorHoodBasis} & MISSING! \\
+  \cpp{LagrangeDGBasis} & MISSING! \\
+  \cpp{RannacherTurekBasis} & \cpp{rannacherTurek} \\
+  \cpp{RaviartThomasBasis} & \cpp{rt<std::size_t k, BasicType basic_type, class size_type=std::size_t>} \\
+  \cpp{BrezziDouglasMariniBasis} & \cpp{bdm<std::size_t k, BasicType basic_type>} \\
+  \cpp{BSplineBasis} & MISSING!
  \end{tabular}
 \end{center}
+
+\todosander{Für die \cpp{LagrangeDGBasis} ist das Feature noch nicht implementiert!}
+\todosander{Für die \cpp{PQ1NodalBasis} ist das Feature noch nicht implementiert!}
+\todosander{Für die \cpp{BSplineBasis} ist das Feature noch nicht implementiert!}
+\todosander{Für die \cpp{TaylorHoodBasis} ist das Feature noch nicht implementiert!}
 
 The general mechanism to combine bases in a tree is called \cpp{composite},
 defined in the header \file{dune/functions/functionspacebases/compositebasis.hh}.
@@ -1467,15 +1489,13 @@ template <typename... Args>
 auto composite(Args&&... args);
 \end{lstlisting}
 The method has an unspecified number of arguments, of unspecified type. The arguments are expected
-to be either factory tags for basis objects, like \cpp{lagrange<1>()}, \cpp{rt<k, GeometryType::BasicType::cube>()},
+to be either factory tags for basis objects, like \cpp{lagrange<1>()} or \cpp{rt<k, GeometryType::BasicType::cube>()},
 or they can be the return value of another call to the \cpp{composite} method (or the \cpp{power} method,
 see below).  They are the subtrees of a new function space basis tree, and the call to \cpp{composite}
 adds the new tree root.
 
 As an example, to combine a Raviart--Thomas basis with a zero-order Lagrange basis (for solving
 the mixed formulation of the Poisson equation, say), the appropriate call is
-\todosander{\cpp{pq} sieht auch blöd aus.  Können wir das, z.B., \cpp{lagrange} nennen?
-  Update: Oh, scheint irgendwie auch zu gehen.}
 \begin{lstlisting}[style=Example]
 auto mixedBasis = makeBasis(
   gridView,
@@ -1498,8 +1518,7 @@ The examples produce the trees shown in Figure~\ref{fig:composite_example_bases}
 
 That last example is not as elegant as it could be.  First of all, it is inconvenient and unnecessarily
 wordy to list the same scalar Lagrange basis three times.  Also, the required number may depend on
-a compile-time parameter. Thirdly, in that case
-more ways of degree-of-freedom numbering is possible. For these reasons, \dunemodule{dune-functions}
+a compile-time parameter.  For these reasons, \dunemodule{dune-functions}
 offers a second way to combine bases called \cpp{power}.  The interface is again a single method
 \begin{lstlisting}[style=Interface]
 template<std::size_t k, class ChildPreBasisFactory>
@@ -1507,7 +1526,7 @@ auto power(ChildPreBasisFactory&& childPreBasisFactory)
 \end{lstlisting}
 provided in the file \file{dune/functions/functionspacebases/powerbasis.hh}.
 It combines \cpp{k} copies of a subtree of type \cpp{ChildPreBasisFactory} in a new tree.  Therefore, the
-displacement vector field from above is more easily written as
+displacement vector field basis from above is more easily written as
 \begin{lstlisting}[style=Example]
 auto displacementBasis = makeBasis(
   gridView,
@@ -1529,8 +1548,10 @@ auto taylorHoodBasis = makeBasis(
 The call to \cpp{power} produces the \cpp{dim}-component velocity basis of order \cpp{p+1},
 and the call to \cpp{composite} combines this with a \cpp{p}-th order Lagrange basis for the pressure.
 
+\bigskip
+
 The previous discussion has left out the question of how the degrees of freedom in the combined tree
-are numbered.  In Section~\ref{} it was explained how the indices
+are numbered.  In Section~\ref{sec:index_trees} it was explained how the indices
 of the degrees of freedom form a separate tree by their multi-index structure, and how this tree
 is constructed from the basis tree by a set of rules.  First of all, each of the bases of
 Section~\ref{subsec:available_bases} implements a numbering of its degrees of freedom,
@@ -1560,20 +1581,22 @@ is appended to address the different subtrees.
 As an example, for two childen $\{f\}$ and $\{g\}$ with multi-indices
 (all $i*$, $k*$ can be multi-indices themselves):
 
+\todosander{Ist es Absicht dass in der folgenden Tabelle zweimal 0 als erste Ziffer vorkommt?
+  Ich habe das so aus der Online-Dokumentation kopiert.}
 \begin{tabular}{l|r}
    function in $\{f\}$ & index \\
    \hline
-   $f_0$  & $(0,i0)$ \\
-   $f_1$  & $(0,i1)$ \\
-   $f_2$  & $(1,i2)$
+   $f_0$  & $(0,i_0)$ \\
+   $f_1$  & $(0,i_1)$ \\
+   $f_2$  & $(1,i_2)$
 \end{tabular}
 
 \begin{tabular}{l|r}
    function in $\{g\}$ & index \\
    \hline
-   $g_0$  & $(0,k0)$ \\
-   $g_1$  & $(1,k1)$ \\
-   $g_2$  & $(2,k2)$
+   $g_0$  & $(0,k_0)$ \\
+   $g_1$  & $(1,k_1)$ \\
+   $g_2$  & $(2,k_2)$
 \end{tabular}
 
 The merged indices will be
@@ -1581,12 +1604,12 @@ The merged indices will be
 \begin{tabular}{l|r}
    function in $\{f,g\}$ & index \\
    \hline
-   $f_0$  & $(0,i0)$ \\
-   $f_1$  & $(0,i1)$ \\
-   $f_2$  & $(1,i2)$ \\
-   $g_0$  & $(2,k0)$ \\
-   $g_1$  & $(3,k1)$ \\
-   $g_2$  & $(4,k2)$
+   $f_0$  & $(0,i_0)$ \\
+   $f_1$  & $(0,i_1)$ \\
+   $f_2$  & $(1,i_2)$ \\
+   $g_0$  & $(2,k_0)$ \\
+   $g_1$  & $(3,k_1)$ \\
+   $g_2$  & $(4,k_2)$
 \end{tabular}
 
 \todosander{Was passiert wenn die unterschiedlichen Teilbäume nicht die gleiche Art von Indizes verwenden?}
@@ -1599,17 +1622,17 @@ does not add a new digit either, but it interleaves the degrees of the different
 \begin{tabular}{l|r}
    function in $\{f\}$ & index \\
    \hline
-   $f_0$  & $(0,i0)$ \\
-   $f_1$  & $(1,i1)$ \\
-   $f_2$  & $(2,i2)$
+   $f_0$  & $(0,i_0)$ \\
+   $f_1$  & $(1,i_1)$ \\
+   $f_2$  & $(2,i_2)$
 \end{tabular}
 
 \begin{tabular}{l|r}
    function in $\{g\}$ & index \\
    \hline
-   $g_0$  & $(0,i0)$ \\
-   $g_1$  & $(1,i1)$ \\
-   $g_2$  & $(2,i2)$
+   $g_0$  & $(0,i_0)$ \\
+   $g_1$  & $(1,i_1)$ \\
+   $g_2$  & $(2,i_2)$
 \end{tabular}
 
 The merged indices will be
@@ -1617,12 +1640,12 @@ The merged indices will be
 \begin{tabular}{l|r}
    function in $\{f,g\}$ & index \\
    \hline
-   $f_0$  & $(0,i0)$ \\
-   $g_0$  & $(1,i0)$ \\
-   $f_1$  & $(2,i1)$ \\
-   $g_1$  & $(3,i1)$ \\
-   $f_2$  & $(4,i2)$ \\
-   $g_2$  & $(5,i2)$
+   $f_0$  & $(0,i_0)$ \\
+   $g_0$  & $(1,i_0)$ \\
+   $f_1$  & $(2,i_1)$ \\
+   $g_1$  & $(3,i_1)$ \\
+   $f_2$  & $(4,i_2)$ \\
+   $g_2$  & $(5,i_2)$
 \end{tabular}
 
 \paragraph{BlockedLexicographic}
@@ -1635,17 +1658,17 @@ then it is a \cpp{std::integral_constant}.
 \begin{tabular}{l|r}
    function in $\{f\}$ & index \\
    \hline
-   $f_0$  & $(i0)$ \\
-   $f_1$  & $(i1)$ \\
-   $f_2$  & $(i2)$
+   $f_0$  & $(i_0)$ \\
+   $f_1$  & $(i_1)$ \\
+   $f_2$  & $(i_2)$
 \end{tabular}
 
 \begin{tabular}{l|r}
    function in $\{g\}$ & index \\
    \hline
-   $g_0$  & $(k0)$ \\
-   $g_1$  & $(k1)$ \\
-   $g_2$  & $(k2)$
+   $g_0$  & $(k_0)$ \\
+   $g_1$  & $(k_1)$ \\
+   $g_2$  & $(k_2)$
 \end{tabular}
 
 The merged indices will be
@@ -1653,12 +1676,12 @@ The merged indices will be
 \begin{tabular}{l|r}
    function in $\{f,g\}$ & index \\
    \hline
-   $f_0$  & $(0,i0)$ \\
-   $f_1$  & $(0,i1)$ \\
-   $f_2$  & $(0,i2)$ \\
-   $g_0$  & $(1,k0)$ \\
-   $g_1$  & $(1,k1)$ \\
-   $g_2$  & $(1,k2)$
+   $f_0$  & $(0,i_0)$ \\
+   $f_1$  & $(0,i_1)$ \\
+   $f_2$  & $(0,i_2)$ \\
+   $g_0$  & $(1,k_0)$ \\
+   $g_1$  & $(1,k_1)$ \\
+   $g_2$  & $(1,k_2)$
 \end{tabular}
 
 \paragraph{LeafBlockedInterleaved}
@@ -1667,17 +1690,17 @@ Interleaved merging of direct children with blocking (i.e. creating blocks at th
 \begin{tabular}{l|r}
    function in $\{f\}$ & index \\
    \hline
-   $f_0$  & $(i0)$ \\
-   $f_1$  & $(i1)$ \\
-   $f_2$  & $(i2)$
+   $f_0$  & $(i_0)$ \\
+   $f_1$  & $(i_1)$ \\
+   $f_2$  & $(i_2)$
 \end{tabular}
 
 \begin{tabular}{l|r}
    function in $\{g\}$ & index \\
    \hline
-   $g_0$  & $(k0)$ \\
-   $g_1$  & $(k1)$ \\
-   $g_2$  & $(k2)$
+   $g_0$  & $(k_0)$ \\
+   $g_1$  & $(k_1)$ \\
+   $g_2$  & $(k_2)$
 \end{tabular}
 
 The merged indices will be
@@ -1685,12 +1708,12 @@ The merged indices will be
 \begin{tabular}{l|r}
    function in $\{f,g\}$ & index \\
    \hline
-   $f_0$  & $(i0,0)$ \\
-   $g_0$  & $(i0,1)$ \\
-   $f_1$  & $(i1,0)$ \\
-   $g_1$  & $(i1,1)$ \\
-   $f_2$  & $(i2,0)$ \\
-   $g_2$  & $(i2,1)$
+   $f_0$  & $(i_0,0)$ \\
+   $g_0$  & $(i_0,1)$ \\
+   $f_1$  & $(i_1,0)$ \\
+   $g_1$  & $(i_1,1)$ \\
+   $f_2$  & $(i_2,0)$ \\
+   $g_2$  & $(i_2,1)$
 \end{tabular}
 
 
