@@ -34,7 +34,7 @@ int main (int argc, char* argv[])
   {
     typedef GridType::LeafGridView GridView;
     const GridView& gridView = grid.leafGridView();
-    Functions::RaviartThomasNodalBasis<GridView,0,GeometryType::BasicType::cube> basis(gridView);
+    Functions::RaviartThomasBasis<GridView,0,GeometryType::BasicType::cube> basis(gridView);
     test.subTest(checkBasis(basis));
   }
 
