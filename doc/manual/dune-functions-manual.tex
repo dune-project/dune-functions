@@ -1398,6 +1398,9 @@ using namespace Dune::Functions::BasisBuilder;
 \end{lstlisting}
 to compile.
 
+\todograeser{Should \cpp{namespace BasisBuilder} better be called \cpp{namespace BasisFactory}?}
+\todosander{Wäre vermutlich besser.}
+
 The methods to combine bases into trees do not operate on the basis classes of the previous section
 directly.  Rather, they combine so-called \emph{pre-bases}, of which there is one for each basis.
 The reason for this is
@@ -1676,223 +1679,6 @@ The merged indices will be
    $f_2$  & $(i2,0)$ \\
    $g_2$  & $(i2,1)$
 \end{tabular}
-
-
-\subsection{Construction of non-trivial basis trees from existing bases}
-In order to simplify the construction of nontrivial product spaces,
-\dunemodule{dune-functions} provides an additional interface for the
-implementation of composable bases. More precisely, a composable
-basis is implemented by providing a so-called pre-basis
-\footnote{Up to the 2.5 release the pre-bases were called node-factory.}.
-A pre-basis can be
-turned into a basis providing the interface described above by
-using it through the \cpp{DefaultGlobalBasis} wrapper class
-provided by \dunemodule{dune-functions}.
-
-\begin{lstlisting}[style=Example]
-// For simplicity: Define type alias to specific pre-basis
-using PreBasis = FooPreBasis<GridView, @@<additional template parameters>@@>;
-
-// Turn PreBasis into a global basis
-using Basis = DefaultGlobalBasis<PreBasis>;
-
-// Create global basis
-Basis basis(@@<constructor arguments of PreBasis>@@);
-\end{lstlisting}
-
-The benefit of this construction is, that a pre-basis can not
-only be used to create a flat global basis, but also can also
-become a subtree in a nontrivial nested global basis. For example
-the following allows to construct a basis, where the local ansatz
-tree has 3 children of the same type.
-
-\begin{lstlisting}[style=Example]
-// For simplicity: Define type alias to specific child pre-basis
-using ChildPreBasis = FooPreBasis<GridView, @@<additional template parameters>@@>;
-
-// Create a new pre-basis for a homogeneous product space
-// with 3 components each taking the form of ChildPreBasis
-using PreBasis = PowerPreBasis<MI, S, ChildPreBasis, 3>;
-
-// Turn PreBasis into a global basis.
-// The local ansatz tree will contain 3 children, each
-// having the form of the ansatz tree of ChildPreBasis.
-using Basis = DefaultGlobalBasis<PreBasis>;
-
-// Create global basis
-Basis basis(@@<constructor arguments of ChildPreBasis>@@);
-\end{lstlisting}
-
-Any pre-basis provides some global index strategy. In the
-above example, the template parameter \cpp{S} describes
-a strategy to construct global indices for the power-pre-basis
-\cpp{PreBasis} from the global indices of its children
-of the type \cpp{ChildPreBasis}. The template parameter
-\cpp{MI} should be a type capable of storing the resulting
-multi-indices. Similar to the above example, one can construct
-per-bases where each child has a different type.
-
-\begin{lstlisting}[style=Example]
-// For simplicity: Define type alias to specific child pre-bases
-using ChildPreBasis1 = FooPreBasis<GridView, @@<additional template parameters>@@>;
-using ChildPreBasis2 = BarPreBasis<GridView, @@<additional template parameters>@@>;
-
-// Create a new pre-basis for a non-homogeneous product space
-// with first child ChildPreBasis1 and second child ChildPreBasis2
-using PreBasis = CompositePreBasis<MI, S, ChildPreBasis1, ChildPreBasis2>;
-
-// Turn PreBasis into a global basis.
-// The local ansatz tree will contain 2 children, having
-// the form of the ansatz trees of ChildPreBasis1 and ChildPreBasis2.
-using Basis = DefaultGlobalBasis<PreBasis>;
-
-// Create global basis
-Basis basis(ChildPreBasis1(@@<args>@@), ChildPreBasis2(@@<args>@@));
-\end{lstlisting}
-
-Of course \cpp{PowerPreBasis} and \cpp{CompositePreBasis}
-can be nested which allows to construct more complex spaces.
-To provide building blocks for the construction of these spaces, the bases
-described in Subsection \ref{subsec:available_bases} are
-all implemented as pre-basis and the global basis types
-listed above are just type aliases to \cpp{DefaultGlobalBasis<PreBasis>}
-with the corresponding pre-bases.
-Combining different \cpp{PQkPreBasis}'s one can for
-example create a Taylor--Hood global basis.
-
-\begin{lstlisting}[style=Example]
-// Define suitable type for multi-indices up to length 3
-using MI = ReservedVector<std::size_t, 3>;
-
-// A simple index merging strategy pre-pending the
-// index of the child to the index within the child.
-using S = BasisBuilder::BlockedLexicographic;
-
-// Pre-basis for a single component of the velocity
-using SVCPrebasis = PQkNodalBasis<GridView, 2, MI>;
-
-// Pre-basis for the velocity vector field
-using VelocityPreBasis = PowerPreBasis<MI, S, SVCPrebasis, dim>;
-
-// Pre-basis for the pressure
-using PressurePreBasis = PQkPreBasis<GridView, 1, MI>;
-
-// Taylor-Hood pre-basis
-using TaylorHoodPreBasis = CompositePreBasis<MI, S, VelocityPreBasis, PressurePreBasis>;
-
-// Taylor-Hood global basis
-using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodPreBasis>;
-
-// Create global basis
-TaylorHoodBasis taylorHoodBasis(VelocityPreBasis(gridView), PressurePreBasis(gridView));
-\end{lstlisting}
-
-In this example the indices of children are merged by prepending
-the index of the child to the index within a child. If the global
-indices of the \cpp{PQkNodalBasis<GridView,k,MI>} take the form
-$0,\dots,n_k$, then the degree of freedom associated to the
-$i$-th $P_2$ basis function for the $j$-the velocity component
-has the multi-index $(0,j,i)$ with $j=0,dots,dim-1$, $i=0,\dots,n_2$.
-Similarly the degree of freedom associated to the $i$-th $P_1$
-basis function for the pressure has the multi-index $(1,i)$
-with $i=0,\dots,n_1$.
-
-While this construction is very flexible it is also a little
-verbose and error prone: The grid view and its type have to
-be passed in several places manually. The type for a suitable
-multi-index has to be selected manually. To avoid both problems
-\dunemodule{dune-functions} provides a simple mechanism for
-the construction of composed global bases. The main idea is
-to delay passing the grid view to a stage where the whole tree
-was build up. At this later stage it can be passed to all
-involved pre-bases at once and a suitable multi-index type
-can be computed automatically. In contrast, when selecting
-a specific pre-basis implementation one only needs to pass
-the information specific to this one.
-Using this mechanism the Taylor-Hood basis can alternatively
-be constructed as follows.
-
-\begin{lstlisting}[style=Example]
-  // import namespace
-  using namespace Functions::BasisBuilder;
-
-  // Construct Taylor-Hood basis
-  auto taylorHoodBasis = makeBasis(
-    gridView,                      // pass grid view only once to the whole basis
-    composite(
-      power<dim>(                  // velocity subtree for dim components
-        lagrange<2>(),             // single component of velocity
-        blockedLexicographic()),   // strategy for merging velocity component indices
-      lagrange<1>(),               // pressure subtree
-      blockedLexicographic));      // strategy for merging velocity and pressure indices
-\end{lstlisting}
-
-At the heart of this mechanism is the \cpp{makeBasis()} functions
-that takes the grid view as first argument and a factory for the
-construction of a pre-basis as second argument.
-
-\begin{lstlisting}[style=Interface]
-namespace BasisBuilder {
-
-  template<class GridView, class PreBasisFactory>
-  auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
-
-}
-\end{lstlisting}
-
-Here, the \cpp{preBasisFactory} encapsulates all requirements
-for the multi-indices provided by the pre-basis and additionally
-all information specific to the latter. Using this the \cpp{makeBasis()}
-function can determine a suitable multi-index type and pass the
-multi-index type along with the grid view to the factory which
-then creates a pre-basis. This is wrapped in a \cpp{DefaultGlobalBasis}
-and handed out by \cpp{makeBasis()}.
-
-The detailed interface of a \cpp{PreBasis} as well as the
-interface of the \cpp{PreBasisFactory} needed to hook into
-the \cpp{makeBasis()} mechanism are only needed for implementors providing
-a new composable global basis and are thus covered in a later section.
-
-The implemented methods for creating \cpp{PreBasisFactory}'s are:
-
-\begin{lstlisting}[style=Interface]
-namespace BasisBuilder {
-
-  // Create PreBasisFactory for a PQ_k basis
-  template<std::size_t k>
-  auto pq();
-
-  // Create PreBasisFactory for a PQ_k basis (same as pq<k>())
-  template<std::size_t k>
-  auto lagrange();
-
-  // Create PreBasisFactory for product space with k-times
-  // the same child and given index merging strategy
-  template<std::size_t k, class ChildPreBasisFactory, class Strategy>
-  auto power(ChildPreBasisFactory&&, const Strategy&);
-
-  // Create PreBasisFactory for product space with k-times
-  // the same child and given default index merging strategy
-  template<std::size_t k, class ChildPreBasisFactory>
-  auto power(ChildPreBasisFactory&& subFactory);
-
-  // Create PreBasisFactory for product space with different
-  // children and given index merging strategy
-  template<class ChildPreBasisFactory1, class ChildPreBasisFactory2, ..., class Strategy>
-  auto composite(const ChildPreBasisFactory1&&, ChildPreBasisFactory2&&, ..., const Strategy&);
-
-  // Create PreBasisFactory for product space with different
-  // children and default index merging strategy
-  template<class ChildPreBasisFactory1, class ChildPreBasisFactory2, ...>
-  auto composite(const ChildPreBasisFactory1&&, ChildPreBasisFactory2&&, ...);
-
-}
-\end{lstlisting}
-
-\todograeser{Describe available index merging strategies}
-\todograeser{Should \cpp{namespace BasisBuilder} better be called \cpp{namespace BasisFactory}?}
-\todograeser{Describe Rannacher-Turek}
-\todograeser{Implement and describe missing hooks for the other bases}
 
 
 
@@ -2411,6 +2197,220 @@ or coupled multi-physic problems.
 
 \subsection{Implementor interface of a \cpp{PreBasis}}
 \subsection{Implementor interface of a \cpp{NodeIndexSet}}
+
+\subsection{Construction of non-trivial basis trees from existing bases}
+In order to simplify the construction of nontrivial product spaces,
+\dunemodule{dune-functions} provides an additional interface for the
+implementation of composable bases. More precisely, a composable
+basis is implemented by providing a so-called pre-basis
+\footnote{Up to the 2.5 release the pre-bases were called node-factory.}.
+A pre-basis can be
+turned into a basis providing the interface described above by
+using it through the \cpp{DefaultGlobalBasis} wrapper class
+provided by \dunemodule{dune-functions}.
+
+\begin{lstlisting}[style=Example]
+// For simplicity: Define type alias to specific pre-basis
+using PreBasis = FooPreBasis<GridView, @@<additional template parameters>@@>;
+
+// Turn PreBasis into a global basis
+using Basis = DefaultGlobalBasis<PreBasis>;
+
+// Create global basis
+Basis basis(@@<constructor arguments of PreBasis>@@);
+\end{lstlisting}
+
+The benefit of this construction is, that a pre-basis can not
+only be used to create a flat global basis, but also can also
+become a subtree in a nontrivial nested global basis. For example
+the following allows to construct a basis, where the local ansatz
+tree has 3 children of the same type.
+
+\begin{lstlisting}[style=Example]
+// For simplicity: Define type alias to specific child pre-basis
+using ChildPreBasis = FooPreBasis<GridView, @@<additional template parameters>@@>;
+
+// Create a new pre-basis for a homogeneous product space
+// with 3 components each taking the form of ChildPreBasis
+using PreBasis = PowerPreBasis<MI, S, ChildPreBasis, 3>;
+
+// Turn PreBasis into a global basis.
+// The local ansatz tree will contain 3 children, each
+// having the form of the ansatz tree of ChildPreBasis.
+using Basis = DefaultGlobalBasis<PreBasis>;
+
+// Create global basis
+Basis basis(@@<constructor arguments of ChildPreBasis>@@);
+\end{lstlisting}
+
+Any pre-basis provides some global index strategy. In the
+above example, the template parameter \cpp{S} describes
+a strategy to construct global indices for the power-pre-basis
+\cpp{PreBasis} from the global indices of its children
+of the type \cpp{ChildPreBasis}. The template parameter
+\cpp{MI} should be a type capable of storing the resulting
+multi-indices. Similar to the above example, one can construct
+per-bases where each child has a different type.
+
+\begin{lstlisting}[style=Example]
+// For simplicity: Define type alias to specific child pre-bases
+using ChildPreBasis1 = FooPreBasis<GridView, @@<additional template parameters>@@>;
+using ChildPreBasis2 = BarPreBasis<GridView, @@<additional template parameters>@@>;
+
+// Create a new pre-basis for a non-homogeneous product space
+// with first child ChildPreBasis1 and second child ChildPreBasis2
+using PreBasis = CompositePreBasis<MI, S, ChildPreBasis1, ChildPreBasis2>;
+
+// Turn PreBasis into a global basis.
+// The local ansatz tree will contain 2 children, having
+// the form of the ansatz trees of ChildPreBasis1 and ChildPreBasis2.
+using Basis = DefaultGlobalBasis<PreBasis>;
+
+// Create global basis
+Basis basis(ChildPreBasis1(@@<args>@@), ChildPreBasis2(@@<args>@@));
+\end{lstlisting}
+
+Of course \cpp{PowerPreBasis} and \cpp{CompositePreBasis}
+can be nested which allows to construct more complex spaces.
+To provide building blocks for the construction of these spaces, the bases
+described in Subsection \ref{subsec:available_bases} are
+all implemented as pre-basis and the global basis types
+listed above are just type aliases to \cpp{DefaultGlobalBasis<PreBasis>}
+with the corresponding pre-bases.
+Combining different \cpp{PQkPreBasis}'s one can for
+example create a Taylor--Hood global basis.
+
+\begin{lstlisting}[style=Example]
+// Define suitable type for multi-indices up to length 3
+using MI = ReservedVector<std::size_t, 3>;
+
+// A simple index merging strategy pre-pending the
+// index of the child to the index within the child.
+using S = BasisBuilder::BlockedLexicographic;
+
+// Pre-basis for a single component of the velocity
+using SVCPrebasis = PQkNodalBasis<GridView, 2, MI>;
+
+// Pre-basis for the velocity vector field
+using VelocityPreBasis = PowerPreBasis<MI, S, SVCPrebasis, dim>;
+
+// Pre-basis for the pressure
+using PressurePreBasis = PQkPreBasis<GridView, 1, MI>;
+
+// Taylor-Hood pre-basis
+using TaylorHoodPreBasis = CompositePreBasis<MI, S, VelocityPreBasis, PressurePreBasis>;
+
+// Taylor-Hood global basis
+using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodPreBasis>;
+
+// Create global basis
+TaylorHoodBasis taylorHoodBasis(VelocityPreBasis(gridView), PressurePreBasis(gridView));
+\end{lstlisting}
+
+In this example the indices of children are merged by prepending
+the index of the child to the index within a child. If the global
+indices of the \cpp{PQkNodalBasis<GridView,k,MI>} take the form
+$0,\dots,n_k$, then the degree of freedom associated to the
+$i$-th $P_2$ basis function for the $j$-the velocity component
+has the multi-index $(0,j,i)$ with $j=0,dots,dim-1$, $i=0,\dots,n_2$.
+Similarly the degree of freedom associated to the $i$-th $P_1$
+basis function for the pressure has the multi-index $(1,i)$
+with $i=0,\dots,n_1$.
+
+While this construction is very flexible it is also a little
+verbose and error prone: The grid view and its type have to
+be passed in several places manually. The type for a suitable
+multi-index has to be selected manually. To avoid both problems
+\dunemodule{dune-functions} provides a simple mechanism for
+the construction of composed global bases. The main idea is
+to delay passing the grid view to a stage where the whole tree
+was build up. At this later stage it can be passed to all
+involved pre-bases at once and a suitable multi-index type
+can be computed automatically. In contrast, when selecting
+a specific pre-basis implementation one only needs to pass
+the information specific to this one.
+Using this mechanism the Taylor-Hood basis can alternatively
+be constructed as follows.
+
+\begin{lstlisting}[style=Example]
+  // import namespace
+  using namespace Functions::BasisBuilder;
+
+  // Construct Taylor-Hood basis
+  auto taylorHoodBasis = makeBasis(
+    gridView,                      // pass grid view only once to the whole basis
+    composite(
+      power<dim>(                  // velocity subtree for dim components
+        lagrange<2>(),             // single component of velocity
+        blockedLexicographic()),   // strategy for merging velocity component indices
+      lagrange<1>(),               // pressure subtree
+      blockedLexicographic));      // strategy for merging velocity and pressure indices
+\end{lstlisting}
+
+At the heart of this mechanism is the \cpp{makeBasis()} functions
+that takes the grid view as first argument and a factory for the
+construction of a pre-basis as second argument.
+
+\begin{lstlisting}[style=Interface]
+namespace BasisBuilder {
+
+  template<class GridView, class PreBasisFactory>
+  auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
+
+}
+\end{lstlisting}
+
+Here, the \cpp{preBasisFactory} encapsulates all requirements
+for the multi-indices provided by the pre-basis and additionally
+all information specific to the latter. Using this the \cpp{makeBasis()}
+function can determine a suitable multi-index type and pass the
+multi-index type along with the grid view to the factory which
+then creates a pre-basis. This is wrapped in a \cpp{DefaultGlobalBasis}
+and handed out by \cpp{makeBasis()}.
+
+The detailed interface of a \cpp{PreBasis} as well as the
+interface of the \cpp{PreBasisFactory} needed to hook into
+the \cpp{makeBasis()} mechanism are only needed for implementors providing
+a new composable global basis and are thus covered in a later section.
+
+The implemented methods for creating \cpp{PreBasisFactory}'s are:
+
+\begin{lstlisting}[style=Interface]
+namespace BasisBuilder {
+
+  // Create PreBasisFactory for a PQ_k basis
+  template<std::size_t k>
+  auto pq();
+
+  // Create PreBasisFactory for a PQ_k basis (same as pq<k>())
+  template<std::size_t k>
+  auto lagrange();
+
+  // Create PreBasisFactory for product space with k-times
+  // the same child and given index merging strategy
+  template<std::size_t k, class ChildPreBasisFactory, class Strategy>
+  auto power(ChildPreBasisFactory&&, const Strategy&);
+
+  // Create PreBasisFactory for product space with k-times
+  // the same child and given default index merging strategy
+  template<std::size_t k, class ChildPreBasisFactory>
+  auto power(ChildPreBasisFactory&& subFactory);
+
+  // Create PreBasisFactory for product space with different
+  // children and given index merging strategy
+  template<class ChildPreBasisFactory1, class ChildPreBasisFactory2, ..., class Strategy>
+  auto composite(const ChildPreBasisFactory1&&, ChildPreBasisFactory2&&, ..., const Strategy&);
+
+  // Create PreBasisFactory for product space with different
+  // children and default index merging strategy
+  template<class ChildPreBasisFactory1, class ChildPreBasisFactory2, ...>
+  auto composite(const ChildPreBasisFactory1&&, ChildPreBasisFactory2&&, ...);
+
+}
+\end{lstlisting}
+
+\todograeser{Implement and describe missing hooks for the other bases}
+\todosander{Das vorige TODO verstehe ich nicht.}
 
 
 
