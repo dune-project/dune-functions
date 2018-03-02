@@ -1794,24 +1794,6 @@ appears a few times because we have two types of unknowns.
 
 \subsection{Discretization}
 
-\begin{figure}
-  \begin{center}
-   \begin{overpic}[width=0.5\textwidth]{taylor_hood_tree}
-    \put(5,5){$P_2$}
-    \put(30,5){$P_2$}
-    \put(55,5){$P_2$}
-    \put(87,31){$P_1$}
-    \put(5,30){$V_\text{v}$}
-    \put(5,57){$B_\text{TH}$}
-    \put(30.7,32){$\otimes$}
-    \put(61.6,58){$\otimes$}
-   \end{overpic}
-
-  \end{center}
-  \caption{Taylor--Hood basis $P_2 \otimes P_2 \otimes P_2 \otimes P_1$ in a tree representation}
-    \label{fig:taylor_hood_basis_tree}
-\end{figure}
-
 We discretize the domain using a structured axis-aligned grid with $4 \times 4$ uniform quadrilateral elements.
 On this grid, we use the Taylor--Hood element to discretize the weak saddle-point problem.  The nodal basis
 of the Taylor--Hood element has a natural tree structure as shown in Figure~\ref{fig:taylor_hood_basis_tree}.
@@ -2127,7 +2109,6 @@ would be computed multiple times.
 
 Next, we construct a suitable quadrature rule and loop over the quadrature points.  The formula for the quadrature
 order combines information about the element type, the shape functions, and the differential operator.
-\todo[inline]{\cpp{QuadratureRuleKey} verwenden!}
 %
 \lstinputlisting[linerange={begin_quad_loop_begin-begin_quad_loop_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
