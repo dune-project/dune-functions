@@ -978,28 +978,6 @@ size_type size() const;
 size_type size(const SizePrefix& prefix) const;
 \end{lstlisting}
 
-\todosander{Wollen wir eventuell ein separates Unterkapitel für diese Teilbaumkonstruktionen
-machen?  Hier an dieser Stelle finde ich die Erklärungen etwas verwirrend.}
-
-Additionally to the concept of a global basis as defined here, there
-is also the concept of a so called \cpp{SubspaceBasis} reflecting
-the basis of the subtree only spanned by those basis functions
-associated to a subtree of the local ansatz tree of the so-called
-root basis.
-For convenience a global basis behaves like a trivial \cpp{SubspaceBasis},
-i.e., the method \cpp{rootBasis()} returns the basis itself
-and \cpp{prefixPath()} returns an empty tree-path of the
-implementation defined type \cpp{PrefixPath}.
-\todograeser{While describing the interface I had the impression that having
-those methods here is inconsistent and that they should maybe be free functions.}
-\todosander{Könnte man tatsächlich in Betracht ziehen.}
-
-\begin{lstlisting}[style=Interface]
-using PrefixPath = @@<implementation defined>@@;
-const @@<implementation defined>@@& rootBasis() const
-const PrefixPath& prefixPath() const
-\end{lstlisting}
-
 Finally, the basis exports its pre-basis of type \cpp{PreBasis}
 via the \cpp{preBasis()} method. The concept of a pre-basis
 will be discussed in Chapter~\ref{sec:implementation_api}.
@@ -1104,18 +1082,6 @@ given below.
 \begin{lstlisting}[style=Interface]
 using Tree = @@<implementation defined>@@;
 const Tree& tree() const;
-\end{lstlisting}
-
-\todosander{Siehe oben: Für den Krams zu Teilraumbasen würde ich ein separates Unterkapitel einführen.}
-In order to be consistent with a \cpp{SubspaceBasis::LocalView}
-the additional method \cpp{rootLocalView()} returns the local view
-itself.
-\todograeser{While describing the interface I had the impression that having
-this method here is inconsistent and that it should maybe be a free function.}
-
-\begin{lstlisting}[style=Interface]
-const DefaultLocalView& rootLocalView() const
-}; // end LocalView
 \end{lstlisting}
 
 \subsection{User interface of a local ansatz \cpp{Tree}}
@@ -1718,6 +1684,39 @@ The merged indices will be
    $f_2$  & $(i_2,0)$ \\
    $g_2$  & $(i_2,1)$
 \end{tabular}
+
+
+\subsection{Separating subtrees}
+
+Additionally to the concept of a global basis as defined here, there
+is also the concept of a so called \cpp{SubspaceBasis} reflecting
+the basis of the subtree only spanned by those basis functions
+associated to a subtree of the local ansatz tree of the so-called
+root basis.
+For convenience a global basis behaves like a trivial \cpp{SubspaceBasis},
+i.e., the method \cpp{rootBasis()} returns the basis itself
+and \cpp{prefixPath()} returns an empty tree-path of the
+implementation defined type \cpp{PrefixPath}.
+\todograeser{While describing the interface I had the impression that having
+those methods here is inconsistent and that they should maybe be free functions.}
+\todosander{Könnte man tatsächlich in Betracht ziehen.}
+
+\begin{lstlisting}[style=Interface]
+using PrefixPath = @@<implementation defined>@@;
+const @@<implementation defined>@@& rootBasis() const
+const PrefixPath& prefixPath() const
+\end{lstlisting}
+
+In order to be consistent with a \cpp{SubspaceBasis::LocalView}
+the additional method \cpp{rootLocalView()} returns the local view
+itself.
+\todograeser{While describing the interface I had the impression that having
+this method here is inconsistent and that it should maybe be a free function.}
+
+\begin{lstlisting}[style=Interface]
+const DefaultLocalView& rootLocalView() const
+}; // end LocalView
+\end{lstlisting}
 
 
 
