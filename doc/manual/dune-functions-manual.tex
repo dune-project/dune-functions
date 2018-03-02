@@ -870,7 +870,7 @@ interface is a valid global basis.
 
 
 
-\subsection{User interface of a \cpp{GlobalBasis}}
+\subsection{User interface of a \texorpdfstring{\cpp{GlobalBasis}}{GlobalBasis}}
 We start by describing the user interface of global bases.  Since we are discussing duck-typing interfaces,
 all class names used below are generic. Trees of global bases are implemented by classes that implement
 the \cpp{GlobalBasis} interface. In the following, we will call the generic such class \cpp{GlobalBasis}.
@@ -1014,7 +1014,7 @@ static_assert(Dune::models<GlobalBasisConcept, Basis>(),
   "Basis does not model the global basis concept.")
 \end{lstlisting}
 
-\subsection{User interface of a \cpp{LocalView}}
+\subsection{User interface of a \texorpdfstring{\cpp{LocalView}}{LocalView}}
 
 The \cpp{LocalView} concept represents the localization of a basis tree to a single element.
 \cpp{LocalView} objects are returned by the method \cpp{GlobalBasis::localView()}.
@@ -1084,7 +1084,7 @@ using Tree = @@<implementation defined>@@;
 const Tree& tree() const;
 \end{lstlisting}
 
-\subsection{User interface of a local ansatz \cpp{Tree}}
+\subsection{User interface of a local ansatz \texorpdfstring{\cpp{Tree}}{Tree}}
 The local view provides access to all local basis functions
 by exporting a \cpp{Tree} object. This implements a tree
 data structure using the foundation classes of the
@@ -1183,7 +1183,7 @@ const FiniteElement& finiteElement() const = 0;
 
 
 
-\subsection{User interface of a \cpp{LocalIndexSet}}
+\subsection{User interface of a \texorpdfstring{\cpp{LocalIndexSet}}{LocalIndexSet}}
 \label{sec:localindexset_interface}
 
 The \cpp{LocalIndexSet} as returned by \cpp{GlobalBasis::localIndexSet()}
@@ -2233,8 +2233,8 @@ ansatz bases for mixed formulations, multicomponent problems,
 or coupled multi-physic problems.
 
 
-\subsection{Implementor interface of a \cpp{PreBasis}}
-\subsection{Implementor interface of a \cpp{NodeIndexSet}}
+\subsection{Implementor interface of a \texorpdfstring{\cpp{PreBasis}}{PreBasis}}
+\subsection{Implementor interface of a \texorpdfstring{\cpp{NodeIndexSet}}{NodeIndexSet}}
 
 \subsection{Construction of non-trivial basis trees from existing bases}
 In order to simplify the construction of nontrivial product spaces,
