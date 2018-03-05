@@ -285,6 +285,43 @@ protected:
 
 
 
+namespace BasisBuilder {
+
+namespace Imp {
+
+class PQ1PreBasisFactory
+{
+public:
+  static const std::size_t requiredMultiIndexSize = 1;
+
+  template<class MultiIndex, class GridView>
+  auto makePreBasis(const GridView& gridView) const
+  {
+    return PQ1PreBasis<GridView, MultiIndex>(gridView);
+  }
+
+};
+
+} // end namespace BasisBuilder::Imp
+
+
+
+/**
+ * \brief Create a pre-basis factory that can create a PQ_1 pre-basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam k   The polynomial order of ansatz functions
+ */
+auto pq1Nodal()
+{
+  return Imp::PQ1PreBasisFactory();
+}
+
+} // end namespace BasisBuilder
+
+
+
 /** \brief Nodal basis of a scalar first-order Lagrangian finite element space
  *
  * \ingroup FunctionSpaceBasesImplementations
