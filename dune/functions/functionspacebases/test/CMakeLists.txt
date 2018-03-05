@@ -7,6 +7,8 @@ dune_add_test(SOURCES brezzidouglasmarinibasistest.cc)
 
 dune_add_test(SOURCES gridviewfunctionspacebasistest.cc)
 
+dune_add_test(SOURCES lagrangedgbasistest.cc)
+
 dune_add_test(SOURCES pq1nodalbasistest.cc)
 
 dune_add_test(SOURCES taylorhoodbasistest.cc)
