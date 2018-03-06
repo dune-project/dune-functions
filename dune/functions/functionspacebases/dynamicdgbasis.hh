@@ -259,6 +259,56 @@ protected:
   const Node* node_;
 }; // end class DynamicDGNodeIndexSet
 
+namespace BasisBuilder {
+
+namespace Imp {
+
+  class DynamicDGPreBasisFactory
+  {
+      using Degrees = std::vector<int>;
+    public:
+      static const std::size_t requiredMultiIndexSize = 1;
+
+      /** Constructor taking a vector carrying the degree for each element */
+      DynamicDGPreBasisFactory(const Degrees& degrees) :
+        degrees_(degrees) {}
+
+      /**
+       * \brief DG pre-basis with varying degrees
+       *
+       * \param degrees Vector with the element-wise degrees
+       */
+      template<class MultiIndex, class GridView>
+      auto makePreBasis(const GridView& gridView) const
+      {
+        // the prebasis copies the degrees, so we do not need to worry about any dangling references here.
+        return DynamicDGPreBasis<GridView, MultiIndex>(gridView, degrees_);
+      }
+
+    private:
+      const Degrees& degrees_;
+  };
+
+} // end namespace BasisBuilder::Imp
+
+
+
+  /**
+   * \brief Create a pre-basis factory that can create a DynamicDG pre-basis
+   *
+   * \ingroup FunctionSpaceBasesImplementations
+   *
+   * \param degrees Vector carrying the element-wise degrees
+   *
+   */
+  auto dynamicDG(const std::vector<int>& degrees)
+  {
+    return Imp::DynamicDGPreBasisFactory(degrees);
+  }
+
+  } // end namespace BasisBuilder
+
+
 
 /** \brief Basis of a Qk DG finite element space with dynamic, possibly non-uniform local order.
  *
