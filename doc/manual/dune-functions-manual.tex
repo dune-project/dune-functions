@@ -1432,10 +1432,10 @@ Some of them have template parameters to transmit compile-time information.  The
   Basis & tag \\
   \hline
   \cpp{PQkNodalBasis} & \cpp{pq<std::size_t k>} \\
-  \cpp{PQ1NodalBasis} & MISSING! \\
+  \cpp{PQ1NodalBasis} & \cpp{pq1Nodal} \\
   \cpp{LagrangeBasis} & \cpp{lagrange<std::size_t k>} \\
   \cpp{TaylorHoodBasis} & MISSING! \\
-  \cpp{LagrangeDGBasis} & MISSING! \\
+  \cpp{LagrangeDGBasis} & \cpp{lagrangeDG} \\
   \cpp{RannacherTurekBasis} & \cpp{rannacherTurek} \\
   \cpp{RaviartThomasBasis} & \cpp{rt<std::size_t k, BasicType basic_type, class size_type=std::size_t>} \\
   \cpp{BrezziDouglasMariniBasis} & \cpp{bdm<std::size_t k, BasicType basic_type>} \\
@@ -1443,8 +1443,6 @@ Some of them have template parameters to transmit compile-time information.  The
  \end{tabular}
 \end{center}
 
-\todosander{Für die \cpp{LagrangeDGBasis} ist das Feature noch nicht implementiert!}
-\todosander{Für die \cpp{PQ1NodalBasis} ist das Feature noch nicht implementiert!}
 \todosander{Für die \cpp{BSplineBasis} ist das Feature noch nicht implementiert!}
 \todosander{Für die \cpp{TaylorHoodBasis} ist das Feature noch nicht implementiert!}
 
