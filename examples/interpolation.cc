@@ -75,8 +75,9 @@ int main (int argc, char *argv[])
   );
 
   BlockVector<FieldVector<double,2> > x2;
+  using VectorBackend = Functions::HierarchicVectorWrapper<BlockVector<FieldVector<double,2> >, double>;
 
-  interpolate(basis2, x2, f2);
+  interpolate(basis2, VectorBackend(x2), f2);
   // { interpolation2_end }
 
   // Interpolate a vector-valued function using a scalar basis
