@@ -57,6 +57,7 @@ int main (int argc, char *argv[])
   interpolate(basis1, x1, f1);
   // { interpolation1_end }
 
+  // Interpolate a vector-valued function using a vector-valued basis
   // { interpolation2_begin }
   auto f2 = [](const FieldVector<double,2>& x)
   {
@@ -64,24 +65,23 @@ int main (int argc, char *argv[])
   };
 
   //Functions::PQkNodalBasis<GridView,2> basis2(gridView);
-  using namespace Functions::BasisTags;
   using namespace Functions::BasisBuilder;
 
   auto basis2 = makeBasis(
     gridView,
       power<dim>(
-        pq<2>(),
-        InterleafedIndex()
+        pq<2>()
       )
   );
 
-  BlockVector<FieldVector<double,3> > x2;
+  BlockVector<FieldVector<double,2> > x2;
 
   interpolate(basis2, x2, f2);
   // { interpolation2_end }
 
+  // Interpolate a vector-valued function using a scalar basis
   // { interpolation3_begin }
-  auto f3 = [](const FieldVector<double,2>& x) { return x; };
+  auto f3 = [](const FieldVector<double,dim>& x) { return x; };
 
   Functions::PQkNodalBasis<GridView,2> basis3(gridView);
   BlockVector<FieldVector<double,3> > x3;
@@ -95,6 +95,10 @@ int main (int argc, char *argv[])
   // { interpolation4_end }
 
   // { interpolation5_begin }
+  // **********************************************
+  //  FEHLT NOCH!
+  // **********************************************
+#if 0
   BitSetVector<3> boundary = ...;  // initialize somehow
 
   for (size_t i=0; i<boundary.size(); i++)
@@ -102,6 +106,7 @@ int main (int argc, char *argv[])
       boundary[i] = "011";   // works like std::bitset
 
   interpolate...
+#endif
   // { interpolation5_end }
 
   return 0;
