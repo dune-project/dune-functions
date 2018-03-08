@@ -8,7 +8,7 @@
 #include <dune/common/shared_ptr.hh>
 
 #include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
-#include <dune/functions/functionspacebases/flatvectorbackend.hh>
+#include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/common/treedata.hh>
@@ -40,13 +40,13 @@ namespace Functions {
  * V the value of this basis function at the evaluation point. Notice
  * that both may be scalar, vector, matrix, or general container valued.
  *
- * 2.Each entry of C is associated with a flat index j via FlatVectorBackend.
+ * 2.Each entry of C is associated with a flat index j via flatVectorView.
  *   This is normally a lexicographic index. The total scalar dimension according
  *   to those flat indices is dim(C).
- * 3.Each entry of V is associated with a flat index k via FlatVectorBackend.
+ * 3.Each entry of V is associated with a flat index k via flatVectorView.
  *   This is normally a lexicographic index. The total scalar dimension according
  *   to those flat indices dim(V).
- * 4.Each entry of RE is associated with a flat index k via FlatVectorBackend.
+ * 4.Each entry of RE is associated with a flat index k via flatVectorView.
  *   This is normally a lexicographic index. The total scalar dimension according
  *   to those flat indices dim(RE).
  * 5.Via those flat indices we now interpret C,V, and RE as vectors and compute the diadic
@@ -117,9 +117,7 @@ public:
       template<typename Node, typename TreePath>
       void leaf(Node& node, TreePath treePath)
       {
-        using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
         using MultiIndex = typename LocalIndexSet::MultiIndex;
-        using CoefficientBlock = typename std::decay<decltype(std::declval<Vector>()[std::declval<MultiIndex>()])>::type;
         using RangeBlock = typename std::decay<decltype(nodeToRangeEntry_(node, y_))>::type;
 
         auto&& fe = node.finiteElement();
@@ -129,7 +127,7 @@ public:
         localBasis.evaluateFunction(x_, shapeFunctionValues);
 
         // Get range entry associated to this node
-        auto&& re = nodeToRangeEntry_(node, y_);
+        auto re = flatVectorView(nodeToRangeEntry_(node, y_));
 
 
         for (size_type i = 0; i < localBasis.size(); ++i)
@@ -137,26 +135,25 @@ public:
           auto&& multiIndex = localIndexSet_.index(node.localIndex(i));
 
           // Get coefficient associated to i-th shape function
-          auto&& c = coefficients_[multiIndex];
+          auto c = flatVectorView(coefficients_[multiIndex]);
 
           // Get value of i-th shape function
-          auto&& v = shapeFunctionValues[i];
+          auto v = flatVectorView(shapeFunctionValues[i]);
+
+
 
           // Notice that the range entry re, the coefficient c, and the shape functions
           // value v may all be scalar, vector, matrix, or general container valued.
           // The matching of their entries is done via the multistage procedure described
           // in the class documentation of DiscreteGlobalBasisFunction.
-          auto dimC = FlatVectorBackend<CoefficientBlock>::size(c);
-          auto dimV = FlatVectorBackend<LocalBasisRange>::size(v);
-          assert(dimC*dimV == FlatVectorBackend<RangeBlock>::size(re));
+          auto&& dimC = c.size();
+          auto dimV = v.size();
+          assert(dimC*dimV == re.size());
           for(size_type j=0; j<dimC; ++j)
           {
-            auto&& c_j = FlatVectorBackend<CoefficientBlock>::getEntry(c, j);
+            auto&& c_j = c[j];
             for(size_type k=0; k<dimV; ++k)
-            {
-              auto&& v_k = FlatVectorBackend<LocalBasisRange>::getEntry(v, k);
-              FlatVectorBackend<RangeBlock>::getEntry(re, j*dimV + k) += c_j*v_k;
-            }
+              re[j*dimV + k] += c_j*v[k];
           }
         }
       }

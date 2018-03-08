@@ -8,6 +8,14 @@ It is supposed to be compatible with the Dune core modules of the same version.
 Changes
 =======
 
+# Master (will become release 2.7)
+
+* `FlatVectorBackend` is now officially an implementation detail and thus moved
+  to the namespace `Impl::`. The header `flatvectorbackend.hh` was removed.
+  As a replacement the new free function `flatVectorView(c)` create a view
+  object providing `operator[]` and `size()` methods for flat-vector-like
+  access to the underlying container `c`.
+
 dune-functions 2.6-dev
 ------------
 
