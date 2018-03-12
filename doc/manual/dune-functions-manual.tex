@@ -130,7 +130,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \title{Function space bases in the dune-functions module}
-\author{Christian Engwer, Carsten Gräser, Steffen Müthing, and Oliver Sander}
+\author{Christian Engwer, Carsten Gräser,\\ Steffen Müthing, and Oliver Sander}
 %\date{}
 
 \begin{document}
@@ -138,19 +138,19 @@
 \maketitle
 
 \begin{abstract}
- \dunemodule{dune-functions} is a \dune module that provides interfaces for functions and function space bases.
+ The \dunemodule{dune-functions} \dune module provides interfaces for functions and function space bases.
  It forms one abstraction level above grids, shape functions, and linear algebra, and provides infrastructure
  for full discretization frameworks like \dunemodule{dune-pdelab} and \dunemodule{dune-fem}.
  This document describes the function space bases provided by \dunemodule{dune-functions}.  These are
  based on an abstract description of bases for product spaces as trees of simpler bases.
- From this description, orderings of degrees of freedom and their numbering by multi-indices can be
+ From this description, orderings of degrees of freedom and their numberings by multi-indices can be
  derived in a natural way. We describe the abstract concepts, document the programmer interface,
  and give a complete example program that solves the stationary Stokes equation using Taylor--Hood elements.
 \end{abstract}
 
 \section*{Introduction}
 
-The core modules of the \dune software system have always focused on low-level infrastructure for
+The core modules of the \dune software system focus on low-level infrastructure for
 implementations of simulation algorithms for partial differential equations.  Module like
 \dunemodule{dune-grid} and \dunemodule{dune-istl} provide APIs to finite  element grids
 and sparse linear algebra, respectively, but little more. Actual finite element functions only
@@ -171,38 +171,35 @@ but smaller ones like \dunemodule{dune-fufem}%
 exist as well.  The functionality of these modules overlaps to a considerable extent, even though
 each such module has a different focus.
 
-The \dunemodule{dune-functions}  module was written to partially overcome this fragmentation.
+The \dunemodule{dune-functions}  module was written to partially overcome this fragmentation,
+and to unify partos of the competing implementations.
 It picks a well-defined aspect of finite element assembly---finite element spaces and functions---and,
 in the \dune spirit, provides an abstract interface that tries to be both extremely flexibly
-and efficient.  It is hoped for that other implementations of the same functionality will
+and efficient.  It is hoped for that other implementations of the same functionality
 eventually replace their implementations by a dependence on \dunemodule{dune-functions}.
 Indeed, at least \dunemodule{dune-pdelab} and \dunemodule{dune-fufem} are already in the process
 of migrating, and have stated their clear intention to complete this migration eventually.
 
 Of the two main parts of \dunemodule{dune-functions} functionality, the API for discrete and
 closed-form functions has already been described in a separate paper~\cite{engwer_graeser_muething_sander:2015}.
-The present document focuses on bases of discrete functions.
-
-The main purpose of the \dunemodule{dune-functions} module is to describe discrete function spaces defined on a grid.
-Still, the central concept in the code is not the function space itself, but rather the {\em basis} of the function space.
+The present document focuses on spaces of discrete functions.  However,
+the central concept is not the function space itself, but rather the {\em basis} of the function space.
 This is because even though finite element spaces play a central role in theoretical considerations of the FE method,
 actual computations are done using coefficients, given with respect to a particular basis.  Also,
 for many different finite element spaces, more than one basis is used in practice.  For example,
-the space of second-order Lagrangian finite elements is used both with the nodal (Lagrange) basis, and with the
+the space of second-order Lagrangian finite elements is used both with the nodal (Lagrange) basis~\cite{braess:2013},
+and with the
 hierarchical basis~\cite{bank:1996}.  Discontinuous Galerkin spaces can be described in terms of Lagrange bases,
-monomial bases, Legendre bases and more.  It is therefore important to be able to distinguish these different
+monomial bases, Legendre bases and more~\cite{hesthaven_warburton:2008}.
+It is therefore important to be able to distinguish these different
 representations of the same space in the application code.
 
 Finite element function space bases frequently exhibit a fair amount of structure.  Vector-valued spaces can be
 written as products of scalar spaces, and the same holds for mixed finite elements.  Even more, such spaces
 have a natural structure as a tree, with scalar-valued or otherwise irreducible spaces forming the leaves, and
 products forming the other nodes.
-
-Given one or several finite element bases with basis functions taking values in different Euclidean spaces,
-\dunemodule{dune-functions} allows to systematically construct bases for function spaces with a
-higher-dimensional range.  These include vector-valued functions, mixed finite elements, and spaces
-for multi-physics.  The building blocks are typically scalar-valued basis functions, but sometimes vector-valued
-ones like the N\'ed\'elec basis are used as well. The constructions are systematically described as tree structures.
+\dunemodule{dune-functions} allows to systematically construct bases by reproducing the tree structures
+as type information in the code.
 This tree construction of finite element spaces has first been systematically worked out in~\cite{muething:2015}.
 
 For the basis functions in such a non-trivial tree structure, there is no single canonical way
@@ -212,36 +209,32 @@ of the basis follows a natural indexing by multi-indices, which can be used to a
 vector and matrix data types, like the ones provided by \dunemodule{dune-istl}. Closer inspection
 reveals that these two possibilities are just two extreme cases of a wider scale of indexing rules.
 The \dunemodule{dune-functions} module therefore provides a systematic way to construct all these
-rules.  Many of the really are useful in applications.
+rules.  Many of them really are useful in applications.
 
-\todosander{Ich bin mir nicht ganz sicher ob man die folgende Information hier oder irgendwo sonst
-überhaupt haben will.  Ganz weglassen und darauf spekulieren dass die Leute das auf der Homepage
-finden?  Oder alles an den Anfang von Kapitel~\ref{sec:function_space_bases_implementation} schieben?}
-
-Installation instructions and a up-to-date class documentation can be found on the \dune
-project homepage \url{www.dune-project.org}.
+The \dunemodule{dune-functions} module is hosted on the \dune project homepage \url{www.dune-project.org}.
+Installation instructions and an up-to-date class documentation can be found there.
 
 \setcounter{tocdepth}{2}  % Show only sections and subsections, but no more
 \tableofcontents
 
 
 \section*{Notation}
-Througout this text we will introduce interfaces
+Throughout this text we will introduce interfaces
 by presenting the interface declaration, explaining
-its meaning, and giving examples on its usage.
+its meaning, and giving examples of its usage.
 In order to distinguish interface declaration
 and code examples, both are formated differently.
 Furthermore implementation defined types, arguments,
 and other omitted code fragments are highlighted.
 Interface declarations are formated like this:
 \begin{lstlisting}[style=Interface]
-// Declaration of the typedef T referring to an implementation defined type
+// Declaration of the typedef T referring to an implementation-defined type
 using T = @@<implementation defined>@@;
 
 // Declaration of the function foo
 T foo(int);
 
-// Declaration of class Bar with implementation defined constructor arguments
+// Declaration of class Bar with implementation-defined constructor arguments
 class Bar {
 public:
   Bar(@@<args>@@);
@@ -252,7 +245,7 @@ An example for using this interface would be formated like this:
 // Call foo() and store result
 T t = foo(1);
 
-// Construct a Bar
+// Construct an object of type Bar
 auto bar = Bar(t, @@<more args>@@);
 \end{lstlisting}
 
