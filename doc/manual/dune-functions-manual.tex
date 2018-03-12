@@ -258,23 +258,25 @@ auto bar = Bar(t, @@<more args>@@);
 \label{sec:finite_element_trees}
 
 
-Before we can explain the implementation of bases for discrete function spaces in Chapter~\ref{sec:function_space_bases_implementation},
-we need to say a few words about the general structure of such spaces.
+Before we can explain the programmer interface for bases of discrete function spaces in Chapter~\ref{sec:function_space_bases_implementation},
+we need to say a few words about how these bases can be endowed with an abstract tree structure.
 Readers who are only interested in scalar finite element spaces may try to proceed directly to
 Chapter~\ref{sec:function_space_bases_implementation}.  They should only know that whenever a tree
 is mentioned there, this tree consists of a single node only, which is the finite element basis.
+\todosander{Dieser letzte Satz stimmt leider in seiner Einfachheit nicht mehr---mittlerweile
+haben wir ja drei Arten von Bäumen.}
 
 \subsection{Trees of finite element spaces}
 
 Throughout this chapter we assume that we have a single fixed domain $\Omega$, and all function spaces
 that we consider are defined on this domain.  We are mainly thinking of spaces of functions that are
-piecewise polynomial with respect to a grid, but we don't actually require that yet.
+piecewise polynomial with respect to a grid, but we do not actually require that yet.
 
 Some finite element spaces arise naturally as a combination of simpler ones.
 There are primarily two ways how two vector spaces $V$ and $W$ can be combined
 to form a new one: Sums and products. While these are also called
-internal and external sums, respectively, we stick to the notation
-sum and product in the following.
+internal and external sums, respectively, we stick to the terminology
+\emph{sum} and \emph{product} in the following.
 
 For sums, both spaces
 have the same range space $R$ and are thus subspaces of the space $R^\Omega$
@@ -282,64 +284,33 @@ of all functions mapping from $\Omega$ to $R$. Then the vector space sum
 \begin{equation*}
   V + W
   \colonequals
-  \{ v + w \; : \; v \in V, w \in W \}
+  \{ v + w \; : \; v \in V, \; w \in W \}
 \end{equation*}
 in $R^\Omega$ will have that same range space.
-If the sum is direct, then a basis of the sum is given by the union of the bases of
-the simpler ones. For example, a $P_2$-space (i.e., a second order Lagrange space)
+For example, a $P_2$-space (i.e., a second order Lagrange space)
 can be viewed as a $P_1$-space plus a hierarchical extension spanned by bubble functions.
 XFEM spaces~\cite{moes_dolbow_belytschko:1999} are constructed by adding particular weighted Heaviside
 functions to a basic space to capture free discontinuities.
 The \dunemodule{dune-functions} module does not currently support constructing sums
 of finite element bases, but this may be added in later versions.
 
-The second way to construct finite element spaces from simpler ones uses (Cartesian) products.
-While \dunemodule{dune-functions} focuses on products, it does not actually use
-function spaces but function space bases as constituting entities.
-We will now describe in a bit more detail, how the product construction carries
-over to the bases of spaces.
-
-Let $B = \{b_i\}_{i=1}^{n_1}$ and $C = \{c_i\}_{i=1}^{n_2}$ be two scalar function space bases and let $\mathbf{e}_1$, $\mathbf{e}_2$ be the canonical
-basis vectors in $\R^2$.
-Then we define the product of the spanned spaces $\op{span}B$ and $\op{span} C$ as
+The second way to construct finite element spaces from simpler ones uses Cartesian products.
+Let $V$ and $W$ be two scalar function space bases.
+Then we define the product of the $V$ and $W$ as
 \begin{align*}
-  \operatorname{span} B \times \operatorname{span} C
-    \colonequals \big\{ (v,w) \st v \in \op{span} B, w \in \op{span} C \big\}.
+  V \times W
+    \colonequals \big\{ (v,w) \st v \in V, \; w \in W \big\}.
 \end{align*}
-A natural basis of this space is given by the concatenation
-of the bases $B$ and $C$ defined by
-\begin{align*}
-(B,C)
- & \colonequals
-    \mathbf{e}_1 \otimes B \cup \mathbf{e}_2 \otimes C \\
-    &= \big\{ \mathbf{e}_1 \otimes b \st b \in B \big\}
-    \cup \big\{ \mathbf{e}_2 \otimes c \st c \in C \big\} \\
- & =
- \big\{(b_1,0), (b_2,0), \dots, (b_{n_1},0) \big\} \cup \big\{(0,c_1), (0,c_2), \dots, (0,c_{n_2})\big\}.
-\end{align*}
-These basis functions take values in $\R \times \R = \R^2$.
-More generally, if $B$ and $C$ are bases with ranges $\R^{m_1}$
-and $\R^{m_2}$, respectively, then
-\begin{equation*}
-    (B,C)
- \colonequals
- \big\{(b_1,\mathbf{0}), (b_2,\mathbf{0}), \dots, (b_{n_1},\mathbf{0})\big\}
- \cup
- \big\{(\mathbf{0}, c_1), (\mathbf{0},c_2), \dots, (\mathbf{0}, c_{n_2})\big\}
-\end{equation*}
-is again the natural basis of the space $\operatorname{span} B \times \operatorname{span} C$.  Its basis functions take values in $\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
-In particular, the symbol $\mathbf{0}$ in the formula above denotes the constant $\R^{m_1}$ and
-$\R^{m_2}$-valued zero functions.
-\todosander{Sollten wir hier explizit auch die externe Summe von Basen einführen?}
+Functions from this space take values in $\R^{n_1} \times \R^{n_2} = \R^{n_1 + n_2}$.
 
-It should be noted that building the (Cartesian) product or external sum of 
+It should be noted that building the (Cartesian) product of
 vector spaces should not be confused with building the tensor product of these spaces.
-It is however true, that the $k$-fold product or $k$-th power
+Rather, the $k$-fold product or $k$-th power
 of a single space can be viewed as the tensor product with $\R^k$, i.e,
 \begin{align*}
-    (\op{span} B)^k
-    = \underbrace{\op{span}B \times \dots \times \op{span}B}_{k-\text{times}}
-    = \R^k \otimes \op{span} B.
+    (V)^k
+    = \underbrace{V \times \dots \times V}_{k-\text{times}}
+    = \R^k \otimes V.
 \end{align*}
 
 The construction via products allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
@@ -349,7 +320,7 @@ The simplest Taylor--Hood element is the product $P_2 \times P_2 \times P_2 \tim
 of $P_2 \times P_2 \times P_2$ for the velocities with $P_1$ for the pressure.
 If additional variables need to be dealt with, more factor bases can be included easily.
 
-In the Taylor--Hood basis, the triple
+In the Taylor--Hood space, the triple
 $P_2 \times P_2 \times P_2$ forms a semantic unit---it contains the components of a velocity field.
 The associativity of the product allows to write it
 as $(P_2 \times P_2 \times P_2) \times P_1$, which makes the semantic relationship clearer.
@@ -381,28 +352,64 @@ space in such a tree representation.
     \label{fig:taylor_hood_basis_tree}
 \end{figure}
 
-%\begin{figure}
-%  \begin{center}
-%   \begin{overpic}[width=0.5\textwidth]{taylor_hood_tree}
-%    \put(5,5){$V_x$}
-%    \put(30,5){$V_y$}
-%    \put(55,5){$V_z$}
-%    \put(87,31){$V_p$}
-%    \put(5,30){$V_v$}
-%    \put(5,57){$V_\text{TH}$}
-%    \put(30.7,32){$\times$}
-%    \put(61.6,58){$\times$}
-%   \end{overpic}
-%  \end{center}
-%  \caption{Taylor--Hood basis $P_2 \times P_2 \times P_2 \times P_1$ in a tree representation}
-%    \label{fig:taylor_hood_basis_tree}
-%\end{figure}
-
 While these extra nodes might initially appear like useless artifacts of the tree representation, they are often extremely useful
 because we can treat the subtrees rooted in those nodes as individual trees in their own right, which often makes it possible to
 reuse existing algorithms that expect to operate on those subtrees in more complex settings.
 
 
+\subsection{Trees of finite element space bases}
+
+The product of finite-dimensional spaces naturally induces a corresponding operation on bases
+of such spaces.
+Let $B = \{b_i\}_{i=1}^{n_1}$ and $C = \{c_i\}_{i=1}^{n_2}$ be two scalar function space bases
+and let $\mathbf{e}_1$, $\mathbf{e}_2$ be the canonical basis vectors in $\R^2$.
+Then we define the product of the bases $B$ and $C$ as
+\begin{align*}
+(B,C)
+ & \colonequals
+    \mathbf{e}_1 \otimes B \cup \mathbf{e}_2 \otimes C \\
+    &= \big\{ \mathbf{e}_1 \otimes b \st b \in B \big\}
+    \cup \big\{ \mathbf{e}_2 \otimes c \st c \in C \big\} \\
+ & =
+ \big\{(b_1,0), (b_2,0), \dots, (b_{n_1},0) \big\} \cup \big\{(0,c_1), (0,c_2), \dots, (0,c_{n_2})\big\}.
+\end{align*}
+These basis functions take values in $\R \times \R = \R^2$.
+More generally, if $B$ and $C$ are bases with ranges $\R^{m_1}$
+and $\R^{m_2}$, respectively, then
+\begin{equation}
+\label{eq:basis_product}
+    (B,C)
+ \colonequals
+ \big\{(b_1,\mathbf{0}), (b_2,\mathbf{0}), \dots, (b_{n_1},\mathbf{0})\big\}
+ \cup
+ \big\{(\mathbf{0}, c_1), (\mathbf{0},c_2), \dots, (\mathbf{0}, c_{n_2})\big\}
+\end{equation}
+is again the natural basis of the space $\operatorname{span} B \times \operatorname{span} C$.  Its basis functions take values in $\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
+In particular, the symbol $\mathbf{0}$ in the formula above denotes the constant $\R^{m_1}$ and
+$\R^{m_2}$-valued zero functions.
+
+Similarly to the case of function spaces, bases can be interpreted as trees.
+This time, the individual basis functions form the tree leafs, and irreducible bases are
+notated as trees with a single root and no further non-leaf roots.
+\begin{center}
+    \begin{tikzpicture}[
+            level/.style={
+                sibling distance = (3-#1)*0.5cm + 1cm,
+                level distance = 1.5cm
+            }
+        ]
+        \node [treenode] {$B$}
+            child{ node [treenode] {$b_1$} }
+            child{ node [treenode] {$b_2$} }
+            child{ node [treenode] {$b_3$} }
+            child{ node [] {$\dots$} }
+            child{ node [treenode] {$b_{n-1}$} }
+            child{ node [treenode] {$b_n$} };
+    \end{tikzpicture}
+\end{center}
+The operation of taking two bases $B$ and $C$, and joining them to form a new basis $(B,C)$
+as in~\eqref{eq:basis_product} is interpreted as taking the two trees corresponding to $B$ and $C$,
+and making them the (unique) children of a new root that represents $(B,C)$.
 
 
 \subsection{Indexing basis functions by multi-indices}
