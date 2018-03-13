@@ -21,6 +21,7 @@
 
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
@@ -255,21 +256,14 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
 // we use a vector<char> which, in contrast to vector<bool>
 // is a real container.
 template <class FEBasis>
-void boundaryTreatment (const FEBasis& feBasis,
-                        const FieldVector<double,FEBasis::GridView::dimension>& bbox,
-                        std::vector<char>& dirichletNodes )
+void boundaryTreatment (const FEBasis& feBasis, std::vector<char>& dirichletNodes )
 {
-  using Coordinate = typename FEBasis::GridView::template Codim<0>::Geometry::GlobalCoordinate;
+  dirichletNodes.clear();
+  dirichletNodes.resize(feBasis.size(), false);
 
-  // Interpolating the indicator function of the boundary will
-  // mark all boundary dofs.
-  interpolate(feBasis, Dune::TypeTree::hybridTreePath(), dirichletNodes,
-      [&bbox](Coordinate x){
-        bool isBoundary = false;
-        for (std::size_t j=0; j<x.size(); j++)
-          isBoundary = isBoundary || x[j] < 1e-8 || x[j] > bbox[j]-1e-8;
-        return isBoundary;
-      });
+  Dune::Functions::forEachBoundaryDOF(feBasis, [&] (auto&& index) {
+    dirichletNodes[index] = true;
+  });
 }
 
 
@@ -327,7 +321,7 @@ int main (int argc, char *argv[]) try
 
   // Determine Dirichlet dofs
   std::vector<char> dirichletNodes;
-  boundaryTreatment(feBasis, l, dirichletNodes);
+  boundaryTreatment(feBasis, dirichletNodes);
 
 
 
