@@ -706,26 +706,50 @@ then \dunemodule{dune-functions} allows any indexing scheme that
 is given by an index map $I: \Lambda \to \mathcal{N}$
 whose range $I(\Lambda)$ is an index tree.
 
-While \dunemodule{dune-functions} allows to use arbitrary index trees
-to enumerate the basis functions, there are some important generic constructions
-to derive such index trees from the finite element tree.
+While the set of all such maps is large, \dunemodule{dune-functions} allows to construct the most
+important ones systematically using certain transformation rules.
+
+Consider a tree of basis functions. We want to construct an indexing for this tree, that is
+an index tree $\mathcal{I}$ and a map $I$ from the set of basis vectors to the leafs of the
+index tree.
+
+Remember first that we assume that basis trees are ordered, i.e., the children of each tree node
+have a fixed given ordering. We then decorate each inner node $A$ of the basis tree with a rule
+that specifies how the index trees of the basis subtrees are combined to form an index tree
+for the basis subtree rooted at $A$. Of the large set of possibilities, we single out four rules
+that appear frequently in applications.
+
+\begin{itemize}
+ \item \textbf{BlockedLexicographic}: Introduce a new node $A_I$ in the index subtree, and make
+   the roots of the index subtrees children of $A_I$. Order them following their corresponding
+   ordering given in the basis tree.
+
+   Exclusive use of this rule will lead to an index tree that is isomorphic to the basis tree.
+
+ \item \textbf{FlatLexicographic}: Instead of introducing a new root node, merge the existing
+   index subtree roots into a single node.
+   \todosander{Hier müssen jetzt irgendwie Offsets ins Spiel kommen.}
+\end{itemize}
+
+These rules can be applied in all situations. For more rules we have to restrict the set
+of inner nodes.
+\begin{definition}
+An inner node will be called \emph{power node}, if all of its children are identical subtrees.
+An inner node that is not a power node is called \emph{composite node}.
+\end{definition}
 
 
-\todosander{Rewrite this section to match the new section title}
+\begin{itemize}
+ \item FlatInterleaved
+ \item LeafBlockedInterleaved
+\end{itemize}
 
-There are two aspects to what we just have loosely called ``indexing''.  The first is that the set of all basis functions
-in the tree need to be given a global order.  There are several reasonable choices to do this, which we discuss
-in this section.
-Given an order of the basis functions, there is then a natural indexing by simply enumerating the basis functions in
-their specific order. This can be flat or hierarchical.
 
-Consider first a leaf basis consisting of $n$ basis functions.  We suppose that these basis functions are given in a fixed
-order (even though being able to change this ordering can improve the performance of a numerical
-algorithm, see for example~\cite[Chap.\,3.3]{saad:2003} and~\cite{bader:2013} for more on this).
-Consider now a tree of finite element bases with a given root $R$.  This root has $m$ children, and suppose that for
-each of the subtrees rooted in these children we have already chosen an ordering.  Suppose further that the children themselves are given
-in a fixed ordering (One may of course create different overall orderings by permuting the children, but in our view
-this leads to a different bases, rather than to a different ordering of the same basis.)  It is then most natural
+
+\todosander{Hier kommt noch alter Text, der weggeschmissen oder irgendwo eingebaut werden muss.}
+
+
+It is then most natural
 to first list all basis functions of the first tree, followed by all basis functions of the second subtree,
 and so on.  This is the ordering obtained by a depth-first traversal of the tree~\cite{cormen:1990}.
 For the Taylor--Hood basis with expression
@@ -769,9 +793,7 @@ In this case, the stiffness matrix only has $2 \times 2$ large sparse blocks, bu
 block will be a $3 \times 3$ matrix, each entry of the lower right block will be a scalar, and the off-diagonal
 blocks will have a corresponding rectangular structure (Figure~\ref{fig:matrix_occupation_patterns}).
 
-To deduce such possibilities from the tree structure we now divide the inner tree nodes into two classes.
-An inner node will be called {\em power node}, if all of its children are identical subtrees.
-An inner node that is not a power node is called {\em composite node}.  To construct an admissible ordering
+To construct an admissible ordering
 of all basis functions in a tree we move recursively from the leaf nodes to the root.  To start the recursion,
 the order of the basis functions in each leaf node is considered fixed.  At each inner node there are two
 possibilities.
