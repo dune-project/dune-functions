@@ -868,10 +868,10 @@ In total, for a tree with $N$ power nodes we obtain $2^N$ different ways to orde
 
 For the most part, access to finite element bases happens element by element.  It is therefore important
 to consider the restrictions of bases to single grid elements.  In contrast to the previous sections
-we now require that all bases in a given tree are defined with respect to the same grid.
-\todosander{Ist das übertrieben restriktiv? Es würde ja reichen wenn es ein ausgezeichnetes Gitter gäbe,
-  bzgl.\ dem man lokalisieren kann. Den Fall hätte man zum Beispiel wenn man normale FE mit
-  Fourier-Basen kombinieren will.}
+we now require that there is a finite element grid for the domain $\Omega$. For simplicity we will
+assume that all bases are bases of functions that are defined piecewise with respect to this grid,
+but it is actually sufficient to require that the restrictions of all basis functions to elements
+of this grid can be constructed cheaply.
 
 We now consider the restrictions of all basis functions of a given tree to a single fixed grid element $e$.
 Of these restricted functions, we discard all those that are constant zero functions on $e$.
@@ -881,11 +881,18 @@ All others form the \emph{local basis} on $e$
  \colonequals
  \{ \lambda|_e \; : \; \lambda \in \Lambda \}.
 \end{equation*}
-The local basis forms a tree that is isomorphic to the full global basis tree.
-\todosander{Das ist unpräzise: Die Aussage gilt nur, wenn man den Baum betrachtet, in dem
-  die Blätter die irreduziblen Basen sind, \emph{nicht} die einzelnen Basisfunktionen.}
+The local basis forms a tree that is isomorphic to a subtree of the full global basis tree.
 
-The basis functions in the local tree have two indices in addition to the global one.
+From this natural isomorphism $\imath_e$ into the full tree of global basis functions follows
+naturally a global indexing of the local basis functions
+\begin{equation*}
+ \Lambda_\text{local} \ni \lambda \mapsto \mathcal{I}
+ \qquad
+ I_\text{local}(\lambda) \colonequals I(\imath_e(\lambda)).
+\end{equation*}
+This is the map that associates shape functions on a given grid element $e$ to global degrees of freedom.
+
+In addition, the basis functions in the local tree have two further indices.
 First, each local basis function has an index to distinguish it from other functions in the
 same leaf node.  As there is no hierarchical structure involved, this index is simply a
 natural number.  It is called the \emph{leaf-local index}.
