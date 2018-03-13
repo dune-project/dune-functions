@@ -459,41 +459,69 @@ is isomorphic to the tree of the Taylor--Hood \emph{space}, shown in Figure~\ref
 To work with the basis of a finite element space, the basis vectors need to be indexed.  Indexing the basis functions
 is what allows to address the corresponding vector and matrix coefficients in suitable vector and matrix data structures.
 In simple cases, indexing means simply enumerating the basis functions with natural numbers, but for many applications
-hierarchically structured matrix and vector data structures are more natural or efficient.  This leads to the need
-for hierarchically structured multi-indices.
-
+hierarchically structured matrix and vector data structures are more natural or efficient.  This leads to the idea
+of hierarchically structured multi-indices.
+%
+\begin{definition}[Multi-indices]
+ A tuple $I \in \N_0^k$ for some $k \in \N_0$ is called a multi-index of length $k$
+ and we write $|I|=k$.
+ The set of all multi-indices is denoted by
+ $\mathcal{N} = \bigcup_{k \in \N_0} \N_0^k$.
+\end{definition}
+%
+To establish some structure in a set of multi-indices it is convenient to consider prefixes.
+%
 \begin{definition}
     \begin{enumerate}
-        \item
-            A tuple $I \in \N_0^k$ for some $k \in \N_0$ is called a multi-index of length $k$
-            and we write $|I|=k$.
-            The set of all multi-indices is denoted by
-            $\mathcal{N} = \bigcup_{k \in \N_0^k} \N_0^k$.
         \item
             If $I \in \mathcal{N}$ takes the form $I = (I',I'')$ for $I',I'' \in \mathcal{N}$,
             then we call $I'$ a prefix of $I$.
             If additionally $|I''|>0$, then we call $I'$ a strict prefix of $I$.
         \item
-            For $I,I' \in \mathcal{N}$ and a set $\mathcal{M} \subset \mathcal{N}$
-            we use the following notation:
+            For $I,I' \in \mathcal{N}$ and a set $\mathcal{M} \subset \mathcal{N}$:
             \begin{enumerate}
               \item
-                We write $I=(I',\dots)$, if $I'$ is a prefix of $I$.
+                We write $I=(I',\dots)$, if $I'$ is a prefix of $I$,
               \item
-                We write $I=(I',\cdot,\dots)$, if $I'$ is a strict prefix of $I$.
+                we write $I=(I',\cdot,\dots)$, if $I'$ is a strict prefix of $I$,
               \item
-                We write $(I',\dots) \in \mathcal{M}$, if $I'$ is a prefix of some
-                $I \in \mathcal{M}$.
+                we write $(I',\dots) \in \mathcal{M}$, if $I'$ is a prefix of some
+                $I \in \mathcal{M}$,
               \item
-                We write $(I',\cdot,\dots) \in \mathcal{M}$, if $I'$ is a strict prefix of some
+                we write $(I',\cdot,\dots) \in \mathcal{M}$, if $I'$ is a strict prefix of some
                 $I \in \mathcal{M}$.
             \end{enumerate}
     \end{enumerate}
 \end{definition}
+It is important to note that the multi-indices from a given set do not necessarily
+have a fixed length.  For example, let's describe a possible indexing of the
+basis vectors of the Taylor--Hood space $(P_2 \times P_2 \times P_2) \times P_1$.
+We start by assuming that the finite element basis functions $\lambda_i^2$ and $\lambda_k^1$
+of $P_2$ and $P_1$ both
+have a flat indexing by natural numbers $i=1,\dots,n_2$ and $k=1,\dots,n_1$,
+respectively.
+Then we enumerate the three coefficients of the velocity
+with the numbers $0$, $1$, and $2$.  Further, we denote velocity components with a $0$,
+and pressure components with a $1$.
+This construction leads to multi-indices of the form $[0,i,j]$ for velocity components, and $[1,k]$
+for pressure components.
+The left-most digit of the multi-index determines if the basis function
+belongs to the velocity or pressure degrees of freedom.
+For the velocity multi-indices $[0,i,j]$ the $i$ determines the component
+of the velocity vector field and the $j$ determines the number of the scalar $P_2$ basis
+function that determines this component.
+For the pressure multi-indices $[0,k]$ the $k$ determines the number of the $P_1$ basis
+function for the scalar $P_1$ function that determines the pressure.
+\todosander{Einheitlichkeit: Nehmen wir runde oder eckige Klammern für die Multi-Indizes?}
 
-Sets of multi-indices form trees as long as they are consistent in the sense that they
+It is evident that the complete set of multi-indices can again be interpreted as a tree,
+shown in Figure~\ref{fig:taylor_hood_index_tree}.  In this tree, the multi-index digits
+label the \emph{edges} of the tree, and multi-indices are the leaf nodes.  Prefixes can be
+interpreted as path from the root to a given node.
+
+This latter fact can be seen as the defining property of index trees.  Indeed,
+sets of multi-indices form trees as long as they are consistent in the sense that they
 can be viewed as the paths to the leafs in an ordered tree.
-%Consistency here means that the multi-indices should form an index tree.
 That is, the children of each node are enumerated using consecutive zero-based
 indices and paths to the leafs (i.e. the multi-indices) are build by concatenating
 those indices starting from the root and ending in a leaf.
@@ -504,38 +532,20 @@ those indices starting from the root and ending in a leaf.
  but $I \notin \mathcal{I}$.
 \end{definition}
 
+An indexing is then an injective map from the leaf nodes of a tree of basis functions to the leafs of an
+index tree.
+\todosander{Notation: Der Buchstabe $I$ wird für zu viele Dinge verwendet.}
+
 \begin{definition}
-  Let $M$ a finite set and $I:M \to \mathcal{N}$ and injective map whose range
+  Let $M$ a finite set and $I:M \to \mathcal{N}$ an injective map whose range
   $I(M)$ is an index tree.
   Then $I$ is called an \emph{index-map} for $M$.
   The index map is called \emph{uniform}, if additionally $I(M) \subset \mathbb{N}^k_0$ for some $k \in \mathbb{N}$
   and \emph{flat}, if $I(M) \subset \mathbb{N}_0$.
+\todosander{Wofür brauchen wir Uniformität?  Gilt die nicht ohnehin automatisch, da wir ja ein
+  endliches $M$ annehmen?}
 \end{definition}
 
-
-We will illustrate this for the Taylor--Hood tree $(P_2 \times P_2 \times P_2) \times P_1$.
-We start by assuming that the finite element basis functions $\lambda_i^2$ and $\lambda_k^1$
-of $P_2$ and $P_1$ both
-have a flat indexing by natural numbers $i=0,\dots,n_2$ and $k=0,\dots,n_1$,
-respectively.
-Then we enumerate the three children $P_2$, $P_2$, $P_2$
-in the velocity subtree $P_2 \times P_2 \times P_2$
-with the numbers $0$, $1$, and $2$.
-Finally we enumerate the two children $(P_2 \times P_2 \times P_2)$ (for the velocity)
-and $P_1$ (for the pressure) in the overall tree $(P_2 \times P_2 \times P_2) \times P_1$
-with the numbers $0$ and $1$.
-This construction leads to multi-indices of the form $[0,i,j]$ for velocity components, and $[1,k]$
-for pressure components.
-The left-most digit of the multi-index determines if the basis function
-belongs to the velocity or pressure degrees of freedom.
-For the velocity multi-indices $[0,i,j]$ the $i$ determines the component
-of the velocity vector field and the $j$ determines the number of the scalar $P_2$ basis
-function that determines this component.
-For the pressure multi-indices $[0,k]$ the $k$ determines the number of the $P_1$ basis
-function for the scalar $P_1$ function that determines the pressure.
-
-It is important to note that the multi-indices for a given basis do not necessarily
-have a fixed length.
 
 If all basis functions $\lambda_I$ of the whole finite element tree are
 indexed by multi-indices of the above given form,
@@ -562,41 +572,41 @@ what the corresponding subtree represents.
     \begin{center}
         \begin{tikzpicture}[
                 level/.style={
-                    sibling distance = (3-#1)*2cm + 1cm,
+                    sibling distance = (3-#1)*2.5cm + 1cm,
                     level distance = 1.5cm
                 }
             ]
-            \node [treenode] {$P_2^3 \times P_1$}
-                child{ node [treenode] {$P_2^3$}
-                    child{ node [treenode] {$P_2$}
-                        child{ node [basisnode] {$\lambda_0^2$} edge from parent node[left] {$0$}}
+            \node [treenode] {$[]$}
+                child{ node [treenode] {$[0]$}
+                    child{ node [treenode] {$[0,0]$}
+                        child{ node [basisnode] {$[0,0,0]$} edge from parent node[left] {$0$}}
                         child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[right] {$n_2$} }
+                        child{ node [basisnode] {$[0,0,n_2]$} edge from parent node[right] {$n_2$} }
                         edge from parent node[above left] {$0$}
                     }
-                    child{ node [treenode] {$P_2$}
-                        child{ node [basisnode] {$\lambda_0^2$} edge from parent node[left] {$0$}}
+                    child{ node [treenode] {$[0,1]$}
+                        child{ node [basisnode] {$[0,1,0]$} edge from parent node[left] {$0$}}
                         child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[right] {$n_2$} }
+                        child{ node [basisnode] {$[0,1,n_2]$} edge from parent node[right] {$n_2$} }
                         edge from parent node[left] {$1$}
                     }
-                    child { node [treenode] {$P_2$}
-                        child{ node [basisnode] {$\lambda_0^2$} edge from parent node[left] {$0$}}
+                    child { node [treenode] {$[0,2]$}
+                        child{ node [basisnode] {$[0,2,0]$} edge from parent node[left] {$0$}}
                         child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[right] {$n_2$} }
+                        child{ node [basisnode] {$[0,2,n_2]$} edge from parent node[right] {$n_2$} }
                         edge from parent node[above right] {$2$}
                     }
                     edge from parent node[above left] {$0$}
                 }
-                child{ node [treenode] {$P_1$}
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^1$} edge from parent node[above left] {$0$} }
+                child{ node [treenode] {$[1]$}
+                    child [sibling distance=1cm] { node [basisnode] {$[1,0]$} edge from parent node[above left] {$0$} }
                     child [sibling distance=1cm] { node [] {$\dots$} }
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1}^1$} edge from parent node[above right] {$n_1$} }
+                    child [sibling distance=1cm] { node [basisnode] {$[1,n_1]$} edge from parent node[above right] {$n_1$} }
                     edge from parent node[above right] {$1$}
                 };
         \end{tikzpicture}
     \end{center}
-    \caption{Index tree for Taylor--Hood with indices inherited from FE tree}
+    \caption{Index tree for the Taylor--Hood basis inherited from the basis tree}
     \label{fig:taylor_hood_index_tree}
 \end{figure}
 
@@ -610,7 +620,7 @@ $P_2$ basis function together, i.\,e., to use the index $[0,j,i]$
 for the $j$-the $P_2$ basis function for the $i$-th component.
 The corresponding alternative index tree is illustrated in
 Figure~\ref{fig:taylor_hood_index_blocked_tree}.
-Figure~\ref{} shows the corresponding layouts of a hierarchical stiffness matrix.
+Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a hierarchical stiffness matrix.
 
 \begin{figure}
     \begin{center}
@@ -620,27 +630,27 @@ Figure~\ref{} shows the corresponding layouts of a hierarchical stiffness matrix
                     level distance = 1.5cm
                 },
             ]
-            \node [treenode] {$P_2^3 \times P_1$}
-                child{ node [treenode] {$P_2^3$}
-                        child [sibling distance=2cm] { node [treenode] {$(\lambda_0^2)^3$}
-                            child{ node [basisnode] {$\lambda_0^2$} edge from parent node[above left] {$0$}}
-                            child{ node [basisnode] {$\lambda_0^2$} edge from parent node[left] {$1$}}
-                            child{ node [basisnode] {$\lambda_0^2$} edge from parent node[above right] {$2$}}
+            \node [treenode] {$[]$}
+                child{ node [treenode] {$[0]$}
+                        child [sibling distance=2.5cm] { node [treenode] {$[0,0]$}
+                            child [sibling distance=1.5cm] { node [basisnode] {$[0,0,0]$} edge from parent node[above left] {$0$}}
+                            child [sibling distance=1.5cm] { node [basisnode] {$[0,0,1]$} edge from parent node[left] {$1$}}
+                            child [sibling distance=1.5cm] { node [basisnode] {$[0,0,2]$} edge from parent node[above right] {$2$}}
                             edge from parent node[above left] {$0$}
                         }
-                        child [sibling distance=2cm]{ node [] {$\dots$} }
-                        child [sibling distance=2cm]{ node [treenode] {$(\lambda_{n_2}^2)^3$}
-                            child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[above left] {$0$}}
-                            child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[left] {$1$}}
-                            child{ node [basisnode] {$\lambda_{n_2}^2$} edge from parent node[above right] {$2$}}
+                        child [sibling distance=2.5cm]{ node [] {$\dots$} }
+                        child [sibling distance=2cm]{ node [treenode] {$[0,n_2]$}
+                            child [sibling distance=1.5cm] { node [basisnode] {$[0,n_2,0]$} edge from parent node[above left] {$0$}}
+                            child [sibling distance=1.5cm] { node [basisnode] {$[0,n_2,1]$} edge from parent node[left] {$1$}}
+                            child [sibling distance=1.5cm] { node [basisnode] {$[0,n_2,2]$} edge from parent node[above right] {$2$}}
                             edge from parent node[above right] {$n_2$}
                         }
                         edge from parent node[above left] {$0$}
                 }
-                child{ node [treenode] {$P_1$}
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^1$} edge from parent node[above left] {$0$} }
+                child{ node [treenode] {$[1]$}
+                    child [sibling distance=1cm] { node [basisnode] {$[1,0]$} edge from parent node[above left] {$0$} }
                     child [sibling distance=1cm] { node [] {$\dots$} }
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1}^1$} edge from parent node[above right] {$n_1$} }
+                    child [sibling distance=1cm] { node [basisnode] {$[1,n_1]$} edge from parent node[above right] {$n_1$} }
                     edge from parent node[above right] {$1$}
                 };
         \end{tikzpicture}
@@ -655,20 +665,17 @@ Figure~\ref{} shows the corresponding layouts of a hierarchical stiffness matrix
    \qquad
    \includegraphics[width=0.4\textwidth]{taylor-hood-matrix-interleaved}
  \end{center}
- \caption{Two matrix occupation patterns.  Left: ordering the basis vectors of $B_x$, $B_y$, $B_z$, $B_p$
-   one after the other gives a stiffness matrix with $4 \times 4$ sparse blocks.
-   Right: interleaving the entries of $B_x$, $B_y$, $B_z$ gives a $2 \times 2$ block structure, where
-   the entries are small blocks themselves.
+ \caption{Two matrix occupation patterns for different indexings of the Taylor--Hood bases.
+   Left: Corresponding to the index tree of Figure~\ref{fig:taylor_hood_index_tree}.
+   Right: Corresponding to the index tree of Figure~\ref{fig:taylor_hood_index_blocked_tree}.
    }
  \label{fig:matrix_occupation_patterns}
 \end{figure}
 
+Alternatively, the case of indexing all basis functions from the Taylor--Hood basis with a single
+natural number can be represented by an index tree with $3(n_2+1) + (n_1+1)$ leaf nodes all
+directly attached to a single root.
 
-
-If $\Lambda$ is the set of basis functions of a finite element tree,
-then \dunemodule{dune-functions} allows any indexing scheme that
-is given by an index map $I: \Lambda \to \mathcal{N}$
-whose range $I(\Lambda)$ is an index tree.
 
 When operating with the indices of basis functions it is important
 to know the maximal appearing index in order to allocate matrices
@@ -676,18 +683,26 @@ and vectors.
 For a flat consecutive zero-based index this is just $d-1$ where
 $d$ is the dimension of the spanned space. For multi-indices from
 an index tree $\mathcal{I}$ we need a slightly more complicated
-construction. Let $(I,\dots) \in \mathcal{I}$, i.\,e., $I$ is a
+construction.
+\begin{definition}
+Let $(I,\dots) \in \mathcal{I}$, i.\,e., $I$ is a
 prefix of multi-indices in $\mathcal{I}$ then the size relative
 to $I$ is given by
 \begin{align}\label{eq:prefix_size}
     |\mathcal{I}|_I = \op{max}\{k \st \exists (I,k,\dots) \in \mathcal{I} \}+1.
 \end{align}
+\end{definition}
 In terms of the ordered tree associated with $\mathcal{I}$ this corresponds
 to the number of direct children of the node indexed by $I$.
 
 
 
 \subsection{Rule-based construction of multi-indices}
+
+If $\Lambda$ is the set of basis functions of a finite element tree,
+then \dunemodule{dune-functions} allows any indexing scheme that
+is given by an index map $I: \Lambda \to \mathcal{N}$
+whose range $I(\Lambda)$ is an index tree.
 
 While \dunemodule{dune-functions} allows to use arbitrary index trees
 to enumerate the basis functions, there are some important generic constructions
