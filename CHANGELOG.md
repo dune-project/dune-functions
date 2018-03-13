@@ -5,6 +5,10 @@ correponding version of the Dune core modules.
 
 ## Master (will become release 2.7)
 
+* The class `SubEntityDOFs<GridView>` was added along with some `subEnitityDOFs`
+  helper functions for creation in the new header `subentitydofs.hh`. After
+  binding an object of this class to a local view and a sub-entity it can be
+  used a range of local indices of DOFs associated to sub-sub-entities of this sub-entity.
 * `FlatVectorBackend` is now officially an implementation detail and thus moved
   to the namespace `Impl::`. The header `flatvectorbackend.hh` was removed.
   As a replacement the new free function `flatVectorView(c)` create a view
