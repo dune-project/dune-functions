@@ -349,7 +349,7 @@ space in such a tree representation.
         \end{tikzpicture}
     \end{center}
     \caption{Finite element tree of the Taylor--Hood space $(P_2 \times P_2 \times P_2)\times P_1$}
-    \label{fig:taylor_hood_basis_tree}
+    \label{fig:taylor_hood_space_tree}
 \end{figure}
 
 While these extra nodes might initially appear like useless artifacts of the tree representation, they are often extremely useful
@@ -361,17 +361,18 @@ reuse existing algorithms that expect to operate on those subtrees in more compl
 
 The product of finite-dimensional spaces naturally induces a corresponding operation on bases
 of such spaces.
-Let $B = \{b_i\}_{i=1}^{n_1}$ and $C = \{c_i\}_{i=1}^{n_2}$ be two scalar function space bases
+Let $B = \{\lambda_i\}_{i=1}^{n_1}$ and $C = \{\gamma_i\}_{i=1}^{n_2}$ be two scalar function space bases
 and let $\mathbf{e}_1$, $\mathbf{e}_2$ be the canonical basis vectors in $\R^2$.
 Then we define the product of the bases $B$ and $C$ as
 \begin{align*}
 (B,C)
  & \colonequals
     \mathbf{e}_1 \otimes B \cup \mathbf{e}_2 \otimes C \\
-    &= \big\{ \mathbf{e}_1 \otimes b \st b \in B \big\}
-    \cup \big\{ \mathbf{e}_2 \otimes c \st c \in C \big\} \\
+    &= \big\{ \mathbf{e}_1 \otimes \lambda \st \lambda \in B \big\}
+    \cup \big\{ \mathbf{e}_2 \otimes \gamma \st \gamma \in C \big\} \\
  & =
- \big\{(b_1,0), (b_2,0), \dots, (b_{n_1},0) \big\} \cup \big\{(0,c_1), (0,c_2), \dots, (0,c_{n_2})\big\}.
+ \big\{(\lambda_1,0), (\lambda_2,0), \dots, (\lambda_{n_1},0) \big\}
+   \cup \big\{(0,\gamma_1), (0,\gamma_2), \dots, (0,\gamma_{n_2})\big\}.
 \end{align*}
 These basis functions take values in $\R \times \R = \R^2$.
 More generally, if $B$ and $C$ are bases with ranges $\R^{m_1}$
@@ -380,16 +381,16 @@ and $\R^{m_2}$, respectively, then
 \label{eq:basis_product}
     (B,C)
  \colonequals
- \big\{(b_1,\mathbf{0}), (b_2,\mathbf{0}), \dots, (b_{n_1},\mathbf{0})\big\}
+ \big\{(\lambda_1,\mathbf{0}), (\lambda_2,\mathbf{0}), \dots, (\lambda_{n_1},\mathbf{0})\big\}
  \cup
- \big\{(\mathbf{0}, c_1), (\mathbf{0},c_2), \dots, (\mathbf{0}, c_{n_2})\big\}
+ \big\{(\mathbf{0}, \gamma_1), (\mathbf{0},\gamma_2), \dots, (\mathbf{0}, \gamma_{n_2})\big\}
 \end{equation}
-is again the natural basis of the space $\operatorname{span} B \times \operatorname{span} C$.  Its basis functions take values in $\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
+is the natural basis of the space $\operatorname{span} B \times \operatorname{span} C$.  Its basis functions take values in $\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
 In particular, the symbol $\mathbf{0}$ in the formula above denotes the constant $\R^{m_1}$ and
 $\R^{m_2}$-valued zero functions.
 
 Similarly to the case of function spaces, bases can be interpreted as trees.
-This time, the individual basis functions form the tree leafs, and irreducible bases are
+This time, the individual basis functions form the tree leafs, and scalar or otherwise irreducible bases are
 notated as trees with a single root and no further non-leaf roots.
 \begin{center}
     \begin{tikzpicture}[
@@ -399,18 +400,57 @@ notated as trees with a single root and no further non-leaf roots.
             }
         ]
         \node [treenode] {$B$}
-            child{ node [treenode] {$b_1$} }
-            child{ node [treenode] {$b_2$} }
-            child{ node [treenode] {$b_3$} }
+            child{ node [treenode] {$\gamma_1$} }
+            child{ node [treenode] {$\gamma_2$} }
+            child{ node [treenode] {$\gamma_3$} }
             child{ node [] {$\dots$} }
-            child{ node [treenode] {$b_{n-1}$} }
-            child{ node [treenode] {$b_n$} };
+            child{ node [treenode] {$\gamma_{n-1}$} }
+            child{ node [treenode] {$\gamma_n$} };
     \end{tikzpicture}
 \end{center}
 The operation of taking two bases $B$ and $C$, and joining them to form a new basis $(B,C)$
 as in~\eqref{eq:basis_product} is interpreted as taking the two trees corresponding to $B$ and $C$,
 and making them the (unique) children of a new root that represents $(B,C)$.
+As an example, Figure~\ref{fig:taylor_hood_basis_tree} shows the tree
+of the Taylor--Hood basis.  Observe how the tree spanned by the inner nodes of that tree
+is isomorphic to the tree of the Taylor--Hood \emph{space}, shown in Figure~\ref{fig:taylor_hood_space_tree}.
 
+\begin{figure}
+    \begin{center}
+        \begin{tikzpicture}[
+                level/.style={
+                    sibling distance = (3-#1)*2cm + 1cm,
+                    level distance = 1.5cm
+                }
+            ]
+            \node [treenode] {$(P_2 \times P_2 \times P_2) \times P_1$}
+                child{ node [treenode] {$P_2 \times P_2 \times P_2$}
+                    child{ node [treenode] {$P_2$}
+                        child{ node [basisnode] {$\lambda_1^2$} }
+                        child{ node [] {$\dots$} }
+                        child{ node [basisnode] {$\lambda_{n_2}^2$} }
+                    }
+                    child{ node [treenode] {$P_2$}
+                        child{ node [basisnode] {$\lambda_1^2$} }
+                        child{ node [] {$\dots$} }
+                        child{ node [basisnode] {$\lambda_{n_2}^2$} }
+                    }
+                    child { node [treenode] {$P_2$}
+                        child{ node [basisnode] {$\lambda_1^2$} }
+                        child{ node [] {$\dots$} }
+                        child{ node [basisnode] {$\lambda_{n_2}^2$} }
+                    }
+                }
+                child{ node [treenode] {$P_1$}
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_1^1$} }
+                    child [sibling distance=1cm] { node [] {$\dots$} }
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1}^1$} }
+                };
+        \end{tikzpicture}
+    \end{center}
+    \caption{Tree of basis vectors for the Taylor--Hood basis}
+    \label{fig:taylor_hood_basis_tree}
+\end{figure}
 
 \subsection{Indexing basis functions by multi-indices}
 \label{sec:index_trees}
