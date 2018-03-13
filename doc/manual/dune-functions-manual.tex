@@ -1801,6 +1801,52 @@ const DefaultLocalView& rootLocalView() const
 }; // end LocalView
 \end{lstlisting}
 
+\subsubsection{HybridTreePath}
+
+\begin{figure}
+ \begin{center}
+  \missingfigure{Example tree paths}
+ \end{center}
+ \caption{Example tree paths}
+ \label{fig:dune_functions:tree_paths}
+\end{figure}
+
+As a data structure, a \cpp{HybridTreePath} object is a finite sequence of integers.
+Starting from the tree root, each integer corresponds to a tree node, and the number specifies which
+subtree of that node to select (Figure~\ref{fig:dune_functions:tree_paths}).
+For an example, in the Taylor--Hood tree, the integer sequence $(0)$ will select the velocity subtree,
+$(1)$ will select the pressure subtree, and $(0,i)$ will select the $i$-th velocity component for $i=0,\dots,d-1$.
+The empty sequence $()$ represents the entire tree.
+
+In the implementation of \cpp{HybridTreePath}, there are two different integer types.  Remember that there are
+two different types of nodes in a finite element basis tree: \cpp{power} nodes, where all direct subtrees
+are identical, and \cpp{composite} nodes, where the subtrees may differ.
+The subtrees of a \cpp{PowerBasis} can be addressed by a regular integer,
+but for the children of a \cpp{CompositeBasis}, the static indices \cpp{_0}, \cpp{_1}, \cpp{_2}, etc.\
+from \file{dune/common/indices.hh} were necessary (from the namespace \cpp{Dune::Indices}, these are names
+for the types \cpp{std::integral_constant<std::size_t,0>} etc.).
+
+To accomodate both ways to index subtrees, a \cpp{HybridTreePath} can combine both types of entries.
+The constructor call
+\begin{lstlisting}
+auto path = TypeTree::hybridTreePath(_0);
+\end{lstlisting}
+will select the velocity subtree of a Taylor--Hood basis, while
+\begin{lstlisting}
+auto path = TypeTree::hybridTreePath(_1);
+\end{lstlisting}
+will select the pressure tree.
+\begin{lstlisting}
+auto path = TypeTree::hybridTreePath(_0,0);
+\end{lstlisting}
+will select the $0$-th velocity component, and
+\begin{lstlisting}
+auto path = TypeTree::hybridTreePath();
+\end{lstlisting}
+will select the entire tree.  Note how the tree path to the $0$-th velocity component combines a compile-time
+index with a run-time index.  In a sense, a \cpp{HybridTreePath} is a combination between a \cpp{std::array}
+and a \cpp{std::integer_sequence}.
+
 
 
 \section{Interpolation}
@@ -1896,55 +1942,6 @@ void interpolate(const B& basis,
 \end{lstlisting}
 In addition to the three arguments of the previous \cpp{interpolate} method, it has an argument \cpp{TreePath},
 which allows to select a subtree of tree of finite element bases.
-
-\begin{figure}
- \begin{center}
-  \missingfigure{Example tree paths}
- \end{center}
- \caption{Example tree paths}
- \label{fig:dune_functions:tree_paths}
-\end{figure}
-
-\todosander{Hier geht jetzt ein Exkurs über \cpp{HybridTreePath} los.  Den will man vermutlich haben,
-  aber nicht hier.}
-
-As a data structure, a \cpp{HybridTreePath} object is a finite sequence of integers.
-Starting from the tree root, each integer corresponds to a tree node, and the number specifies which
-subtree of that node to select (Figure~\ref{fig:dune_functions:tree_paths}).
-For an example, in the Taylor--Hood tree, the integer sequence $(0)$ will select the velocity subtree,
-$(1)$ will select the pressure subtree, and $(0,i)$ will select the $i$-th velocity component for $i=0,\dots,d-1$.
-The empty sequence $()$ represents the entire tree.
-
-In the implementation of \cpp{HybridTreePath}, there are two different integer types.  Remember that there are
-two different types of nodes in a finite element basis tree: \cpp{power} nodes, where all direct subtrees
-are identical, and \cpp{composite} nodes, where the subtrees may differ.
-The subtrees of a \cpp{PowerBasis} can be addressed by a regular integer,
-but for the children of a \cpp{CompositeBasis}, the static indices \cpp{_0}, \cpp{_1}, \cpp{_2}, etc.\
-from \file{dune/common/indices.hh} were necessary (from the namespace \cpp{Dune::Indices}, these are names
-for the types \cpp{std::integral_constant<std::size_t,0>} etc.).
-
-To accomodate both ways to index subtrees, a \cpp{HybridTreePath} can combine both types of entries.
-The constructor call
-\begin{lstlisting}
-auto path = TypeTree::hybridTreePath(_0);
-\end{lstlisting}
-will select the velocity subtree of a Taylor--Hood basis, while
-\begin{lstlisting}
-auto path = TypeTree::hybridTreePath(_1);
-\end{lstlisting}
-will select the pressure tree.
-\begin{lstlisting}
-auto path = TypeTree::hybridTreePath(_0,0);
-\end{lstlisting}
-will select the $0$-th velocity component, and
-\begin{lstlisting}
-auto path = TypeTree::hybridTreePath();
-\end{lstlisting}
-will select the entire tree.  Note how the tree path to the $0$-th velocity component combines a compile-time
-index with a run-time index.  In a sense, a \cpp{HybridTreePath} is a combination between a \cpp{std::array}
-and a \cpp{std::integer_sequence}.
-
-\todosander{Exkurs Ende}
 
 \bigskip
 
