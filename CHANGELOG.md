@@ -5,6 +5,9 @@ correponding version of the Dune core modules.
 
 ## Master (will become release 2.7)
 
+- The algorithm `forEachBoundaryDOF()` was added in a new header `boundarydofs.hh`.
+  It allows to iterate over all DOFs of a given global basis associated to sub-entities
+  located at the boundary of the domain.
 - The class `SubEntityDOFs<GridView>` was added along with some `subEnitityDOFs`
   helper functions for creation in the new header `subentitydofs.hh`. After
   binding an object of this class to a local view and a sub-entity it can be
