@@ -30,7 +30,7 @@ namespace Functions {
  *
  * After beeing bound this class can be used as range of local indices
  * of those DOFs that are associated to the sub-entity or sub-sub-entities
- * of this sub-entity. Furthermore it allos to ask if a given local index
+ * of this sub-entity. Furthermore it allows to ask if a given local index
  * is contained in this range.
  *
  * Notice that the class itself does only depend on the GridView
