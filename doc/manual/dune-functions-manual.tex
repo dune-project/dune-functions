@@ -494,36 +494,36 @@ To establish some structure in a set of multi-indices it is convenient to consid
     \end{enumerate}
 \end{definition}
 It is important to note that the multi-indices from a given set do not necessarily
-have a fixed length.  For example, let's describe a possible indexing of the
-basis vectors of the Taylor--Hood space $(P_2 \times P_2 \times P_2) \times P_1$.
+all have the same length.  For example, consider a possible indexing of the
+basis vectors of the Taylor--Hood basis of Figure~\ref{fig:taylor_hood_basis_tree}.
 We start by assuming that the finite element basis functions $\lambda_i^2$ and $\lambda_k^1$
 of $P_2$ and $P_1$ both
-have a flat indexing by natural numbers $i=1,\dots,n_2$ and $k=1,\dots,n_1$,
+have a flat indexing by natural numbers $i=0,\dots,n_2$ and $k=0,\dots,n_1$,
 respectively.
 Then we enumerate the three coefficients of the velocity
-with the numbers $0$, $1$, and $2$.  Further, we denote velocity components with a $0$,
-and pressure components with a $1$.
-This construction leads to multi-indices of the form $[0,i,j]$ for velocity components, and $[1,k]$
+with the numbers $0$, $1$, and $2$.  Further, we denote velocity components with a leading digit $0$,
+and pressure components with a leading digit $1$.
+This construction leads to multi-indices of the form $(0,i,j)$ for velocity components, and $(1,k)$
 for pressure components.
-The left-most digit of the multi-index determines if the basis function
-belongs to the velocity or pressure degrees of freedom.
-For the velocity multi-indices $[0,i,j]$ the $i$ determines the component
+For the velocity multi-indices $(0,i,j)$ the $i$ determines the component
 of the velocity vector field and the $j$ determines the number of the scalar $P_2$ basis
 function that determines this component.
-For the pressure multi-indices $[0,k]$ the $k$ determines the number of the $P_1$ basis
+For the pressure multi-indices $(0,k)$ the $k$ determines the number of the $P_1$ basis
 function for the scalar $P_1$ function that determines the pressure.
-\todosander{Einheitlichkeit: Nehmen wir runde oder eckige Klammern für die Multi-Indizes?}
 
-It is evident that the complete set of multi-indices can again be interpreted as a tree,
-shown in Figure~\ref{fig:taylor_hood_index_tree}.  In this tree, the multi-index digits
-label the \emph{edges} of the tree, and multi-indices are the leaf nodes.  Prefixes can be
+It is evident that the complete set of these multi-indices can again be interpreted as a rooted tree.
+In this tree, shown in Figure~\ref{fig:taylor_hood_index_tree}, the multi-indices correspond
+to the leaf nodes, and the multi-index digits label the \emph{edges} of the tree.  Prefixes can be
 interpreted as path from the root to a given node.
+\todosander{Hmm.  Ist das redundant?  Wir nehmen ja an dass wir \emph{geordnete} Bäume haben,
+d.h., die Kinder eines Knotens haben ohnehin immer eine feste Ordnung $0,\dots, d-1$.
+Die Ziffern des Multi-Index geben aber immer gerade diese Ordnung der Kinder wieder.}
 
 This latter fact can be seen as the defining property of index trees.  Indeed,
 sets of multi-indices form trees as long as they are consistent in the sense that they
 can be viewed as the paths to the leafs in an ordered tree.
 That is, the children of each node are enumerated using consecutive zero-based
-indices and paths to the leafs (i.e. the multi-indices) are build by concatenating
+indices and paths to the leafs (i.e, the multi-indices) are built by concatenating
 those indices starting from the root and ending in a leaf.
 
 \begin{definition}
@@ -531,42 +531,8 @@ those indices starting from the root and ending in a leaf.
  if for any $(I,i,\dots) \in \mathcal{I}$ there are also $(I,0,\dots),(I,1,\dots),\dots,(I,i-1,\dots) \in \mathcal{I}$
  but $I \notin \mathcal{I}$.
 \end{definition}
-
-An indexing is then an injective map from the leaf nodes of a tree of basis functions to the leafs of an
-index tree.
-\todosander{Notation: Der Buchstabe $I$ wird für zu viele Dinge verwendet.}
-
-\begin{definition}
-  Let $M$ a finite set and $I:M \to \mathcal{N}$ an injective map whose range
-  $I(M)$ is an index tree.
-  Then $I$ is called an \emph{index-map} for $M$.
-  The index map is called \emph{uniform}, if additionally $I(M) \subset \mathbb{N}^k_0$ for some $k \in \mathbb{N}$
-  and \emph{flat}, if $I(M) \subset \mathbb{N}_0$.
-\todosander{Wofür brauchen wir Uniformität?  Gilt die nicht ohnehin automatisch, da wir ja ein
-  endliches $M$ annehmen?}
-\end{definition}
-
-
-If all basis functions $\lambda_I$ of the whole finite element tree are
-indexed by multi-indices of the above given form,
-and if $X$ is a coefficient vector that has a compatible hierarchical structure,
-then the velocity vector field $u_h$ and the pressure field $p_h$ are given by
-\begin{align*}
-    u_h &= \bigg( \sum_{j=0}^{n_2} X_{(0,i,j)}\lambda_{(0,i,j)}\bigg)_{i=0,\dots,2},
-    &
-    p_h &= \sum_{k=0}^{n_1} X_{(1,k)}\lambda_{(1,k)}
-\end{align*}
-with basis functions
-\begin{equation*}
-    \lambda_{(0,i,j)} = \lambda^2_j \qquad i=0,1,2,
-    \qquad \text{and} \qquad
-    \lambda_{(1,k)} \lambda^1_k.
-\end{equation*}
-
-This index construction is illustrated in Figure~\ref{fig:taylor_hood_index_tree}
-where the Taylor--Hood finite element tree is extended with individual basis functions,
-edges are labels with corresponding multi-index entries, and node labels indicate
-what the corresponding subtree represents.
+The index tree for the example indexing of the Taylor--Hood basis given above is shown
+in Figure~\ref{fig:taylor_hood_index_tree}.
 
 \begin{figure}
     \begin{center}
@@ -610,17 +576,48 @@ what the corresponding subtree represents.
     \label{fig:taylor_hood_index_tree}
 \end{figure}
 
-In the previous example, the inner nodes of the index tree have formed a tree that was
-isomorphic to the original basis tree.
-However, one may also be interested in constructing multi-indices
-that do not mimic the structure of the finite element tree:
-To increase data locality in assembled matrices for the Taylor--Hood basis it may be
-preferable to group all velocity degrees of freedom corresponding to a single
-$P_2$ basis function together, i.\,e., to use the index $[0,j,i]$
-for the $j$-the $P_2$ basis function for the $i$-th component.
-The corresponding alternative index tree is illustrated in
-Figure~\ref{fig:taylor_hood_index_blocked_tree}.
-Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a hierarchical stiffness matrix.
+
+\begin{definition}
+Let $(I,\dots) \in \mathcal{I}$, i.e., $I$ is a
+prefix of multi-indices in $\mathcal{I}$. Then the size relative
+to $I$ is given by
+\begin{align}\label{eq:prefix_size}
+    |\mathcal{I}|_I = \op{max}\{k \st \exists (I,k,\dots) \in \mathcal{I} \}+1.
+\end{align}
+\end{definition}
+In terms of the ordered tree associated with $\mathcal{I}$ this corresponds
+to the out-degree, i.e., the number of direct children of the node indexed by $I$.
+
+
+An indexing is then an injective map from the leaf nodes of a tree of basis functions to the leafs of an
+index tree.
+\todosander{Notation: Der Buchstabe $I$ wird für zu viele Dinge verwendet.}
+
+\begin{definition}
+  Let $M$ a finite set and $I:M \to \mathcal{N}$ an injective map whose range
+  $I(M)$ forms an index tree.
+  Then $I$ is called an \emph{index-map} for $M$.
+  The index map is called \emph{uniform}, if additionally $I(M) \subset \mathbb{N}^k_0$ for some $k \in \mathbb{N}$
+  and \emph{flat}, if $I(M) \subset \mathbb{N}_0$.
+\todosander{Wofür brauchen wir Uniformität?}
+\end{definition}
+
+Continuing the Taylor--Hood example, if
+all basis functions $\lambda_I$ of the whole finite element tree are
+indexed by multi-indices of the above given form,
+and if $X$ is a coefficient vector that has a compatible hierarchical structure,
+then the velocity vector field $u_h$ and the pressure field $p_h$ are given by
+\begin{align*}
+    u_h &= \bigg( \sum_{j=0}^{n_2} X_{(0,i,j)}\lambda_{(0,i,j)}\bigg)_{i=0,\dots,2},
+    &
+    p_h &= \sum_{k=0}^{n_1} X_{(1,k)}\lambda_{(1,k)}
+\end{align*}
+with scalar-valued basis functions
+\begin{equation*}
+    \lambda_{(0,i,j)} = \lambda^2_j \qquad i=0,1,2,
+    \qquad \text{and} \qquad
+    \lambda_{(1,k)} \lambda^1_k.
+\end{equation*}
 
 \begin{figure}
     \begin{center}
@@ -659,6 +656,19 @@ Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a
     \label{fig:taylor_hood_index_blocked_tree}
 \end{figure}
 
+
+In the previous example, the index tree was
+isomorphic to the original basis tree.
+However, one may also be interested in constructing multi-indices
+that do not mimic the structure of the basis tree:
+For example, to increase data locality in assembled matrices for the Taylor--Hood basis it may be
+preferable to group all velocity degrees of freedom corresponding to a single
+$P_2$ basis function together, i.\,e., to use the index $(0,j,i)$
+for the $j$-th $P_2$ basis function for the $i$-th component.
+The corresponding alternative index tree is shown in
+Figure~\ref{fig:taylor_hood_index_blocked_tree}.
+Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a hierarchical stiffness matrix.
+
 \begin{figure}
  \begin{center}
    \includegraphics[width=0.4\textwidth]{taylor-hood-matrix-lexicographic}
@@ -676,26 +686,9 @@ Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a
 
 Alternatively, the case of indexing all basis functions from the Taylor--Hood basis with a single
 natural number can be represented by an index tree with $3(n_2+1) + (n_1+1)$ leaf nodes all
-directly attached to a single root.
+directly attached to a single root. Different variations of such a tree differ by how the
+degrees of freedom are ordered.
 
-
-When operating with the indices of basis functions it is important
-to know the maximal appearing index in order to allocate matrices
-and vectors.
-For a flat consecutive zero-based index this is just $d-1$ where
-$d$ is the dimension of the spanned space. For multi-indices from
-an index tree $\mathcal{I}$ we need a slightly more complicated
-construction.
-\begin{definition}
-Let $(I,\dots) \in \mathcal{I}$, i.\,e., $I$ is a
-prefix of multi-indices in $\mathcal{I}$ then the size relative
-to $I$ is given by
-\begin{align}\label{eq:prefix_size}
-    |\mathcal{I}|_I = \op{max}\{k \st \exists (I,k,\dots) \in \mathcal{I} \}+1.
-\end{align}
-\end{definition}
-In terms of the ordered tree associated with $\mathcal{I}$ this corresponds
-to the number of direct children of the node indexed by $I$.
 
 
 
