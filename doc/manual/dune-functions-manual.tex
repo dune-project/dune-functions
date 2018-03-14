@@ -694,21 +694,21 @@ degrees of freedom are ordered.
 
 \subsection{Rule-based construction of multi-indices}
 
-If $\Lambda$ is the set of basis functions of a finite element tree,
-then \dunemodule{dune-functions} allows any indexing scheme that
+Let $\Lambda$ be the set of basis functions of a finite element basis tree.
+In principle, \dunemodule{dune-functions} allows any indexing scheme that
 is given by an index map $I: \Lambda \to \mathcal{N}$
 whose range $I(\Lambda)$ is an index tree.
-
-While the set of all such maps is large, \dunemodule{dune-functions} allows to construct the most
+Out of this large set of maps, \dunemodule{dune-functions} allows to construct the most
 important ones systematically using certain transformation rules.
 
 Consider a tree of basis functions. We want to construct an indexing for this tree, that is
 an index tree $\mathcal{I}$ and a map $I$ from the set of basis vectors to the leafs of the
-index tree.
-
-Remember first that we assume that basis trees are ordered, i.e., the children of each tree node
-have a fixed given ordering. We then decorate each inner node $A$ of the basis tree with a rule
-that specifies how the index trees of the basis subtrees are combined to form an index tree
+index tree. This construction proceeds recursively.
+Remember first that basis trees are ordered, i.e., the children of each tree node
+have a fixed given ordering.  This means in particular that all leaf nodes have a fixed
+given ordering with respect to their direct fathers.
+We then decorate each inner node $A$ of the basis tree with a rule
+that specifies how the index trees of the subtrees of $A$ are combined to form an index tree
 for the basis subtree rooted at $A$. Of the large set of possibilities, we single out four rules
 that appear frequently in applications.
 
@@ -721,20 +721,32 @@ that appear frequently in applications.
 
  \item \textbf{FlatLexicographic}: Instead of introducing a new root node, merge the existing
    index subtree roots into a single node.
-   \todosander{Hier müssen jetzt irgendwie Offsets ins Spiel kommen.}
+   \todosander{Ergeben sich die Indizes damit automatisch?  Oder müssen wir hier explizit
+     angeben wie sich die Offsets berechnen?}
 \end{itemize}
 
+The previous rules have been called \emph{lexicographic}, by which we mean that all degrees of
+freedom of the first subtree of $A$ appear before all degrees of freedom of the second subtree,
+and so on.
+\todosander{Streng genommen ist dies das erste Mal dass wir von Reihenfolgen sprechen.
+  Das sollten wir noch etwas formalisieren.}
 These rules can be applied in all situations. For more rules we have to restrict the set
 of inner nodes.
 \begin{definition}
 An inner node will be called \emph{power node}, if all of its children are identical subtrees.
 An inner node that is not a power node is called \emph{composite node}.
 \end{definition}
+In particular, each subtree of a \emph{power} node has the same number of basis functions.
+It is therefore possible to interleave the degrees of freedom.
 
+\todosander{Man könnte darüber nachdenken das zu verallgemeinern:  Wenn z.B. ein Teilbaum
+genau doppelt so viele Basen hat wie der andere, dann könnte man immer abwechselnd zwei Basen aus dem
+einen Teilraum nehmen und dann eine aus dem anderen.  Ich wäre eher dagegen über so etwas
+nachzudenken, wenn ich es nicht in einer Anwendung brauchen würde...}
 
 \begin{itemize}
- \item FlatInterleaved
- \item LeafBlockedInterleaved
+ \item \textbf{FlatInterleaved}:
+ \item \textbf{LeafBlockedInterleaved}:
 \end{itemize}
 
 
