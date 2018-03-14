@@ -905,10 +905,12 @@ Secondly, each local basis has an index for the entire local tree.  This is what
 the element stiffness matrix.  This is the \emph{local index}.
 In principle, this indexing can use another general index tree, which does not have to coincide
 with the index tree for the global basis.
-\todosander{Die Implementierung nimmt zwar aktuell immer nur flache Indizes, aber ich bin dennoch
- versucht das hier in voller Allgemeinheit aufzuschreiben.  Er im Kapitel zum API würde ich dann
- sagen dass der Index immer flach ist.  Ein Grund ist, dass wir ja selbst ab und zu noch mit
- der Festlegung auf flache Indizes hadern.}
+This means that the local index of a shape function can again be a multi-index, but the types,
+lengths and orderings can be completely unrelated to the corresponding global indices.
+This allows to use nested types for element stiffness matrices and load vectors.
+As explained in Chapter~\ref{sec:function_space_bases_implementation}, however,
+the \dunemodule{dune-functions} \emph{implementation} is fairly restrictive here,
+and only allows flat lexicographic indices here.
 
 
 \section{Programmer interface for function space bases}
