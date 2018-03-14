@@ -717,12 +717,86 @@ that appear frequently in applications.
    the roots of the index subtrees children of $A_I$. Order them following their corresponding
    ordering given in the basis tree.
 
+   Example:
+   \begin{tabular}{l|r}
+   function in $\{f\}$ & index \\
+   \hline
+   $f_0$  & $(i_0)$ \\
+   $f_1$  & $(i_1)$ \\
+   $f_2$  & $(i_2)$
+\end{tabular}
+
+\begin{tabular}{l|r}
+   function in $\{g\}$ & index \\
+   \hline
+   $g_0$  & $(k_0)$ \\
+   $g_1$  & $(k_1)$ \\
+   $g_2$  & $(k_2)$
+\end{tabular}
+
+The merged indices will be
+
+\begin{tabular}{l|r}
+   function in $\{f,g\}$ & index \\
+   \hline
+   $f_0$  & $(0,i_0)$ \\
+   $f_1$  & $(0,i_1)$ \\
+   $f_2$  & $(0,i_2)$ \\
+   $g_0$  & $(1,k_0)$ \\
+   $g_1$  & $(1,k_1)$ \\
+   $g_2$  & $(1,k_2)$
+\end{tabular}
+
+
    Exclusive use of this rule will lead to an index tree that is isomorphic to the basis tree.
 
  \item \textbf{FlatLexicographic}: Instead of introducing a new root node, merge the existing
    index subtree roots into a single node.
    \todosander{Ergeben sich die Indizes damit automatisch?  Oder müssen wir hier explizit
      angeben wie sich die Offsets berechnen?}
+
+     This merges the subtree numbers lexicographically, i.e., all degrees of freedom of subtree~0
+appear before all degrees of freedom of subtree~1, which in turn precede those in the later subtrees.
+The fact that the merging strategy is \emph{flat} means that no additional multi-index digit
+is appended to address the different subtrees.
+
+As an example, for two childen $\{f\}$ and $\{g\}$ with multi-indices
+(all $i*$, $k*$ can be multi-indices themselves):
+
+\todosander{Ist es Absicht dass in der folgenden Tabelle zweimal 0 als erste Ziffer vorkommt?
+  Ich habe das so aus der Online-Dokumentation kopiert.}
+\begin{tabular}{l|r}
+   function in $\{f\}$ & index \\
+   \hline
+   $f_0$  & $(0,i_0)$ \\
+   $f_1$  & $(0,i_1)$ \\
+   $f_2$  & $(1,i_2)$
+\end{tabular}
+
+\begin{tabular}{l|r}
+   function in $\{g\}$ & index \\
+   \hline
+   $g_0$  & $(0,k_0)$ \\
+   $g_1$  & $(1,k_1)$ \\
+   $g_2$  & $(2,k_2)$
+\end{tabular}
+
+The merged indices will be
+
+\begin{tabular}{l|r}
+   function in $\{f,g\}$ & index \\
+   \hline
+   $f_0$  & $(0,i_0)$ \\
+   $f_1$  & $(0,i_1)$ \\
+   $f_2$  & $(1,i_2)$ \\
+   $g_0$  & $(2,k_0)$ \\
+   $g_1$  & $(3,k_1)$ \\
+   $g_2$  & $(4,k_2)$
+\end{tabular}
+
+\todosander{Ein Beispiel für den Fall dass die unterschiedlichen Teilbäume nicht die gleiche Art von Indizes verwenden?}
+
+
 \end{itemize}
 
 The previous rules have been called \emph{lexicographic}, by which we mean that all degrees of
@@ -746,7 +820,70 @@ nachzudenken, wenn ich es nicht in einer Anwendung brauchen würde...}
 
 \begin{itemize}
  \item \textbf{FlatInterleaved}:
+
+ \begin{tabular}{l|r}
+   function in $\{f\}$ & index \\
+   \hline
+   $f_0$  & $(0,i_0)$ \\
+   $f_1$  & $(1,i_1)$ \\
+   $f_2$  & $(2,i_2)$
+\end{tabular}
+
+\begin{tabular}{l|r}
+   function in $\{g\}$ & index \\
+   \hline
+   $g_0$  & $(0,i_0)$ \\
+   $g_1$  & $(1,i_1)$ \\
+   $g_2$  & $(2,i_2)$
+\end{tabular}
+
+The merged indices will be
+
+\begin{tabular}{l|r}
+   function in $\{f,g\}$ & index \\
+   \hline
+   $f_0$  & $(0,i_0)$ \\
+   $g_0$  & $(1,i_0)$ \\
+   $f_1$  & $(2,i_1)$ \\
+   $g_1$  & $(3,i_1)$ \\
+   $f_2$  & $(4,i_2)$ \\
+   $g_2$  & $(5,i_2)$
+\end{tabular}
+
+
  \item \textbf{LeafBlockedInterleaved}:
+
+\begin{tabular}{l|r}
+   function in $\{f\}$ & index \\
+   \hline
+   $f_0$  & $(i_0)$ \\
+   $f_1$  & $(i_1)$ \\
+   $f_2$  & $(i_2)$
+\end{tabular}
+
+\begin{tabular}{l|r}
+   function in $\{g\}$ & index \\
+   \hline
+   $g_0$  & $(k_0)$ \\
+   $g_1$  & $(k_1)$ \\
+   $g_2$  & $(k_2)$
+\end{tabular}
+
+The merged indices will be
+
+\begin{tabular}{l|r}
+   function in $\{f,g\}$ & index \\
+   \hline
+   $f_0$  & $(i_0,0)$ \\
+   $g_0$  & $(i_0,1)$ \\
+   $f_1$  & $(i_1,0)$ \\
+   $g_1$  & $(i_1,1)$ \\
+   $f_2$  & $(i_2,0)$ \\
+   $g_2$  & $(i_2,1)$
+\end{tabular}
+
+
+
 \end{itemize}
 
 
