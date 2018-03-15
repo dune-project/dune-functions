@@ -361,7 +361,7 @@ int main (int argc, char *argv[])
   auto basis = makeBasis(
     gridView,
     composite(
-      rt<k, GeometryType::BasicType::cube>(),
+      raviartThomas<k, GeometryType::BasicType::cube>(),
       pq<k>()
     ));
 
