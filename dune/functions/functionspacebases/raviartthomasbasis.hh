@@ -423,7 +423,7 @@ public:
  * \tparam basic_type Basic geometry type
  */
 template<std::size_t k, GeometryType::BasicType basic_type, class size_type=std::size_t>
-auto rt()
+auto raviartThomas()
 {
   return Imp::RaviartThomasPreBasisFactory<k, basic_type, size_type>();
 }

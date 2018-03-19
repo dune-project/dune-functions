@@ -409,7 +409,7 @@ public:
 } // end namespace BasisBuilder::Imp
 
 template<std::size_t k, GeometryType::BasicType basic_type>
-Imp::BrezziDouglasMariniPreBasisFactory<k, basic_type> bdm()
+Imp::BrezziDouglasMariniPreBasisFactory<k, basic_type> brezziDouglasMarini()
 {
   return{};
 }
