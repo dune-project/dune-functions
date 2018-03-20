@@ -45,7 +45,7 @@ template<class V>
 class ISTLVectorBackend
 {
 
-  // Template aliases for using dectecion idiom.
+  // Template aliases for using detection idiom.
   template<class C>
   using dynamicIndexAccess_t = decltype(std::declval<C>()[0]);
 
@@ -129,7 +129,7 @@ class ISTLVectorBackend
   }
 
   template<class... Args>
-  static constexpr void forwardToResize(Args&&... args)
+  static void forwardToResize(Args&&... args)
   {
     resize(std::forward<Args>(args)...);
   }
@@ -137,7 +137,7 @@ class ISTLVectorBackend
 
   template<class C, class SizeProvider,
     std::enable_if_t<hasResizeMethod<C>::value, int> = 0>
-  static constexpr void resize(C&& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
+  static void resize(C&& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
 //    if (size==0)
@@ -159,7 +159,7 @@ class ISTLVectorBackend
   template<class C, class SizeProvider,
     std::enable_if_t<not hasResizeMethod<C>::value, int> = 0,
     std::enable_if_t<isVector<C>::value, int> = 0>
-  static constexpr void resize(C&& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
+  static void resize(C&& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
     // If size == 0 there's nothing to do:
@@ -194,7 +194,7 @@ class ISTLVectorBackend
   template<class C, class SizeProvider,
     std::enable_if_t<not hasResizeMethod<C>::value, int> = 0,
     std::enable_if_t<isScalar<C>::value, int> = 0>
-  static constexpr void resize(C&& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
+  static void resize(C&& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
     if (size != 0)
