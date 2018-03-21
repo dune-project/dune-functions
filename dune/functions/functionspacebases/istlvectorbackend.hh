@@ -114,7 +114,7 @@ class ISTLVectorBackend
   {
     std::size_t i = (nextPosition < multiIndex.size()) ? multiIndex[nextPosition] : 0;
     return hybridIndexAccess(c, i, [&] (auto&& ci) -> decltype(auto) {
-        return resolveMultiIndex(std::forward<decltype(ci)>(ci), multiIndex, nextPosition+1);
+        return ISTLVectorBackend<V>::resolveMultiIndex(std::forward<decltype(ci)>(ci), multiIndex, nextPosition+1);
     });
   }
 
