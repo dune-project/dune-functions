@@ -17,7 +17,6 @@ install(FILES
         lagrangebasis.hh
         lagrangedgbasis.hh
         powerbasis.hh
-        pq1nodalbasis.hh
         pqknodalbasis.hh
         rannacherturekbasis.hh
         nodes.hh
