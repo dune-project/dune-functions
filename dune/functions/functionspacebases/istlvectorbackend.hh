@@ -187,7 +187,7 @@ class ISTLVectorBackend
       // Here we'd simply like to call resize(c[i], sizeProvider, prefix);
       // but gcc does not accept this due to a bug. Instead it reports
       // "error: ‘this’ was not captured for this lambda function"
-      forwardToResize(c[i], sizeProvider, prefix);
+      ISTLVectorBackend<V>::forwardToResize(c[i], sizeProvider, prefix);
     });
   }
 
