@@ -114,7 +114,7 @@ class ISTLVectorBackend
   {
     std::size_t i = (nextPosition < multiIndex.size()) ? multiIndex[nextPosition] : 0;
     return hybridIndexAccess(c, i, [&] (auto&& ci) -> decltype(auto) {
-        return resolveMultiIndex(std::forward<decltype(ci)>(ci), multiIndex, nextPosition+1);
+        return ISTLVectorBackend<V>::resolveMultiIndex(std::forward<decltype(ci)>(ci), multiIndex, nextPosition+1);
     });
   }
 
@@ -187,7 +187,7 @@ class ISTLVectorBackend
       // Here we'd simply like to call resize(c[i], sizeProvider, prefix);
       // but gcc does not accept this due to a bug. Instead it reports
       // "error: ‘this’ was not captured for this lambda function"
-      forwardToResize(c[i], sizeProvider, prefix);
+      ISTLVectorBackend<V>::forwardToResize(c[i], sizeProvider, prefix);
     });
   }
 
