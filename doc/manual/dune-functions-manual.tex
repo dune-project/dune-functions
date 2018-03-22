@@ -1627,12 +1627,11 @@ This method takes a pre-basis factory, and produces a complete basis from it.
 
 In the simple-most case, the tree consists of a single basis. That means that in particular
 you can write
-\todosander{\cpp{rt} ist als Abkürzung arg kurz -- sollten wir ändern! \\
-  Genaugenommen sollten wir eine Regel für die Namensgebung angeben:  Zum Beispiel immer
+\todosander{Ich schlage vor dass wir eine Regel für die Namensgebung angeben:  Zum Beispiel immer
   ``Name der Basis mit kleinem Anfangsbuchstaben und ohne den \cpp{Basis}-Suffix.}
 \todosander{Darf nicht mehr \cpp{BasisType} benutzen!}
 \begin{lstlisting}[style=Example]
-auto raviartThomasBasis = makeBasis(gridView, rt<k, GeometryType::BasicType::cube>());
+auto raviartThomasBasis = makeBasis(gridView, raviartThomas<k, GeometryType::BasicType::cube>());
 \end{lstlisting}
 to obtain a Raviart--Thomas basis for the given grid view.  This is equivalent to constructing
 the basis directly:
@@ -1660,8 +1659,8 @@ Some of them have template parameters to transmit compile-time information.  The
   \cpp{TaylorHoodBasis} & MISSING! \\
   \cpp{LagrangeDGBasis} & \cpp{lagrangeDG} \\
   \cpp{RannacherTurekBasis} & \cpp{rannacherTurek} \\
-  \cpp{RaviartThomasBasis} & \cpp{rt<std::size_t k, BasicType basic_type, class size_type=std::size_t>} \\
-  \cpp{BrezziDouglasMariniBasis} & \cpp{bdm<std::size_t k, BasicType basic_type>} \\
+  \cpp{RaviartThomasBasis} & \cpp{raviartThomas<std::size_t k, BasicType basic_type, class size_type=std::size_t>} \\
+  \cpp{BrezziDouglasMariniBasis} & \cpp{brezziDouglasMarini<std::size_t k, BasicType basic_type>} \\
   \cpp{BSplineBasis} & MISSING!
  \end{tabular}
 \end{center}
@@ -1677,7 +1676,7 @@ template <typename... Args>
 auto composite(Args&&... args);
 \end{lstlisting}
 The method has an unspecified number of arguments, of unspecified type. The arguments are expected
-to be either factory tags for basis objects, like \cpp{lagrange<1>()} or \cpp{rt<k, GeometryType::BasicType::cube>()},
+to be either factory tags for basis objects, like \cpp{lagrange<1>()} or \cpp{raviartThomas<k, GeometryType::BasicType::cube>()},
 or they can be the return value of another call to the \cpp{composite} method (or the \cpp{power} method,
 see below).  They are the subtrees of a new function space basis tree, and the call to \cpp{composite}
 adds the new tree root.
@@ -1688,7 +1687,7 @@ the mixed formulation of the Poisson equation, say), the appropriate call is
 auto mixedBasis = makeBasis(
   gridView,
   composite(
-    rt<0, GeometryType::BasicType::cube>(),
+    raviartThomas<0, GeometryType::BasicType::cube>(),
     pq<0>()
   ));
 \end{lstlisting}
