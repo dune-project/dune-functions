@@ -84,7 +84,7 @@ public:
 
 
 template<class Vector, class Coefficient, std::size_t dim, class MultiIndex>
-Dune::TestSuite checkHierarchicVector(std::string shortName="")
+Dune::TestSuite checkISTLVectorBackend(std::string shortName="")
 {
   Dune::TestSuite test(shortName);
 
@@ -164,7 +164,7 @@ int main (int argc, char *argv[]) try
     using Coefficient = double;
     using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    test.subTest(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>("TV<V<V<double>>, V<double>>"));
+    test.subTest(checkISTLVectorBackend<Vector, Coefficient, 2, MultiIndex>("TV<V<V<double>>, V<double>>"));
   }
 
   {
@@ -173,7 +173,7 @@ int main (int argc, char *argv[]) try
     using Coefficient = double;
     using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    test.subTest(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>("TV<V<BV<FV<double,1>>>, V<FV<doule,1>>>"));
+    test.subTest(checkISTLVectorBackend<Vector, Coefficient, 2, MultiIndex>("TV<V<BV<FV<double,1>>>, V<FV<doule,1>>>"));
   }
 
 //  {
@@ -182,7 +182,7 @@ int main (int argc, char *argv[]) try
 //    using Coefficient = Dune::FieldVector<double,3>;
 //    using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
 //    using MultiIndex = ReservedVector<std::size_t, 3>;
-//    test.subTest(checkHierarchicVector<Vector, Coefficient, 2, MultiIndex>("TV<V<V<FV<double,3>>>, V<FV<double,3>>>"));
+//    test.subTest(checkISTLVectorBackend<Vector, Coefficient, 2, MultiIndex>("TV<V<V<FV<double,3>>>, V<FV<double,3>>>"));
 //  }
 
   {
@@ -192,7 +192,7 @@ int main (int argc, char *argv[]) try
     using Coefficient = double;
     using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    test.subTest(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>("TV<V<A<FV<double,1>,5>>, V<double>>"));
+    test.subTest(checkISTLVectorBackend<Vector, Coefficient, dim, MultiIndex>("TV<V<A<FV<double,1>,5>>, V<double>>"));
   }
 
   {
@@ -202,7 +202,7 @@ int main (int argc, char *argv[]) try
     using Coefficient = double;
     using Vector = Dune::MultiTypeBlockVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    test.subTest(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>("MTBV<BV<FV<double,5>>, BV<FV<double,1>>>"));
+    test.subTest(checkISTLVectorBackend<Vector, Coefficient, dim, MultiIndex>("MTBV<BV<FV<double,5>>, BV<FV<double,1>>>"));
   }
 
   {
@@ -212,7 +212,7 @@ int main (int argc, char *argv[]) try
     using Coefficient = double;
     using Vector = Dune::MultiTypeBlockVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
-    test.subTest(checkHierarchicVector<Vector, Coefficient, dim, MultiIndex>("MTBV<V<MTBV<FV<double,1>, double, FV<double,1>>>, BV<FV<double,1>>"));
+    test.subTest(checkISTLVectorBackend<Vector, Coefficient, dim, MultiIndex>("MTBV<V<MTBV<FV<double,1>, double, FV<double,1>>>, BV<FV<double,1>>"));
   }
 
 
