@@ -1548,13 +1548,6 @@ These can be directly used in finite element simulation codes. At the time of wr
    than one element type.  At the time of writing, higher-order spaces are implemented only partially.
    Check the online class documentation for the current status.
 
- \item \cpp{PQ1NodalBasis}:
- \todosander{Würde ich gerne rausschmeißen, da die Funktionalität durch \cpp{PQKNodalBasis}
-   abgedeckt ist.  Den didaktischen Wert halte ich für überschätzt.}
-   Lagrangian nodal bases of first order.  This is a separate implementation of
-   the case $k=1$ of the previous basis.  It exists mainly so that people interested in writing their
-   own bases have a simple example to look at.
-
  \item \cpp{TaylorHoodBasis}: The Taylor--Hood bases described in Chapter~\ref{sec:finite_element_trees}.
    This is a simple example of basis constructed by building products.
    A complete example for how to use this basis is given in Chapter~\ref{sec:stokes_example}.
@@ -1663,7 +1656,6 @@ Some of them have template parameters to transmit compile-time information.  The
   Basis & tag \\
   \hline
   \cpp{PQkNodalBasis} & \cpp{pq<std::size_t k>} \\
-  \cpp{PQ1NodalBasis} & \cpp{pq1Nodal} \\
   \cpp{LagrangeBasis} & \cpp{lagrange<std::size_t k>} \\
   \cpp{TaylorHoodBasis} & MISSING! \\
   \cpp{LagrangeDGBasis} & \cpp{lagrangeDG} \\
