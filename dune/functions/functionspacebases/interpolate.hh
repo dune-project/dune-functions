@@ -17,7 +17,8 @@
 #include <dune/functions/common/functionfromcallable.hh>
 #include <dune/functions/common/functionconcepts.hh>
 
-#include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+#include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/sizeinfo.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
@@ -72,8 +73,8 @@ public:
 
   using Tree = T;
 
-  using HierarchicVector = HV;
-  using HierarchicBitVector = HBV;
+  using VectorBackend = HV;
+  using BitVectorBackend = HBV;
 
   using NodeToRangeEntry = NTRE;
 
@@ -152,9 +153,9 @@ public:
 
 protected:
 
-  HierarchicVector& vector_;
+  VectorBackend& vector_;
   const LocalFunction& localF_;
-  const HierarchicBitVector& bitVector_;
+  const BitVectorBackend& bitVector_;
   const LocalIndexSet& localIndexSet_;
   const NodeToRangeEntry& nodeToRangeEntry_;
 };
@@ -163,7 +164,23 @@ protected:
 } // namespace Imp
 
 
+template<class C>
+struct ConceptCheck
+{
+  template<class... T>
+  using Check = decltype(models<C, T...>());
 
+
+  template<class... T>
+  static constexpr auto check = models<C, T...>();
+
+  template<class... T>
+  constexpr auto operator()(T&& ...) const
+  {
+    return models<C, std::remove_reference_t<T>...>();
+  }
+
+};
 
 /**
  * \brief Interpolate given function in discrete function space
@@ -196,8 +213,19 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
 
   auto&& gridView = basis.gridView();
 
-  auto&& bitVector = makeHierarchicVectorForMultiIndex<typename B::MultiIndex>(bv);
-  auto&& vector = makeHierarchicVectorForMultiIndex<typename B::MultiIndex>(coeff);
+  // Small helper function to wrap vectors using istlVectorBackend
+  // if they do not already satisfy the VectorBackend interface.
+  auto toVectorBackend = [&](auto& v) -> decltype(auto) {
+    return Dune::Hybrid::ifElse(models<Concept::VectorBackend<B>, decltype(v)>(),
+    [&](auto id) -> decltype(auto) {
+      return v;
+    }, [&](auto id) -> decltype(auto) {
+      return istlVectorBackend(v);
+    });
+  };
+
+  auto&& bitVector = toVectorBackend(bv);
+  auto&& vector = toVectorBackend(coeff);
   vector.resize(sizeInfo(basis));
 
 
