@@ -13,7 +13,7 @@
 #include <dune/grid/utility/structuredgridfactory.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
-#include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+#include <dune/functions/functionspacebases/istlvectorbackend.hh>
 
 #include <dune/istl/bvector.hh>
 using namespace Dune;
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
   using Vector = Dune::BlockVector<Dune::FieldVector<double, 1> >;
   Vector x;
   x.resize(basis.dimension());
-  auto xbe = Dune::Functions::HierarchicVectorWrapper<Vector>(x);
+  auto xbe = Dune::Functions::istlVectorBackend(x);
   x=1.0;
 
   // create a discrete global basis function
