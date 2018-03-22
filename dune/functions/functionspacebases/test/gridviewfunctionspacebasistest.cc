@@ -18,7 +18,6 @@
 #include <dune/localfunctions/test/test-localfe.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/functions/functionspacebases/bsplinebasis.hh>
@@ -272,11 +271,10 @@ void testOnStructuredGrid()
   std::fill(elements.begin(), elements.end(), 2);
   GridType grid(l,elements);
 
-  // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
+  // Test whether function space basis can be instantiated on the leaf view
   typedef typename GridType::LeafGridView GridView;
   GridView gridView = grid.leafGridView();
 
-  PQ1NodalBasis<GridView> pq1Basis(gridView);
   PQkNodalBasis<GridView, 3> pq3Basis(gridView);
   PQkNodalBasis<GridView, 4> pq4Basis(gridView);
   PQkNodalBasis<GridView, 0> pq0Basis(gridView);
@@ -285,9 +283,6 @@ void testOnStructuredGrid()
   LagrangeDGBasis<GridView, 3> lagrangeDG3Basis(gridView);
 
   grid.globalRefine(2);
-
-  // Test PQ1NodalBasis
-  testScalarBasis(pq1Basis, gridView, true);
 
   // Test PQkNodalBasis for k==3
   if (dim<3) // Currently not implemented for dim >= 3
@@ -367,11 +362,7 @@ void testOnHybridGrid()
   // reference value is wrong.
   bool disableInterpolate = (dim==3);
 
-  // Test PQ1NodalBasis -- dedicated implementation
-  PQ1NodalBasis<GridView> pq1DedicatedBasis(gridView);
-  testScalarBasisConst(pq1DedicatedBasis, true, disableInterpolate);
-
-  // Test PQ1NodalBasis -- generic basis
+  // Test PQkNodalBasis for k==1
   PQkNodalBasis<GridView, 1> pq1Basis(gridView);
   testScalarBasisConst(pq1Basis, true, disableInterpolate);
 
