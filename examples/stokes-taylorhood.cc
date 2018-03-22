@@ -262,7 +262,7 @@ int main (int argc, char *argv[]) try
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> bbox = {1, 1};
-  std::array<int,dim> elements = {4, 4};
+  std::array<int,dim> elements = {{4, 4}};
   GridType grid(bbox,elements);
 
   typedef GridType::LeafGridView GridView;

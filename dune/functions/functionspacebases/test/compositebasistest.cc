@@ -2,6 +2,7 @@
 // vi: set et ts=4 sw=2 sts=2:
 #include <config.h>
 
+#include <dune/common/unused.hh>
 #include <dune/common/function.hh>
 #include <dune/common/bitsetvector.hh>
 
@@ -24,7 +25,7 @@ int main (int argc, char *argv[]) try
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> l(1);
-  std::array<int,dim> elements = {4, 4};
+  std::array<int,dim> elements = {{4, 4}};
   GridType grid(l,elements);
 
   typedef GridType::LeafGridView GridView;
@@ -36,7 +37,7 @@ int main (int argc, char *argv[]) try
 
   using namespace Functions::BasisBuilder;
 
-  auto basis = makeBasis(
+  auto basis DUNE_UNUSED = makeBasis(
     gridView,
     composite(
       pq<1>(),

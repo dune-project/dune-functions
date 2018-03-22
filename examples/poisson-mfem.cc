@@ -338,10 +338,10 @@ int main (int argc, char *argv[])
 
 #ifdef DIM2
   const int dim = 2;
-  std::array<int,dim> elements = {50, 50};
+  std::array<int,dim> elements = {{50, 50}};
 #else
   const int dim = 3;
-  std::array<int,dim> elements = {10, 10, 10};
+  std::array<int,dim> elements = {{10, 10, 10}};
 #endif
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> l(1);
