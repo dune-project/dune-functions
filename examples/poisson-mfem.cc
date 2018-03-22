@@ -22,7 +22,7 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/raviartthomasbasis.hh>
-#include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+#include <dune/functions/functionspacebases/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
@@ -292,8 +292,8 @@ void assembleMixedPoissonRhs(const Basis& basis,
   auto localVolumeTerm = localFunction(Functions::makeGridViewFunction(volumeTerm, gridView));
 
   // set rhs to correct length -- the total number of basis vectors in the basis
-  typedef Dune::Functions::HierarchicVectorWrapper<VectorType, double> HierarchicVectorView;
-  HierarchicVectorView(rhs).resize(basis);
+  using Dune::Functions::istlVectorBackend;
+  istlVectorBackend(rhs).resize(basis);
 
   // Set all entries to zero
   rhs = 0;
@@ -366,7 +366,8 @@ int main (int argc, char *argv[])
 
   typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
   typedef BlockVector<BlockVector<FieldVector<double,1> > > VectorType;
-  typedef Dune::Functions::HierarchicVectorWrapper<VectorType, double> HierarchicVectorView;
+
+  using Dune::Functions::istlVectorBackend;
 
   MatrixType stiffnessMatrix;
   VectorType rhs;
@@ -388,7 +389,6 @@ int main (int argc, char *argv[])
 
   using namespace TypeTree::Indices;
   using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
-  using HierarchicBitVectorView = Functions::HierarchicVectorWrapper<BitVectorType, char>;
 
   BitVectorType isTopBoundary;
   BitVectorType isLowerBoundary;
@@ -422,10 +422,10 @@ int main (int argc, char *argv[])
   VectorType isTopBoundaryTmp, isLowerBoundaryTmp;
 
   // Use double-valued interpolation and transfer to char-valued vectors.
-  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicVectorView(isTopBoundaryTmp),   topBoundaryIndicator);
-  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicVectorView(isLowerBoundaryTmp), lowerBoundaryIndicator);
-  HierarchicBitVectorView(isTopBoundary).resize(basis);
-  HierarchicBitVectorView(isLowerBoundary).resize(basis);
+  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), istlVectorBackend(isTopBoundaryTmp),   topBoundaryIndicator);
+  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), istlVectorBackend(isLowerBoundaryTmp), lowerBoundaryIndicator);
+  istlVectorBackend(isTopBoundary).resize(basis);
+  istlVectorBackend(isLowerBoundary).resize(basis);
   isTopBoundary = 0;
   isLowerBoundary = 0;
   for (size_t i=0; i<isTopBoundaryTmp[0].size(); i++)
@@ -434,8 +434,8 @@ int main (int argc, char *argv[])
     isLowerBoundary[0][i] = isLowerBoundaryTmp[0][i]!=0 ? 1: 0;
   }
 
-  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicVectorView(rhs), topFluxBC,   HierarchicBitVectorView(isTopBoundary));
-  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), HierarchicVectorView(rhs), lowerFluxBC, HierarchicBitVectorView(isLowerBoundary));
+  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), istlVectorBackend(rhs), topFluxBC,   istlVectorBackend(isTopBoundary));
+  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), istlVectorBackend(rhs), lowerFluxBC, istlVectorBackend(isLowerBoundary));
 
   ////////////////////////////////////////////
   //   Modify Dirichlet rows
@@ -490,8 +490,8 @@ int main (int argc, char *argv[])
   using FluxRange = FieldVector<double,dim>;
   using PressureRange = double;
 
-  auto fluxFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<FluxRange>(basis, TypeTree::hybridTreePath(_0), HierarchicVectorView(x));
-  auto pressureFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<PressureRange>(basis, TypeTree::hybridTreePath(_1), HierarchicVectorView(x));
+  auto fluxFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<FluxRange>(basis, TypeTree::hybridTreePath(_0), istlVectorBackend(x));
+  auto pressureFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<PressureRange>(basis, TypeTree::hybridTreePath(_1), istlVectorBackend(x));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
