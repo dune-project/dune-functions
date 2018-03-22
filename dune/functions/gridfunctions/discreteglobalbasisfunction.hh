@@ -117,9 +117,6 @@ public:
       template<typename Node, typename TreePath>
       void leaf(Node& node, TreePath treePath)
       {
-        using MultiIndex = typename LocalIndexSet::MultiIndex;
-        using RangeBlock = typename std::decay<decltype(nodeToRangeEntry_(node, y_))>::type;
-
         auto&& fe = node.finiteElement();
         auto&& localBasis = fe.localBasis();
 
