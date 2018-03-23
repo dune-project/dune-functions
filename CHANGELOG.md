@@ -5,6 +5,11 @@ correponding version of the Dune core modules.
 
 ## Master (will become release 2.7)
 
+* The new method `istlVectorBacken(vector)` creates a `VectorBackend`
+  suitable for being used as coefficient vector for `interpolate()`
+  and `DiscreteGlobalBasisFunction`. The underlying `vector` can
+  be a nested vector composed by stl and dune random access containers.
+  Notice that the only scalar coefficients per basis function are supported.
 * `FlatVectorBackend` is now officially an implementation detail and thus moved
   to the namespace `Impl::`. The header `flatvectorbackend.hh` was removed.
   As a replacement the new free function `flatVectorView(c)` create a view
