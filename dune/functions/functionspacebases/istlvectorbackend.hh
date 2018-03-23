@@ -144,13 +144,26 @@ class ISTLVectorBackend
   static void resize(C&& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
-//    if (size==0)
-//    {
-//      if (c.size()==0)
-//        DUNE_THROW(RangeError, "Can't resize dynamically sized vector entry v[" << prefix << "]. Its size is 0 but the target size is unknown due to size(" << prefix << ")=0.");
-//      else
-//        return;
-//    }
+    if (size==0)
+    {
+      // If size==0 this prefix refers to a single coefficient c.
+      // But being in this overload means that c is not a scalar
+      // because is has a resize() method. Since operator[] deliberately
+      // supports implicit padding of multi-indices by as many
+      // [0]'s as needed to resolve a scalar entry, we should also
+      // except a non-scalar c here. However, this requires that
+      // we silently believe that whatever size c already has is
+      // intended by the user. The only exception is c.size()==0
+      // which is not acceptable but we also cannot know the desired size.
+      if (c.size()==0)
+        DUNE_THROW(RangeError, "The vector entry v[" << prefix << "] should refer to a "
+                                << "scalar coefficient, but is a dynamically sized vector of size==0");
+      else
+        // Accept non-zero sized coefficients to avoid that resize(basis)
+        // fails for a vector that works with operator[] and already
+        // has the appropriate size.
+        return;
+    }
     c.resize(size);
     prefix.push_back(0);
     for(std::size_t i=0; i<size; ++i)
