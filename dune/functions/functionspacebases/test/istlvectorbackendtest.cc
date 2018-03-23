@@ -29,8 +29,8 @@ using namespace Dune;
  * \brief A Dummy global basis
  *
  * This is a mock class providing non-uniform size information.
- * It's non-uniform in the sense, that not all multi-indices are
- * do not always have the same size.
+ * It's non-uniform in the sense that not all multi-indices
+ * have the same length.
  */
 template<std::size_t dim>
 class GlobalBasisMoc
