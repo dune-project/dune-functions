@@ -176,15 +176,6 @@ int main (int argc, char *argv[]) try
     test.subTest(checkISTLVectorBackend<Vector, Coefficient, 2, MultiIndex>("TV<V<BV<FV<double,1>>>, V<FV<doule,1>>>"));
   }
 
-//  {
-//    using VelocityVector = std::vector<std::vector<Dune::FieldVector<double,3>>>;
-//    using PressureVector = std::vector<Dune::FieldVector<double,3>>;
-//    using Coefficient = Dune::FieldVector<double,3>;
-//    using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
-//    using MultiIndex = ReservedVector<std::size_t, 3>;
-//    test.subTest(checkISTLVectorBackend<Vector, Coefficient, 2, MultiIndex>("TV<V<V<FV<double,3>>>, V<FV<double,3>>>"));
-//  }
-
   {
     static const std::size_t dim = 5;
     using VelocityVector = std::vector<std::array<Dune::FieldVector<double,1>,dim>>;
