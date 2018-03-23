@@ -114,7 +114,11 @@ class ISTLVectorBackend
   {
     std::size_t i = (nextPosition < multiIndex.size()) ? multiIndex[nextPosition] : 0;
     return hybridIndexAccess(c, i, [&] (auto&& ci) -> decltype(auto) {
-        return ISTLVectorBackend<V>::resolveMultiIndex(std::forward<decltype(ci)>(ci), multiIndex, nextPosition+1);
+      // Here we'd simply like to call resolveMultiIndex(...)
+      // but gcc-5 does not find the name unless we explicitly
+      // qualify the call although it should compile because
+      // it's visible in our scope.
+      return ISTLVectorBackend<V>::resolveMultiIndex(std::forward<decltype(ci)>(ci), multiIndex, nextPosition+1);
     });
   }
 
@@ -185,8 +189,11 @@ class ISTLVectorBackend
     forEach(integralRange(Hybrid::size(c)), [&](auto&& i) {
       prefix.back() = i;
       // Here we'd simply like to call resize(c[i], sizeProvider, prefix);
-      // but gcc does not accept this due to a bug. Instead it reports
+      // but even gcc-7 does not except this bus reports
       // "error: ‘this’ was not captured for this lambda function"
+      // although there's no 'this' because we're in a static method.
+      // Bypassing this by and additional method that does perfect
+      // forwarding allows to workaround this.
       ISTLVectorBackend<V>::forwardToResize(c[i], sizeProvider, prefix);
     });
   }
