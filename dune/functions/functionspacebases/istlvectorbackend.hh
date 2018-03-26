@@ -10,6 +10,7 @@
 #include <dune/common/std/type_traits.hh>
 #include <dune/common/indices.hh>
 #include <dune/common/hybridutilities.hh>
+#include <dune/common/overloadset.hh>
 
 #include <dune/functions/common/indexaccess.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
@@ -132,6 +133,53 @@ class ISTLVectorBackend
     return std::forward<C>(c);
   }
 
+
+  template<class... Args>
+  static void forwardToAccessEntry(Args&&... args)
+  {
+    accessEntry(std::forward<Args>(args)...);
+  }
+
+
+
+  template<class C, class MultiIndex, class F,
+    std::enable_if_t<isDynamicVector<C>::value, int> = 0>
+  static void accessEntry(C&& c, const MultiIndex& multiIndex, F&& f, std::size_t nextPosition = 0)
+  {
+    if (nextPosition == multiIndex.size())
+      f(std::forward<C>(c));
+    else
+      accessEntry(c[multiIndex[nextPosition]], multiIndex, f, nextPosition+1);
+  }
+
+  template<class C, class MultiIndex, class F,
+    std::enable_if_t<isStaticVector<C>::value, int> = 0>
+  static void accessEntry(C&& c, const MultiIndex& multiIndex, F&& f, std::size_t nextPosition = 0)
+  {
+    if (nextPosition == multiIndex.size())
+      f(std::forward<C>(c));
+    else
+    {
+      hybridIndexAccess(c, multiIndex[nextPosition], [&] (auto&& ci) -> decltype(auto) {
+        // Here we'd simply like to call accessEntry(...)
+        // but gcc-5 does not find the name unless we explicitly
+        // qualify the call although it should compile because
+        // it's visible in our scope.
+        ISTLVectorBackend<V>::forwardToAccessEntry(std::forward<decltype(ci)>(ci), multiIndex, f, nextPosition+1);
+      });
+    }
+  }
+
+  template<class C, class MultiIndex, class F,
+    std::enable_if_t<isScalar<C>::value, int> = 0>
+  static void accessEntry(C&& c, const MultiIndex& multiIndex, F&& f, std::size_t nextPosition = 0)
+  {
+    assert(nextPosition == multiIndex.size());
+    f(std::forward<C>(c));
+  }
+
+
+
   template<class... Args>
   static void forwardToResize(Args&&... args)
   {
@@ -247,6 +295,12 @@ public:
   decltype(auto) operator[](const MultiIndex& index)
   {
     return resolveMultiIndex(*vector_, index);
+  }
+
+  template<class MultiIndex, class F>
+  void accessEntry(const MultiIndex& index, F&& f)
+  {
+    accessEntry(*vector_, index, orderedOverload(f, [](auto&&...) -> void{}));
   }
 
   const Vector& vector() const

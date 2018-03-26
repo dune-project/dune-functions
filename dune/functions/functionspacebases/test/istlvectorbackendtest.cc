@@ -146,6 +146,105 @@ Dune::TestSuite checkISTLVectorBackend(std::string shortName="")
   return test;
 }
 
+template<class Vector, std::size_t dim, class MultiIndex>
+Dune::TestSuite checkISTLVectorBackendAccessEntry(std::string shortName="")
+{
+  Dune::TestSuite test(shortName);
+
+  using namespace Dune::TypeTree::Indices;
+  using Basis = GlobalBasisMoc<dim>;
+  using SizePrefix = typename Basis::SizePrefix;
+
+  Basis basis;
+
+  // Create raw vector
+  Vector x_raw;
+
+  // Create wrapped vector
+  auto x = Dune::Functions::istlVectorBackend(x_raw);
+
+  test.require(Dune::models<Dune::Functions::Concept::VectorBackend<Basis>, decltype(x)>(), "VectorBackend concept check")
+    << "Object returned by istlVectorBackend() does not model the VectorBackend concept";
+
+  // Resize wrapped vector using basis
+  x.resize(basis);
+
+  // Derive size information from vector
+  test.require(x_raw.size() == basis.size(SizePrefix{}), "resize check")
+    << "x_raw.size() is " << x_raw.size() << " but should be " << basis.size(SizePrefix{});
+
+  test.require(x_raw[_0].size() == basis.size(SizePrefix{0}), "resize check")
+    << "x_raw[_0].size() is " << x_raw[_0].size() << " but should be " << basis.size(SizePrefix{0});
+
+  for (std::size_t i=0; i<basis.size({0}); ++i)
+    test.require(x_raw[_0][i].size() == basis.size(SizePrefix{0,i}), "resize check")
+      << "x_raw[_0][" << i << "].size() is " << x_raw[_0][i].size() << " but should be " << basis.size(SizePrefix{0,i});
+
+  test.require(x_raw[_1].size() == basis.size(SizePrefix{1}), "resize check")
+    << "x_raw[_1].size() is " << x_raw[_0].size() << " but should be " << basis.size(SizePrefix{1});
+
+
+  // Assign values to each vector entry
+  //
+  // Notice that we need to know the exact entry type
+  // below to ensure that the code compiles.
+  for (std::size_t i=0; i<x_raw[_0].size(); ++i)
+    for (std::size_t j=0; j<x_raw[_0][i].size(); ++j)
+      x.accessEntry(MultiIndex{{0, i, j}}, [&](Dune::FieldVector<double,3>& xx) {
+          xx = 0+i+j;
+      });
+  for (std::size_t i=0; i<x_raw[_1].size(); ++i)
+    x.accessEntry(MultiIndex{{1, i}}, [&](double& xx) {
+        xx = 1+i;
+    });
+
+  // Assign values to each vector entry
+  //
+  // Alternative aaporach: Use SFINAE to ensure that the expressions
+  // in the callback compile. Nasty consequence: If it does not compile
+  // for the type we expect it to, the code will silently be ignored
+  // and the entry will not be touched, without ever getting a warning!
+  for (std::size_t i=0; i<x_raw[_0].size(); ++i)
+    for (std::size_t j=0; j<x_raw[_0][i].size(); ++j)
+      x.accessEntry(MultiIndex{{0, i, j}}, [&](auto&& xx)
+          -> typename Dune::void_t<decltype(xx = 0+i+j+42)>
+      {
+          xx = 0+i+j+42;
+      });
+  for (std::size_t i=0; i<x_raw[_1].size(); ++i)
+    x.accessEntry(MultiIndex{{1, i}}, [&](double& xx)
+          -> typename Dune::void_t<decltype(xx = 1+i)>
+      {
+        xx = 1+i+42;
+      });
+
+
+  // Print the result
+  for (std::size_t i=0; i<x_raw[_0].size(); ++i)
+    for (std::size_t j=0; j<x_raw[_0][i].size(); ++j)
+    {
+      std::cout << "x[0," << i << "," << j << "] = ";
+      x.accessEntry(MultiIndex{{0, i, j}}, [&](auto&& xx)
+          -> typename Dune::void_t<decltype(std::cout << xx)>
+      {
+          std::cout << xx;
+      });
+      std::cout << " should be " << i+j+42 << std::endl;
+    }
+  for (std::size_t i=0; i<x_raw[_1].size(); ++i)
+  {
+    std::cout << "x[1," << i << "] = ";
+    x.accessEntry(MultiIndex{{1, i}}, [&](double& xx)
+        -> typename Dune::void_t<decltype(std::cout << xx)>
+    {
+      std::cout << xx;
+    });
+    std::cout << " should be " << 1+i+42 << std::endl;
+  }
+
+
+  return test;
+}
 
 int main (int argc, char *argv[]) try
 {
@@ -204,6 +303,14 @@ int main (int argc, char *argv[]) try
     using Vector = Dune::MultiTypeBlockVector<VelocityVector, PressureVector>;
     using MultiIndex = ReservedVector<std::size_t, 3>;
     test.subTest(checkISTLVectorBackend<Vector, Coefficient, dim, MultiIndex>("MTBV<V<MTBV<FV<double,1>, double, FV<double,1>>>, BV<FV<double,1>>"));
+  }
+
+  {
+    using VelocityVector = std::vector<std::vector<Dune::FieldVector<double,3>>>;
+    using PressureVector = std::vector<double>;
+    using Vector = Dune::TupleVector<VelocityVector, PressureVector>;
+    using MultiIndex = ReservedVector<std::size_t, 3>;
+    test.subTest(checkISTLVectorBackendAccessEntry<Vector, 2, MultiIndex>("TV<V<V<FV<double,3>>>, V<FV<double,3>>>"));
   }
 
 
