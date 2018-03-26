@@ -1529,6 +1529,55 @@ using namespace Indices;
 const auto& node = localView.tree().child(_0, 1);
 \end{lstlisting}
 
+\subsection{Multi-indices}
+
+The type of global multi-indices is hard-wired by \dunemodule{dune-functions}.  Generally, multi-indices
+will be objects of type
+\begin{lstlisting}
+template <class T, int n>
+class ReservedVector;
+\end{lstlisting}
+This is a general container class, provided by \dunemodule{dune-common} in the file
+\file{dune/common/reservedvector.hh}.  It behaves like a \cpp{std::vector}, i.e., it is a
+random-access container with dynamically adjustable size.  The difference to a \cpp{std::vector}
+is that a \cpp{ReservedVector} stores its data on the operating system stack, rather than on
+the heap.  This allows for much more efficient container construction, destruction, and data access.
+However, as stack space is limited, \cpp{ReservedVector} objects can only be used for small amounts
+of data. The second template parameter specifies the amount of memory to reserve on the stack
+(in units of data items \cpp{T}). If the actual container size exceeds that number, the resulting
+behavior is undefined.
+\todosander{Erklären dass der Zahlentype \cpp{T} von außen gesteuert werden kann.}
+
+It has to be noted that while the trees of global and local basis functions is encoded statically
+in C++ type information, the index tree, i.e., the set of multi-indices use to label global
+degrees of freedom is a pure run-time construct.  This can be inconvenient when using multi-indices
+to access containers such as \cpp{std::tuple} or \cpp{MultiTypeBlockVector} from the \dunemodule{dune-istl}
+module.
+\todosander{Begründe diese Entscheidung.}
+
+If the basis is indexed with a flat index, i.e., a multi-index with only a single digit,
+then using a \cpp{ReservedVector} can be a bit cumbersome (besides being inefficient, because
+each \cpp{ReservedVector} object stores its size as a run-time value).  Morally, flat multi-indices
+are simply natural numbers.  However, if \cpp{i} is \cpp{ReservedVector} of length~1,
+using it to access the corresponding entry of a \cpp{std::vector} called \cpp{vec} has to be
+written as
+\begin{lstlisting}
+auto value = vec[i[0]];
+\end{lstlisting}
+To allow the more intuitive syntax
+\begin{lstlisting}
+auto value = vec[i];
+\end{lstlisting}
+\dunemodule{dune-functions} switches away from the \cpp{ReservedVector} implementation if the index
+of a basis tree is flat.  In that case, indices are stored as objects of type \cpp{FlatMultiIndex}.
+These objects behave like objects of type \cpp{std::array<T,1>}.  Additionally, they allow to cast
+theiry content to \cpp{T&}.  Therefore, objects of type \cpp{FlatMultiIndex} can be directly used
+like number types, and like multi-index types as well.
+\todosander{Wenn man das hier liest drängt sich die Frage auf warum man nicht allgemeiner für
+uniforme Multi-Indizes auf \cpp{std::array} wechseln kann (ohne den Cast-Operator, natürlich).
+Da Multi-Indizes ja vermutlich häufig kopiert werden, möchte man die Länge ja wirklich nur
+dabei haben wenn man sie wirklich braucht.}
+
 
 \section{Constructing trees of finite element bases}
 
