@@ -306,13 +306,13 @@ The \dunemodule{dune-functions} module does not currently support constructing s
 of finite element bases, but this may be added in later versions.
 
 The second way to construct finite element spaces from simpler ones uses Cartesian products.
-Let $V$ and $W$ be two scalar function space bases.
+Let $V \subset (\R^{r_1})^\Omega$ and $W \subset (\R^{r_2})^\Omega$ be two scalar function space bases.
 Then we define the product of the $V$ and $W$ as
 \begin{align*}
   V \times W
     \colonequals \big\{ (v,w) \st v \in V, \; w \in W \big\}.
 \end{align*}
-Functions from this space take values in $\R^{n_1} \times \R^{n_2} = \R^{n_1 + n_2}$.
+Functions from this space take values in $\R^{r_1} \times \R^{r_2} = \R^{r_1 + r_2}$.
 
 It should be noted that building the (Cartesian) product of
 vector spaces should not be confused with building the tensor product of these spaces.
@@ -388,8 +388,8 @@ Then we define the product of the bases $B$ and $C$ as
    \cup \big\{(0,\gamma_1), (0,\gamma_2), \dots, (0,\gamma_{n_2})\big\}.
 \end{align*}
 These basis functions take values in $\R \times \R = \R^2$.
-More generally, if $B$ and $C$ are bases with ranges $\R^{m_1}$
-and $\R^{m_2}$, respectively, then
+More generally, if $B$ and $C$ are bases with ranges $\R^{r_1}$
+and $\R^{r_2}$, respectively, then
 \begin{equation}
 \label{eq:basis_product}
     (B,C)
@@ -398,9 +398,9 @@ and $\R^{m_2}$, respectively, then
  \cup
  \big\{(\mathbf{0}, \gamma_1), (\mathbf{0},\gamma_2), \dots, (\mathbf{0}, \gamma_{n_2})\big\}
 \end{equation}
-is the natural basis of the space $\operatorname{span} B \times \operatorname{span} C$.  Its basis functions take values in $\R^{m_1} \times \R^{m_2} = \R^{m_1+m_2}$.
-In particular, the symbol $\mathbf{0}$ in the formula above denotes the constant $\R^{m_1}$ and
-$\R^{m_2}$-valued zero functions.
+is the natural basis of the space $\operatorname{span} B \times \operatorname{span} C$.  Its basis functions take values in $\R^{r_1} \times \R^{r_2} = \R^{r_1+r_2}$.
+In particular, the symbol $\mathbf{0}$ in the formula above denotes the constant $\R^{r_1}$ and
+$\R^{r_2}$-valued zero functions.
 
 Similarly to the case of function spaces, bases can be interpreted as trees.
 This time, the individual basis functions form the tree leafs, and scalar or otherwise irreducible bases are
