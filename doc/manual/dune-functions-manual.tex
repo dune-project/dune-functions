@@ -249,6 +249,11 @@ T t = foo(1);
 auto bar = Bar(t, @@<more args>@@);
 \end{lstlisting}
 
+For two sets $R$ and $\Omega$ we denote by $R^\Omega = \{f:R \to \Omega\}$
+the set of all functions mapping from $R$ to $\Omega$. For domains $\Omega\subset \R^d$
+we denote by $P_k(\Omega) \subset \R^\Omega$ the space of all
+scalar-valued polynomials of degree at most $k$ on $\Omega$.
+If the domain $\Omega$ is fixed, we will simply write $P_k$.
 
 
 
@@ -261,10 +266,16 @@ auto bar = Bar(t, @@<more args>@@);
 Before we can explain the programmer interface for bases of discrete function spaces in Chapter~\ref{sec:function_space_bases_implementation},
 we need to say a few words about how these bases can be endowed with an abstract tree structure.
 Readers who are only interested in scalar finite element spaces may try to proceed directly to
-Chapter~\ref{sec:function_space_bases_implementation}.  They should only know that whenever a tree
-is mentioned there, this tree consists of a single node only, which is the finite element basis.
+Chapter~\ref{sec:function_space_bases_implementation}.  They should only know that whenever a
+local finite element tree
+is mentioned there, this tree consists of a single node only, which is the local finite element basis.
+Similarly, for a scalar finite element space the tree of multi-indices used to index the
+basis functions often takes the form of
+a contiguous, zero-starting set of natural numbers.
+
 \todosander{Dieser letzte Satz stimmt leider in seiner Einfachheit nicht mehr---mittlerweile
 haben wir ja drei Arten von Bäumen.}
+\todograeser{Besser so?}
 
 \subsection{Trees of finite element spaces}
 
@@ -328,9 +339,10 @@ Grouped expressions of this type are conveniently visualized as tree structures.
 suggests to interpret composite
 finite element spaces as tree structures.  In this structure, leaf nodes represent scalar or otherwise irreducible spaces,
 and inner nodes represent products of their children.  Subtrees then represent composite
-finite element spaces.  Figure~\ref{fig:taylor_hood_basis_tree} shows the Tayor--Hood finite element
+finite element spaces.  Figure~\ref{fig:taylor_hood_space_tree} shows the Tayor--Hood finite element
 space in such a tree representation. Note that in this document all trees are \emph{rooted} and \emph{ordered},
 i.e., they have a dedicated root note, and the children of each node have a fixed given ordering.
+Based on this child ordering we associate to each child the corresponding zero-based index.
 
 \begin{figure}
     \begin{center}
