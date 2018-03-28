@@ -374,7 +374,7 @@ reuse existing algorithms that expect to operate on those subtrees in more compl
 
 The product of finite-dimensional spaces naturally induces a corresponding operation on bases
 of such spaces.
-Let $B = \{\lambda_i\}_{i=1}^{n_1}$ and $C = \{\gamma_i\}_{i=1}^{n_2}$ be two scalar function space bases
+Let $B = \{\lambda_i\}_{i=0}^{n_1-1}$ and $C = \{\gamma_i\}_{i=0}^{n_2-1}$ be two scalar function space bases
 and let $\mathbf{e}_1$, $\mathbf{e}_2$ be the canonical basis vectors in $\R^2$.
 Then we define the product of the bases $B$ and $C$ as
 \begin{align*}
@@ -384,8 +384,8 @@ Then we define the product of the bases $B$ and $C$ as
     &= \big\{ \mathbf{e}_1 \otimes \lambda \st \lambda \in B \big\}
     \cup \big\{ \mathbf{e}_2 \otimes \gamma \st \gamma \in C \big\} \\
  & =
- \big\{(\lambda_1,0), (\lambda_2,0), \dots, (\lambda_{n_1},0) \big\}
-   \cup \big\{(0,\gamma_1), (0,\gamma_2), \dots, (0,\gamma_{n_2})\big\}.
+ \big\{(\lambda_0,0), (\lambda_1,0), \dots, (\lambda_{n_1-1},0) \big\}
+   \cup \big\{(0,\gamma_0), (0,\gamma_1), \dots, (0,\gamma_{n_2-1})\big\}.
 \end{align*}
 These basis functions take values in $\R \times \R = \R^2$.
 More generally, if $B$ and $C$ are bases with ranges $\R^{r_1}$
@@ -394,11 +394,12 @@ and $\R^{r_2}$, respectively, then
 \label{eq:basis_product}
     (B,C)
  \colonequals
- \big\{(\lambda_1,\mathbf{0}), (\lambda_2,\mathbf{0}), \dots, (\lambda_{n_1},\mathbf{0})\big\}
+ \big\{(\lambda_0,\mathbf{0}), (\lambda_1,\mathbf{0}), \dots, (\lambda_{n_1-1},\mathbf{0})\big\}
  \cup
- \big\{(\mathbf{0}, \gamma_1), (\mathbf{0},\gamma_2), \dots, (\mathbf{0}, \gamma_{n_2})\big\}
+ \big\{(\mathbf{0}, \gamma_0), (\mathbf{0},\gamma_1), \dots, (\mathbf{0}, \gamma_{n_2-1})\big\}
 \end{equation}
-is the natural basis of the space $\operatorname{span} B \times \operatorname{span} C$.  Its basis functions take values in $\R^{r_1} \times \R^{r_2} = \R^{r_1+r_2}$.
+is the natural basis of the space $\operatorname{span} B \times \operatorname{span} C$.
+Its basis functions take values in $\R^{r_1} \times \R^{r_2} = \R^{r_1+r_2}$.
 In particular, the symbol $\mathbf{0}$ in the formula above denotes the constant $\R^{r_1}$ and
 $\R^{r_2}$-valued zero functions.
 
@@ -413,12 +414,12 @@ notated as trees with a single root and no further non-leaf roots.
             }
         ]
         \node [treenode] {$B$}
+            child{ node [treenode] {$\gamma_0$} }
             child{ node [treenode] {$\gamma_1$} }
             child{ node [treenode] {$\gamma_2$} }
-            child{ node [treenode] {$\gamma_3$} }
             child{ node [] {$\dots$} }
-            child{ node [treenode] {$\gamma_{n-1}$} }
-            child{ node [treenode] {$\gamma_n$} };
+            child{ node [treenode] {$\gamma_{n-2}$} }
+            child{ node [treenode] {$\gamma_{n-1}$} };
     \end{tikzpicture}
 \end{center}
 The operation of taking two bases $B$ and $C$, and joining them to form a new basis $(B,C)$
@@ -439,25 +440,25 @@ is isomorphic to the tree of the Taylor--Hood \emph{space}, shown in Figure~\ref
             \node [treenode] {$(P_2 \times P_2 \times P_2) \times P_1$}
                 child{ node [treenode] {$P_2 \times P_2 \times P_2$}
                     child{ node [treenode] {$P_2$}
-                        child{ node [basisnode] {$\lambda_1^2$} }
+                        child{ node [basisnode] {$\lambda_0^2$} }
                         child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$\lambda_{n_2}^2$} }
+                        child{ node [basisnode] {$\lambda_{n_2-1}^2$} }
                     }
                     child{ node [treenode] {$P_2$}
-                        child{ node [basisnode] {$\lambda_1^2$} }
+                        child{ node [basisnode] {$\lambda_0^2$} }
                         child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$\lambda_{n_2}^2$} }
+                        child{ node [basisnode] {$\lambda_{n_2-1}^2$} }
                     }
                     child { node [treenode] {$P_2$}
-                        child{ node [basisnode] {$\lambda_1^2$} }
+                        child{ node [basisnode] {$\lambda_0^2$} }
                         child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$\lambda_{n_2}^2$} }
+                        child{ node [basisnode] {$\lambda_{n_2-1}^2$} }
                     }
                 }
                 child{ node [treenode] {$P_1$}
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_1^1$} }
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^1$} }
                     child [sibling distance=1cm] { node [] {$\dots$} }
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1}^1$} }
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1-1}^1$} }
                 };
         \end{tikzpicture}
     \end{center}
