@@ -172,10 +172,10 @@ exist as well.  The functionality of these modules overlaps to a considerable ex
 each such module has a different focus.
 
 The \dunemodule{dune-functions}  module was written to partially overcome this fragmentation,
-and to unify partos of the competing implementations.
+and to unify parts of the competing implementations.
 It picks a well-defined aspect of finite element assembly---finite element spaces and functions---and,
 in the \dune spirit, provides an abstract interface that tries to be both extremely flexibly
-and efficient.  It is hoped for that other implementations of the same functionality
+and efficient.  It is hoped for, that other implementations of the same functionality
 eventually replace their implementations by a dependence on \dunemodule{dune-functions}.
 Indeed, at least \dunemodule{dune-pdelab} and \dunemodule{dune-fufem} are already in the process
 of migrating, and have stated their clear intention to complete this migration eventually.
@@ -208,7 +208,7 @@ by a contiguous, zero-starting set of natural numbers. On the other hand, from t
 of the basis follows a natural indexing by multi-indices, which can be used to address nested
 vector and matrix data types, like the ones provided by \dunemodule{dune-istl}. Closer inspection
 reveals that these two possibilities are just two extreme cases of a wider scale of indexing rules.
-The \dunemodule{dune-functions} module therefore provides a systematic way to construct all these
+The \dunemodule{dune-functions} module therefore provides a systematic way to construct such
 rules.  Many of them really are useful in applications.
 
 The \dunemodule{dune-functions} module is hosted on the \dune project homepage \url{www.dune-project.org}.
