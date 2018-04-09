@@ -85,7 +85,8 @@
 
 \definecolor{interfacecolor}{rgb}{0.95,0.95,1}
 \lstdefinestyle{Example}{}
-\lstdefinestyle{Interface}{backgroundcolor=\color{interfacecolor},frame=single,frameround={tttt}}
+%\lstdefinestyle{Interface}{backgroundcolor=\color{interfacecolor},frame=single,frameround={tttt}}
+\lstdefinestyle{Interface}{backgroundcolor=\color{interfacecolor},frame=single}
 
 \newcommand{\cpp}[1]{\lstinline[basicstyle=\ttfamily]!#1!}
 
@@ -379,14 +380,14 @@ reuse existing algorithms that expect to operate on those subtrees in more compl
 The product of finite-dimensional spaces naturally induces a corresponding operation on bases
 of such spaces.
 Let $B = \{\lambda_i\}_{i=0}^{n_1-1}$ and $C = \{\gamma_i\}_{i=0}^{n_2-1}$ be two scalar function space bases
-and let $\mathbf{e}_1$, $\mathbf{e}_2$ be the canonical basis vectors in $\R^2$.
+and let $\mathbf{e}_0$, $\mathbf{e}_1$ be the canonical basis vectors in $\R^2$.
 Then we define the product of the bases $B$ and $C$ as
 \begin{align*}
 (B,C)
  & \colonequals
-    \mathbf{e}_1 \otimes B \cup \mathbf{e}_2 \otimes C \\
-    &= \big\{ \mathbf{e}_1 \otimes \lambda \st \lambda \in B \big\}
-    \cup \big\{ \mathbf{e}_2 \otimes \gamma \st \gamma \in C \big\} \\
+    \mathbf{e}_0 \otimes B \cup \mathbf{e}_1 \otimes C \\
+    &= \big\{ \mathbf{e}_0 \otimes \lambda \st \lambda \in B \big\}
+    \cup \big\{ \mathbf{e}_1 \otimes \gamma \st \gamma \in C \big\} \\
  & =
  \big\{(\lambda_0,0), (\lambda_1,0), \dots, (\lambda_{n_1-1},0) \big\}
    \cup \big\{(0,\gamma_0), (0,\gamma_1), \dots, (0,\gamma_{n_2-1})\big\}.
@@ -709,315 +710,466 @@ degrees of freedom are ordered.
 
 Let $\Lambda$ be the set of basis functions of a finite element basis tree.
 In principle, \dunemodule{dune-functions} allows any indexing scheme that
-is given by an index map $\iota: \Lambda \to \mathcal{N}$
-whose range $\iota(\Lambda)$ is an index tree.
+is given by an index map $\iota: \Lambda \to \mathcal{N}$,
+i.e., $\iota$ is injective and its range $\iota(\Lambda)$ is an index tree.
 Out of this large set of maps, \dunemodule{dune-functions} allows to construct the most
 important ones systematically using certain transformation rules.
 
-Consider a tree of basis functions. We want to construct an indexing for this tree, that is
-an index tree $\mathcal{I}$ and a map $\iota$ from the set of basis vectors to the leafs of the
-index tree. This construction proceeds recursively.
-Remember first that basis trees are ordered, i.e., the children of each tree node
-have a fixed given ordering.  This means in particular that all leaf nodes have a fixed
-given ordering with respect to their direct fathers.
-We then decorate each inner node $A$ of the basis tree with a rule
-that specifies how the index trees of the subtrees of $A$ are combined to form an index tree
-for the basis subtree rooted at $A$. Of the large set of possibilities, we single out four rules
-that appear frequently in applications.
+Consider a tree of finite element space bases. We want to construct an indexing for this tree, that is
+an index tree $\mathcal{I}$ and a bijection $\iota$ from the set of all basis functions $\Lambda$
+to the multi-indices in $\mathcal{I}$. This construction proceeds recursively.
+To describe the recursive construction remember first all trees are ordered,
+i.e., the children of each tree node have a fixed given ordering and thus
+a well-defined zero-based index with respect to their direct fathers.
+In the following we assume that $\Lambda$ is the set of all basis functions
+corresponding to a node in the tree of finite element spaces, i.e.,
+we can associate $\Lambda$ to the space $\operatorname{span} \Lambda$
+within this tree.
+
+If $\Lambda$ corresponds to a leaf node
+in the tree of finite element spaces, i.e., $\operatorname{span} \Lambda$ is
+an elementary space of the product space construction,
+we assume that an index map $\iota : \Lambda \to \mathcal{N}$
+is given. The most obvious construction would be to use a flat zero-based index
+of the basis function within this elementary space. However, other choices are possible.
+E.g. in case of a discontinuous finite element space, we may associate to each
+basis function $\lambda \in \Lambda$ a multi-index $\iota(\lambda)=(i,k)$ where $i$ is the
+index of the grid element $\lambda$ is defined on and $k$ is the index of $\lambda$
+within this element.
+
+If $\Lambda$ corresponds to the root or any other interior node,
+then it takes the form
+\begin{align*}
+  \Lambda = (\Lambda_0, \dots, \Lambda_{m-1})
+          = \bigcup_{i=0}^{m-1} \mathbf{e}_i \otimes \Lambda_i
+\end{align*}
+where $\Lambda_i$ is the set of basis functions of the $i$-th child
+space $\operatorname{span} \Lambda_i$ of the product space
+\begin{align*}
+  \operatorname{span} \Lambda = \times_{i=0}^{m-1} \operatorname{span} \Lambda_i
+  = (\operatorname{span} \Lambda_0) \times \dots \times (\operatorname{span} \Lambda_{m-1}).
+\end{align*}
+For the recursive construction we assume that an index-map
+$\iota_i : \Lambda_i \to \mathcal{N}$ on $\Lambda_i$ is given for any $i=0,\dots,m-1$.
+The task is to construct an index map $\iota: \Lambda \to \mathcal{N}$
+from the maps $\iota_i$.
+In the following we describe for strategies to achieve this, that
+have been implemented in \dunemodule{dune-functions}. For all these
+strategies remember, that any $\lambda \in \Lambda$ has a unique representation
+$\lambda = \mathbf{e}_i \otimes \hat{\lambda}$ for $i \in \{0,\dots,m-1\}$ and some
+$\hat{\lambda} \in \Lambda_i$.
+It will be necessary to distinguish the special case that all children
+$\Lambda_i$ are the same.
+
+\begin{definition}
+  An inner node $\Lambda$ will be called \emph{power node}, if all of its children $\Lambda_i$
+  are identical and equipped with identical index-maps $\iota_i$.
+  An inner node that is not a power node is called \emph{composite node}.
+\end{definition}
 
 \begin{itemize}
- \item \textbf{BlockedLexicographic}: Introduce a new node $A_I$ in the index subtree, and make
-   the roots of the index subtrees children of $A_I$. Order them following their corresponding
-   ordering given in the basis tree.
+  \item
+    \textbf{BlockedLexicographic}: This strategy prepends the child index
+    to the multi-index within the child basis. That is, the index map $\iota:\Lambda \to \mathcal{N}$
+    is given by
+    \begin{align*}
+      \iota(\mathbf{e}_i \otimes \hat{\lambda}) = (i,\iota_i(\hat{\lambda})).
+    \end{align*}
+    It is straight forward to show that $\iota$ is always an index-map
+    for $\Lambda$.
+    Example:
 
-   Example:
-   \begin{tabular}{l|r}
-   function in $\{f\}$ & index \\
-   \hline
-   $f_0$  & $(i_0)$ \\
-   $f_1$  & $(i_1)$ \\
-   $f_2$  & $(i_2)$
-\end{tabular}
+    \begin{tabular}{c|c|c|c}
+      indices for $\Lambda_0$ &
+      indices for $\Lambda_1$ &
+      indices for $\dots$ &
+      indices for $\Lambda$ \\
+      \hline
+      $\iota_0(\hat{\lambda}_{0,0}) = (I^0)$ & & &
+        $\iota(\mathbf{e}_0 \otimes \hat{\lambda}_{0,0}) = (0,I^0)$ \\
+      $\iota_0(\hat{\lambda}_{0,1}) = (I^1)$ & & &
+        $\iota(\mathbf{e}_0 \otimes \hat{\lambda}_{0,1}) = (0,I^1)$ \\
+      & $\iota_1(\hat{\lambda}_{1,0}) = (K^0)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,0}) = (1,K^0)$ \\
+      & $\iota_1(\hat{\lambda}_{1,1}) = (K^1)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,1}) = (1,K^1)$ \\
+      & $\iota_1(\hat{\lambda}_{1,2}) = (K^2)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,2}) = (1,K^2)$ \\
+      & & \dots &
+        \dots \\
+    \end{tabular}
 
-\begin{tabular}{l|r}
-   function in $\{g\}$ & index \\
-   \hline
-   $g_0$  & $(k_0)$ \\
-   $g_1$  & $(k_1)$ \\
-   $g_2$  & $(k_2)$
-\end{tabular}
+  \item
+    \textbf{LeafBlockedInterleaved}: This strategy appends the child index
+    to the multi-index within the child basis.
+    That is, the index map $\iota:\Lambda \to \mathcal{N}$
+    is given by
+    \begin{align*}
+      \iota(\mathbf{e}_i \otimes\hat{\lambda}) = (\iota_i(\hat{\lambda}),i).
+    \end{align*}
+    If $\Lambda$ is a power node, it is again straight forward to show that
+    $\iota$ is an index-map for $\Lambda$.
+    Example:
 
-The merged indices will be
+    \begin{tabular}{c|c|c|c}
+      indices for $\Lambda_0$ &
+      indices for $\Lambda_1$ &
+      indices for $\dots$ &
+      indices for $\Lambda$ \\
+      \hline
+      $\iota_0(\hat{\lambda}_{0,0}) = (I^0)$ & & &
+        $\iota(\mathbf{e}_0 \otimes \hat{\lambda}_{0,0}) = (I^0,0)$ \\
+      & $\iota_1(\hat{\lambda}_{1,0}) = (I^0)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,0}) = (I^0,1)$ \\
+      & & \dots &
+        \dots \\
+      $\iota_0(\hat{\lambda}_{0,1}) = (I^1)$ & & &
+        $\iota(\mathbf{e}_0 \otimes \hat{\lambda}_{0,1}) = (I^1,0)$ \\
+      & $\iota_1(\hat{\lambda}_{1,1}) = (I^1)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,1}) = (I^1,1)$ \\
+      & & \dots &
+        \dots \\
+      $\iota_0(\hat{\lambda}_{0,2}) = (I^2)$ & & &
+        $\iota(\mathbf{e}_0 \otimes \hat{\lambda}_{0,2}) = (I^2,0)$ \\
+      & $\iota_1(\hat{\lambda}_{1,2}) = (I^2)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,2}) = (I^2,1)$ \\
+      & & \dots &
+        \dots \\
+    \end{tabular}
 
-\begin{tabular}{l|r}
-   function in $\{f,g\}$ & index \\
-   \hline
-   $f_0$  & $(0,i_0)$ \\
-   $f_1$  & $(0,i_1)$ \\
-   $f_2$  & $(0,i_2)$ \\
-   $g_0$  & $(1,k_0)$ \\
-   $g_1$  & $(1,k_1)$ \\
-   $g_2$  & $(1,k_2)$
-\end{tabular}
+    However, for general composite nodes this may not be the case:
+    Consider $\iota_0(\Lambda_0) = \{0\}$ and $\iota_1(\Lambda_1) = \{(0,0)\}$.
+    Then $\iota(\Lambda) = \{(0,0), (0,0,1)\}$ which is not an index tree.
+  \item \textbf{FlatLexicographic}: This strategy introduces
+    a new root node in the index tree by merging the roots of all
+    index-tree $\iota_i(\Lambda_i)$ into a single one.
+    Assuming that we split the multi-index
+    $\iota_i(\hat{\lambda})$ according to
+    \begin{align}\label{eq:multiindex-split}
+      \iota_i(\hat{\lambda}) = (i_0,I)
+    \end{align} 
+    where $i_0 \in \mathbb{N}_0$ is the first digit and
+    $I \in \mathcal{N}$ are the remaining digits
+    the index map $\iota:\Lambda \to \mathcal{N}$ is given by
+    \begin{align*}
+      \iota(\mathbf{e}_i \otimes\hat{\lambda}) = (i_0 + L_i, I)
+    \end{align*}
+    where the offset $L_i$ for the first digit is computed by
+    \begin{align*}
+      L_i = \sum_{j=0}^{i-1} |\iota_j(\Lambda_j)|_{()}.
+    \end{align*}
+    This construction shifts the first digit such that there is ``enough space''
+    to fit the multi-indices of all basis functions from $\Lambda_j$ with $j<0$.
+    This guarantees that $\iota$ is always an index-map for $\Lambda$.
+    The fact that the merging strategy is \emph{flat} means that no
+    additional multi-index digit is inserted to address the different children.
+    Example:
 
+    \begin{tabular}{c|c|c|c}
+      indices for $\Lambda_0$ &
+      indices for $\Lambda_1$ &
+      indices for $\dots$ &
+      indices for $\Lambda$ \\
+      \hline
+      $\iota_0(\hat{\lambda}_{0,0}) = (0,I^0)$ & & &
+        $\iota(\mathbf{e}_0 \otimes \hat{\lambda}_{0,0}) = (0,I^0)$ \\
+      $\iota_0(\hat{\lambda}_{0,1}) = (1,I^1)$ & & &
+        $\iota(\mathbf{e}_0 \otimes \hat{\lambda}_{0,1}) = (1,I^1)$ \\
+      & $\iota_1(\hat{\lambda}_{1,0}) = (0,K^0)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,0}) = (2,K^0)$ \\
+      & $\iota_1(\hat{\lambda}_{1,1}) = (0,K^1)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,1}) = (2,K^1)$ \\
+      & $\iota_1(\hat{\lambda}_{1,2}) = (1,K^2)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,2}) = (3,K^2)$ \\
+      & & \dots &
+        \dots \\
+    \end{tabular}
+  \item \textbf{FlatInterleaved}: This strategy also merges
+    the roots of all child index-trees $\iota_i(\Lambda_i)$
+    into a single one but interleaves the children.
+    Again using the splitting
+    $\iota_i(\hat{\lambda}) = (i_0,I)$
+    the index map $\iota:\Lambda \to \mathcal{N}$ is given by
+    \begin{align*}
+      \iota(\mathbf{e}_i \otimes\hat{\lambda}) = (i_0 m + i, I)
+    \end{align*}
+    where the fixed stride $m$ is the number of children of $\Lambda$.
+     ...
 
-   Exclusive use of this rule will lead to an index tree that is isomorphic to the basis tree.
+    Example:
 
- \item \textbf{FlatLexicographic}: Instead of introducing a new root node, merge the existing
-   index subtree roots into a single node.
-   \todosander{Ergeben sich die Indizes damit automatisch?  Oder müssen wir hier explizit
-     angeben wie sich die Offsets berechnen?}
+    \begin{tabular}{c|c|c|c}
+      indices for $\Lambda_0$ &
+      indices for $\Lambda_1$ &
+      indices for $\dots$ &
+      indices for $\Lambda$ \\
+      \hline
+      $\iota_0(\hat{\lambda}_{0,0}) = (0,I^0)$ & & &
+        $\iota(\mathbf{e}_0 \otimes \hat{\lambda}_{0,0}) = (0,I^0)$ \\
+      & $\iota_1(\hat{\lambda}_{1,0}) = (0,I^0)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,0}) = (1,I^0)$ \\
+      & & \dots &
+        \dots \\
+      $\iota_0(\hat{\lambda}_{0,1}) = (1,I^1)$ & & &
+        $\iota(\mathbf{e}_0 \otimes \hat{\lambda}_{0,1}) = (m+0,I^1)$ \\
+      & $\iota_1(\hat{\lambda}_{1,1}) = (1,I^1)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,1}) = (m+1,I^1)$ \\
+      & & \dots &
+        \dots \\
+      $\iota_0(\hat{\lambda}_{0,2}) = (2,I^2)$ & & &
+        $\iota(\mathbf{e}_0 \otimes \hat{\lambda}_{0,2}) = (2m+0,I^2)$ \\
+      & $\iota_1(\hat{\lambda}_{1,2}) = (2,I^2)$ & &
+        $\iota(\mathbf{e}_1 \otimes \hat{\lambda}_{1,2}) = (2m+1,I^2)$ \\
+      & & \dots &
+        \dots \\
+    \end{tabular}
 
-     This merges the subtree numbers lexicographically, i.e., all degrees of freedom of subtree~0
-appear before all degrees of freedom of subtree~1, which in turn precede those in the later subtrees.
-The fact that the merging strategy is \emph{flat} means that no additional multi-index digit
-is appended to address the different subtrees.
-
-As an example, for two childen $\{f\}$ and $\{g\}$ with multi-indices
-(all $i*$, $k*$ can be multi-indices themselves):
-
-\todosander{Ist es Absicht dass in der folgenden Tabelle zweimal 0 als erste Ziffer vorkommt?
-  Ich habe das so aus der Online-Dokumentation kopiert.}
-\begin{tabular}{l|r}
-   function in $\{f\}$ & index \\
-   \hline
-   $f_0$  & $(0,i_0)$ \\
-   $f_1$  & $(0,i_1)$ \\
-   $f_2$  & $(1,i_2)$
-\end{tabular}
-
-\begin{tabular}{l|r}
-   function in $\{g\}$ & index \\
-   \hline
-   $g_0$  & $(0,k_0)$ \\
-   $g_1$  & $(1,k_1)$ \\
-   $g_2$  & $(2,k_2)$
-\end{tabular}
-
-The merged indices will be
-
-\begin{tabular}{l|r}
-   function in $\{f,g\}$ & index \\
-   \hline
-   $f_0$  & $(0,i_0)$ \\
-   $f_1$  & $(0,i_1)$ \\
-   $f_2$  & $(1,i_2)$ \\
-   $g_0$  & $(2,k_0)$ \\
-   $g_1$  & $(3,k_1)$ \\
-   $g_2$  & $(4,k_2)$
-\end{tabular}
-
-\todosander{Ein Beispiel für den Fall dass die unterschiedlichen Teilbäume nicht die gleiche Art von Indizes verwenden?}
-
+    ... counter example
 
 \end{itemize}
 
-The previous rules have been called \emph{lexicographic}, by which we mean that all degrees of
-freedom of the first subtree of $A$ appear before all degrees of freedom of the second subtree,
-and so on.
-\todosander{Streng genommen ist dies das erste Mal dass wir von Reihenfolgen sprechen.
-  Das sollten wir noch etwas formalisieren.}
-These rules can be applied in all situations. For more rules we have to restrict the set
-of inner nodes.
-\begin{definition}
-An inner node will be called \emph{power node}, if all of its children are identical subtrees.
-An inner node that is not a power node is called \emph{composite node}.
-\end{definition}
-In particular, each subtree of a \emph{power} node has the same number of basis functions.
-It is therefore possible to interleave the degrees of freedom.
 
 \todosander{Man könnte darüber nachdenken das zu verallgemeinern:  Wenn z.B. ein Teilbaum
 genau doppelt so viele Basen hat wie der andere, dann könnte man immer abwechselnd zwei Basen aus dem
 einen Teilraum nehmen und dann eine aus dem anderen.  Ich wäre eher dagegen über so etwas
 nachzudenken, wenn ich es nicht in einer Anwendung brauchen würde...}
 
-\begin{itemize}
- \item \textbf{FlatInterleaved}:
+We now consider the Taylor--Hood basis
+\begin{align*}
+ \Lambda_\text{TH}
+  = ((\Lambda_{P_2}, \Lambda_{P_2}, \Lambda_{P_2}), \Lambda_{P_1})
+\end{align*}
+as an example. For the bases $\Lambda_{P_1}, \Lambda_{P_2}$
+of the elementary spaces $P_1,P_2$ we consider fixed given flat index maps
+\begin{align*}
+  \iota_{P_1}(\Lambda_{P_1}) &\to \mathbb{N}_0, &
+  \iota_{P_2}(\Lambda_{P_2}) &\to \mathbb{N}_0.
+\end{align*}
+These are typically constructed by enumerating the grid entities
+the basis functions are associated to.
+Then the interior product space basis
+\begin{align*}
+  \Lambda_V = (\Lambda_{P_2}, \Lambda_{P_2}, \Lambda_{P_2})
+\end{align*}
+together with the index map $\iota_{P_2}$ is a power node in the above
+given sense, while the external product space basis
+\begin{align*}
+ \Lambda_\text{TH}
+  = (\Lambda_V, \Lambda_{P_1})
+\end{align*}
+is a composite node. As two of the above given strategies can be used
+for composite nodes, while all four can be applied to power nodes
+we can obtain eight different variants of index maps for the Taylor--Hood basis
+$\Lambda_{\text{TH}}$.
+In the following table we list all combinations, where the label $X(Y)$
+means, that we use strategy $X$ for the outer product and strategy $Y$
+for the inner product. For $X$ and $Y$ we use the abbreviations
+BlockedLexicographic (BL), LeafBlockedInterleaved (BI), FlatLexicographic (FL), FlatInterleaved (FI).
 
- \begin{tabular}{l|r}
-   function in $\{f\}$ & index \\
-   \hline
-   $f_0$  & $(0,i_0)$ \\
-   $f_1$  & $(1,i_1)$ \\
-   $f_2$  & $(2,i_2)$
+The basis functions for the $k$-th component of the pressure
+are denoted by
+\begin{align*}
+  v_{x_k,i} = \mathbf{e}_0 \otimes (\mathbf{e}_k \otimes \lambda^{P_2}_i)
+\end{align*}
+where $i=0,\dots,n-1$ for $n=|\Lambda_{P_2}|= \operatorname{dim} P_2$
+while the basis functions for the pressure are denoted by
+\begin{align*}
+  p_{j} = \mathbf{e}_1 \otimes \lambda^{P_1}_j
+\end{align*}
+where $j=0,\dots,|\Lambda_{P_1}|-1$.
+
+
+{\footnotesize
+\begin{center}
+\begin{tabular}{c|c|c|c|c|c|c|c|c}
+    & BL(BL)
+    & BL(BI)
+    & BL(FL)
+    & BL(FI)
+    & FL(BL)
+    & FL(BI)
+    & FL(FL)
+    & FL(FI)
+    \\
+  \hline
+  $v_{x_0,0}$
+    & $(0,0,0)$
+    & $(0,0,0)$
+    & $(0,0)$
+    & $(0,0+0)$
+    & $(0,0)$
+    & $(0,0)$
+    & $(0)$
+    & $(0+0)$
+    \\
+  $v_{x_0,1}$
+    & $(0,0,1)$
+    & $(0,1,0)$
+    & $(0,1)$
+    & $(0,3+0)$
+    & $(0,1)$
+    & $(1,0)$
+    & $(1)$
+    & $(3+0)$
+    \\
+  $v_{x_0,2}$
+    & $(0,0,2)$
+    & $(0,2,0)$
+    & $(0,2)$
+    & $(0,6+0)$
+    & $(0,2)$
+    & $(2,0)$
+    & $(2)$
+    & $(6+0)$
+    \\
+  $v_{x_0,3}$
+    & $(0,0,3)$
+    & $(0,3,0)$
+    & $(0,3)$
+    & $(0,9+0)$
+    & $(0,3)$
+    & $(3,0)$
+    & $(3)$
+    & $(9+0)$
+    \\
+  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ &  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$
+  \\
+%  $v_{x_0,n-1}$
+%    & $(0,0,n-1)$
+%    & $(0,n-1,0)$
+%    & $(0,n-1)$
+%    & $(0,3(n-1)+0)$
+%    & $(0,n-1)$
+%    & $(n-1,0)$
+%    & $(n-1)$
+%    & $(3(n-1)+0)$
+%    \\
+%  \hline
+  $v_{x_1,0}$
+    & $(0,1,0)$
+    & $(0,0,1)$
+    & $(0,n+0)$
+    & $(0,0+1)$
+    & $(1,0)$
+    & $(0,1)$
+    & $(n+0)$
+    & $(0+1)$
+    \\
+  $v_{x_1,1}$
+    & $(0,1,1)$
+    & $(0,1,1)$
+    & $(0,n+1)$
+    & $(0,3+1)$
+    & $(1,1)$
+    & $(1,1)$
+    & $(n+1)$
+    & $(3+1)$
+    \\
+  $v_{x_1,2}$
+    & $(0,1,2)$
+    & $(0,2,1)$
+    & $(0,n+2)$
+    & $(0,6+1)$
+    & $(1,2)$
+    & $(2,1)$
+    & $(n+2)$
+    & $(6+1)$
+    \\
+  $v_{x_1,3}$
+    & $(0,1,3)$
+    & $(0,3,1)$
+    & $(0,n+3)$
+    & $(0,9+1)$
+    & $(1,3)$
+    & $(3,1)$
+    & $(n+3)$
+    & $(9+1)$
+    \\
+  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ &  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$
+  \\
+%  \hline
+  $v_{x_2,0}$
+    & $(0,2,0)$
+    & $(0,0,2)$
+    & $(0,2n+0)$
+    & $(0,0+2)$
+    & $(2,0)$
+    & $(0,2)$
+    & $(2n+0)$
+    & $(0+2)$
+    \\
+  $v_{x_2,1}$
+    & $(0,2,1)$
+    & $(0,1,2)$
+    & $(0,2n+1)$
+    & $(0,3+2)$
+    & $(2,1)$
+    & $(1,2)$
+    & $(2n+1)$
+    & $(3+2)$
+    \\
+  $v_{x_2,2}$
+    & $(0,2,2)$
+    & $(0,2,2)$
+    & $(0,2n+2)$
+    & $(0,6+2)$
+    & $(2,2)$
+    & $(2,2)$
+    & $(2n+2)$
+    & $(6+2)$
+    \\
+  $v_{x_2,3}$
+    & $(0,2,3)$
+    & $(0,3,2)$
+    & $(0,2n+3)$
+    & $(0,9+2)$
+    & $(2,3)$
+    & $(3,2)$
+    & $(2n+3)$
+    & $(9+2)$
+    \\
+  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ &  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$
+  \\
+%  \hline
+%  \hline
+  $p_{0}$
+    & $(1,0)$
+    & $(1,0)$
+    & $(1,0)$
+    & $(1,0)$
+    & $(3+0)$
+    & $(n+0)$
+    & $(3n+0)$
+    & $(3n+0)$
+    \\
+  $p_{1}$
+    & $(1,1)$
+    & $(1,1)$
+    & $(1,1)$
+    & $(1,1)$
+    & $(3+1)$
+    & $(n+1)$
+    & $(3n+1)$
+    & $(3n+1)$
+    \\
+  $p_{2}$
+    & $(1,2)$
+    & $(1,2)$
+    & $(1,2)$
+    & $(1,2)$
+    & $(3+2)$
+    & $(n+2)$
+    & $(3n+2)$
+    & $(3n+2)$
+    \\
+  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ &  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$
+  \\
+  \hline
 \end{tabular}
-
-\begin{tabular}{l|r}
-   function in $\{g\}$ & index \\
-   \hline
-   $g_0$  & $(0,i_0)$ \\
-   $g_1$  & $(1,i_1)$ \\
-   $g_2$  & $(2,i_2)$
-\end{tabular}
-
-The merged indices will be
-
-\begin{tabular}{l|r}
-   function in $\{f,g\}$ & index \\
-   \hline
-   $f_0$  & $(0,i_0)$ \\
-   $g_0$  & $(1,i_0)$ \\
-   $f_1$  & $(2,i_1)$ \\
-   $g_1$  & $(3,i_1)$ \\
-   $f_2$  & $(4,i_2)$ \\
-   $g_2$  & $(5,i_2)$
-\end{tabular}
+\end{center}
+}
 
 
- \item \textbf{LeafBlockedInterleaved}:
-
-\begin{tabular}{l|r}
-   function in $\{f\}$ & index \\
-   \hline
-   $f_0$  & $(i_0)$ \\
-   $f_1$  & $(i_1)$ \\
-   $f_2$  & $(i_2)$
-\end{tabular}
-
-\begin{tabular}{l|r}
-   function in $\{g\}$ & index \\
-   \hline
-   $g_0$  & $(k_0)$ \\
-   $g_1$  & $(k_1)$ \\
-   $g_2$  & $(k_2)$
-\end{tabular}
-
-The merged indices will be
-
-\begin{tabular}{l|r}
-   function in $\{f,g\}$ & index \\
-   \hline
-   $f_0$  & $(i_0,0)$ \\
-   $g_0$  & $(i_0,1)$ \\
-   $f_1$  & $(i_1,0)$ \\
-   $g_1$  & $(i_1,1)$ \\
-   $f_2$  & $(i_2,0)$ \\
-   $g_2$  & $(i_2,1)$
-\end{tabular}
-
-
-
-\end{itemize}
-
-
-
-\todosander{Hier kommt noch alter Text, der weggeschmissen oder irgendwo eingebaut werden muss.}
-
-
-It is then most natural
-to first list all basis functions of the first tree, followed by all basis functions of the second subtree,
-and so on.  This is the ordering obtained by a depth-first traversal of the tree~\cite{cormen:1990}.
-For the Taylor--Hood basis with expression
-\begin{equation*}
- B_\text{TH}
- =
- (B_x \otimes B_y \otimes B_z) \otimes B_p,
-\end{equation*}
-this means that the basis vectors are ordered as
-\begin{equation*}
- b_{x,1}, b_{x,2}, \dots, b_{x,\abs{B_x}},
- b_{y,1}, \dots, b_{y,\abs{B_y}},
- b_{z,1}, \dots, b_{z,\abs{B_z}},
- b_{p,1}, \dots, b_{p,\abs{B_p}}.
-\end{equation*}
-(As this lists stands, but this has been done consciously to avoid overly technical notation.  Indeed, a given basis
-function $b_{x,i}$ from the leaf basis is scalar valued.  However, in the product velocity space
-$B_x \otimes B_y \otimes B_z$ the same basis function appears as $\mathbf{e}_1 b_{x,i} = (b_{x,i},0,0)^T$,
-and now takes values in $\R^3$.  Furthermore, as part of the complete Taylor--Hood basis it is
-$\tilde{\mathbf{e}}_1 b_{x,i} = (b_{x,i},0,0,0)^T$.  For the sake of the discussion here we identify a scalar
-basis function $b_{x,i}$ with all of its vector-values variants.)
-
-This is certainly a reasonable ordering.  Used in a finite element computation it will lead to a stiffness
-matrix which, conceptually, consists of $4 \times 4$ large sparse blocks (Figure~\ref{fig:matrix_occupation_patterns}).
-We call this the {\em lexicographic} ordering.
-
-However, there is one important alternative.  Since, for the standard applications of the Taylor--Hood element,
-the $B_x$, $B_y$, $B_z$ bases are used to discretize the $x, y, z$ components of a velocity vector field,
-it would be rather unusual not to use identical bases for these three coefficients.
-In this case, all three bases have the same number of basis functions with the same ordering.  We can therefore
-{\em interleave} the basis functions from the three subtrees.  That is,
-the basis functions of the Taylor--Hood basis appear in the order
-\begin{equation*}
- b_{x,1}, b_{y,1}, b_{z,1},
- b_{x,2}, b_{y,2}, b_{z,2},
- \dots
- b_{x,N}, b_{y,N}, b_{z,N},
- b_{p,1}, \dots, b_{p\abs{B_p}}.
-\end{equation*}
-In this case, the stiffness matrix only has $2 \times 2$ large sparse blocks, but each entry of the uppler left
-block will be a $3 \times 3$ matrix, each entry of the lower right block will be a scalar, and the off-diagonal
-blocks will have a corresponding rectangular structure (Figure~\ref{fig:matrix_occupation_patterns}).
-
-To construct an admissible ordering
-of all basis functions in a tree we move recursively from the leaf nodes to the root.  To start the recursion,
-the order of the basis functions in each leaf node is considered fixed.  At each inner node there are two
-possibilities.
-\begin{enumerate}
- \item The inner node is a composite node.  Then the basis functions of all the subtrees (with the ordering
-   within each subtree already given by recursion) are concatenated to obtain lexicographic ordering.
-   Remember that we suppose the order of the children to be fixed.
- %
- \item The inner node is a power node.  Then there are two choices: Either combine the subtree basis functions
-   in lexicographic order, or interleave them.
-\end{enumerate}
-In total, for a tree with $N$ power nodes we obtain $2^N$ different ways to order the basis functions of the tree.
-
-
-
-\begin{table}
- \begin{center}
- \begin{tabular}{c|c|c|c|c}
- \hline \\
-  $b_{x,0}$  & $0$    & $(0,0)$ & $(0,0)$ & $(0,0,0)$ \\
-  $b_{x,1}$  & $1$    & $(0,1)$ & $(0,1)$ & $(0,0,1)$ \\
-  $b_{x,2}$  & $2$    & $(0,2)$ & $(0,2)$ & $(0,0,2)$ \\
-    \vdots   & \vdots & \vdots  & \vdots  & \vdots  \\
-  $b_{y,0}$  & $n$    & $(0,n)$ & $(1,0)$ & $(0,1,0)$ \\
-  $b_{y,1}$  & $n+1$  & $(0,n+1)$ & $(1,1)$ & $(0,1,1)$ \\
-  $b_{y,2}$  & $n+2$  & $(0,n+2)$ & $(1,2)$ & $(0,1,2)$ \\
-    \vdots   & \vdots & \vdots  & \vdots  & \vdots  \\
-  $b_{z,0}$  & $2n$   & $(0,2n)$ & $(2,0)$ & $(0,2,0)$ \\
-  $b_{z,1}$  & $2n+1$ & $(0,2n+1)$ & $(2,1)$ & $(0,2,1)$ \\
-  $b_{z,2}$  & $2n+2$ & $(0,2n+2)$ & $(2,2)$ & $(0,2,2)$ \\
-    \vdots   & \vdots & \vdots  & \vdots  & \vdots  \\
-  $p_0$      & $3n$   & $(1,0)$ & $n$ & $(1,0)$ \\
-  $p_1$      & $3n+1$ & $(1,1)$ & $n+1$ & $(1,1)$ \\
-  $p_2$      & $3n+2$ & $(1,2)$ & $n+2$ & $(1,2)$ \\
-    \vdots   & \vdots & \vdots  & \vdots  & \vdots
- \end{tabular}
- \end{center}
- \caption{Possible index types for a Taylor--Hood basis with lexicographic ordering of the velocity basis functions}
- \label{tbl:th_multiindices_lexicographic}
-\end{table}
-
-\begin{table}
- \begin{center}
- \begin{tabular}{c|c|c|c|c}
- \hline \\
-  $b_{x,0}$  & $0$    & $(0,0)$ & $(0,0)$ & $(0,0,0)$ \\
-  $b_{y,0}$  & $1$    & $(0,1)$ & $(0,1)$ & $(0,0,1)$ \\
-  $b_{z,0}$  & $2$    & $(0,2)$ & $(0,2)$ & $(0,0,2)$ \\
-  $b_{x,1}$  & $3$    & $(0,3)$ & $(1,0)$ & $(0,1,0)$ \\
-  $b_{y,1}$  & $4$    & $(0,4)$ & $(1,1)$ & $(0,1,1)$ \\
-  $b_{z,1}$  & $5$    & $(0,5)$ & $(1,2)$ & $(0,1,2)$ \\
-  $b_{x,2}$  & $6$    & $(0,6)$ & $(2,0)$ & $(0,2,0)$ \\
-  $b_{y,2}$  & $7$    & $(0,7)$ & $(2,1)$ & $(0,2,1)$ \\
-  $b_{z,2}$  & $8$    & $(0,8)$ & $(2,2)$ & $(0,2,2)$ \\
-    \vdots   & \vdots & \vdots  & \vdots  & \vdots  \\
-  $p_0$      & $3n$   & $(1,0)$ & $n$ & $(1,0)$ \\
-  $p_1$      & $3n+1$ & $(1,1)$ & $n+1$ & $(1,1)$ \\
-  $p_2$      & $3n+2$ & $(1,2)$ & $n+2$ & $(1,2)$ \\
-    \vdots   & \vdots & \vdots  & \vdots  & \vdots
- \end{tabular}
- \end{center}
- \caption{Possible index types for a Taylor--Hood basis with interleaved ordering of the velocity basis functions
- \todo[inline]{Inkonsistenz:  Der Index in der rechten Spalte ist so wie man ihn als Programmierer erwarten würde.
-   Aus Sicht der Baumkonstruktion ist er allerdings inkonsequent.  Der skalare Index in einer einzelnen Blatt-Basis
-    erscheint nicht als letzte Stelle im Multi-Index, sondern als {\em vorletzte}.  Das muss man ordentlich
-    begründen, und schauen was in allgemeineren Bäumen passiert.}
- \label{tbl:th_multiindices_interleaved}
- }
-\end{table}
 
 \subsection{Localization to single elements}
 
