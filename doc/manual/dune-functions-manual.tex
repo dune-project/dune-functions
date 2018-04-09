@@ -1354,12 +1354,8 @@ For a scalar basis, this method again returns the number of basis functions.
 
 Since prefixes may have variable size, it is guaranteed that the type \cpp{SizePrefix}
 is always a \cpp{Dune::ReservedVector<size\_type,k>} where \cpp{k}
-is strictly larger than the maximal length of a multi-index. The result
+is as least as large as the maximal length of a multi-index. The result
 type of all size-related methods is exported as \cpp{size\_type}.
-\todograeser{Do we need 'strictly larger'? As far as I can see 'at least' should be OK.}
-\todosander{An manchen Stellen im Code hat man tatsächlich eine Stelle mehr als die
-Länge des längsten MultiIndex (zB \cpp{LagrangeDGBasis}).  Darüber habe ich mich auch
-schon gewundert.}
 
 \begin{lstlisting}[style=Interface]
 using size_type = @@<implementation defined>@@;
