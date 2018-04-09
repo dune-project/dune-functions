@@ -258,12 +258,34 @@ T t = foo(1);
 auto bar = Bar(t, @@<more args>@@);
 \end{lstlisting}
 
-For two sets $R$ and $\Omega$ we denote by $R^\Omega = \{f:R \to \Omega\}$
+For two sets $R$ and $\Omega$ we denote by $R^\Omega = \{f:\Omega \to R\}$
 the set of all functions mapping from $R$ to $\Omega$. For domains $\Omega\subset \R^d$
 we denote by $P_k(\Omega) \subset \R^\Omega$ the space of all
-scalar-valued polynomials of degree at most $k$ on $\Omega$.
+scalar-valued continuous piecewise polynomials of degree at most $k$ on $\Omega$
+with respect to some given triangulation.
 If the domain $\Omega$ is fixed, we will simply write $P_k$.
 
+In order to handle product space constructions we additionally introduce
+a generalized tensor product notation:
+Consider ranges $R_0,\dots,R_{m-1}$ of function spaces $R_0^\Omega,\dots,R_{m-1}^\Omega$
+and the $i$-th canonical basis vector $\mathbf{e}_i$ in $\R^m$.
+Then
+\begin{align*}
+  \mathbf{e}_i \otimes f
+  = (0,\dots,0,\underbrace{f}_{\text{$i$-th entry}},0,\dots,0)
+  \in \prod_{j=0}^{m-1} \Bigl(R_j^\Omega\Bigr) = \Bigl(\prod_{j=0}^{m-1} R_j\Bigr)^\Omega
+\end{align*}
+where $0$ in the $j$-th position denotes the zero-function in $R_j^\Omega$.
+%denotes the function
+%\begin{align*}
+%  \mathbf{e}_i \otimes f &: \Omega \to \prod_{j=0}^{m-1} R_j, &
+%  ((\mathbf{e}_i \otimes f)(x))_j &= 
+%  \begin{cases}
+%    f(x) &\text{ if } i=j,\\
+%    0 \in \R_j^\Omega &\text{ else}.
+%  \end{cases}
+%\end{align*}
+Here and throughout the paper we will use zero based indices, i.e., $i,j\in \{0,\dots,m-1\}$.
 
 
 \label{sec:notation}
@@ -366,7 +388,7 @@ Based on this child ordering we associate to each child the corresponding zero-b
                 child{ node [treenode] {$P_1$} };
         \end{tikzpicture}
     \end{center}
-    \caption{Finite element tree of the Taylor--Hood space $(P_2 \times P_2 \times P_2)\times P_1$}
+    \caption{Function space tree of the Taylor--Hood space $(P_2 \times P_2 \times P_2)\times P_1$}
     \label{fig:taylor_hood_space_tree}
 \end{figure}
 
@@ -376,63 +398,41 @@ reuse existing algorithms that expect to operate on those subtrees in more compl
 
 
 \subsection{Trees of finite element space bases}
+\label{sec:basistree}
 
 The product of finite-dimensional spaces naturally induces a corresponding operation on bases
 of such spaces.
-Let $B = \{\lambda_i\}_{i=0}^{n_1-1}$ and $C = \{\gamma_i\}_{i=0}^{n_2-1}$ be two scalar function space bases
-and let $\mathbf{e}_0$, $\mathbf{e}_1$ be the canonical basis vectors in $\R^2$.
-Then we define the product of the bases $B$ and $C$ as
+Let $\Lambda_i$ a function space basis of the space $V_i = \operatorname{span} \Lambda_i$
+for $i=0,\dots,m-1$. Then a natural basis $\Lambda$ of the product space
 \begin{align*}
-(B,C)
- & \colonequals
-    \mathbf{e}_0 \otimes B \cup \mathbf{e}_1 \otimes C \\
-    &= \big\{ \mathbf{e}_0 \otimes \lambda \st \lambda \in B \big\}
-    \cup \big\{ \mathbf{e}_1 \otimes \gamma \st \gamma \in C \big\} \\
- & =
- \big\{(\lambda_0,0), (\lambda_1,0), \dots, (\lambda_{n_1-1},0) \big\}
-   \cup \big\{(0,\gamma_0), (0,\gamma_1), \dots, (0,\gamma_{n_2-1})\big\}.
+  V_0 \times \dots \times V_{m-1}
+  = \prod_{i=0}^{m-1} V_i
+  = \prod_{i=0}^{m-1} \operatorname{span}\Lambda_i
 \end{align*}
-These basis functions take values in $\R \times \R = \R^2$.
-More generally, if $B$ and $C$ are bases with ranges $\R^{r_1}$
-and $\R^{r_2}$, respectively, then
-\begin{equation}
-\label{eq:basis_product}
-    (B,C)
- \colonequals
- \big\{(\lambda_0,\mathbf{0}), (\lambda_1,\mathbf{0}), \dots, (\lambda_{n_1-1},\mathbf{0})\big\}
- \cup
- \big\{(\mathbf{0}, \gamma_0), (\mathbf{0},\gamma_1), \dots, (\mathbf{0}, \gamma_{n_2-1})\big\}
-\end{equation}
-is the natural basis of the space $\operatorname{span} B \times \operatorname{span} C$.
-Its basis functions take values in $\R^{r_1} \times \R^{r_2} = \R^{r_1+r_2}$.
-In particular, the symbol $\mathbf{0}$ in the formula above denotes the constant $\R^{r_1}$ and
-$\R^{r_2}$-valued zero functions.
+is given by
+\begin{align}
+  \label{eq:basis_product}
+  \Lambda =
+    \Lambda_0 \sqcup \dots \sqcup \Lambda_{m-1}
+    = \bigsqcup_{i=0}^{m-1} \Lambda_i
+    \colonequals \bigcup_{i=0}^{m-1} \mathbf{e}_i \otimes \Lambda_i.
+\end{align}
+Note that the symbol $\sqcup$ used to denote the disjoint union
+is a simple short hand notation for \eqref{eq:basis_product}
+and not understood as an associative binary operation.
+Using this notation we have
+\begin{align*}
+  \operatorname{span} \Lambda
+    = \operatorname{span} \Bigl( \Lambda_0 \sqcup \dots \sqcup \Lambda_{m-1} \Bigr)
+%  = \prod_{i=0}^{m-1} \operatorname{span} \Lambda_i
+    = (\operatorname{span} \Lambda_0) \times \dots \times (\operatorname{span} \Lambda_{m-1}).
+\end{align*}
 
 Similarly to the case of function spaces, bases can be interpreted as trees.
-This time, the individual basis functions form the tree leafs, and scalar or otherwise irreducible bases are
-notated as trees with a single root and no further non-leaf roots.
-\begin{center}
-    \begin{tikzpicture}[
-            level/.style={
-                sibling distance = (3-#1)*0.5cm + 1cm,
-                level distance = 1.5cm
-            }
-        ]
-        \node [treenode] {$B$}
-            child{ node [treenode] {$\gamma_0$} }
-            child{ node [treenode] {$\gamma_1$} }
-            child{ node [treenode] {$\gamma_2$} }
-            child{ node [] {$\dots$} }
-            child{ node [treenode] {$\gamma_{n-2}$} }
-            child{ node [treenode] {$\gamma_{n-1}$} };
-    \end{tikzpicture}
-\end{center}
-The operation of taking two bases $B$ and $C$, and joining them to form a new basis $(B,C)$
-as in~\eqref{eq:basis_product} is interpreted as taking the two trees corresponding to $B$ and $C$,
-and making them the (unique) children of a new root that represents $(B,C)$.
-As an example, Figure~\ref{fig:taylor_hood_basis_tree} shows the tree
-of the Taylor--Hood basis.  Observe how the tree spanned by the inner nodes of that tree
-is isomorphic to the tree of the Taylor--Hood \emph{space}, shown in Figure~\ref{fig:taylor_hood_space_tree}.
+If we associate to each space $V$ in the function space tree a basis $\Lambda_V$
+then the induced natural function space basis tree is obtained by simply replacing
+$V$ by $\Lambda_V$ in each node. For the Taylor--Hood basis this leads to the
+function space basis tree depicted in Figure~\ref{fig:taylor_hood_basis_tree}.
 
 \begin{figure}
     \begin{center}
@@ -442,34 +442,20 @@ is isomorphic to the tree of the Taylor--Hood \emph{space}, shown in Figure~\ref
                     level distance = 1.5cm
                 }
             ]
-            \node [treenode] {$(P_2 \times P_2 \times P_2) \times P_1$}
-                child{ node [treenode] {$P_2 \times P_2 \times P_2$}
-                    child{ node [treenode] {$P_2$}
-                        child{ node [basisnode] {$\lambda_0^2$} }
-                        child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$\lambda_{n_2-1}^2$} }
-                    }
-                    child{ node [treenode] {$P_2$}
-                        child{ node [basisnode] {$\lambda_0^2$} }
-                        child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$\lambda_{n_2-1}^2$} }
-                    }
-                    child { node [treenode] {$P_2$}
-                        child{ node [basisnode] {$\lambda_0^2$} }
-                        child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$\lambda_{n_2-1}^2$} }
-                    }
+            \node [treenode] {$(\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}) \sqcup  \Lambda_{P_1}$}
+                child{ node [treenode] {$\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}$}
+                    child{ node [treenode] {$\Lambda_{P_2}$} }
+                    child{ node [treenode] {$\Lambda_{P_2}$} }
+                    child{ node [treenode] {$\Lambda_{P_2}$} }
                 }
-                child{ node [treenode] {$P_1$}
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^1$} }
-                    child [sibling distance=1cm] { node [] {$\dots$} }
-                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1-1}^1$} }
-                };
+                child{ node [treenode] {$\Lambda_{P_1}$} };
         \end{tikzpicture}
     \end{center}
-    \caption{Tree of basis vectors for the Taylor--Hood basis}
+    \caption{Function space basis tree of the Taylor--Hood space $(P_2 \times P_2 \times P_2)\times P_1$}
     \label{fig:taylor_hood_basis_tree}
 \end{figure}
+
+
 
 \subsection{Indexing basis functions by multi-indices}
 \label{sec:index_trees}
@@ -511,12 +497,16 @@ To establish some structure in a set of multi-indices it is convenient to consid
             \end{enumerate}
     \end{enumerate}
 \end{definition}
+
 It is important to note that the multi-indices from a given set do not necessarily
 all have the same length.  For example, consider a possible indexing of the
-basis vectors of the Taylor--Hood basis of Figure~\ref{fig:taylor_hood_basis_tree}.
-We start by assuming that the finite element basis functions $\lambda_i^2$ and $\lambda_k^1$
+basis functions of the Taylor--Hood basis.
+Figure~\ref{fig:taylor_hood_basis_function_tree} illustrates the set of all basis
+functions by extending the basis tree of Figure~\ref{fig:taylor_hood_basis_tree}
+by leaf nodes for individual basis functions.
+We start by assuming that the finite element basis functions $\lambda_i^{P_2}$ and $\lambda_k^{P_1}$
 of $P_2$ and $P_1$ both
-have a flat indexing by natural numbers $i=0,\dots,n_2$ and $k=0,\dots,n_1$,
+have a flat indexing by natural numbers $i=0,\dots,n_2-1$ and $k=0,\dots,n_1-1$,
 respectively.
 Then we enumerate the three coefficients of the velocity
 with the numbers $0$, $1$, and $2$.  Further, we denote velocity components with a leading digit $0$,
@@ -528,6 +518,43 @@ of the velocity vector field and the $j$ determines the number of the scalar $P_
 function that determines this component.
 For the pressure multi-indices $(0,k)$ the $k$ determines the number of the $P_1$ basis
 function for the scalar $P_1$ function that determines the pressure.
+
+\begin{figure}
+    \begin{center}
+        \begin{tikzpicture}[
+                level/.style={
+                    sibling distance = (3-#1)*2cm + 1cm,
+                    level distance = 1.5cm
+                }
+            ]
+            \node [treenode] {$(\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}) \sqcup  \Lambda_{P_1}$}
+                child{ node [treenode] {$\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}$}
+                    child{ node [treenode] {$\Lambda_{P_2}$}
+                        child{ node [basisnode] {$\lambda_0^{P_2}$} }
+                        child{ node [] {$\dots$} }
+                        child{ node [basisnode] {$\lambda_{n_2-1}^{P_2}$} }
+                    }
+                    child{ node [treenode] {$\Lambda_{P_2}$}
+                        child{ node [basisnode] {$\lambda_0^{P_2}$} }
+                        child{ node [] {$\dots$} }
+                        child{ node [basisnode] {$\lambda_{n_2-1}^{P_2}$} }
+                    }
+                    child{ node [treenode] {$\Lambda_{P_2}$}
+                        child{ node [basisnode] {$\lambda_0^{P_2}$} }
+                        child{ node [] {$\dots$} }
+                        child{ node [basisnode] {$\lambda_{n_2-1}^{P_2}$} }
+                    }
+                }
+                child{ node [treenode] {$\Lambda_{P_2}$}
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_0^{P_1}$} }
+                    child [sibling distance=1cm] { node [] {$\dots$} }
+                    child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1-1}^{P_1}$} }
+                };
+        \end{tikzpicture}
+    \end{center}
+    \caption{Tree of basis vectors for the Taylor--Hood basis}
+    \label{fig:taylor_hood_basis_function_tree}
+\end{figure}
 
 It is evident that the complete set of these multi-indices can again be interpreted as a rooted tree.
 In this tree, shown in Figure~\ref{fig:taylor_hood_index_tree}, the multi-indices correspond
@@ -558,32 +585,32 @@ in Figure~\ref{fig:taylor_hood_index_tree}.
                     level distance = 1.5cm
                 }
             ]
-            \node [treenode] {$[]$}
-                child{ node [treenode] {$[0]$}
-                    child{ node [treenode] {$[0,0]$}
-                        child{ node [basisnode] {$[0,0,0]$} edge from parent node[left] {$0$}}
-                        child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$[0,0,n_2]$} edge from parent node[right] {$n_2$} }
+            \node [smalltreenode] {$()$}
+                child [sibling distance=70mm] { node [smalltreenode] {$( 0 )$}
+                    child [sibling distance=43mm] { node [smalltreenode] {$( 0,0 )$}
+                        child [sibling distance=14mm] { node [smallbasisnode] {$( 0,0,0 )$} edge from parent node[left] {$0$}}
+                        child [sibling distance=14mm] { node [] {$\dots$} }
+                        child [sibling distance=14mm] { node [smallbasisnode] {$( 0,0,n_2-1 )$} edge from parent node[right] {$n_2-1$} }
                         edge from parent node[above left] {$0$}
                     }
-                    child{ node [treenode] {$[0,1]$}
-                        child{ node [basisnode] {$[0,1,0]$} edge from parent node[left] {$0$}}
-                        child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$[0,1,n_2]$} edge from parent node[right] {$n_2$} }
+                    child [sibling distance=43mm] { node [smalltreenode] {$( 0,1 )$}
+                        child [sibling distance=14mm] { node [smallbasisnode] {$( 0,1,0 )$} edge from parent node[left] {$0$}}
+                        child [sibling distance=14mm] { node [] {$\dots$} }
+                        child [sibling distance=14mm] { node [smallbasisnode] {$( 0,1,n_2-1 )$} edge from parent node[right] {$n_2-1$} }
                         edge from parent node[left] {$1$}
                     }
-                    child { node [treenode] {$[0,2]$}
-                        child{ node [basisnode] {$[0,2,0]$} edge from parent node[left] {$0$}}
-                        child{ node [] {$\dots$} }
-                        child{ node [basisnode] {$[0,2,n_2]$} edge from parent node[right] {$n_2$} }
+                    child [sibling distance=43mm] { node [smalltreenode] {$( 0,2 )$}
+                        child [sibling distance=14mm] { node [smallbasisnode] {$( 0,2,0 )$} edge from parent node[left] {$0$}}
+                        child [sibling distance=14mm] { node [] {$\dots$} }
+                        child [sibling distance=14mm] { node [smallbasisnode] {$( 0,2,n_2-1 )$} edge from parent node[right] {$n_2-1$} }
                         edge from parent node[above right] {$2$}
                     }
                     edge from parent node[above left] {$0$}
                 }
-                child{ node [treenode] {$[1]$}
-                    child [sibling distance=1cm] { node [basisnode] {$[1,0]$} edge from parent node[above left] {$0$} }
+                child [sibling distance=70mm] { node [smalltreenode] {$( 1 )$}
+                    child [sibling distance=1cm] { node [smallbasisnode] {$( 1,0 )$} edge from parent node[above left] {$0$} }
                     child [sibling distance=1cm] { node [] {$\dots$} }
-                    child [sibling distance=1cm] { node [basisnode] {$[1,n_1]$} edge from parent node[above right] {$n_1$} }
+                    child [sibling distance=1cm] { node [smallbasisnode] {$( 1,n_1-1 )$} edge from parent node[above right] {$n_1-1$} }
                     edge from parent node[above right] {$1$}
                 };
         \end{tikzpicture}
@@ -620,18 +647,27 @@ Continuing the Taylor--Hood example, if
 all basis functions $\lambda_I$ of the whole finite element tree are
 indexed by multi-indices of the above given form,
 and if $X$ is a coefficient vector that has a compatible hierarchical structure,
-then the velocity vector field $u_h$ and the pressure field $p_h$ are given by
+then a the finite element function $(u_h,p_h)$ with velocity
+$u_h$ and pressure $p_h$ defined by the coefficient vector $X$
+is given by
 \begin{align*}
-    u_h &= \bigg( \sum_{j=0}^{n_2} X_{(0,i,j)}\lambda_{(0,i,j)}\bigg)_{i=0,\dots,2},
-    &
-    p_h &= \sum_{k=0}^{n_1} X_{(1,k)}\lambda_{(1,k)}
+  (u_h,p_h) &=
+  \sum_{i=0}^2\sum_{j=0}^{n_2-1} X_{(0,i,j)}\lambda_{(0,i,j)}
+  + \sum_{k=0}^{n_1-1} X_{(1,k)}\lambda_{(1,k)}
 \end{align*}
-with scalar-valued basis functions
+with basis functions
 \begin{equation*}
-    \lambda_{(0,i,j)} = \lambda^2_j \qquad i=0,1,2,
+  \lambda_{(0,i,j)} = \mathbf{e}_0 \otimes (\mathbf{e}_i \otimes \lambda^{P_2}_j) \qquad i=0,1,2,
     \qquad \text{and} \qquad
-    \lambda_{(1,k)} \lambda^1_k.
+    \lambda_{(1,k)} = \mathbf{e}_1 \otimes \lambda^{P_1}_k.
 \end{equation*}
+Alternatively the individual velocity and pressure fields
+$u_h$ and $p_h$ are given by
+\begin{align*}
+  u_h &= \sum_{j=0}^{n_2-1} X_{(0,i,j)} (\mathbf{e}_i \otimes \lambda^{P_2}_j),
+    &
+    p_h &= \sum_{k=0}^{n_1} X_{(1,k)}\lambda^{P_1}_k.
+\end{align*}
 
 \begin{figure}
     \begin{center}
@@ -672,9 +708,9 @@ with scalar-valued basis functions
 
 
 In the previous example, the index tree was
-isomorphic to the original basis tree.
+isomorphic to the basis function tree depicted in Figure~\ref{fig:taylor_hood_basis_function_tree}.
 However, one may also be interested in constructing multi-indices
-that do not mimic the structure of the basis tree:
+that do not mimic the structure of the basis function tree:
 For example, to increase data locality in assembled matrices for the Taylor--Hood basis it may be
 preferable to group all velocity degrees of freedom corresponding to a single
 $P_2$ basis function together, i.\,e., to use the index $(0,j,i)$
@@ -699,7 +735,7 @@ Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a
 \end{figure}
 
 Alternatively, the case of indexing all basis functions from the Taylor--Hood basis with a single
-natural number can be represented by an index tree with $3(n_2+1) + (n_1+1)$ leaf nodes all
+natural number can be represented by an index tree with $3 n_2 + n_1$ leaf nodes all
 directly attached to a single root. Different variations of such a tree differ by how the
 degrees of freedom are ordered.
 
@@ -715,20 +751,19 @@ i.e., $\iota$ is injective and its range $\iota(\Lambda)$ is an index tree.
 Out of this large set of maps, \dunemodule{dune-functions} allows to construct the most
 important ones systematically using certain transformation rules.
 
-Consider a tree of finite element space bases. We want to construct an indexing for this tree, that is
+Consider a tree of finite element space bases in the sense of Section~\ref{sec:basistree}.
+We want to construct an indexing for this tree, that is
 an index tree $\mathcal{I}$ and a bijection $\iota$ from the set of all basis functions $\Lambda$
 to the multi-indices in $\mathcal{I}$. This construction proceeds recursively.
-To describe the recursive construction remember first all trees are ordered,
-i.e., the children of each tree node have a fixed given ordering and thus
-a well-defined zero-based index with respect to their direct fathers.
-In the following we assume that $\Lambda$ is the set of all basis functions
-corresponding to a node in the tree of finite element spaces, i.e.,
-we can associate $\Lambda$ to the space $\operatorname{span} \Lambda$
-within this tree.
+To describe the recursive construction
+we assume in the following that $\Lambda$ is a node in the function space
+basis tree, i.e., it is the set of all basis functions
+corresponding to a node $V=\operatorname{span} \Lambda$
+in the function space tree.
 
-If $\Lambda$ corresponds to a leaf node
-in the tree of finite element spaces, i.e., $\operatorname{span} \Lambda$ is
-an elementary space of the product space construction,
+If $\Lambda$ is a leaf node
+in the function space basis tree, i.e., $V=\operatorname{span} \Lambda$ is
+a leaf node in the function space tree,
 we assume that an index map $\iota : \Lambda \to \mathcal{N}$
 is given. The most obvious construction would be to use a flat zero-based index
 of the basis function within this elementary space. However, other choices are possible.
@@ -737,29 +772,32 @@ basis function $\lambda \in \Lambda$ a multi-index $\iota(\lambda)=(i,k)$ where 
 index of the grid element $\lambda$ is defined on and $k$ is the index of $\lambda$
 within this element.
 
-If $\Lambda$ corresponds to the root or any other interior node,
+If $\Lambda$ is the root or any other interior node in the function space basis tree,
 then it takes the form
 \begin{align*}
-  \Lambda = (\Lambda_0, \dots, \Lambda_{m-1})
+  \Lambda = \Lambda_0 \sqcup \dots \sqcup \Lambda_{m-1}
           = \bigcup_{i=0}^{m-1} \mathbf{e}_i \otimes \Lambda_i
 \end{align*}
-where $\Lambda_i$ is the set of basis functions of the $i$-th child
+where $\Lambda_0, \dots,\Lambda_{m-1}$ are the direct children of $\Lambda$,
+i.e., the sets of basis functions of the $i$-th child
 space $\operatorname{span} \Lambda_i$ of the product space
 \begin{align*}
-  \operatorname{span} \Lambda = \times_{i=0}^{m-1} \operatorname{span} \Lambda_i
-  = (\operatorname{span} \Lambda_0) \times \dots \times (\operatorname{span} \Lambda_{m-1}).
+  \operatorname{span} \Lambda
+    = \operatorname{span} \Bigl( \Lambda_0 \sqcup \dots \sqcup \Lambda_{m-1} \Bigr)
+%  = \prod_{i=0}^{m-1} \operatorname{span} \Lambda_i
+    = (\operatorname{span} \Lambda_0) \times \dots \times (\operatorname{span} \Lambda_{m-1}).
 \end{align*}
 For the recursive construction we assume that an index-map
 $\iota_i : \Lambda_i \to \mathcal{N}$ on $\Lambda_i$ is given for any $i=0,\dots,m-1$.
 The task is to construct an index map $\iota: \Lambda \to \mathcal{N}$
 from the maps $\iota_i$.
-In the following we describe for strategies to achieve this, that
+In the following we describe four strategies to achieve this, that
 have been implemented in \dunemodule{dune-functions}. For all these
 strategies remember, that any $\lambda \in \Lambda$ has a unique representation
 $\lambda = \mathbf{e}_i \otimes \hat{\lambda}$ for $i \in \{0,\dots,m-1\}$ and some
 $\hat{\lambda} \in \Lambda_i$.
 It will be necessary to distinguish the special case that all children
-$\Lambda_i$ are the same.
+$\Lambda_i$ are identical.
 
 \begin{definition}
   An inner node $\Lambda$ will be called \emph{power node}, if all of its children $\Lambda_i$
@@ -894,8 +932,8 @@ $\Lambda_i$ are the same.
       \iota(\mathbf{e}_i \otimes\hat{\lambda}) = (i_0 m + i, I)
     \end{align*}
     where the fixed stride $m$ is the number of children of $\Lambda$.
-     ...
-
+    If $\Lambda$ is a power node, it is again straight forward to show that
+    $\iota$ is an index-map for $\Lambda$.
     Example:
 
     \begin{tabular}{c|c|c|c}
@@ -924,8 +962,8 @@ $\Lambda_i$ are the same.
         \dots \\
     \end{tabular}
 
-    ... counter example
-
+    Again, for this interleaved strategy, $\iota$ might not be an
+    index-map for general composite nodes
 \end{itemize}
 
 
@@ -934,12 +972,16 @@ genau doppelt so viele Basen hat wie der andere, dann könnte man immer abwechse
 einen Teilraum nehmen und dann eine aus dem anderen.  Ich wäre eher dagegen über so etwas
 nachzudenken, wenn ich es nicht in einer Anwendung brauchen würde...}
 
-We now consider the Taylor--Hood basis
+We now come back to the Taylor--Hood example.
+While the indexing schemes proposed for this example so far where
+introduced in an ad-hoc way, we will now systematically apply
+the above given strategies to construct index maps.
+To this end we denote the Taylor--Hood basis by
 \begin{align*}
  \Lambda_\text{TH}
-  = ((\Lambda_{P_2}, \Lambda_{P_2}, \Lambda_{P_2}), \Lambda_{P_1})
+  = (\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}) \sqcup \Lambda_{P_1}.
 \end{align*}
-as an example. For the bases $\Lambda_{P_1}, \Lambda_{P_2}$
+For the bases $\Lambda_{P_1}, \Lambda_{P_2}$
 of the elementary spaces $P_1,P_2$ we consider fixed given flat index maps
 \begin{align*}
   \iota_{P_1}(\Lambda_{P_1}) &\to \mathbb{N}_0, &
@@ -949,13 +991,13 @@ These are typically constructed by enumerating the grid entities
 the basis functions are associated to.
 Then the interior product space basis
 \begin{align*}
-  \Lambda_V = (\Lambda_{P_2}, \Lambda_{P_2}, \Lambda_{P_2})
+  \Lambda_V = \Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}
 \end{align*}
 together with the index map $\iota_{P_2}$ is a power node in the above
 given sense, while the external product space basis
 \begin{align*}
  \Lambda_\text{TH}
-  = (\Lambda_V, \Lambda_{P_1})
+  = \Lambda_V \sqcup \Lambda_{P_1}
 \end{align*}
 is a composite node. As two of the above given strategies can be used
 for composite nodes, while all four can be applied to power nodes
@@ -971,13 +1013,18 @@ are denoted by
 \begin{align*}
   v_{x_k,i} = \mathbf{e}_0 \otimes (\mathbf{e}_k \otimes \lambda^{P_2}_i)
 \end{align*}
-where $i=0,\dots,n-1$ for $n=|\Lambda_{P_2}|= \operatorname{dim} P_2$
+where $i=0,\dots,n_2-1$ for $n_2=|\Lambda_{P_2}|= \operatorname{dim} P_2$
 while the basis functions for the pressure are denoted by
 \begin{align*}
   p_{j} = \mathbf{e}_1 \otimes \lambda^{P_1}_j
 \end{align*}
-where $j=0,\dots,|\Lambda_{P_1}|-1$.
+where $j=0,\dots,n_1-1$ for $n_1=|\Lambda_{P_1}|= \operatorname{dim} P_1$.
 
+The resulting multi-indices for all combinations $X(Y)$ are listed
+in the following table. Notice that the index-maps depicted in
+Figure~\ref{fig:taylor_hood_index_tree} and Figure~\ref{fig:taylor_hood_index_blocked_tree}
+are reproduced for the strategies
+BL(BL) and BL(BI), respectively.
 
 {\footnotesize
 \begin{center}
@@ -1034,55 +1081,55 @@ where $j=0,\dots,|\Lambda_{P_1}|-1$.
     \\
   $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ &  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$
   \\
-%  $v_{x_0,n-1}$
-%    & $(0,0,n-1)$
-%    & $(0,n-1,0)$
-%    & $(0,n-1)$
-%    & $(0,3(n-1)+0)$
-%    & $(0,n-1)$
-%    & $(n-1,0)$
-%    & $(n-1)$
-%    & $(3(n-1)+0)$
+%  $v_{x_0,n_2-1}$
+%    & $(0,0,n_2-1)$
+%    & $(0,n_2-1,0)$
+%    & $(0,n_2-1)$
+%    & $(0,3(n_2-1)+0)$
+%    & $(0,n_2-1)$
+%    & $(n_2-1,0)$
+%    & $(n_2-1)$
+%    & $(3(n_2-1)+0)$
 %    \\
 %  \hline
   $v_{x_1,0}$
     & $(0,1,0)$
     & $(0,0,1)$
-    & $(0,n+0)$
+    & $(0,n_2+0)$
     & $(0,0+1)$
     & $(1,0)$
     & $(0,1)$
-    & $(n+0)$
+    & $(n_2+0)$
     & $(0+1)$
     \\
   $v_{x_1,1}$
     & $(0,1,1)$
     & $(0,1,1)$
-    & $(0,n+1)$
+    & $(0,n_2+1)$
     & $(0,3+1)$
     & $(1,1)$
     & $(1,1)$
-    & $(n+1)$
+    & $(n_2+1)$
     & $(3+1)$
     \\
   $v_{x_1,2}$
     & $(0,1,2)$
     & $(0,2,1)$
-    & $(0,n+2)$
+    & $(0,n_2+2)$
     & $(0,6+1)$
     & $(1,2)$
     & $(2,1)$
-    & $(n+2)$
+    & $(n_2+2)$
     & $(6+1)$
     \\
   $v_{x_1,3}$
     & $(0,1,3)$
     & $(0,3,1)$
-    & $(0,n+3)$
+    & $(0,n_2+3)$
     & $(0,9+1)$
     & $(1,3)$
     & $(3,1)$
-    & $(n+3)$
+    & $(n_2+3)$
     & $(9+1)$
     \\
   $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ &  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$
@@ -1091,41 +1138,41 @@ where $j=0,\dots,|\Lambda_{P_1}|-1$.
   $v_{x_2,0}$
     & $(0,2,0)$
     & $(0,0,2)$
-    & $(0,2n+0)$
+    & $(0,2n_2+0)$
     & $(0,0+2)$
     & $(2,0)$
     & $(0,2)$
-    & $(2n+0)$
+    & $(2n_2+0)$
     & $(0+2)$
     \\
   $v_{x_2,1}$
     & $(0,2,1)$
     & $(0,1,2)$
-    & $(0,2n+1)$
+    & $(0,2n_2+1)$
     & $(0,3+2)$
     & $(2,1)$
     & $(1,2)$
-    & $(2n+1)$
+    & $(2n_2+1)$
     & $(3+2)$
     \\
   $v_{x_2,2}$
     & $(0,2,2)$
     & $(0,2,2)$
-    & $(0,2n+2)$
+    & $(0,2n_2+2)$
     & $(0,6+2)$
     & $(2,2)$
     & $(2,2)$
-    & $(2n+2)$
+    & $(2n_2+2)$
     & $(6+2)$
     \\
   $v_{x_2,3}$
     & $(0,2,3)$
     & $(0,3,2)$
-    & $(0,2n+3)$
+    & $(0,2n_2+3)$
     & $(0,9+2)$
     & $(2,3)$
     & $(3,2)$
-    & $(2n+3)$
+    & $(2n_2+3)$
     & $(9+2)$
     \\
   $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ &  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$
@@ -1138,9 +1185,9 @@ where $j=0,\dots,|\Lambda_{P_1}|-1$.
     & $(1,0)$
     & $(1,0)$
     & $(3+0)$
-    & $(n+0)$
-    & $(3n+0)$
-    & $(3n+0)$
+    & $(n_2+0)$
+    & $(3n_2+0)$
+    & $(3n_2+0)$
     \\
   $p_{1}$
     & $(1,1)$
@@ -1148,9 +1195,9 @@ where $j=0,\dots,|\Lambda_{P_1}|-1$.
     & $(1,1)$
     & $(1,1)$
     & $(3+1)$
-    & $(n+1)$
-    & $(3n+1)$
-    & $(3n+1)$
+    & $(n_2+1)$
+    & $(3n_2+1)$
+    & $(3n_2+1)$
     \\
   $p_{2}$
     & $(1,2)$
@@ -1158,9 +1205,9 @@ where $j=0,\dots,|\Lambda_{P_1}|-1$.
     & $(1,2)$
     & $(1,2)$
     & $(3+2)$
-    & $(n+2)$
-    & $(3n+2)$
-    & $(3n+2)$
+    & $(n_2+2)$
+    & $(3n_2+2)$
+    & $(3n_2+2)$
     \\
   $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ &  $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$
   \\
