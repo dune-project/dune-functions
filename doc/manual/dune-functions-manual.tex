@@ -40,9 +40,17 @@
         inner sep=1mm,
         outer sep=0mm
     },
+    smalltreenode/.style = {
+        treenode,
+        font=\footnotesize
+    },
     basisnode/.style = {
         treenode,
         minimum width=9mm,
+    },
+    smallbasisnode/.style = {
+        basisnode,
+        font=\footnotesize
     }
 }
 
@@ -483,21 +491,21 @@ To establish some structure in a set of multi-indices it is convenient to consid
 \begin{definition}
     \begin{enumerate}
         \item
-            If $I \in \mathcal{N}$ takes the form $I = (I',I'')$ for $I',I'' \in \mathcal{N}$,
-            then we call $I'$ a prefix of $I$.
-            If additionally $|I''|>0$, then we call $I'$ a strict prefix of $I$.
+            If $I \in \mathcal{N}$ takes the form $I = (I^0,I^1)$ for $I^0,I^1 \in \mathcal{N}$,
+            then we call $I^0$ a prefix of $I$.
+            If additionally $|I^1|>0$, then we call $I^0$ a strict prefix of $I$.
         \item
-            For $I,I' \in \mathcal{N}$ and a set $\mathcal{M} \subset \mathcal{N}$:
+            For $I,I^0 \in \mathcal{N}$ and a set $\mathcal{M} \subset \mathcal{N}$:
             \begin{enumerate}
               \item
-                We write $I=(I',\dots)$, if $I'$ is a prefix of $I$,
+                We write $I=(I^0,\dots)$, if $I^0$ is a prefix of $I$,
               \item
-                we write $I=(I',\cdot,\dots)$, if $I'$ is a strict prefix of $I$,
+                we write $I=(I^0,\cdot,\dots)$, if $I^0$ is a strict prefix of $I$,
               \item
-                we write $(I',\dots) \in \mathcal{M}$, if $I'$ is a prefix of some
+                we write $(I^0,\dots) \in \mathcal{M}$, if $I^0$ is a prefix of some
                 $I \in \mathcal{M}$,
               \item
-                we write $(I',\cdot,\dots) \in \mathcal{M}$, if $I'$ is a strict prefix of some
+                we write $(I^0,\cdot,\dots) \in \mathcal{M}$, if $I^0$ is a strict prefix of some
                 $I \in \mathcal{M}$.
             \end{enumerate}
     \end{enumerate}
@@ -523,11 +531,8 @@ function for the scalar $P_1$ function that determines the pressure.
 It is evident that the complete set of these multi-indices can again be interpreted as a rooted tree.
 In this tree, shown in Figure~\ref{fig:taylor_hood_index_tree}, the multi-indices correspond
 to the leaf nodes, and the multi-index digits labeling the \emph{edges} are the
-natural (zero-based) indices of the children in the ordered tree.  Prefixes can be
-interpreted as path from the root to a given node.
-\todosander{Hmm.  Ist das redundant?  Wir nehmen ja an dass wir \emph{geordnete} Bäume haben,
-d.h., die Kinder eines Knotens haben ohnehin immer eine feste Ordnung $0,\dots, d-1$.
-Die Ziffern des Multi-Index geben aber immer gerade diese Ordnung der Kinder wieder.}
+natural (zero-based) indices of the children within the ordered tree.  Prefixes can be
+interpreted as paths from the root to a given node.
 
 This latter fact can be seen as the defining property of index trees.  Indeed,
 sets of multi-indices form trees as long as they are consistent in the sense that they
@@ -601,15 +606,13 @@ to the out-degree, i.e., the number of direct children of the node indexed by $I
 
 An indexing is then an injective map from the leaf nodes of a tree of basis functions to the leafs of an
 index tree.
-\todosander{Notation: Der Buchstabe $I$ wird für zu viele Dinge verwendet.}
 
 \begin{definition}
-  Let $M$ a finite set and $I:M \to \mathcal{N}$ an injective map whose range
-  $I(M)$ forms an index tree.
-  Then $I$ is called an \emph{index-map} for $M$.
-  The index map is called \emph{uniform}, if additionally $I(M) \subset \mathbb{N}^k_0$ for some $k \in \mathbb{N}$
-  and \emph{flat}, if $I(M) \subset \mathbb{N}_0$.
-\todosander{Wofür brauchen wir Uniformität?}
+  Let $M$ a finite set and $\iota:M \to \mathcal{N}$ an injective map whose range
+  $\iota(M)$ forms an index tree.
+  Then $\iota$ is called an \emph{index-map} for $M$.
+  The index map is called \emph{uniform}, if additionally $\iota(M) \subset \mathbb{N}^k_0$ for some $k \in \mathbb{N}$
+  and \emph{flat}, if $\iota(M) \subset \mathbb{N}_0$.
 \end{definition}
 
 Continuing the Taylor--Hood example, if
@@ -637,27 +640,27 @@ with scalar-valued basis functions
                     level distance = 1.5cm
                 },
             ]
-            \node [treenode] {$[]$}
-                child{ node [treenode] {$[0]$}
-                        child [sibling distance=2.5cm] { node [treenode] {$[0,0]$}
-                            child [sibling distance=1.5cm] { node [basisnode] {$[0,0,0]$} edge from parent node[above left] {$0$}}
-                            child [sibling distance=1.5cm] { node [basisnode] {$[0,0,1]$} edge from parent node[left] {$1$}}
-                            child [sibling distance=1.5cm] { node [basisnode] {$[0,0,2]$} edge from parent node[above right] {$2$}}
+            \node [treenode] {$()$}
+                child{ node [treenode] {$( 0 )$}
+                        child [sibling distance=2.5cm] { node [smalltreenode] {$( 0,0 )$}
+                            child [sibling distance=1.5cm] { node [smallbasisnode] {$( 0,0,0 )$} edge from parent node[above left] {$0$}}
+                            child [sibling distance=1.5cm] { node [smallbasisnode] {$( 0,0,1 )$} edge from parent node[left] {$1$}}
+                            child [sibling distance=1.5cm] { node [smallbasisnode] {$( 0,0,2 )$} edge from parent node[above right] {$2$}}
                             edge from parent node[above left] {$0$}
                         }
-                        child [sibling distance=2.5cm]{ node [] {$\dots$} }
-                        child [sibling distance=2cm]{ node [treenode] {$[0,n_2]$}
-                            child [sibling distance=1.5cm] { node [basisnode] {$[0,n_2,0]$} edge from parent node[above left] {$0$}}
-                            child [sibling distance=1.5cm] { node [basisnode] {$[0,n_2,1]$} edge from parent node[left] {$1$}}
-                            child [sibling distance=1.5cm] { node [basisnode] {$[0,n_2,2]$} edge from parent node[above right] {$2$}}
-                            edge from parent node[above right] {$n_2$}
+                        child [sibling distance=2.3cm]{ node [] {$\dots$} }
+                        child [sibling distance=2.6cm]{ node [smalltreenode] {$( 0,n_2-1 )$}
+                            child [sibling distance=2cm] { node [smallbasisnode] {$( 0,n_2 - 1,0 )$} edge from parent node[above left] {$0$}}
+                            child [sibling distance=2cm] { node [smallbasisnode] {$( 0,n_2 - 1,1 )$} edge from parent node[left] {$1$}}
+                            child [sibling distance=2cm] { node [smallbasisnode] {$( 0,n_2 - 1,2 )$} edge from parent node[above right] {$2$}}
+                            edge from parent node[above right] {$n_2-1$}
                         }
                         edge from parent node[above left] {$0$}
                 }
-                child{ node [treenode] {$[1]$}
-                    child [sibling distance=1cm] { node [basisnode] {$[1,0]$} edge from parent node[above left] {$0$} }
-                    child [sibling distance=1cm] { node [] {$\dots$} }
-                    child [sibling distance=1cm] { node [basisnode] {$[1,n_1]$} edge from parent node[above right] {$n_1$} }
+                child [sibling distance=6.2cm]{ node [smalltreenode] {$( 1 )$}
+                    child [sibling distance=1.3cm] { node [smallbasisnode] {$( 1,0 )$} edge from parent node[above left] {$0$} }
+                    child [sibling distance=1.3cm] { node [] {$\dots$} }
+                    child [sibling distance=1.3cm] { node [smallbasisnode] {$( 1,n_1-1 )$} edge from parent node[above right] {$n_1-1$} }
                     edge from parent node[above right] {$1$}
                 };
         \end{tikzpicture}
@@ -706,13 +709,13 @@ degrees of freedom are ordered.
 
 Let $\Lambda$ be the set of basis functions of a finite element basis tree.
 In principle, \dunemodule{dune-functions} allows any indexing scheme that
-is given by an index map $I: \Lambda \to \mathcal{N}$
-whose range $I(\Lambda)$ is an index tree.
+is given by an index map $\iota: \Lambda \to \mathcal{N}$
+whose range $\iota(\Lambda)$ is an index tree.
 Out of this large set of maps, \dunemodule{dune-functions} allows to construct the most
 important ones systematically using certain transformation rules.
 
 Consider a tree of basis functions. We want to construct an indexing for this tree, that is
-an index tree $\mathcal{I}$ and a map $I$ from the set of basis vectors to the leafs of the
+an index tree $\mathcal{I}$ and a map $\iota$ from the set of basis vectors to the leafs of the
 index tree. This construction proceeds recursively.
 Remember first that basis trees are ordered, i.e., the children of each tree node
 have a fixed given ordering.  This means in particular that all leaf nodes have a fixed
