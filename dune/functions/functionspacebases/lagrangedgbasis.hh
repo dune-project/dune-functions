@@ -69,7 +69,7 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using SizePrefix = Dune::ReservedVector<size_type, 2>;
+  using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
   /** \brief Constructor for a given grid view object */
   LagrangeDGPreBasis(const GridView& gv) :

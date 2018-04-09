@@ -88,7 +88,7 @@ public:
   using MultiIndex = MI;
 
   //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, SubPreBasis::SizePrefix::max_size()+1>;
+  using SizePrefix = Dune::ReservedVector<size_type, SubPreBasis::SizePrefix::max_size()>;
 
 private:
 
