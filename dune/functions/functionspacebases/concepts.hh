@@ -171,6 +171,7 @@ struct PreBasis
     requireConvertible<typename PB::size_type>(preBasis.size(std::declval<typename PB::SizePrefix>())),
     requireConvertible<typename PB::size_type>(preBasis.dimension()),
     requireConvertible<typename PB::size_type>(preBasis.maxNodeSize()),
+    requireSameType<decltype(const_cast<PB&>(preBasis).update(preBasis.gridView())),void>(),
     requireConcept<BasisTree<typename PB::GridView>>(preBasis.node(RootTreePath())),
     requireConcept<NodeIndexSet<PB>>(preBasis.template indexSet<RootTreePath>())
   );
@@ -245,6 +246,7 @@ struct GlobalBasis
     requireConvertible<typename B::size_type>(basis.size()),
     requireConvertible<typename B::size_type>(basis.size(std::declval<typename B::SizePrefix>())),
     requireConvertible<typename B::size_type>(basis.dimension()),
+    requireConvertible<void>(basis.update(basis.gridView())),
     requireConcept<LocalIndexSet<typename B::LocalView>>(basis.localIndexSet()),
     requireConcept<LocalView<B>>(basis.localView())
   );
