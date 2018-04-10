@@ -1569,14 +1569,10 @@ tree. The argument to this method is the lexicographic
 index of the local basis functions within the subtree
 and the result is the lexicographic index within the full
 tree. Hence the local indices of all basis functions
-within this subtree form a consecutive range. The first
-value in this range, i.e., the result of \cpp{localIndex(0)}
-is also accessible via the \cpp{offset()} method.
+within this subtree form a consecutive range.
 The result of these methods is undefined if the
 local view containing the tree is in unbound state.
 All these indices are of type \cpp{size\_type}.
-\todograeser{Is the offset() method part of the interface?
-Making it protected seems to be reasonable.}
 
 \begin{lstlisting}[style=Interface]
 class BasisNode
@@ -1584,19 +1580,28 @@ class BasisNode
 public:
 using size_type = @@<implementation defined>@@;
 size_type size() const;
-size_type offset() const;
 size_type localIndex(size_type i) const;
 \end{lstlisting}
 
 For some computations it is important to identify
 individual nodes in the tree. To this end the node
-exports its path in the full tree via the \cpp{treePath()}
-method. The result is a tree path
-as defined in the \dunemodule{dune-typetree} module.
-It is possible to retrieve the node from the full
-tree by addressing it with its tree path.
-Notice that, to allow this functionality, the
-type \cpp{TreePath} will in general differ from one node to the other.
+exports its path with respect to the full tree root
+via the \cpp{treePath()} method.
+The result is a multi-index
+implemented by the \cpp{Dune::TypeTree::HybridTreePath}
+class defined in the \dunemodule{dune-typetree} module.
+On the other hand any interior node allows to access
+its children using the \cpp{child()} method.
+The path to the desired child can either be passed
+as a \cpp{Dune::TypeTree::HybridTreePath} object
+or as a sequence of indices. Indices referring
+to the child of a power node can be passed as
+an integral value, e.g., as \cpp{std::size_t}.
+Indices referring to children of a composite node
+have to be passed statically as \cpp{Dune::index_constant<i>}.
+For convenience global constants \cpp{_0},\cpp{_1}, \dots
+of this type are implemented in the \cpp{Dune::Indices}
+namespace.
 If data needs to be attached to nodes,
 the \cpp{treeIndex()} can be used. The latter returns
 the lexicographic index of the node within the full
@@ -1608,6 +1613,13 @@ the tree is in unbound state.
 using TreePath = @@<implementation defined>@@;
 const TreePath& treePath() const;
 size_type treeIndex() const;
+
+// The following methods do only exist for interior nodes
+template<class... ChildIndices>
+auto child(ChildIndices... childIndices);
+
+template<class ChildTreePath>
+auto child(ChildTreePath childTreePath);
 }; // end BasisNode
 \end{lstlisting}
 
@@ -1631,7 +1643,6 @@ public:
 // interface common with interior nodes
 using size_type = @@<implementation defined>@@;
 size_type size() const;
-size_type offset() const;
 size_type localIndex(size_type i) const;
 using TreePath = @@<implementation defined>@@;
 const TreePath& treePath() const;
@@ -1738,29 +1749,29 @@ component can be obtained by the following.
 // import namespace with index constants
 using namespace Indices;
 
-// generate tree path for 2nd component of the velocity tree
-auto treePath = TypeTree::hybridTreePath(_0, 1);
-
-// obtain the desired leaf node in the basis tree
-const auto& node = TypeTree::child(localView.tree(), treePath);
+// obtain the leaf node for 2nd component of the velocity tree
+const auto& node = localView.tree().child(_0, 1);
 \end{lstlisting}
 \todosander{Können wir hier \dunemodule{dune-typetree} aufräumen und das \cpp{hybrid}
 endlich streichen?}
 
-Notice that we used the index constants \cpp{\_0}
-from the namespace \cpp{TypeTree::Indices}
+Notice that we used the index constants \cpp{\_0}, \dots{}
+from the namespace \cpp{Dune::Indices}
 to address the velocity node because the
-tree root is a hybrid container whose child nodes
+tree root is a composite node whose child nodes
 for velocity and pressure are of different type.
 The same result can be achieved by the following
-slightly more compact code.
+slightly more verbose code.
 
 \begin{lstlisting}[style=Example]
-// import namespace with index constants
-using namespace Indices;
+// generate tree path for 2nd component of the velocity tree
+auto treePath = TypeTree::hybridTreePath(_0, 1);
 
-// obtain the desired leaf node in the basis tree
-const auto& node = localView.tree().child(_0, 1);
+// obtain the desired leaf node in the basis tree using the child method
+const auto& node = localView.tree().child(treePath);
+
+// obtain the desired leaf node in the basis tree using the global child function
+const auto& node = TypeTree::child(localView.tree(), treePath);
 \end{lstlisting}
 
 \subsection{Multi-indices}
