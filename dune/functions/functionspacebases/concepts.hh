@@ -55,7 +55,6 @@ struct BasisNode
     requireType<typename N::size_type>(),
     requireType<typename N::TreePath>(),
     requireConvertible<typename N::size_type>(node.size()),
-    requireConvertible<typename N::size_type>(node.offset()),
     requireConvertible<typename N::size_type>(node.localIndex(std::declval<typename N::size_type>())),
     requireConvertible<typename N::size_type>(node.treeIndex()),
     requireConvertible<typename N::TreePath>(node.treePath()),
