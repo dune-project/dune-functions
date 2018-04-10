@@ -155,12 +155,12 @@ namespace Dune {
         return treeIndex_;
       }
 
+    protected:
+
       size_type offset() const
       {
         return offset_;
       }
-
-    protected:
 
       void setOffset(const size_type offset)
       {
