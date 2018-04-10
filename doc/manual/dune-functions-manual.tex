@@ -417,7 +417,7 @@ is given by
     = \bigsqcup_{i=0}^{m-1} \Lambda_i
     \colonequals \bigcup_{i=0}^{m-1} \mathbf{e}_i \otimes \Lambda_i.
 \end{align}
-Note that the symbol $\sqcup$ used to denote the disjoint union
+Note that the symbol $\sqcup$ used here
 is a simple short hand notation for \eqref{eq:basis_product}
 and not understood as an associative binary operation.
 Using this notation we have
@@ -502,7 +502,7 @@ It is important to note that the multi-indices from a given set do not necessari
 all have the same length.  For example, consider a possible indexing of the
 basis functions of the Taylor--Hood basis.
 Figure~\ref{fig:taylor_hood_basis_function_tree} illustrates the set of all basis
-functions by extending the basis tree of Figure~\ref{fig:taylor_hood_basis_tree}
+functions by extending the ordered basis tree of Figure~\ref{fig:taylor_hood_basis_tree}
 by leaf nodes for individual basis functions.
 We start by assuming that the finite element basis functions $\lambda_i^{P_2}$ and $\lambda_k^{P_1}$
 of $P_2$ and $P_1$ both
@@ -625,7 +625,7 @@ Let $(I,\dots) \in \mathcal{I}$, i.e., $I$ is a
 prefix of multi-indices in $\mathcal{I}$. Then the size relative
 to $I$ is given by
 \begin{align}\label{eq:prefix_size}
-    |\mathcal{I}|_I = \op{max}\{k \st \exists (I,k,\dots) \in \mathcal{I} \}+1.
+  \operatorname{deg}^+_{\mathcal{I}}[I] \colonequals  \op{max}\{k \st \exists (I,k,\dots) \in \mathcal{I} \}+1.
 \end{align}
 \end{definition}
 In terms of the ordered tree associated with $\mathcal{I}$ this corresponds
@@ -647,12 +647,12 @@ Continuing the Taylor--Hood example, if
 all basis functions $\lambda_I$ of the whole finite element tree are
 indexed by multi-indices of the above given form,
 and if $X$ is a coefficient vector that has a compatible hierarchical structure,
-then a the finite element function $(u_h,p_h)$ with velocity
-$u_h$ and pressure $p_h$ defined by the coefficient vector $X$
+then a the finite element function $(v_h,p_h)$ with velocity
+$v_h$ and pressure $p_h$ defined by the coefficient vector $X$
 is given by
 \begin{align*}
-  (u_h,p_h) &=
-  \sum_{i=0}^2\sum_{j=0}^{n_2-1} X_{(0,i,j)}\lambda_{(0,i,j)}
+  (v_h,p_h)
+  &= \sum_{i=0}^2\sum_{j=0}^{n_2-1} X_{(0,i,j)}\lambda_{(0,i,j)}
   + \sum_{k=0}^{n_1-1} X_{(1,k)}\lambda_{(1,k)}
 \end{align*}
 with basis functions
@@ -661,10 +661,17 @@ with basis functions
     \qquad \text{and} \qquad
     \lambda_{(1,k)} = \mathbf{e}_1 \otimes \lambda^{P_1}_k.
 \end{equation*}
-Alternatively the individual velocity and pressure fields
-$u_h$ and $p_h$ are given by
+Introducing the corresponding index map $\iota : \Lambda_{\text{TH}} \to \mathcal{N}$
+with $\iota(\Lambda_I)=I$ on the set $\Lambda_{\text{TH}}$ of all basis functions
+we can write this in compact form as
 \begin{align*}
-  u_h &= \sum_{j=0}^{n_2-1} X_{(0,i,j)} (\mathbf{e}_i \otimes \lambda^{P_2}_j),
+  (v_h,p_h) &= \sum_{\lambda \in \Lambda_{\text{TH}}} X_{\iota(\lambda)} \lambda
+            = \sum_{I \in \iota(\Lambda_{\text{TH}})} X_I \lambda_I.
+\end{align*}
+Alternatively the individual velocity and pressure fields
+$v_h$ and $p_h$ are given by
+\begin{align*}
+  v_h &= \sum_{j=0}^{n_2-1} X_{(0,i,j)} (\mathbf{e}_i \otimes \lambda^{P_2}_j),
     &
     p_h &= \sum_{k=0}^{n_1} X_{(1,k)}\lambda^{P_1}_k.
 \end{align*}
@@ -894,7 +901,7 @@ $\Lambda_i$ are identical.
     \end{align*}
     where the offset $L_i$ for the first digit is computed by
     \begin{align*}
-      L_i = \sum_{j=0}^{i-1} |\iota_j(\Lambda_j)|_{()}.
+      L_i = \sum_{j=0}^{i-1} \operatorname{deg}_{\iota_j(\Lambda_j)}^+[()].
     \end{align*}
     This construction shifts the first digit such that there is ``enough space''
     to fit the multi-indices of all basis functions from $\Lambda_j$ with $j<0$.
@@ -1231,35 +1238,56 @@ We now consider the restrictions of all basis functions of a given tree to a sin
 Of these restricted functions, we discard all those that are constant zero functions on $e$.
 All others form the \emph{local basis} on $e$
 \begin{equation*}
- \Lambda_\text{local}
+ \Lambda|_e
  \colonequals
  \{ \lambda|_e \; : \; \lambda \in \Lambda \}.
 \end{equation*}
-The local basis forms a tree that is isomorphic to a subtree of the full global basis tree.
+The local basis forms a tree that is isomorphic to the full function space basis tree
+with each global function space basis $\Lambda$ replaced by its local counterpart $\Lambda|_e$.
 
-From this natural isomorphism $\imath_e$ into the full tree of global basis functions follows
-naturally a global indexing of the local basis functions
-\begin{equation*}
- \Lambda_\text{local} \ni \lambda \mapsto \mathcal{I}
- \qquad
- I_\text{local}(\lambda) \colonequals I(\imath_e(\lambda)).
-\end{equation*}
-This is the map that associates shape functions on a given grid element $e$ to global degrees of freedom.
+This natural isomorphism from the global top the local tree
+naturally induces a localized version of the index map given by
+\begin{align*}
+  \iota|_e : \Lambda|_e &\to \mathcal{I}, &
+  \iota|_e(\lambda_e) &\colonequals \iota(\lambda).
+\end{align*}
+This is the map that associates shape functions on a given grid element $e$ to global indices of
+degrees of freedom.
+Notice that the map $\iota|_e$ itself is not an index-map in the above given sense
+since $\iota|_e(\Lambda|_e)$ is only a subset of the index tree $\iota(\Lambda)$.
 
-In addition, the basis functions in the local tree have two further indices.
-First, each local basis function has an index to distinguish it from other functions in the
-same leaf node.  As there is no hierarchical structure involved, this index is simply a
-natural number.  It is called the \emph{leaf-local index}.
-Secondly, each local basis has an index for the entire local tree.  This is what is used to address
-the element stiffness matrix.  This is the \emph{local index}.
-In principle, this indexing can use another general index tree, which does not have to coincide
-with the index tree for the global basis.
+In order to index the basis functions in $\Lambda|_e$ efficiently we introduce
+an additional local index map
+\begin{align*}
+  \iota^{\text{local}}_{\Lambda|_e}: \Lambda|_e \to \mathcal{N}
+\end{align*}
+where $\iota^{\text{local}}_{\Lambda|_e}(\Lambda|_e)$ is an index tree.
+The index $\iota^{\text{local}}_{\Lambda|_e}(\lambda|_e)$ is
+called the \emph{local index} of $\lambda$ (with respect to $e$).
+To distinguish this from the indices generated by $\iota$
+we call $\iota(\lambda)$ the \emph{global index} of $\lambda$.
+As explained in Chapter~\ref{sec:function_space_bases_implementation},
+the \dunemodule{dune-functions} \emph{implementation} is fairly restrictive here,
+and only allows flat local indices, i.e.,
+$\iota^{\text{local}}_{\Lambda|_e}(\Lambda|_e) \subset \mathbb{N}_0.$
+
+In addition, we introduce for each leaf local basis $\hat{\Lambda}|_e$
+of the full local basis tree another local index map
+\begin{align*}
+  \iota^{\text{leaf-local}}_{\hat{\Lambda}|_e}: \hat{\Lambda}|_e \to \mathbb{N}_0
+\end{align*}
+As there is no hierarchical structure involved, this index is simply a
+natural number.
+The index $\iota^{\text{leaf-local}}_{\hat{\Lambda}|_e}(\lambda|_e)$ is
+called the \emph{leaf-local index} of $\lambda$ (with respect to $e$).
+
+The local index is typically used to address
+the element stiffness matrix.
+In principle, this indexing can use another non-flat index tree,
+which does not have to coincide with the index tree for the global basis.
 This means that the local index of a shape function can again be a multi-index, but the types,
 lengths and orderings can be completely unrelated to the corresponding global indices.
-This allows to use nested types for element stiffness matrices and load vectors.
-As explained in Chapter~\ref{sec:function_space_bases_implementation}, however,
-the \dunemodule{dune-functions} \emph{implementation} is fairly restrictive here,
-and only allows flat lexicographic indices here.
+This would allows to use nested types for element stiffness matrices and load vectors.
 
 
 \section{Programmer interface for function space bases}
