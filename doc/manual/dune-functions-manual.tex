@@ -1660,6 +1660,8 @@ const FiniteElement& finiteElement() const = 0;
 \subsection{User interface of a \texorpdfstring{\cpp{LocalIndexSet}}{LocalIndexSet}}
 \label{sec:localindexset_interface}
 
+\todograeser{Should we merge \cpp{LocalIndexSet} into \cpp{LocalView}?}
+
 The \cpp{LocalIndexSet} as returned by \cpp{GlobalBasis::localIndexSet()}
 provides access to global multi-indices for the
 local basis functions reachable from a local view.
@@ -1754,6 +1756,7 @@ const auto& node = localView.tree().child(_0, 1);
 \end{lstlisting}
 \todosander{Können wir hier \dunemodule{dune-typetree} aufräumen und das \cpp{hybrid}
 endlich streichen?}
+\todograeser{Implement \cpp{treePath()} method in \dunemodule{dune-typetree}}
 
 Notice that we used the index constants \cpp{\_0}, \dots{}
 from the namespace \cpp{Dune::Indices}
@@ -1775,6 +1778,8 @@ const auto& node = TypeTree::child(localView.tree(), treePath);
 \end{lstlisting}
 
 \subsection{Multi-indices}
+
+\todograeser{General multi-indices, dynamic multi-indices, hybrid multi-indices, implementations}
 
 The type of global multi-indices is hard-wired by \dunemodule{dune-functions}.  Generally, multi-indices
 will be objects of type
@@ -1837,33 +1842,14 @@ The \dunemodule{dune-functions} module contains a collection of standard finite 
 These can be directly used in finite element simulation codes. At the time of writing there is:
 
 \begin{itemize}
- \item \cpp{PQkNodalBasis}: Lagrangian bases of order $k$, where $k$ is a compile-time parameter.
+ \item \cpp{LagrangeBasis}: Lagrangian bases of order $k$, where $k$ is a compile-time parameter.
    For $k\le 2$, this implementation works on all kinds of conforming grids, including grids with more
    than one element type.  At the time of writing, higher-order spaces are implemented only partially.
    Check the online class documentation for the current status.
 
- \item \cpp{TaylorHoodBasis}: The Taylor--Hood bases described in Chapter~\ref{sec:finite_element_trees}.
-   This is a simple example of basis constructed by building products.
-   A complete example for how to use this basis is given in Chapter~\ref{sec:stokes_example}.
-   \todosander{Sollen wir diese Basis komplett entfernen, wo man sie mittlerweile doch
-     einfach aus den Einzelteilen zusammenbasteln kann?}
-   \todograeser{Es war Christian wichtig, dass man nicht-triviale Basen auch manuell,
-    d.h. ohne \cpp{PowerPreBasis}, implementieren kann. Für diesen Fall taugt
-    das noch als Beispiel.}
-    \todosander{Ist das noch aktuell?}
-
  \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
    Therefore, this basis also
    works well on non-conforming grids.  The polynomial order is again a compile-time constant.
-
- \item \cpp{RannacherTurekBasis}: An $H^1$-nonconforming scalar basis, which adapts the idea
-   of the Crouzeix--Raviart basis to cube grids~\cite{rannacher_turek:1992}.
-
- \item \cpp{RaviartThomasBasis}: The standard Raviart--Thomas basis for problems in
-  $H(\text{div})$~\cite{boffi_brezzi_fortin:2013}.  Available for different orders and element types.
-
- \item \cpp{BrezziDouglasMariniBasis}: The standard Brezzi--Douglas--Marini basis, which is an
-  alternative basis for $H(\text{div})$-conforming problems~\cite{boffi_brezzi_fortin:2013}.
 
  \item \cpp{BSplineBasis}:  Implements a $B$-Spline basis on a structured, axis-aligned grid as described,
    e.g., in~\cite{cottrell_hughes_bazilevs:2009}.  Arbitrary orders, dimensions, and knot vectors are supported,
@@ -1883,25 +1869,47 @@ These can be directly used in finite element simulation codes. At the time of wr
    object is undefined.
 \end{itemize}
 
-\todosander{Außerdem haben wir noch \cpp{LagrangeBasis} als Alias für \cpp{PQkNodalBasis}.
- Das sollten wir mal aufräumen.}
+\todograeser{Describe in which sense the above bases behave in a standard way and
+how to construct more complex ones.}
+
+\begin{itemize}
+ \item \cpp{TaylorHoodBasis}:
+   An implementation of a Taylor--Hood basis.
+   This is a simple implementation example of a basis with a non-trivial tree.
+   Notice that non-trivial product bases like a Taylor--Hood basis
+   can be easily constructed in a generic way. This approach is described
+   in Chapter~\ref{sec:composed_bases} and the preferred way to construct
+   a Taylor--Hood basis.
+ \item \cpp{RannacherTurekBasis}: An $H^1$-nonconforming scalar basis, which adapts the idea
+   of the Crouzeix--Raviart basis to cube grids~\cite{rannacher_turek:1992}.
+
+ \item \cpp{RaviartThomasBasis}: The standard Raviart--Thomas basis for problems in
+  $H(\text{div})$~\cite{boffi_brezzi_fortin:2013}.  Available for different orders and element types.
+
+ \item \cpp{BrezziDouglasMariniBasis}: The standard Brezzi--Douglas--Marini basis, which is an
+  alternative basis for $H(\text{div})$-conforming problems~\cite{boffi_brezzi_fortin:2013}.
+\end{itemize}
 
 \todosander{Wir müssen hier beschreiben dass selbst Basen für nicht-affine FE immer nur
   Größen zurückgeben, die sich auf das Referenzelement beziehen.}
 
+For a detailed discussion of the template parameters and constructor arguments
+of the basis implementations listed above we refer to the class documentation.
+
+
 \subsection{Combining bases into trees}
+\label{sec:composed_bases}
 
 The basis implementations of the previous section can be combined by multiplication to form new bases.
 This produces the tree structures described in Section~\ref{sec:finite_element_trees}.
-The code for this resides in the \cpp{BasisBuilder} namespace, which is a nested namespace
+The code for this resides in the \cpp{BasisFactory} namespace, which is a nested namespace
 within \cpp{Dune::Functions::}. Therefore, the examples of this section need a
 \begin{lstlisting}[style=Example]
-using namespace Dune::Functions::BasisBuilder;
+using namespace Dune::Functions::BasisFactory;
 \end{lstlisting}
 to compile.
 
-\todograeser{Should \cpp{namespace BasisBuilder} better be called \cpp{namespace BasisFactory}?}
-\todosander{Wäre vermutlich besser.}
+\todosander{Rename \cpp{namespace BasisBuilder} to \cpp{namespace BasisFactory}!}
 
 The methods to combine bases into trees do not operate on the basis classes of the previous section
 directly.  Rather, they combine so-called \emph{pre-bases}, of which there is one for each basis.
@@ -1910,70 +1918,69 @@ that it is technically very challenging to combine the actual user-visible basis
 tree hierarchy that itself again implements the interface of a hierarchical function space basis.
 Therefore, the multiplication operators are applied to pre-basis objects, and return pre-basis
 objects of the resulting tree.
-The pre-basis of the final basis tree can then be turned into an actual basis by a call to
+The pre-basis of the final basis tree can then be turned into an actual basis.
+
+Since all pre-bases in the product pre-basis have to know some common information
+like, e.g., the grid view, doing this hierarchic construction
+manually is verbose and error prone. As a more user friendly and safer solution
+a global basis can be constructed by a call to
 \begin{lstlisting}[style=Interface]
 template <class GridView, class PreBasisFactory>
 auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
 \end{lstlisting}
-This method takes a pre-basis factory, and produces a complete basis from it.
-\todosander{Hmm, was war noch mal genau der Unterschied zwischen einer PreBasis und einer
-  PreBasisFactory?  Will man das wirklich hier erklären müssen?}
+The pre-basis-factory argument encodes the hierarchic product.
+The involved pre-bases are constructed automatically by the
+\cpp{makeBasis()} function in a consistent way.
+This also determines a suitable multi-index type automatically
+which, otherwise, would have to be done by the user.
 
-In the simple-most case, the tree consists of a single basis. That means that in particular
-you can write
-\todosander{Ich schlage vor dass wir eine Regel für die Namensgebung angeben:  Zum Beispiel immer
-  ``Name der Basis mit kleinem Anfangsbuchstaben und ohne den \cpp{Basis}-Suffix.}
+In the simple-most case, the tree consists of a single basis.
+As a convention, for each implemented global basis
+\cpp{FooBarBasis} there is a function \cpp{BasisFactory::fooBar()}
+creating a suitable pre-basis-factory object which
+stores all basis-specific information.
+This function is defined in the same header file.
+That means that in particular you can write
 \todosander{Darf nicht mehr \cpp{BasisType} benutzen!}
 \begin{lstlisting}[style=Example]
 auto raviartThomasBasis = makeBasis(gridView, raviartThomas<k, GeometryType::BasicType::cube>());
 \end{lstlisting}
-to obtain a Raviart--Thomas basis for the given grid view.  This is equivalent to constructing
+to obtain a Raviart--Thomas basis for the given grid view.
+Notice that the \cpp{raviartThomas()} function does not need
+the grid view as parameter.
+This is equivalent to constructing
 the basis directly:
 \begin{lstlisting}[style=Example]
 RaviartThomasBasis<GridView,k,GeometryType::BasicType::cube> raviartThomasBasis;
 \end{lstlisting}
-\todosander{Was passiert wenn ich eine Basis nicht mit dem Default-Konstruktor erzeugen möchte?
-  Kann ich der \cpp{PreBasisFactory} dann Argumente mitgeben?}
-\todograeser{Genau, die \cpp{PreBasisFactory} bekommt alle Basis-spezifischen Argumente aber
- verzögert die Erzeugung der \cpp{PreBasis}. \cpp{makeBasis()} reicht dann die fehlenden Argumente weiter
- und erzeugt mit \cpp{PreBasisFactory::makePreBasis<MultiIndex>(gridView)} die \cpp{PreBasis}. D.h. Unterstützung für
- zusätzliche Argumente muß man in \cpp{FooPreBasisFactory} und \cpp{foo()} implementieren.}
-\todosander{Was passiert dann mit dem \cpp{gridView}-Argument?  Das muss ja jeder Basis-Konstruktor
- haben.  Gebe ich den \cpp{gridView} hier zweimal an, oder fügt \cpp{makeBasis} den auch in
- diesem Fall automatisch hinzu?  Vielleicht wäre an dieser Stelle ein Beispiel gut.}
-
-Each basis implementation listed above has a corresponding pre-basis factory, defined in the same header.
-Some of them have template parameters to transmit compile-time information.  The factories are
-\begin{center}
- \begin{tabular}{r|l}
-  Basis & tag \\
-  \hline
-  \cpp{PQkNodalBasis} & \cpp{pq<std::size_t k>} \\
-  \cpp{LagrangeBasis} & \cpp{lagrange<std::size_t k>} \\
-  \cpp{TaylorHoodBasis} & MISSING! \\
-  \cpp{LagrangeDGBasis} & \cpp{lagrangeDG} \\
-  \cpp{RannacherTurekBasis} & \cpp{rannacherTurek} \\
-  \cpp{RaviartThomasBasis} & \cpp{raviartThomas<std::size_t k, BasicType basic_type, class size_type=std::size_t>} \\
-  \cpp{BrezziDouglasMariniBasis} & \cpp{brezziDouglasMarini<std::size_t k, BasicType basic_type>} \\
-  \cpp{BSplineBasis} & MISSING!
- \end{tabular}
-\end{center}
+This example shows another convention: The template and constructor parameters
+of the \cpp{FooBarBasis} are given in the same order as the template
+parameters and arguments of the \cpp{BasisFactory::fooBar()} function,
+despite the fact that the former has the grid view type and object prepended.
 
 \todosander{Für die \cpp{BSplineBasis} ist das Feature noch nicht implementiert!}
 \todosander{Für die \cpp{TaylorHoodBasis} ist das Feature noch nicht implementiert!}
 
-The general mechanism to combine bases in a tree is called \cpp{composite},
+The pre-basis combining several bases in a product is called \cpp{CompositePreBasis}
 defined in the header \file{dune/functions/functionspacebases/compositebasis.hh}.
-The composite mechanism consists of a single method
+Analogously to the above description, a corresponding pre-basis-factory
+can be constructed using a global function
+with the signature
 \begin{lstlisting}[style=Interface]
-template <typename... Args>
-auto composite(Args&&... args);
+template <class... ChildPreBasisFactory>
+auto composite(ChildPreBasisFactory&&... childPreBasisFactory);
 \end{lstlisting}
-The method has an unspecified number of arguments, of unspecified type. The arguments are expected
-to be either factory tags for basis objects, like \cpp{lagrange<1>()} or \cpp{raviartThomas<k, GeometryType::BasicType::cube>()},
-or they can be the return value of another call to the \cpp{composite} method (or the \cpp{power} method,
-see below).  They are the subtrees of a new function space basis tree, and the call to \cpp{composite}
-adds the new tree root.
+%\begin{lstlisting}[style=Interface]
+%template <class... ChildPreBasisFactory, class IndexMergingStrategy>
+%auto composite(ChildPreBasisFactory&&... childPreBasisFactory, IndexMergingStrategy indexMergingStrategy);
+%\end{lstlisting}
+contained in the namespace  \cpp{BasisFactory::}.
+The method has an unspecified number of arguments, of unspecified type.
+The arguments are expected to be pre-basis-factory objects themselves.
+This can either be plain pre-basis-factories constructed by, e.g.,
+\cpp{lagrange<1>()} or \cpp{raviartThomas<k, GeometryType::BasicType::cube>()},
+or composite- or power-pre-basis-factories constructed by \cpp{composite()}
+or \cpp{power()} (see below), respectively.
 
 As an example, to combine a Raviart--Thomas basis with a zero-order Lagrange basis (for solving
 the mixed formulation of the Poisson equation, say), the appropriate call is
@@ -1982,25 +1989,30 @@ auto mixedBasis = makeBasis(
   gridView,
   composite(
     raviartThomas<0, GeometryType::BasicType::cube>(),
-    pq<0>()
+    lagrange<0>()
   ));
 \end{lstlisting}
-Combining three copies of a Lagrange basis for a displacement field in elasticity theory is
+Combining three copies of a first order Lagrange basis for a displacement field in elasticity theory is
 \begin{lstlisting}[style=Example]
 auto displacementBasis = makeBasis(
   gridView,
   composite(
-    pq<1>(),
-    pq<1>(),
-    pq<1>()
+    lagrange<1>(),
+    lagrange<1>(),
+    lagrange<1>()
   ));
 \end{lstlisting}
 The examples produce the trees shown in Figure~\ref{fig:composite_example_bases}.
 
 That last example is not as elegant as it could be.  First of all, it is inconvenient and unnecessarily
-wordy to list the same scalar Lagrange basis three times.  Also, the required number may depend on
-a compile-time parameter.  For these reasons, \dunemodule{dune-functions}
-offers a second way to combine bases called \cpp{power}.  The interface is again a single method
+wordy to list the same scalar Lagrange basis three times.  Secondly, the required number may depend on
+a compile-time parameter.
+Finally, the implementation can benefit from the explicit knowledge that
+all children are equal in terms of efficiency.
+For these reasons, \dunemodule{dune-functions}
+offers a second way to combine bases: The \cpp{PowerPreBasis} with a
+corresponding pre-basis-factory to be constructed with \cpp{BasisFactory::power()}. 
+The interface is again a single method
 \begin{lstlisting}[style=Interface]
 template<std::size_t k, class ChildPreBasisFactory>
 auto power(ChildPreBasisFactory&& childPreBasisFactory)
@@ -2012,10 +2024,11 @@ displacement vector field basis from above is more easily written as
 auto displacementBasis = makeBasis(
   gridView,
   power<3>(
-    pq<1>()
+    lagrange<1>()
   ));
 \end{lstlisting}
-Of course, all these techniques can be combined. To obtain the \cpp{p}-th order Taylor--Hood basis,
+Since \cpp{composite()} and \cpp{power()} create pre-basis-factories themselves,
+all these techniques can be combined. To obtain the \cpp{p}-th order Taylor--Hood basis,
 write
 \begin{lstlisting}[style=Example]
 auto taylorHoodBasis = makeBasis(
