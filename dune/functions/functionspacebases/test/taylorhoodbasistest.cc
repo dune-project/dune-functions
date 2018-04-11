@@ -120,6 +120,25 @@ int main (int argc, char* argv[]) try
   std::cout << "Computed integral is " << integral << std::endl;
   assert(std::abs(integral-0.5)< 1e-10);
 
+  /////////////////////////////////////////////////////////////////
+  //  Standard tests
+  /////////////////////////////////////////////////////////////////
+
+  // check TaylorHoodBasis created 'manually'
+  {
+    typedef GridType::LeafGridView GridView;
+    const GridView& gridView = grid.leafGridView();
+    Functions::TaylorHoodBasis<GridView> basis(gridView);
+    test.subTest(checkBasis(basis));
+  }
+
+  // check RaviartThomasBasis created using basis builder mechanism
+  {
+    using namespace Functions::BasisBuilder;
+    auto basis = makeBasis(grid.leafGridView(), taylorHood());
+    test.subTest(checkBasis(basis));
+  }
+
   return test.exit();
 
 } catch ( Dune::Exception &e )

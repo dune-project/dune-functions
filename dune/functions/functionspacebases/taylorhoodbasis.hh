@@ -405,6 +405,38 @@ private:
 
 
 
+namespace BasisBuilder {
+
+namespace Imp {
+
+class TaylorHoodPreBasisFactory
+{
+public:
+  static const std::size_t requiredMultiIndexSize=2;
+
+  template<class MultiIndex, class GridView>
+  auto makePreBasis(const GridView& gridView) const
+  {
+    return TaylorHoodPreBasis<GridView, MultiIndex>(gridView);
+  }
+
+};
+
+} // end namespace BasisBuilder::Imp
+
+/**
+ * \brief Create a pre-basis factory that can create a Taylor-Hood pre-basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ */
+auto taylorHood()
+{
+  return Imp::TaylorHoodPreBasisFactory();
+}
+
+} // end namespace BasisBuilder
+
 // *****************************************************************************
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************
