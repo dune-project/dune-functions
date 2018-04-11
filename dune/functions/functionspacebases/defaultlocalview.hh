@@ -7,6 +7,7 @@
 #include <tuple>
 
 #include <dune/common/concept.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>
 
@@ -22,6 +23,9 @@ template<class GB>
 class DefaultLocalView
 {
   using PrefixPath = TypeTree::HybridTreePath<>;
+
+  // Node index set provided by PreBasis
+  using NodeIndexSet = typename GB::PreBasis::template IndexSet<PrefixPath>;
 
 public:
 
@@ -40,10 +44,21 @@ public:
   //! Tree of local finite elements / local shape function sets
   using Tree = typename GlobalBasis::PreBasis::template Node<PrefixPath>;
 
+  /** \brief Type used for global numbering of the basis vectors */
+  using MultiIndex = typename NodeIndexSet::MultiIndex;
+
+private:
+
+  template<typename NodeIndexSet_>
+  using hasIndices = decltype(std::declval<NodeIndexSet_>().indices(std::declval<std::vector<MultiIndex>>().begin()));
+
+public:
+
   /** \brief Construct local view for a given global finite element basis */
   DefaultLocalView(const GlobalBasis& globalBasis) :
     globalBasis_(&globalBasis),
-    tree_(globalBasis_->preBasis().node(PrefixPath()))
+    tree_(globalBasis_->preBasis().node(PrefixPath())),
+    nodeIndexSet_(globalBasis_->preBasis().template indexSet<PrefixPath>())
   {
     static_assert(models<Concept::BasisTree<GridView>, Tree>(), "Tree type passed to DefaultLocalView does not model the BasisNode concept.");
     initializeTree(tree_);
@@ -58,6 +73,17 @@ public:
   {
     element_ = e;
     bindTree(tree_, element_);
+    nodeIndexSet_.bind(tree_);
+    indices_.resize(size());
+    Hybrid::ifElse(
+      Std::is_detected<hasIndices,NodeIndexSet>{},
+      [&](auto id) {
+        id(nodeIndexSet_).indices(indices_.begin());
+      },
+      [&](auto id) {
+        for (size_type i = 0 ; i < this->size() ; ++i)
+          indices_[i] = id(nodeIndexSet_).index(i);
+      });
   }
 
   /** \brief Return the grid element that the view is bound to
@@ -74,7 +100,9 @@ public:
    * Calling this method should only be a hint that the view can be unbound.
    */
   void unbind()
-  {}
+  {
+    nodeIndexSet_.unbind();
+  }
 
   /** \brief Return the local ansatz tree associated to the bound entity
    *
@@ -103,6 +131,12 @@ public:
     return globalBasis_->preBasis().maxNodeSize();
   }
 
+  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+  MultiIndex index(size_type i) const
+  {
+    return indices_[i];
+  }
+
   /** \brief Return the global basis that we are a view on
    */
   const GlobalBasis& globalBasis() const
@@ -119,6 +153,8 @@ protected:
   const GlobalBasis* globalBasis_;
   Element element_;
   Tree tree_;
+  NodeIndexSet nodeIndexSet_;
+  std::vector<MultiIndex> indices_;
 };
 
 
