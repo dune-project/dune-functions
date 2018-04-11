@@ -185,6 +185,7 @@ struct LocalView
   template<class V>
   auto require(const V& localView) -> decltype(
     requireType<typename V::size_type>(),
+    requireType<typename V::MultiIndex>(),
     requireType<typename V::GlobalBasis>(),
     requireType<typename V::Tree>(),
     requireType<typename V::GridView>(),
@@ -197,6 +198,7 @@ struct LocalView
     const_cast<V&>(localView).unbind(),
     requireConvertible<typename V::Tree>(localView.tree()),
     requireConvertible<typename V::size_type>(localView.size()),
+    requireConvertible<typename V::MultiIndex>(indexSet.index(std::declval<typename V::size_type>())),
     requireConvertible<typename V::size_type>(localView.maxSize()),
     requireConvertible<typename V::GlobalBasis>(localView.globalBasis()),
     requireConcept<BasisTree<typename V::GridView>>(localView.tree()),
