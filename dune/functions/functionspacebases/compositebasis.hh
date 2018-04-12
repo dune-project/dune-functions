@@ -461,7 +461,7 @@ constexpr std::size_t maxHelper(ST0&& i0, ST&&... i)
 template<class IndexMergingStrategy, class... ChildPreBasisFactory>
 class CompositePreBasisFactory
 {
-  static const bool isBlocked = std::is_same<IndexMergingStrategy,BlockedLexicographic>::value or std::is_same<IndexMergingStrategy,LeafBlockedInterleaved>::value;
+  static const bool isBlocked = std::is_same<IndexMergingStrategy,BlockedLexicographic>::value or std::is_same<IndexMergingStrategy,BlockedInterleaved>::value;
 
   static const std::size_t maxChildIndexSize = maxHelper(ChildPreBasisFactory::requiredMultiIndexSize...);
 

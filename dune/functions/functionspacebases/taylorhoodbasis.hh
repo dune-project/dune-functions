@@ -59,7 +59,7 @@ class TaylorHoodNodeIndexSet;
  * using PressurePreBasis = PQkPreBasis<GV,k,MI>;
  * using TaylorHoodKPreBasis = CompositePreBasis<MI, BlockedLexicographic, VelocityPreBasis, PressurePreBasis>;
  * \endcode
- * Where IMS is LeafBlockedInterleaved if HI is set and
+ * Where IMS is BlockedInterleaved if HI is set and
  * FlatInterleaved otherwise.
  */
 template<typename GV, class MI, bool HI=false>

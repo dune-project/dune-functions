@@ -226,7 +226,7 @@ private:
     return subPreBasis_.size(subPrefix);
   }
 
-  size_type size(const SizePrefix& prefix, BasisFactory::LeafBlockedInterleaved) const
+  size_type size(const SizePrefix& prefix, BasisFactory::BlockedInterleaved) const
   {
     if (prefix.size() == 0)
       return subPreBasis_.size();
@@ -406,7 +406,7 @@ public:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisFactory::LeafBlockedInterleaved) const
+  It indices(It multiIndices, BasisFactory::BlockedInterleaved) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
@@ -444,7 +444,7 @@ namespace Imp {
 template<std::size_t k, class IndexMergingStrategy, class ChildPreBasisFactory>
 class PowerPreBasisFactory
 {
-  static const bool isBlocked = std::is_same<IndexMergingStrategy,BlockedLexicographic>::value or std::is_same<IndexMergingStrategy,LeafBlockedInterleaved>::value;
+  static const bool isBlocked = std::is_same<IndexMergingStrategy,BlockedLexicographic>::value or std::is_same<IndexMergingStrategy,BlockedInterleaved>::value;
 
   static const std::size_t maxChildIndexSize = ChildPreBasisFactory::requiredMultiIndexSize;
 
@@ -503,12 +503,12 @@ auto power(ChildPreBasisFactory&& childPreBasisFactory, const IndexMergingStrate
  * \tparam ChildPreBasisFactory Types of child pre-basis factory
  * \param childPreBasisFactory Child pre-basis factory
  *
- * This overload will select the BasisFactory::LeafBlockedInterleaved strategy.
+ * This overload will select the BasisFactory::BlockedInterleaved strategy.
  */
 template<std::size_t k, class ChildPreBasisFactory>
 auto power(ChildPreBasisFactory&& childPreBasisFactory)
 {
-  return Imp::PowerPreBasisFactory<k, LeafBlockedInterleaved, ChildPreBasisFactory>(std::forward<ChildPreBasisFactory>(childPreBasisFactory));
+  return Imp::PowerPreBasisFactory<k, BlockedInterleaved, ChildPreBasisFactory>(std::forward<ChildPreBasisFactory>(childPreBasisFactory));
 }
 
 } // end namespace BasisFactory
