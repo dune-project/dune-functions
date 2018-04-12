@@ -977,14 +977,6 @@ $\Lambda_i$ are identical.
 \end{itemize}
 
 
-\todosander{Man könnte darüber nachdenken das zu verallgemeinern:  Wenn z.B. ein Teilbaum
-genau doppelt so viele Basen hat wie der andere, dann könnte man immer abwechselnd zwei Basen aus dem
-einen Teilraum nehmen und dann eine aus dem anderen.  Ich wäre eher dagegen über so etwas
-nachzudenken, wenn ich es nicht in einer Anwendung brauchen würde...}
-\todograeser{I'm aware of several real word applications. However, there is not really a generic scheme
-  as the onces discussed above. Implementing this amounts in allowing user-defined index-merging strategies.
-  I'm all in favor of doing this. But unless it's implemented, we should drop the todo remark here.}
-
 We now come back to the Taylor--Hood example.
 While the indexing schemes proposed for this example so far where
 introduced in an ad-hoc way, we will now systematically apply
@@ -1016,7 +1008,7 @@ is a composite node. As two of the above given strategies can be used
 for composite nodes, while all four can be applied to power nodes
 we can obtain eight different variants of index maps for the Taylor--Hood basis
 $\Lambda_{\text{TH}}$.
-In the following table we list all combinations, where the label $X(Y)$
+In the Table~\ref{tab:th_indexing_variants} we list all combinations, where the label $X(Y)$
 means, that we use strategy $X$ for the outer product and strategy $Y$
 for the inner product. For $X$ and $Y$ we use the abbreviations
 BlockedLexicographic (BL), LeafBlockedInterleaved (BI), FlatLexicographic (FL), FlatInterleaved (FI).
@@ -1039,7 +1031,8 @@ Figure~\ref{fig:taylor_hood_index_tree} and Figure~\ref{fig:taylor_hood_index_bl
 are reproduced for the strategies
 BL(BL) and BL(BI), respectively.
 
-{\footnotesize
+\begin{table}
+\footnotesize
 \begin{center}
 \begin{tabular}{c|c|c|c|c|c|c|c|c}
     & BL(BL)
@@ -1227,7 +1220,9 @@ BL(BL) and BL(BI), respectively.
   \hline
 \end{tabular}
 \end{center}
-}
+\caption{Different indexing strategies for the Taylor--Hood basis functions.}
+\label{tab:th_indexing_variants}
+\end{table}
 
 
 
@@ -1762,6 +1757,9 @@ const auto& node = localView.tree().child(treePath);
 const auto& node = TypeTree::child(localView.tree(), treePath);
 \end{lstlisting}
 
+\subsection{Combining global basis and coefficient vector to a finite element function}
+\todograeser{Write this section}
+
 \subsection{Multi-indices}
 
 \todograeser{General multi-indices, dynamic multi-indices, hybrid multi-indices, implementations}
@@ -1889,10 +1887,6 @@ bases implementations, that otherwise behave like any other basis.
   \todograeser{Is this correct for BDM?}
 \end{itemize}
 
-\todosander{Wir müssen hier beschreiben dass selbst Basen für nicht-affine FE immer nur
-  Größen zurückgeben, die sich auf das Referenzelement beziehen.}
-\todograeser{So?}
-
 For a detailed discussion of the template parameters and constructor arguments
 of the basis implementations listed above we refer to the class documentation.
 
@@ -1957,7 +1951,6 @@ parameters and arguments of the \cpp{BasisFactory::fooBar()} function,
 despite the fact that the former has the grid view type and object prepended.
 
 \todosander{Für die \cpp{BSplineBasis} ist das Feature noch nicht implementiert!}
-\todosander{Für die \cpp{TaylorHoodBasis} ist das Feature noch nicht implementiert!}
 
 The pre-basis combining several bases in a product is called \cpp{CompositePreBasis}
 defined in the header \file{dune/functions/functionspacebases/compositebasis.hh}.
@@ -2001,6 +1994,7 @@ auto displacementBasis = makeBasis(
   ));
 \end{lstlisting}
 The examples produce the trees shown in Figure~\ref{fig:composite_example_bases}.
+\todograeser{Add figure}
 
 That last example is not as elegant as it could be.  First of all, it is inconvenient and unnecessarily
 wordy to list the same scalar Lagrange basis three times.  Secondly, the required number may depend on
@@ -2068,8 +2062,53 @@ flag indicating an \cpp{IndexMergingStrategy}. The four implemented strategies a
 and have been described in Section~\ref{sec:index_strategies}.
 For each strategy \cpp{FooBar} there is a function \cpp{BasisFactory::fooBar()} creating
 the flag in the header \file{functionspacebases/basistags.hh}.
+\todograeser{Rename \cpp{LeafBlockedInterleaved} to \cpp{BlockedInterleaved}}
 
-\todograeser{Remove old text below}
+For example, a Taylor--Hood basis with the indexing listed in the
+second column (labeled BL(BI)) of Table~\ref{tab:th_indexing_variants} can be created using
+\begin{lstlisting}[style=Example]
+auto taylorHoodBasis = makeBasis(
+  gridView,
+  composite(
+    power<dim>(
+      lagrange<p+1>(),
+      leafBlockedInterleaved()),
+    lagrange<p>(),
+    blockedLexicographic()
+  ));
+\end{lstlisting}
+This will lead to multi-indices of length three and two
+for velocity and pressure degrees of freedom, respectively.
+The same ordering of basis functions with a uniform indexing scheme
+with multi-index length two (column four labeled BL(FI) in Table~\ref{tab:th_indexing_variants}) is obtained using
+\begin{lstlisting}[style=Example]
+auto taylorHoodBasis = makeBasis(
+  gridView,
+  composite(
+    power<dim>(
+      lagrange<p+1>(),
+      flatInterleaved()),
+    lagrange<p>(),
+    blockedLexicographic()
+  ));
+\end{lstlisting}
+Finally, of flat indexing scheme still preserving the same ordering
+(column eight labeled FL(FI) in Table~\ref{tab:th_indexing_variants})
+obtained by
+\begin{lstlisting}[style=Example]
+auto taylorHoodBasis = makeBasis(
+  gridView,
+  composite(
+    power<dim>(
+      lagrange<p+1>(),
+      flatInterleaved()),
+    lagrange<p>(),
+    flatLexicographic()
+  ));
+\end{lstlisting}
+
+
+
 
 \subsection{Separating subtrees}
 
