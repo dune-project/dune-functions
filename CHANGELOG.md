@@ -5,11 +5,14 @@ correponding version of the Dune core modules.
 
 ## Master (will become release 2.7)
 
-* `FlatVectorBackend` is now officially an implementation detail and thus moved
+- `FlatVectorBackend` is now officially an implementation detail and thus moved
   to the namespace `Impl::`. The header `flatvectorbackend.hh` was removed.
   As a replacement the new free function `flatVectorView(c)` create a view
   object providing `operator[]` and `size()` methods for flat-vector-like
   access to the underlying container `c`.
+- The `BasisBuilder` namespace has been renamed to `BasisFactory`.
+  The old name still exists and should work as before, but its use
+  is discouraged.
 
 ## Release 2.6
 

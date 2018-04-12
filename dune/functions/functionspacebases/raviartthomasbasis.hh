@@ -394,7 +394,7 @@ protected:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 namespace Imp {
 
@@ -412,7 +412,7 @@ public:
 
 };
 
-} // end namespace BasisBuilder::Imp
+} // end namespace BasisFactory::Imp
 
 /**
  * \brief Create a pre-basis factory that can create a Raviart-Thomas pre-basis
@@ -428,7 +428,7 @@ auto raviartThomas()
   return Imp::RaviartThomasPreBasisFactory<k, basic_type, size_type>();
 }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
 
 
 

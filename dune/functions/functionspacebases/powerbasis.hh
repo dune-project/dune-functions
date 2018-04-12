@@ -176,7 +176,7 @@ public:
 
 private:
 
-  size_type size(const SizePrefix& prefix, BasisBuilder::FlatInterleaved) const
+  size_type size(const SizePrefix& prefix, BasisFactory::FlatInterleaved) const
   {
     // The root index size is the root index size of a single subnode
     // multiplied by the number of subnodes because we enumerate all
@@ -196,7 +196,7 @@ private:
     return subPreBasis_.size(subPrefix);
   }
 
-  size_type size(const SizePrefix& prefix, BasisBuilder::FlatLexicographic) const
+  size_type size(const SizePrefix& prefix, BasisFactory::FlatLexicographic) const
   {
     // The size at the index tree root is the size of at the index tree
     // root of a single subnode multiplied by the number of subnodes
@@ -216,7 +216,7 @@ private:
     return subPreBasis_.size(subPrefix);
   }
 
-  size_type size(const SizePrefix& prefix, BasisBuilder::BlockedLexicographic) const
+  size_type size(const SizePrefix& prefix, BasisFactory::BlockedLexicographic) const
   {
     if (prefix.size() == 0)
       return children;
@@ -226,7 +226,7 @@ private:
     return subPreBasis_.size(subPrefix);
   }
 
-  size_type size(const SizePrefix& prefix, BasisBuilder::LeafBlockedInterleaved) const
+  size_type size(const SizePrefix& prefix, BasisFactory::LeafBlockedInterleaved) const
   {
     if (prefix.size() == 0)
       return subPreBasis_.size();
@@ -321,7 +321,7 @@ public:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisBuilder::FlatInterleaved) const
+  It indices(It multiIndices, BasisFactory::FlatInterleaved) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
@@ -348,7 +348,7 @@ public:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisBuilder::FlatLexicographic) const
+  It indices(It multiIndices, BasisFactory::FlatLexicographic) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
@@ -380,7 +380,7 @@ public:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisBuilder::BlockedLexicographic) const
+  It indices(It multiIndices, BasisFactory::BlockedLexicographic) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
@@ -406,7 +406,7 @@ public:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisBuilder::LeafBlockedInterleaved) const
+  It indices(It multiIndices, BasisFactory::LeafBlockedInterleaved) const
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
@@ -437,7 +437,7 @@ private:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 namespace Imp {
 
@@ -473,7 +473,7 @@ private:
   ChildPreBasisFactory childPreBasisFactory_;
 };
 
-} // end namespace BasisBuilder::Imp
+} // end namespace BasisFactory::Imp
 
 
 
@@ -503,7 +503,7 @@ auto power(ChildPreBasisFactory&& childPreBasisFactory, const IndexMergingStrate
  * \tparam ChildPreBasisFactory Types of child pre-basis factory
  * \param childPreBasisFactory Child pre-basis factory
  *
- * This overload will select the BasisBuilder::LeafBlockedInterleaved strategy.
+ * This overload will select the BasisFactory::LeafBlockedInterleaved strategy.
  */
 template<std::size_t k, class ChildPreBasisFactory>
 auto power(ChildPreBasisFactory&& childPreBasisFactory)
@@ -511,8 +511,14 @@ auto power(ChildPreBasisFactory&& childPreBasisFactory)
   return Imp::PowerPreBasisFactory<k, LeafBlockedInterleaved, ChildPreBasisFactory>(std::forward<ChildPreBasisFactory>(childPreBasisFactory));
 }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
 
+// Backward compatibility
+namespace BasisBuilder {
+
+  using namespace BasisFactory;
+
+}
 
 
 } // end namespace Functions

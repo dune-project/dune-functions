@@ -35,7 +35,7 @@ int main (int argc, char *argv[]) try
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
-  using namespace Functions::BasisBuilder;
+  using namespace Functions::BasisFactory;
 
   auto basis DUNE_UNUSED = makeBasis(
     gridView,

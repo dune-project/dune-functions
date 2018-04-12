@@ -405,7 +405,7 @@ private:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 namespace Imp {
 
@@ -422,7 +422,7 @@ public:
 
 };
 
-} // end namespace BasisBuilder::Imp
+} // end namespace BasisFactory::Imp
 
 /**
  * \brief Create a pre-basis factory that can create a Taylor-Hood pre-basis
@@ -435,7 +435,7 @@ auto taylorHood()
   return Imp::TaylorHoodPreBasisFactory();
 }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
 
 // *****************************************************************************
 // This is the actual global basis implementation based on the reusable parts.

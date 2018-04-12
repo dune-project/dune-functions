@@ -471,7 +471,7 @@ protected:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 namespace Imp {
 
@@ -489,7 +489,7 @@ public:
 
 };
 
-} // end namespace BasisBuilder::Imp
+} // end namespace BasisFactory::Imp
 
 
 
@@ -506,8 +506,7 @@ auto pq()
   return Imp::PQkPreBasisFactory<k>();
 }
 
-} // end namespace BasisBuilder
-
+} // end namespace BasisFactory
 
 
 // *****************************************************************************

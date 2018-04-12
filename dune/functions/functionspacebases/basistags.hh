@@ -34,7 +34,7 @@ namespace Functions {
   } // namespace Concept
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
   /**
    * \brief Base class for index merging strategies to simplify detection
@@ -220,7 +220,15 @@ namespace BasisBuilder {
     return {};
   }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
+
+// Backward compatibility
+namespace BasisBuilder {
+
+  using namespace BasisFactory;
+
+}
+
 } // end namespace Functions
 } // end namespace Dune
 

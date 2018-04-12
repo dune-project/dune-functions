@@ -354,7 +354,7 @@ int main (int argc, char *argv[])
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
-  using namespace Functions::BasisBuilder;
+  using namespace Functions::BasisFactory;
 
   const int k = 0;
 

@@ -45,7 +45,7 @@ int main (int argc, char* argv[]) try
 
   // check RannacherTurekBasis created using basis builder mechanism
   {
-    using namespace Functions::BasisBuilder;
+    using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid.leafGridView(), rannacherTurek());
     test.subTest(checkBasis(basis));
   }
