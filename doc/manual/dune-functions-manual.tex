@@ -2074,8 +2074,39 @@ auto displacementBasis = makeBasis(
     lagrange<1>()
   ));
 \end{lstlisting}
-The examples produce the trees shown in Figure~\ref{fig:composite_example_bases}.
-\todograeser{Add figure}
+The examples produce the trees shown in Figure~\ref{fig:example_composite_bases}.
+
+\begin{figure}
+    \begin{center}
+        \begin{tikzpicture}[
+                level/.style={
+                    sibling distance = (3-#1)*0.3cm + 1cm,
+                    level distance = 1.5cm
+                }
+            ]
+            \node [treenode] {$\Lambda_{RT} \sqcup \Lambda_{P_0}$}
+                child{ node [treenode] {$\Lambda_{RT}$} }
+                child{ node [treenode] {$\Lambda_{P_0}$} };
+        \end{tikzpicture}
+        %
+        \hspace{0.15\textwidth}
+        %
+        \begin{tikzpicture}[
+                level/.style={
+                    sibling distance = (3-#1)*0.3cm + 1cm,
+                    level distance = 1.5cm
+                }
+            ]
+            \node [treenode] {$\Lambda_{P_1} \sqcup \Lambda_{P_1} \sqcup \Lambda_{P_1}$}
+                child{ node [treenode] {$\Lambda_{P_1}$} }
+                child{ node [treenode] {$\Lambda_{P_1}$} }
+                child{ node [treenode] {$\Lambda_{P_1}$} };
+        \end{tikzpicture}
+    \end{center}
+    \caption{Example composite bases}
+    \label{fig:example_composite_bases}
+\end{figure}
+
 
 That last example is not as elegant as it could be.  First of all, it is inconvenient and unnecessarily
 wordy to list the same scalar Lagrange basis three times.  Secondly, the required number may depend on
