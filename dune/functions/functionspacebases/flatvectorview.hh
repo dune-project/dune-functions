@@ -194,7 +194,7 @@ auto flatVectorView(const T& t)
 template<class T>
 auto flatVectorView(T&& t)
 {
-  return Impl::FlatVectorView<T&&>(t);
+  return Impl::FlatVectorView<T&&>(std::move(t));
 }
 
 
