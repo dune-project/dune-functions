@@ -978,6 +978,9 @@ $\Lambda_i$ are identical.
 genau doppelt so viele Basen hat wie der andere, dann könnte man immer abwechselnd zwei Basen aus dem
 einen Teilraum nehmen und dann eine aus dem anderen.  Ich wäre eher dagegen über so etwas
 nachzudenken, wenn ich es nicht in einer Anwendung brauchen würde...}
+\todograeser{I'm aware of several real word applications. However, there is not really a generic scheme
+  as the onces discussed above. Implementing this amounts in allowing user-defined index-merging strategies.
+  I'm all in favor of doing this. But unless it's implemented, we should drop the todo remark here.}
 
 We now come back to the Taylor--Hood example.
 While the indexing schemes proposed for this example so far where
@@ -1425,12 +1428,13 @@ For convenience there is also a method \cpp{size()} returning the same
 value as the method with an empty prefix, i.e., \cpp{size(\{\})}.
 For a scalar basis, this method again returns the number of basis functions.
 
-\todosander{Irgendwo muss der Typ (bzw.\ das Konzept) \cpp{MultiIndex} erklärt werden.}
-
 Since prefixes may have variable size, it is guaranteed that the type \cpp{SizePrefix}
 is always a \cpp{Dune::ReservedVector<size\_type,k>} where \cpp{k}
 is as least as large as the maximal length of a multi-index. The result
 type of all size-related methods is exported as \cpp{size\_type}.
+
+The typo of used global multi-indices is exported as \cpp{MultiIndex}.
+The interface of this type is discussed later.
 
 \begin{lstlisting}[style=Interface]
 using size_type = @@<implementation defined>@@;
@@ -1441,27 +1445,6 @@ size_type size() const;
 size_type size(const SizePrefix& prefix) const;
 \end{lstlisting}
 
-Finally, the basis exports its pre-basis of type \cpp{PreBasis}
-via the \cpp{preBasis()} method. The concept of a pre-basis
-will be discussed in Chapter~\ref{sec:implementation_api}.
-\todograeser{%
-    Do we require that \cpp{preBasis()} and \cpp{PreBasis} exists?
-    Do we require that each global basis is implemented using a pre-basis?
-    Do we require that GlobalBasis is always a DefaultGlobalBasis parametrized with the pre-basis?
-}
-\todosander{I'd say we require that any basis can become part of a tree.
-  If that means that each global basis needs to be implemented using a factory: so be it.}
-\todograeser{Update: The above given questions are the topic of
-\url{https://gitlab.dune-project.org/staging/dune-functions/issues/4}
-and were discussed on the last meeting. There we had some consensus,
-that it would be nice if any global basis is reusable but that we
-do not require this. Hence the answer to all three questions above is 'no'.
-}
-
-\begin{lstlisting}[style=Interface]
-using PreBasis = @@<implementation define>@@;
-const PreBasis& preBasis() const;
-\end{lstlisting}
 
 
 To statically check for the interface,
@@ -1660,7 +1643,9 @@ const FiniteElement& finiteElement() const = 0;
 \subsection{User interface of a \texorpdfstring{\cpp{LocalIndexSet}}{LocalIndexSet}}
 \label{sec:localindexset_interface}
 
-\todograeser{Should we merge \cpp{LocalIndexSet} into \cpp{LocalView}?}
+\todograeser{IMHO we should merge \cpp{LocalIndexSet} into \cpp{LocalView}!
+I prepared a merge request implementing this and discussing the reasons:
+\url{https://gitlab.dune-project.org/staging/dune-functions/merge_requests/118}}
 
 The \cpp{LocalIndexSet} as returned by \cpp{GlobalBasis::localIndexSet()}
 provides access to global multi-indices for the
@@ -1754,9 +1739,6 @@ using namespace Indices;
 // obtain the leaf node for 2nd component of the velocity tree
 const auto& node = localView.tree().child(_0, 1);
 \end{lstlisting}
-\todosander{Können wir hier \dunemodule{dune-typetree} aufräumen und das \cpp{hybrid}
-endlich streichen?}
-\todograeser{Implement \cpp{treePath()} method in \dunemodule{dune-typetree}}
 
 Notice that we used the index constants \cpp{\_0}, \dots{}
 from the namespace \cpp{Dune::Indices}
@@ -1768,7 +1750,7 @@ slightly more verbose code.
 
 \begin{lstlisting}[style=Example]
 // generate tree path for 2nd component of the velocity tree
-auto treePath = TypeTree::hybridTreePath(_0, 1);
+auto treePath = TypeTree::treePath(_0, 1);
 
 // obtain the desired leaf node in the basis tree using the child method
 const auto& node = localView.tree().child(treePath);
@@ -1851,6 +1833,9 @@ These can be directly used in finite element simulation codes. At the time of wr
    Therefore, this basis also
    works well on non-conforming grids.  The polynomial order is again a compile-time constant.
 
+ \item \cpp{RannacherTurekBasis}: An $H^1$-nonconforming scalar basis, which adapts the idea
+   of the Crouzeix--Raviart basis to cube grids~\cite{rannacher_turek:1992}.
+
  \item \cpp{BSplineBasis}:  Implements a $B$-Spline basis on a structured, axis-aligned grid as described,
    e.g., in~\cite{cottrell_hughes_bazilevs:2009}.  Arbitrary orders, dimensions, and knot vectors are supported,
    allowing, e.g., to work with $C^1$ elements for fourth-order differential equations.
@@ -1867,12 +1852,7 @@ These can be directly used in finite element simulation codes. At the time of wr
    \cpp{LocalCoefficient} object must be available on each element, that assigns shape functions
    to faces of the reference elements. For the \cpp{BSplineBasis}, the behavior of this
    object is undefined.
-\end{itemize}
 
-\todograeser{Describe in which sense the above bases behave in a standard way and
-how to construct more complex ones.}
-
-\begin{itemize}
  \item \cpp{TaylorHoodBasis}:
    An implementation of a Taylor--Hood basis.
    This is a simple implementation example of a basis with a non-trivial tree.
@@ -1880,18 +1860,35 @@ how to construct more complex ones.}
    can be easily constructed in a generic way. This approach is described
    in Chapter~\ref{sec:composed_bases} and the preferred way to construct
    a Taylor--Hood basis.
- \item \cpp{RannacherTurekBasis}: An $H^1$-nonconforming scalar basis, which adapts the idea
-   of the Crouzeix--Raviart basis to cube grids~\cite{rannacher_turek:1992}.
+\end{itemize}
 
+The bases listed above all have the property, that the shape functions provided by
+\cpp{tree.finiteElement()} are implemented in terms of local element coordinates
+for the domain. That is, if the bound-to grid element $e$ is obtained by the transformation
+$\Phi_e:R \to e$ from the reference element $R$, then the implemented localized shape function
+representing the restriction of the basis function $\lambda$ to the
+element $e$ is given by $\hat{\lambda}|_e = \lambda\circ\Phi_e$.
+
+Non-affine finite elements may require additional transformations such that it is
+not reasonable to export localized shape functions satisfying the above given
+invariance. In this case the interpretation of the shape functions requires some
+implementation defined transformations. This is the case for the following global
+bases implementations, that otherwise behave like any other basis.
+
+\begin{itemize}
  \item \cpp{RaviartThomasBasis}: The standard Raviart--Thomas basis for problems in
   $H(\text{div})$~\cite{boffi_brezzi_fortin:2013}.  Available for different orders and element types.
+  The shape functions exported by \cpp{tree.finiteElement()} do not include the Piola-transformation.
 
  \item \cpp{BrezziDouglasMariniBasis}: The standard Brezzi--Douglas--Marini basis, which is an
   alternative basis for $H(\text{div})$-conforming problems~\cite{boffi_brezzi_fortin:2013}.
+  The shape functions exported by \cpp{tree.finiteElement()} do not include the Piola-transformation.
+  \todograeser{Is this correct for BDM?}
 \end{itemize}
 
 \todosander{Wir müssen hier beschreiben dass selbst Basen für nicht-affine FE immer nur
   Größen zurückgeben, die sich auf das Referenzelement beziehen.}
+\todograeser{So?}
 
 For a detailed discussion of the template parameters and constructor arguments
 of the basis implementations listed above we refer to the class documentation.
@@ -2271,19 +2268,19 @@ for the types \cpp{std::integral_constant<std::size_t,0>} etc.).
 To accomodate both ways to index subtrees, a \cpp{HybridTreePath} can combine both types of entries.
 The constructor call
 \begin{lstlisting}
-auto path = TypeTree::hybridTreePath(_0);
+auto path = TypeTree::treePath(_0);
 \end{lstlisting}
 will select the velocity subtree of a Taylor--Hood basis, while
 \begin{lstlisting}
-auto path = TypeTree::hybridTreePath(_1);
+auto path = TypeTree::treePath(_1);
 \end{lstlisting}
 will select the pressure tree.
 \begin{lstlisting}
-auto path = TypeTree::hybridTreePath(_0,0);
+auto path = TypeTree::treePath(_0,0);
 \end{lstlisting}
 will select the $0$-th velocity component, and
 \begin{lstlisting}
-auto path = TypeTree::hybridTreePath();
+auto path = TypeTree::treePath();
 \end{lstlisting}
 will select the entire tree.  Note how the tree path to the $0$-th velocity component combines a compile-time
 index with a run-time index.  In a sense, a \cpp{HybridTreePath} is a combination between a \cpp{std::array}
@@ -2668,7 +2665,7 @@ The we interpolate this boolean-valued function in the space spanned by the velo
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 Observe how the \dunemodule{dune-functions} interface allows to interpolate C++11 lambdas, which makes the code
-very short and readable.  The expression \cpp{TypeTree::hybridTreePath(_0,i)} selects the different coordinate
+very short and readable.  The expression \cpp{TypeTree::treePath(_0,i)} selects the different coordinate
 directions of the velocity basis from the tree representation given in Figure~\ref{fig:taylor_hood_basis_tree}.
 As the bases for the velocity components are all the same, an ordinary integer \cpp{i} is sufficient to choose
 one of them.  In contrast, the velocity and pressure bases are different C++ types, and a compile-time
@@ -2686,7 +2683,7 @@ that into the right-hand-side vector \cpp{rhs}.
 \lstinputlisting[linerange={interpolate_dirichlet_values_begin-interpolate_dirichlet_values_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-The expression \cpp{TypeTree::hybridTreePath(_0)} demands that only velocity degrees of freedom are
+The expression \cpp{TypeTree::treePath(_0)} demands that only velocity degrees of freedom are
 interpolated.  The \cpp{isBoundary} vector given as the last argument restricts the interpolation
 to only the boundary degrees of freedom.
 
@@ -2952,6 +2949,16 @@ basis of a larger space. This can be used, e.g., to compose
 ansatz bases for mixed formulations, multicomponent problems,
 or coupled multi-physic problems.
 
+\subsection{Implementor interface for global bases}
+
+Finally, the basis exports its pre-basis of type \cpp{PreBasis}
+via the \cpp{preBasis()} method. The concept of a pre-basis
+will be discussed in Chapter~\ref{sec:implementation_api}.
+
+\begin{lstlisting}[style=Interface]
+using PreBasis = @@<implementation define>@@;
+const PreBasis& preBasis() const;
+\end{lstlisting}
 
 \subsection{Implementor interface of a \texorpdfstring{\cpp{PreBasis}}{PreBasis}}
 \subsection{Implementor interface of a \texorpdfstring{\cpp{NodeIndexSet}}{NodeIndexSet}}
@@ -3166,12 +3173,6 @@ namespace BasisBuilder {
 
 }
 \end{lstlisting}
-
-\todograeser{Implement and describe missing hooks for the other bases}
-\todosander{Das vorige TODO verstehe ich nicht.}
-
-
-
 
 \bibliographystyle{plainnat}
 \bibliography{dune-functions-manual}
