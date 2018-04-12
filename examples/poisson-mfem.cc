@@ -203,25 +203,23 @@ void getOccupationPattern(const Basis& basis,
 
   // A view on the FE basis on a single element
   auto localView = basis.localView();
-  auto localIndexSet = basis.localIndexSet();
 
   // Loop over all leaf elements
   for(const auto& element : elements(basis.gridView()))
   {
     // Bind the local FE basis view to the current element
     localView.bind(element);
-    localIndexSet.bind(localView);
 
     // Add element stiffness matrix onto global stiffness matrix
-    for (size_t i=0; i<localIndexSet.size(); i++)
+    for (size_t i=0; i<localView.size(); i++)
     {
       // The global index of the i-th local degree of freedom of the element 'e'
-      auto row = localIndexSet.index(i);
+      auto row = localView.index(i);
 
-      for (size_t j=0; j<localIndexSet.size(); ++j)
+      for (size_t j=0; j<localView.size(); ++j)
       {
         // The global index set of the j-th local degree of freedom of the element 'e'
-        auto col = localIndexSet.index(j);
+        auto col = localView.index(j);
 
         nb[row[0]][col[0]].add(row[1], col[1]);
       }
@@ -253,14 +251,12 @@ void assembleMixedPoissonMatrix(const Basis& basis,
 
   // A view on the FE basis on a single element
   auto localView = basis.localView();
-  auto localIndexSet = basis.localIndexSet();
 
   // A loop over all elements of the grid
   for(const auto& element : elements(gridView))
   {
     // Bind the local FE basis view to the current element
     localView.bind(element);
-    localIndexSet.bind(localView);
 
     // Now let's get the element stiffness matrix
     // A dense matrix is used for the element stiffness matrix
@@ -271,12 +267,12 @@ void assembleMixedPoissonMatrix(const Basis& basis,
     for (size_t i=0; i<elementMatrix.N(); i++)
     {
       // The global index of the i-th local degree of freedom of the element 'e'
-      auto row = localIndexSet.index(i);
+      auto row = localView.index(i);
 
       for (size_t j=0; j<elementMatrix.M(); j++ )
       {
         // The global index of the j-th local degree of freedom of the element 'e'
-        auto col = localIndexSet.index(j);
+        auto col = localView.index(j);
         matrix[row[0]][col[0]][row[1]][col[1]] += elementMatrix[i][j];
       }
     }
@@ -304,14 +300,12 @@ void assembleMixedPoissonRhs(const Basis& basis,
 
   // A view on the FE basis on a single element
   auto localView = basis.localView();
-  auto localIndexSet = basis.localIndexSet();
 
   // A loop over all elements of the grid
   for(const auto& element : elements(gridView))
   {
     // Bind the local FE basis view to the current element
     localView.bind(element);
-    localIndexSet.bind(localView);
 
     // Now get the local contribution to the right-hand side vector
     BlockVector<FieldVector<double,1> > localRhs;
@@ -321,7 +315,7 @@ void assembleMixedPoissonRhs(const Basis& basis,
     for (size_t i=0; i<localRhs.size(); i++)
     {
       // The global index of the i-th vertex of the element 'e'
-      auto row = localIndexSet.index(i);
+      auto row = localView.index(i);
       rhs[row[0]][row[1]] += localRhs[i];
     }
   }
