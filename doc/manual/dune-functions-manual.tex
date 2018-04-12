@@ -1227,6 +1227,7 @@ BL(BL) and BL(BI), respectively.
 
 
 \subsection{Localization to single elements}
+\label{sec:localization}
 
 For the most part, access to finite element bases happens element by element.  It is therefore important
 to consider the restrictions of bases to single grid elements.  In contrast to the previous sections
@@ -1281,6 +1282,20 @@ As there is no hierarchical structure involved, this index is simply a
 natural number.
 The index $\iota^{\text{leaf-local}}_{\hat{\Lambda}|_e}(\lambda|_e)$ is
 called the \emph{leaf-local index} of $\lambda$ (with respect to $e$).
+
+In an actual programming interface one typically accesses
+basis functions by indices directly. We will later see, that
+in \dunemodule{dune-functions} the leaf-local index is the
+shape function index of the \dunemodule{dune-localfunctions} module.
+Hence the interface needs to implement the map
+\begin{align*}
+  \iota^{\text{leaf}\to\text{local}}_e \colonequals \iota^{\text{local}}_{\Lambda|_e} \circ (\iota^{\text{leaf-local}}_{\hat{\Lambda}|_e})^{-1}
+\end{align*}
+mapping leaf-local indices to local indices and
+\begin{align*}
+  \iota^{\text{local}\to\text{global}}_e \colonequals \iota|_e \circ (\iota^{\text{local}}_{\Lambda|_e})^{-1}
+\end{align*}
+mapping local indices to global multi-indices.
 
 The local index is typically used to address
 the element stiffness matrix.
@@ -1413,7 +1428,7 @@ method. The given prefix takes the form of a multi-index itself.
 If $\mathcal{I}$ is the set of all global multi-indices of the
 basis and $P \in \mathcal{N}$ is a prefix for this set,
 i.e. there is a $(P,\dots) \in \mathcal{I}$, then
-\cpp{size(P)} returns the size $|\mathcal{I}|_P$ of
+\cpp{size(P)} returns the size $\operatorname{deg}^+_{\mathcal{I}}[P]$ of
 $\mathcal{I}$ relative to $P$ defined according to \eqref{eq:prefix_size}.
 %For a prefix $(p_1,\dots,p_k)$ the method returns the maximal value $q$ such that there
 %is a global index of the form $(p_1,\dots,p_k,q-1,\dots)$.
@@ -1546,14 +1561,23 @@ local basis functions within the subtree rooted at the
 present node. For each of these local basis functions
 the \cpp{localIndex(size\_type)} method returns a unique
 local index within all local basis functions associated to the full
-tree. The argument to this method is the lexicographic
+tree.
+The argument to this method is the lexicographic
 index of the local basis functions within the subtree
 and the result is the lexicographic index within the full
-tree. Hence the local indices of all basis functions
+tree.
+Hence the local indices of all basis functions
 within this subtree form a consecutive range.
 The result of these methods is undefined if the
 local view containing the tree is in unbound state.
 All these indices are of type \cpp{size\_type}.
+
+If the node corresponds to a leaf,
+then the method \cpp{localIndex(size\_type)}
+implements the map $\iota^{\text{leaf}\to\text{local}}_e$
+with bound-to element $e$
+introduced in Section~\ref{sec:localization}
+which maps leaf-local to local indices.
 
 \begin{lstlisting}[style=Interface]
 class BasisNode
@@ -1679,6 +1703,11 @@ method. The argument for this method is the local
 index of the basis function within the tree as
 returned by the \cpp{BasisNode::localIndex(size\_type)}
 method.
+Hence the method \cpp{index(size\_type)}
+implements the map $\iota^{\text{local}\to\text{global}}_e$
+with bound-to element $e$
+introduced in Section~\ref{sec:localization}
+which maps local indices to global multi-indices.
 Accessing the same global index multiple times
 is cheap, because global indices are pre-computed
 and cached during \cpp{bind(LocalView)}.
@@ -1810,6 +1839,58 @@ like number types, and like multi-index types as well.
 uniforme Multi-Indizes auf \cpp{std::array} wechseln kann (ohne den Cast-Operator, natürlich).
 Da Multi-Indizes ja vermutlich häufig kopiert werden, möchte man die Länge ja wirklich nur
 dabei haben wenn man sie wirklich braucht.}
+
+
+\subsubsection{HybridTreePath}
+
+\begin{figure}
+ \begin{center}
+  \missingfigure{Example tree paths}
+ \end{center}
+ \caption{Example tree paths}
+ \label{fig:dune_functions:tree_paths}
+\end{figure}
+
+As a data structure, a \cpp{HybridTreePath} object is a finite sequence of integers.
+Starting from the tree root, each integer corresponds to a tree node, and the number specifies which
+subtree of that node to select (Figure~\ref{fig:dune_functions:tree_paths}).
+For an example, in the Taylor--Hood tree, the integer sequence $(0)$ will select the velocity subtree,
+$(1)$ will select the pressure subtree, and $(0,i)$ will select the $i$-th velocity component for $i=0,\dots,d-1$.
+The empty sequence $()$ represents the entire tree.
+
+In the implementation of \cpp{HybridTreePath}, there are two different integer types.  Remember that there are
+two different types of nodes in a finite element basis tree: \cpp{power} nodes, where all direct subtrees
+are identical, and \cpp{composite} nodes, where the subtrees may differ.
+The subtrees of a \cpp{PowerBasis} can be addressed by a regular integer,
+but for the children of a \cpp{CompositeBasis}, the static indices \cpp{_0}, \cpp{_1}, \cpp{_2}, etc.\
+from \file{dune/common/indices.hh} were necessary (from the namespace \cpp{Dune::Indices}, these are names
+for the types \cpp{std::integral_constant<std::size_t,0>} etc.).
+
+To accomodate both ways to index subtrees, a \cpp{HybridTreePath} can combine both types of entries.
+The constructor call
+\begin{lstlisting}
+auto path = TypeTree::treePath(_0);
+\end{lstlisting}
+will select the velocity subtree of a Taylor--Hood basis, while
+\begin{lstlisting}
+auto path = TypeTree::treePath(_1);
+\end{lstlisting}
+will select the pressure tree.
+\begin{lstlisting}
+auto path = TypeTree::treePath(_0,0);
+\end{lstlisting}
+will select the $0$-th velocity component, and
+\begin{lstlisting}
+auto path = TypeTree::treePath();
+\end{lstlisting}
+will select the entire tree.  Note how the tree path to the $0$-th velocity component combines a compile-time
+index with a run-time index.  In a sense, a \cpp{HybridTreePath} is a combination between a \cpp{std::array}
+and a \cpp{std::integer_sequence}.
+
+
+
+
+
 
 
 \section{Constructing trees of finite element bases}
@@ -2110,86 +2191,6 @@ auto taylorHoodBasis = makeBasis(
 
 
 
-\subsection{Separating subtrees}
-
-Additionally to the concept of a global basis as defined here, there
-is also the concept of a so called \cpp{SubspaceBasis} reflecting
-the basis of the subtree only spanned by those basis functions
-associated to a subtree of the local ansatz tree of the so-called
-root basis.
-For convenience a global basis behaves like a trivial \cpp{SubspaceBasis},
-i.e., the method \cpp{rootBasis()} returns the basis itself
-and \cpp{prefixPath()} returns an empty tree-path of the
-implementation defined type \cpp{PrefixPath}.
-\todograeser{While describing the interface I had the impression that having
-those methods here is inconsistent and that they should maybe be free functions.}
-\todosander{Könnte man tatsächlich in Betracht ziehen.}
-
-\begin{lstlisting}[style=Interface]
-using PrefixPath = @@<implementation defined>@@;
-const @@<implementation defined>@@& rootBasis() const
-const PrefixPath& prefixPath() const
-\end{lstlisting}
-
-In order to be consistent with a \cpp{SubspaceBasis::LocalView}
-the additional method \cpp{rootLocalView()} returns the local view
-itself.
-\todograeser{While describing the interface I had the impression that having
-this method here is inconsistent and that it should maybe be a free function.}
-
-\begin{lstlisting}[style=Interface]
-const DefaultLocalView& rootLocalView() const
-}; // end LocalView
-\end{lstlisting}
-
-\subsubsection{HybridTreePath}
-
-\begin{figure}
- \begin{center}
-  \missingfigure{Example tree paths}
- \end{center}
- \caption{Example tree paths}
- \label{fig:dune_functions:tree_paths}
-\end{figure}
-
-As a data structure, a \cpp{HybridTreePath} object is a finite sequence of integers.
-Starting from the tree root, each integer corresponds to a tree node, and the number specifies which
-subtree of that node to select (Figure~\ref{fig:dune_functions:tree_paths}).
-For an example, in the Taylor--Hood tree, the integer sequence $(0)$ will select the velocity subtree,
-$(1)$ will select the pressure subtree, and $(0,i)$ will select the $i$-th velocity component for $i=0,\dots,d-1$.
-The empty sequence $()$ represents the entire tree.
-
-In the implementation of \cpp{HybridTreePath}, there are two different integer types.  Remember that there are
-two different types of nodes in a finite element basis tree: \cpp{power} nodes, where all direct subtrees
-are identical, and \cpp{composite} nodes, where the subtrees may differ.
-The subtrees of a \cpp{PowerBasis} can be addressed by a regular integer,
-but for the children of a \cpp{CompositeBasis}, the static indices \cpp{_0}, \cpp{_1}, \cpp{_2}, etc.\
-from \file{dune/common/indices.hh} were necessary (from the namespace \cpp{Dune::Indices}, these are names
-for the types \cpp{std::integral_constant<std::size_t,0>} etc.).
-
-To accomodate both ways to index subtrees, a \cpp{HybridTreePath} can combine both types of entries.
-The constructor call
-\begin{lstlisting}
-auto path = TypeTree::treePath(_0);
-\end{lstlisting}
-will select the velocity subtree of a Taylor--Hood basis, while
-\begin{lstlisting}
-auto path = TypeTree::treePath(_1);
-\end{lstlisting}
-will select the pressure tree.
-\begin{lstlisting}
-auto path = TypeTree::treePath(_0,0);
-\end{lstlisting}
-will select the $0$-th velocity component, and
-\begin{lstlisting}
-auto path = TypeTree::treePath();
-\end{lstlisting}
-will select the entire tree.  Note how the tree path to the $0$-th velocity component combines a compile-time
-index with a run-time index.  In a sense, a \cpp{HybridTreePath} is a combination between a \cpp{std::array}
-and a \cpp{std::integer_sequence}.
-
-
-
 \section{Interpolation}
 
 In various parts of a finite element or finite volume simulation code, given functions need to be interpolated
@@ -2357,6 +2358,42 @@ void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices.
 template <class B, class... TreeIndices, class C, class F>
 void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f);
 \end{lstlisting}
+
+
+
+\section{Treating subtrees as separate bases}
+\todograeser{Update, \cpp{DiscreteGlobalBasisFunction}, \cpp{interpolate()}}
+
+Additionally to the concept of a global basis as defined here, there
+is also the concept of a so called \cpp{SubspaceBasis} reflecting
+the basis of the subtree only spanned by those basis functions
+associated to a subtree of the local ansatz tree of the so-called
+root basis.
+For convenience a global basis behaves like a trivial \cpp{SubspaceBasis},
+i.e., the method \cpp{rootBasis()} returns the basis itself
+and \cpp{prefixPath()} returns an empty tree-path of the
+implementation defined type \cpp{PrefixPath}.
+\todograeser{While describing the interface I had the impression that having
+those methods here is inconsistent and that they should maybe be free functions.}
+\todosander{Könnte man tatsächlich in Betracht ziehen.}
+
+\begin{lstlisting}[style=Interface]
+using PrefixPath = @@<implementation defined>@@;
+const @@<implementation defined>@@& rootBasis() const
+const PrefixPath& prefixPath() const
+\end{lstlisting}
+
+In order to be consistent with a \cpp{SubspaceBasis::LocalView}
+the additional method \cpp{rootLocalView()} returns the local view
+itself.
+\todograeser{While describing the interface I had the impression that having
+this method here is inconsistent and that it should maybe be a free function.}
+
+\begin{lstlisting}[style=Interface]
+const DefaultLocalView& rootLocalView() const
+}; // end LocalView
+\end{lstlisting}
+
 
 
 \section{Solving the Stokes equation with \dunemodule{dune-functions}}
