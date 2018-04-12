@@ -750,6 +750,7 @@ degrees of freedom are ordered.
 
 
 \subsection{Rule-based construction of multi-indices}
+\label{sec:index_strategies}
 
 Let $\Lambda$ be the set of basis functions of a finite element basis tree.
 In principle, \dunemodule{dune-functions} allows any indexing scheme that
@@ -885,6 +886,7 @@ $\Lambda_i$ are identical.
     However, for general composite nodes this may not be the case:
     Consider $\iota_0(\Lambda_0) = \{0\}$ and $\iota_1(\Lambda_1) = \{(0,0)\}$.
     Then $\iota(\Lambda) = \{(0,0), (0,0,1)\}$ which is not an index tree.
+
   \item \textbf{FlatLexicographic}: This strategy introduces
     a new root node in the index tree by merging the roots of all
     index-tree $\iota_i(\Lambda_i)$ into a single one.
@@ -929,6 +931,7 @@ $\Lambda_i$ are identical.
       & & \dots &
         \dots \\
     \end{tabular}
+
   \item \textbf{FlatInterleaved}: This strategy also merges
     the roots of all child index-trees $\iota_i(\Lambda_i)$
     into a single one but interleaves the children.
@@ -2043,9 +2046,7 @@ Note that this is the preferred way to construct a Taylor--Hood basis in contras
 auto taylorHoodBasis1 = makeBasis(gridView, taylorHood());
 auto taylorHoodBasis2 = TaylorHoodBasis<GridView>(gridView);
 \end{lstlisting}
-since these variants mainly exist as implementation example (see the discussion on \cpp{TaylorHoodBasis} above).
-
-\bigskip
+since these variants mainly exist as implementation example (see the discussion on \cpp{TaylorHoodBasis} in Section~\ref{subsec:available_bases}).
 
 The previous discussion has left out the question of how the degrees of freedom in the combined tree
 are numbered.  In Section~\ref{sec:index_trees} it was explained how the indices
@@ -2055,7 +2056,23 @@ Section~\ref{subsec:available_bases} implements a numbering of its degrees of fr
 and generally these numberings cannot be changed.
 To select a degree of freedom numbering for a nontrivial basis,
 each call to \cpp{composite} or \cpp{power} can be augmented by an additional
-tag class called \cpp{IndexMergingStrategy}. Four merging strategies are possible.  They differ by the ordering
+flag indicating an \cpp{IndexMergingStrategy}. The four implemented strategies are
+\begin{itemize}
+  \item
+    \cpp{BlockedLexicographic}
+  \item
+    \cpp{LeafBlockedInterleaved}
+  \item
+    \cpp{FlatLexicographic}
+  \item
+    \cpp{FlatInterleaved}
+\end{itemize}
+and have been described in Section~\ref{sec:index_strategies}.
+For each strategy \cpp{FooBar} there is a function \cpp{BasisBuilder::fooBar()} creating
+the flag in the header \file{functionspacebases/basistags.hh}.
+
+\todograeser{Remove old text below}
+Four merging strategies are possible.  They differ by the ordering
 (\emph{interleaved} or \emph{lexicographic}), and by whether a new node should be added to the
 index tree (in other words, whether a new digit will get added to the multi-indices that
 distinguishes between the subtrees.
