@@ -134,7 +134,7 @@ int main (int argc, char* argv[]) try
 
   // check RaviartThomasBasis created using basis builder mechanism
   {
-    using namespace Functions::BasisBuilder;
+    using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid.leafGridView(), taylorHood());
     test.subTest(checkBasis(basis));
   }

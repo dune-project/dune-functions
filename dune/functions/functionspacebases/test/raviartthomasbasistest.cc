@@ -42,7 +42,7 @@ int main (int argc, char* argv[])
 
   // check RaviartThomasBasis created using basis builder mechanism
   {
-    using namespace Functions::BasisBuilder;
+    using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid.leafGridView(), raviartThomas<0, GeometryType::BasicType::cube>());
     test.subTest(checkBasis(basis));
   }

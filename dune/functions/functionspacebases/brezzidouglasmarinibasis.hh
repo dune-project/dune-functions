@@ -394,7 +394,7 @@ protected:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 namespace Imp {
 
@@ -412,7 +412,7 @@ public:
   }
 };
 
-} // end namespace BasisBuilder::Imp
+} // end namespace BasisFactory::Imp
 
 template<std::size_t k, GeometryType::BasicType basic_type>
 Imp::BrezziDouglasMariniPreBasisFactory<k, basic_type> brezziDouglasMarini()
@@ -420,7 +420,7 @@ Imp::BrezziDouglasMariniPreBasisFactory<k, basic_type> brezziDouglasMarini()
   return{};
 }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
 
 
 

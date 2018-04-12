@@ -227,7 +227,7 @@ public:
 
 private:
 
-  size_type size(const SizePrefix& prefix, BasisBuilder::BlockedLexicographic) const
+  size_type size(const SizePrefix& prefix, BasisFactory::BlockedLexicographic) const
   {
     if (prefix.size() == 0)
       return children;
@@ -264,7 +264,7 @@ private:
     }
   };
 
-  size_type size(const SizePrefix& prefix, BasisBuilder::FlatLexicographic) const
+  size_type size(const SizePrefix& prefix, BasisFactory::FlatLexicographic) const
   {
     size_type r = 0;
     using namespace Dune::Hybrid;
@@ -383,7 +383,7 @@ public:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisBuilder::FlatLexicographic) const
+  It indices(It multiIndices, BasisFactory::FlatLexicographic) const
   {
     using namespace Dune::Hybrid;
     size_type firstComponentOffset = 0;
@@ -415,7 +415,7 @@ public:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisBuilder::BlockedLexicographic) const
+  It indices(It multiIndices, BasisFactory::BlockedLexicographic) const
   {
     using namespace Dune::Hybrid;
     // Loop over all children
@@ -442,7 +442,7 @@ private:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 namespace Imp {
 
@@ -496,7 +496,7 @@ private:
   std::tuple<ChildPreBasisFactory...> childPreBasisFactories_;
 };
 
-} // end namespace BasisBuilder::Imp
+} // end namespace BasisFactory::Imp
 
 
 
@@ -546,17 +546,24 @@ auto composite(Args&&... args)
  * \param args Child factory builder objects
  *
  * This is the overload used if no IndexMergingStrategy is supplied.
- * In this case the BasisBuilder::BlockedLexicographic strategy is used.
+ * In this case the BasisFactory::BlockedLexicographic strategy is used.
  */
 template<
   typename... Args,
   std::enable_if_t<not Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
 auto composite(Args&&... args)
 {
-  return Imp::CompositePreBasisFactory<BasisBuilder::BlockedLexicographic, std::decay_t<Args>...>(std::forward<Args>(args)...);
+  return Imp::CompositePreBasisFactory<BasisFactory::BlockedLexicographic, std::decay_t<Args>...>(std::forward<Args>(args)...);
 }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
+
+// Backward compatibility
+namespace BasisBuilder {
+
+  using namespace BasisFactory;
+
+}
 
 
 

@@ -45,7 +45,7 @@ int main (int argc, char* argv[])
 
   // check LagrangeDGBasis created using basis builder mechanism
   {
-    using namespace Functions::BasisBuilder;
+    using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid.leafGridView(), lagrangeDG<2>());
     test.subTest(checkBasis(basis));
   }

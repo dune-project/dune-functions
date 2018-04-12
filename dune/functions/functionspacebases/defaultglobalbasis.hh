@@ -163,7 +163,7 @@ protected:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 template<class GridView, class PreBasisFactory>
 auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory)
@@ -184,8 +184,14 @@ auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory)
   return DefaultGlobalBasis<PreBasis>(std::move(preBasis));
 }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
 
+// Backward compatibility
+namespace BasisBuilder {
+
+  using namespace BasisFactory;
+
+}
 
 
 } // end namespace Functions

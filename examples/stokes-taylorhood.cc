@@ -277,7 +277,7 @@ int main (int argc, char *argv[]) try
 //  typedef Functions::TaylorHoodBasis<GridView> TaylorHoodBasis;        /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
 //  TaylorHoodBasis taylorHoodBasis(gridView);
 
-  using namespace Functions::BasisBuilder;
+  using namespace Functions::BasisFactory;
 
   static const std::size_t K = 1; // pressure order for Taylor-Hood
 
