@@ -2038,6 +2038,12 @@ auto taylorHoodBasis = makeBasis(
 \end{lstlisting}
 The call to \cpp{power} produces the \cpp{dim}-component velocity basis of order \cpp{p+1},
 and the call to \cpp{composite} combines this with a \cpp{p}-th order Lagrange basis for the pressure.
+Note that this is the preferred way to construct a Taylor--Hood basis in contrast to
+\begin{lstlisting}[style=Example]
+auto taylorHoodBasis1 = makeBasis(gridView, taylorHood());
+auto taylorHoodBasis2 = TaylorHoodBasis<GridView>(gridView);
+\end{lstlisting}
+since these variants mainly exist as implementation example (see the discussion on \cpp{TaylorHoodBasis} above).
 
 \bigskip
 
