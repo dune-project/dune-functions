@@ -22,22 +22,15 @@ public:
   using NodeIndexSet = NIS;
 
   /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = typename NodeIndexSet::MultiIndex;
-  using size_type = std::size_t;
+  using MultiIndex = typename LocalView::MultiIndex;
+  using size_type = typename LocalView::size_type;
 
-private:
-
-  template<typename NodeIndexSet>
-  using hasIndices = decltype(std::declval<NodeIndexSet>().indices(std::declval<std::vector<MultiIndex>>().begin()));
-
-public:
-
-  DefaultLocalIndexSet(const NodeIndexSet& nodeIndexSet) :
-    nodeIndexSet_(nodeIndexSet)
+  DefaultLocalIndexSet() :
+    localView_(nullptr)
   {}
 
-  DefaultLocalIndexSet(NodeIndexSet&& nodeIndexSet) :
-    nodeIndexSet_(nodeIndexSet)
+  DefaultLocalIndexSet(const NodeIndexSet& nodeIndexSet) :
+    localView_(nullptr)
   {}
 
   /** \brief Bind the index set to a LocalView
@@ -45,17 +38,6 @@ public:
   void bind(const LocalView& localView)
   {
     localView_ = &localView;
-    nodeIndexSet_.bind(localView_->tree());
-    indices_.resize(size());
-    Hybrid::ifElse(
-      Std::is_detected<hasIndices,NodeIndexSet>{},
-      [&](auto id) {
-        id(nodeIndexSet_).indices(indices_.begin());
-      },
-      [&](auto id) {
-        for (size_type i = 0 ; i < this->size() ; ++i)
-          indices_[i] = id(nodeIndexSet_).index(i);
-      });
   }
 
   /** \brief Bind the index set to a SubspaceLocalView
@@ -71,20 +53,19 @@ public:
   void unbind()
   {
     localView_ = nullptr;
-    nodeIndexSet_.unbind();
   }
 
   /** \brief Size of subtree rooted in this node (element-local)
    */
   size_type size() const
   {
-    return nodeIndexSet_.size();
+    return localView_->size();
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   MultiIndex index(size_type i) const
   {
-    return indices_[i];
+    return localView_->index(i);
   }
 
   /** \brief Return the local view that we are attached to
@@ -97,9 +78,6 @@ public:
 protected:
 
   const LocalView* localView_;
-
-  NodeIndexSet nodeIndexSet_;
-  std::vector<MultiIndex> indices_;
 };
 
 

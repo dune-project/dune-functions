@@ -52,6 +52,9 @@ public:
   //! Tree of local finite elements / local shape function sets
   using Tree = typename TypeTree::ChildForTreePath<RootTree, PrefixPath>;
 
+  /** \brief Type used for global numbering of the basis vectors */
+  using MultiIndex = typename RootLocalView::MultiIndex;
+
   /** \brief Construct local view for a given global finite element basis */
   SubspaceLocalView(const GlobalBasis& globalBasis, const PrefixPath& prefixPath) :
     globalBasis_(&globalBasis),
@@ -113,6 +116,12 @@ public:
   size_type maxSize() const
   {
     return rootLocalView_.maxSize();
+  }
+
+  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+  MultiIndex index(size_type i) const
+  {
+    return rootLocalView_.index(i);
   }
 
   /** \brief Return the global basis that we are a view on
