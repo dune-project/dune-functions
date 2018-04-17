@@ -238,17 +238,16 @@ Installation instructions and an up-to-date class documentation can be found the
 
 Before we can explain the programmer interface for bases of discrete function spaces in Chapter~\ref{sec:function_space_bases_implementation},
 we need to say a few words about how these bases can be endowed with an abstract tree structure.
-Readers who are only interested in scalar finite element spaces may try to proceed directly to
+Readers who are only interested in finite element spaces of scalar-valued functions may try to proceed directly to
 Chapter~\ref{sec:function_space_bases_implementation}.  They should only know that whenever a
 local finite element tree
 is mentioned there, this tree consists of a single node only, which is the local finite element basis.
 Similarly, for a scalar finite element space the tree of multi-indices used to index the
-basis functions often takes the form of
-a contiguous, zero-starting set of natural numbers.
+basis functions simply represents a contiguous, zero-starting set of natural numbers.
 
 \subsection{Trees of function spaces}
 
-Throughout this chapter we assume that we have a single fixed domain $\Omega$, and all function spaces
+Throughout this paper we assume that we have a single fixed domain $\Omega$, and all function spaces
 that we consider are defined on this domain.  We are mainly thinking of spaces of functions that are
 piecewise polynomial with respect to a grid, but we do not actually require that yet.
 
@@ -259,57 +258,63 @@ scalar-valued continuous piecewise polynomials of degree at most $k$ on $\Omega$
 with respect to some given triangulation.
 If the domain $\Omega$ is fixed, we will simply write $P_k$.
 
-Some finite element spaces arise naturally as a combination of simpler ones.
+Considering the different finite element spaces that are in use, there are some that we will
+call \emph{irreducible}.  By this term we mean all bases of scalar-valued functions,
+but also others like the Raviart--Thomas basis that cannot easily be written as a combination
+of simpler bases.
+
+Many other finite element spaces arise naturally as a combination of simpler ones.
 There are primarily two ways how two vector spaces $V$ and $W$ can be combined
 to form a new one: Sums and products. While these are also called
 internal and external sums, respectively, we stick to the terminology
 \emph{sum} and \emph{product} in the following.
 
-For sums, both spaces
-have the same range space $R$ and are thus subspaces of the space $R^\Omega$
-of all functions mapping from $\Omega$ to $R$. Then the vector space sum
+For sums, both spaces need to
+have the same range space $R$, and thus both be subspaces of $R^\Omega$.
+Then the vector space sum
 \begin{equation*}
   V + W
   \colonequals
   \{ v + w \; : \; v \in V, \; w \in W \}
 \end{equation*}
 in $R^\Omega$ will have that same range space.
-For example, a $P_2$-space (i.e., a second order Lagrange space)
-can be viewed as a $P_1$-space plus a hierarchical extension spanned by bubble functions.
+For example, a $P_2$-space
+can be viewed as a $P_1$-space plus a hierarchical extension spanned by bubble functions~\cite{bank:1996}.
 XFEM spaces~\cite{moes_dolbow_belytschko:1999} are constructed by adding particular weighted Heaviside
 functions to a basic space to capture free discontinuities.
 The \dunemodule{dune-functions} module does not currently support constructing sums
 of finite element bases, but this may be added in later versions.
 
 The second way to construct finite element spaces from simpler ones uses Cartesian products.
-Let $V \subset (\R^{r_1})^\Omega$ and $W \subset (\R^{r_2})^\Omega$ be two scalar function space bases.
-Then we define the product of the $V$ and $W$ as
+Let $V \subset (\R^{r_1})^\Omega$ and $W \subset (\R^{r_2})^\Omega$ be two function spaces.
+Then we define the product of $V$ and $W$ as
 \begin{align*}
   V \times W
     \colonequals \big\{ (v,w) \st v \in V, \; w \in W \big\}.
 \end{align*}
 Functions from this space take values in $\R^{r_1} \times \R^{r_2} = \R^{r_1 + r_2}$.
 
-It should be noted that building the (Cartesian) product of
-vector spaces should not be confused with building the tensor product of these spaces.
-Rather, the $k$-fold product or $k$-th power
-of a single space can be viewed as the tensor product with $\R^k$, i.e,
+It should be noted that building the Cartesian product of
+vector spaces must not be confused with the tensor product of these spaces.
+Rather, the $k$-th power
+of a single space can be viewed as the tensor product of that space with $\R^k$, i.e,
 \begin{align*}
     (V)^k
     = \underbrace{V \times \dots \times V}_{k-\text{times}}
     = \R^k \otimes V.
 \end{align*}
 
-The construction via products allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
+The product operation allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
 For example, the space of
 first-order Lagrangian finite elements with values in $\R^3$ can be seen as the product $P_1 \times P_1 \times P_1$.
 The simplest Taylor--Hood element is the product $P_2 \times P_2 \times P_2 \times P_1$
 of $P_2 \times P_2 \times P_2$ for the velocities with $P_1$ for the pressure.
-If additional variables need to be dealt with, more factor bases can be included easily.
+More factor bases can be included easily, if necessary.  We call such products of
+spaces \emph{composite spaces}.
 
 In the Taylor--Hood space, the triple
 $P_2 \times P_2 \times P_2$ forms a semantic unit---it contains the components of a velocity field.
-The associativity of the product allows to write it
+The associativity of the product allows to write the Taylor--Hood space
 as $(P_2 \times P_2 \times P_2) \times P_1$, which makes the semantic relationship clearer.
 Grouped expressions of this type are conveniently visualized as tree structures.  This
 suggests to interpret composite
@@ -341,7 +346,7 @@ Based on this child ordering we associate to each child the corresponding zero-b
     \label{fig:taylor_hood_space_tree}
 \end{figure}
 
-While these extra nodes might initially appear like useless artifacts of the tree representation, they are often extremely useful
+While these inner tree nodes might initially appear like useless artifacts of the tree representation, they are often extremely useful
 because we can treat the subtrees rooted in those nodes as individual trees in their own right, which often makes it possible to
 reuse existing algorithms that expect to operate on those subtrees in more complex settings.
 
@@ -372,7 +377,7 @@ where $0$ in the $j$-th position denotes the zero-function in $R_j^\Omega$.
 Here and throughout the paper we will use zero based indices, i.e., $i,j\in \{0,\dots,m-1\}$.
 
 
-Let $\Lambda_i$ a function space basis of the space $V_i = \operatorname{span} \Lambda_i$
+Let $\Lambda_i$ be a function space basis of the space $V_i = \operatorname{span} \Lambda_i$
 for $i=0,\dots,m-1$. Then a natural basis $\Lambda$ of the product space
 \begin{align*}
   V_0 \times \dots \times V_{m-1}
@@ -389,17 +394,17 @@ is given by
 \end{align}
 Note that the symbol $\sqcup$ used here
 is a simple short hand notation for \eqref{eq:basis_product}
-and not understood as an associative binary operation.
+and not to be understood as an associative binary operation.
 Using this notation we have
 \begin{align*}
   \operatorname{span} \Lambda
-    = \operatorname{span} \Bigl( \Lambda_0 \sqcup \dots \sqcup \Lambda_{m-1} \Bigr)
+    = \operatorname{span} \bigl( \Lambda_0 \sqcup \dots \sqcup \Lambda_{m-1} \bigr)
 %  = \prod_{i=0}^{m-1} \operatorname{span} \Lambda_i
     = (\operatorname{span} \Lambda_0) \times \dots \times (\operatorname{span} \Lambda_{m-1}).
 \end{align*}
 
 Similarly to the case of function spaces, bases can be interpreted as trees.
-If we associate to each space $V$ in the function space tree a basis $\Lambda_V$
+If we associate to each space $V$ in the function space tree a basis $\Lambda_V$,
 then the induced natural function space basis tree is obtained by simply replacing
 $V$ by $\Lambda_V$ in each node. For the Taylor--Hood basis this leads to the
 function space basis tree depicted in Figure~\ref{fig:taylor_hood_basis_tree}.
