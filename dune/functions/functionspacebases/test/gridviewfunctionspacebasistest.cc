@@ -133,26 +133,23 @@ void testScalarBasisConst(const Basis& feBasis,
   std::vector<bool> seen(feBasis.size());
   std::fill(seen.begin(), seen.end(), false);
 
-  auto localIndexSet = feBasis.localIndexSet();
-
   // Loop over all leaf elements
   for (auto it = gridView.template begin<0>(); it!=gridView.template end<0>(); ++it)
   {
     // Bind the local FE basis view to the current element
     localView.bind(*it);
-    localIndexSet.bind(localView);
 
     for (size_t i=0; i<localView.tree().size(); i++)
     {
-      if (localIndexSet.index(i)[0] < 0)
+      if (localView.index(i)[0] < 0)
         DUNE_THROW(Exception, "Index is negative, which is not allowed");
 
-      if (localIndexSet.index(i)[0] >= seen.size())
+      if (localView.index(i)[0] >= seen.size())
         DUNE_THROW(Exception, "Local index " << i
-                           << " is mapped to global index " << localIndexSet.index(i)
+                           << " is mapped to global index " << localView.index(i)
                            << ", which is larger than allowed");
 
-      seen[localIndexSet.index(i)[0]] = true;
+      seen[localView.index(i)[0]] = true;
     }
   }
 
@@ -172,7 +169,7 @@ void testScalarBasisConst(const Basis& feBasis,
     std::fill(x.begin(), x.end(), 0.5);
 
   // Objects required in the local context
-  auto localIndexSet2 = feBasis.localIndexSet();
+  auto localView2 = feBasis.localView();
   std::vector<double> localCoefficients(localView.maxSize());
 
   // Loop over elements and integrate over the function
@@ -180,22 +177,19 @@ void testScalarBasisConst(const Basis& feBasis,
   for (const auto& element : elements(gridView))
   {
     localView.bind(element);
-    localIndexSet.bind(localView);
-    localIndexSet2.bind(localView);
+    localView2.bind(element);
 
     // paranoia checks
-    assert(localView.size() == localIndexSet.size());
     assert(&(localView.globalBasis()) == &(feBasis));
-    assert(&(localIndexSet.localView()) == &(localView));
 
-    assert(localIndexSet.size() == localIndexSet2.size());
-    for (size_t i=0; i<localIndexSet.size(); i++)
-      assert(localIndexSet.index(i) == localIndexSet2.index(i));
+    assert(localView.size() == localView2.size());
+    for (size_t i=0; i<localView.size(); i++)
+      assert(localView.index(i) == localView2.index(i));
 
     // copy data from global vector
-    localCoefficients.resize(localIndexSet.size());
-    for (size_t i=0; i<localIndexSet.size(); i++)
-      localCoefficients[i] = x[localIndexSet.index(i)[0]];
+    localCoefficients.resize(localView.size());
+    for (size_t i=0; i<localView.size(); i++)
+      localCoefficients[i] = x[localView.index(i)[0]];
 
     // get access to the finite element
     typedef typename Basis::LocalView::Tree Tree;
@@ -232,7 +226,6 @@ void testScalarBasisConst(const Basis& feBasis,
     }
 
     // unbind
-    localIndexSet.unbind();
     localView.unbind();
   }
 

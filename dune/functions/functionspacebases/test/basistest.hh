@@ -143,18 +143,16 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
   auto multiIndexSet = std::set<MultiIndex, decltype(compare)>{compare};
 
   auto localView = basis.localView();
-  auto localIndexSet = basis.localIndexSet();
   for (const auto& e : elements(basis.gridView()))
   {
     localView.bind(e);
-    localIndexSet.bind(localView);
 
-    test.require(localIndexSet.size() <= localView.maxSize(), "localIndexSet.size() check")
-      << "localIndexSet.size() is " << localIndexSet.size() << " but localView.maxSize() is " << localView.maxSize();
+    test.require(localView.size() <= localView.maxSize(), "localView.size() check")
+      << "localView.size() is " << localView.size() << " but localView.maxSize() is " << localView.maxSize();
 
-    for (decltype(localIndexSet.size()) i=0; i< localIndexSet.size(); ++i)
+    for (decltype(localView.size()) i=0; i< localView.size(); ++i)
     {
-      auto multiIndex = localIndexSet.index(i);
+      auto multiIndex = localView.index(i);
       multiIndexSet.insert(multiIndex);
     }
   }
