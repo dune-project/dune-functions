@@ -152,7 +152,7 @@
  for full discretization frameworks like \dunemodule{dune-pdelab} and \dunemodule{dune-fem}.
  This document describes the function space bases provided by \dunemodule{dune-functions}.  These are
  based on an abstract description of bases for product spaces as trees of simpler bases.
- From this description, orderings of degrees of freedom and their numberings by multi-indices can be
+ From this description, many different numberings of degrees of freedom by multi-indices can be
  derived in a natural way. We describe the abstract concepts, document the programmer interface,
  and give a complete example program that solves the stationary Stokes equation using Taylor--Hood elements.
 \end{abstract}
@@ -160,13 +160,13 @@
 \section*{Introduction}
 
 The core modules of the \dune software system focus on low-level infrastructure for
-implementations of simulation algorithms for partial differential equations.  Module like
-\dunemodule{dune-grid} and \dunemodule{dune-istl} provide APIs to finite  element grids
+implementations of simulation algorithms for partial differential equations.  Modules like
+\dunemodule{dune-grid} and \dunemodule{dune-istl} provide programmer interfaces (APIs) to finite element grids
 and sparse linear algebra, respectively, but little more. Actual finite element functions only
 appear in the \dunemodule{dune-localfunctions} module, which deals with discrete function spaces
-on a single grid element exclusively.
+on single grid elements exclusively.
 
-On top of these core modules, various other modules implement finite element and finite volume assemblers
+On top of these core modules, various other modules in the \dune ecosystem implement finite element and finite volume assemblers
 and solvers, and the corresponding discrete function spaces. The most prominent ones are
 \dunemodule{dune-pdelab}%
 \footnote{\url{https://dune-project.org/modules/dune-pdelab}}
@@ -183,32 +183,35 @@ each such module has a different focus.
 The \dunemodule{dune-functions}  module was written to partially overcome this fragmentation,
 and to unify parts of the competing implementations.
 It picks a well-defined aspect of finite element assembly---finite element spaces and functions---and,
-in the \dune spirit, provides an abstract interface that tries to be both extremely flexibly
+in the \dune spirit, provides abstract interfaces that try to be both extremely flexibly
 and efficient.  It is hoped for, that other implementations of the same functionality
 eventually replace their implementations by a dependence on \dunemodule{dune-functions}.
 Indeed, at least \dunemodule{dune-pdelab} and \dunemodule{dune-fufem} are already in the process
 of migrating, and have stated their clear intention to complete this migration eventually.
 
-Of the two main parts of \dunemodule{dune-functions} functionality, the API for discrete and
+Of the two parts of \dunemodule{dune-functions} functionality, the API for discrete and
 closed-form functions has already been described in a separate paper~\cite{engwer_graeser_muething_sander:2015}.
 The present document focuses on spaces of discrete functions.  However,
 the central concept is not the function space itself, but rather the {\em basis} of the function space.
-This is because even though finite element spaces play a central role in theoretical considerations of the FE method,
-actual computations are done using coefficients, given with respect to a particular basis.  Also,
-for many different finite element spaces, more than one basis is used in practice.  For example,
+This is because even though finite element spaces play a central role in theoretical considerations of
+the finite element method,
+actual computations use coefficient vectors, which are defined with respect to a particular basis.  Also,
+for various finite element spaces, more than one basis is used in practice.  For example,
 the space of second-order Lagrangian finite elements is used both with the nodal (Lagrange) basis~\cite{braess:2013},
 and with the
 hierarchical basis~\cite{bank:1996}.  Discontinuous Galerkin spaces can be described in terms of Lagrange bases,
 monomial bases, Legendre bases and more~\cite{hesthaven_warburton:2008}.
 It is therefore important to be able to distinguish these different
 representations of the same space in the application code.
+For these reasons, the main \dunemodule{dune-functions} interface represents a basis of a
+discrete function space, and not the space itself.
 
 Finite element function space bases frequently exhibit a fair amount of structure.  Vector-valued spaces can be
 written as products of scalar spaces, and the same holds for mixed finite elements.  Even more, such spaces
 have a natural structure as a tree, with scalar-valued or otherwise irreducible spaces forming the leaves, and
-products forming the other nodes.
-\dunemodule{dune-functions} allows to systematically construct bases by reproducing the tree structures
-as type information in the code.
+products forming the inner nodes. The \dunemodule{dune-functions} module
+allows to systematically construct new bases by multiplication of existing bases.
+The resulting tree structure is reproduced as type information in the code.
 This tree construction of finite element spaces has first been systematically worked out in~\cite{muething:2015}.
 
 For the basis functions in such a non-trivial tree structure, there is no single canonical way
@@ -218,7 +221,8 @@ of the basis follows a natural indexing by multi-indices, which can be used to a
 vector and matrix data types, like the ones provided by \dunemodule{dune-istl}. Closer inspection
 reveals that these two possibilities are just two extreme cases of a wider scale of indexing rules.
 The \dunemodule{dune-functions} module therefore provides a systematic way to construct such
-rules.  Many of them really are useful in applications.
+rules.  While some of the resulting rules are somewhat contrived, many others really are useful
+in applications.
 
 The \dunemodule{dune-functions} module is hosted on the \dune project homepage \url{www.dune-project.org}.
 Installation instructions and an up-to-date class documentation can be found there.
