@@ -227,70 +227,6 @@ Installation instructions and an up-to-date class documentation can be found the
 \tableofcontents
 
 
-\section*{Notation}
-
-The \dunemodule{dune-functions} module is implemented in the C++ programming language.
-Throughout this text we will introduce programmer interfaces
-by presenting the interface declaration, explaining
-its meaning, and giving examples of its usage.
-In order to distinguish interface declarations
-from code examples, both are formatted differently.
-Furthermore, implementation defined types, arguments,
-and other omitted code fragments are highlighted.
-Interface declarations are formatted like this:
-\begin{lstlisting}[style=Interface]
-// Declaration of the type T referring to an implementation-defined type
-using T = @@<implementation defined>@@;
-
-// Declaration of the function foo
-T foo(int);
-
-// Declaration of class Bar with implementation-defined constructor arguments
-class Bar {
-public:
-  Bar(@@<args>@@);
-};
-\end{lstlisting}
-An example for using this interface would be formatted like this:
-\begin{lstlisting}[style=Example]
-// Call foo() and store result
-T t = foo(1);
-
-// Construct an object of type Bar
-auto bar = Bar(t, @@<more args>@@);
-\end{lstlisting}
-
-For two sets $R$ and $\Omega$ we denote by $R^\Omega = \{f:\Omega \to R\}$
-the set of all functions mapping from $\Omega$ to $R$. For domains $\Omega\subset \R^d$
-we denote by $P_k(\Omega) \subset \R^\Omega$ the space of all
-scalar-valued continuous piecewise polynomials of degree at most $k$ on $\Omega$
-with respect to some given triangulation.
-If the domain $\Omega$ is fixed, we will simply write $P_k$.
-
-In order to handle product space constructions we additionally introduce
-a generalized tensor product notation:
-Consider ranges $R_0,\dots,R_{m-1}$ of function spaces $R_0^\Omega,\dots,R_{m-1}^\Omega$
-and the $i$-th canonical basis vector $\mathbf{e}_i$ in $\R^m$.
-Then
-\begin{align*}
-  \mathbf{e}_i \otimes f
-  \colonequals (0,\dots,0,\underbrace{f}_{\text{$i$-th entry}},0,\dots,0)
-  \in \prod_{j=0}^{m-1} \Bigl(R_j^\Omega\Bigr) = \Bigl(\prod_{j=0}^{m-1} R_j\Bigr)^\Omega,
-\end{align*}
-where $0$ in the $j$-th position denotes the zero-function in $R_j^\Omega$.
-%denotes the function
-%\begin{align*}
-%  \mathbf{e}_i \otimes f &: \Omega \to \prod_{j=0}^{m-1} R_j, &
-%  ((\mathbf{e}_i \otimes f)(x))_j &= 
-%  \begin{cases}
-%    f(x) &\text{ if } i=j,\\
-%    0 \in \R_j^\Omega &\text{ else}.
-%  \end{cases}
-%\end{align*}
-Here and throughout the paper we will use zero based indices, i.e., $i,j\in \{0,\dots,m-1\}$.
-
-
-\label{sec:notation}
 
 \section{Function space bases}
 \label{sec:finite_element_trees}
@@ -311,6 +247,13 @@ a contiguous, zero-starting set of natural numbers.
 Throughout this chapter we assume that we have a single fixed domain $\Omega$, and all function spaces
 that we consider are defined on this domain.  We are mainly thinking of spaces of functions that are
 piecewise polynomial with respect to a grid, but we do not actually require that yet.
+
+For a set $R$ we denote by $R^\Omega = \{f:\Omega \to R\}$
+the set of all functions mapping from $\Omega$ to $R$. For domains $\Omega\subset \R^d$
+we denote by $P_k(\Omega) \subset \R^\Omega$ the space of all
+scalar-valued continuous piecewise polynomials of degree at most $k$ on $\Omega$
+with respect to some given triangulation.
+If the domain $\Omega$ is fixed, we will simply write $P_k$.
 
 Some finite element spaces arise naturally as a combination of simpler ones.
 There are primarily two ways how two vector spaces $V$ and $W$ can be combined
@@ -403,7 +346,28 @@ reuse existing algorithms that expect to operate on those subtrees in more compl
 \label{sec:basistree}
 
 The product of finite-dimensional spaces naturally induces a corresponding operation on bases
-of such spaces.
+of such spaces.  We additionally introduce a generalized tensor product notation:
+Consider ranges $R_0,\dots,R_{m-1}$ of function spaces $R_0^\Omega,\dots,R_{m-1}^\Omega$
+and the $i$-th canonical basis vector $\mathbf{e}_i$ in $\R^m$.
+Then
+\begin{align*}
+  \mathbf{e}_i \otimes f
+  \colonequals (0,\dots,0,\underbrace{f}_{\text{$i$-th entry}},0,\dots,0)
+  \in \prod_{j=0}^{m-1} \Bigl(R_j^\Omega\Bigr) = \Bigl(\prod_{j=0}^{m-1} R_j\Bigr)^\Omega,
+\end{align*}
+where $0$ in the $j$-th position denotes the zero-function in $R_j^\Omega$.
+%denotes the function
+%\begin{align*}
+%  \mathbf{e}_i \otimes f &: \Omega \to \prod_{j=0}^{m-1} R_j, &
+%  ((\mathbf{e}_i \otimes f)(x))_j &=
+%  \begin{cases}
+%    f(x) &\text{ if } i=j,\\
+%    0 \in \R_j^\Omega &\text{ else}.
+%  \end{cases}
+%\end{align*}
+Here and throughout the paper we will use zero based indices, i.e., $i,j\in \{0,\dots,m-1\}$.
+
+
 Let $\Lambda_i$ a function space basis of the space $V_i = \operatorname{span} \Lambda_i$
 for $i=0,\dots,m-1$. Then a natural basis $\Lambda$ of the product space
 \begin{align*}
@@ -1354,6 +1318,38 @@ C++-style duck-typing~\cite{koenig_moo:2005}
 i.e., any object providing the required
 interface is a valid global basis.
 
+
+\subsection*{Notation}
+
+Throughout this text we will introduce programmer interfaces
+by presenting the interface declaration, explaining
+its meaning, and giving examples of its usage.
+In order to distinguish interface declarations
+from code examples, both are formatted differently.
+Furthermore, implementation defined types, arguments,
+and other omitted code fragments are highlighted.
+Interface declarations are formatted like this:
+\begin{lstlisting}[style=Interface]
+// Declaration of the type T referring to an implementation-defined type
+using T = @@<implementation defined>@@;
+
+// Declaration of the function foo
+T foo(int);
+
+// Declaration of class Bar with implementation-defined constructor arguments
+class Bar {
+public:
+  Bar(@@<args>@@);
+};
+\end{lstlisting}
+An example for using this interface would be formatted like this:
+\begin{lstlisting}[style=Example]
+// Call foo() and store result
+T t = foo(1);
+
+// Construct an object of type Bar
+auto bar = Bar(t, @@<more args>@@);
+\end{lstlisting}
 
 
 \subsection{User interface of a \texorpdfstring{\cpp{GlobalBasis}}{GlobalBasis}}
