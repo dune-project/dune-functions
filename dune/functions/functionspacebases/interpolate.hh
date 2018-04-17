@@ -65,8 +65,8 @@ class LocalInterpolateVisitor
 public:
 
   using Basis = B;
-  using LocalIndexSet = typename B::LocalIndexSet;
-  using MultiIndex = typename LocalIndexSet::MultiIndex;
+  using LocalView = typename B::LocalView;
+  using MultiIndex = typename LocalView::MultiIndex;
 
   using LocalFunction = LF;
 
@@ -84,11 +84,11 @@ public:
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
-  LocalInterpolateVisitor(const B& basis, HV& coeff, const HBV& bitVector, const LF& localF, const LocalIndexSet& localIndexSet, const NodeToRangeEntry& nodeToRangeEntry) :
+  LocalInterpolateVisitor(const B& basis, HV& coeff, const HBV& bitVector, const LF& localF, const LocalView& localView, const NodeToRangeEntry& nodeToRangeEntry) :
     vector_(coeff),
     localF_(localF),
     bitVector_(bitVector),
-    localIndexSet_(localIndexSet),
+    localView_(localView),
     nodeToRangeEntry_(nodeToRangeEntry)
   {
     static_assert(Dune::Functions::Concept::isCallable<LocalFunction, LocalDomain>(), "Function passed to LocalInterpolateVisitor does not model the Callable<LocalCoordinate> concept");
@@ -129,7 +129,7 @@ public:
     // We loop over j defined above and thus over the components of the
     // range type of localF_.
 
-    auto blockSize = flatVectorView(vector_[localIndexSet_.index(0)]).size();
+    auto blockSize = flatVectorView(vector_[localView_.index(0)]).size();
 
     for(j=0; j<blockSize; ++j)
     {
@@ -138,7 +138,7 @@ public:
       fe.localInterpolation().interpolate(FunctionFromCallable(localFj), interpolationCoefficients);
       for (size_t i=0; i<fe.localBasis().size(); ++i)
       {
-        auto multiIndex = localIndexSet_.index(node.localIndex(i));
+        auto multiIndex = localView_.index(node.localIndex(i));
         auto bitVectorBlock = flatVectorView(bitVector_[multiIndex]);
         if (bitVectorBlock[j])
         {
@@ -155,7 +155,7 @@ protected:
   HierarchicVector& vector_;
   const LocalFunction& localF_;
   const HierarchicBitVector& bitVector_;
-  const LocalIndexSet& localIndexSet_;
+  const LocalView& localView_;
   const NodeToRangeEntry& nodeToRangeEntry_;
 };
 
@@ -209,17 +209,15 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
   auto localF = localFunction(gf);
 
   auto localView = basis.localView();
-  auto localIndexSet = basis.localIndexSet();
 
   for (const auto& e : elements(gridView))
   {
     localView.bind(e);
-    localIndexSet.bind(localView);
     localF.bind(e);
 
     auto&& subTree = TypeTree::child(localView.tree(),treePath);
 
-    Imp::LocalInterpolateVisitor<B, Tree, NTRE, decltype(vector), decltype(localF), decltype(bitVector)> localInterpolateVisitor(basis, vector, bitVector, localF, localIndexSet, nodeToRangeEntry);
+    Imp::LocalInterpolateVisitor<B, Tree, NTRE, decltype(vector), decltype(localF), decltype(bitVector)> localInterpolateVisitor(basis, vector, bitVector, localF, localView, nodeToRangeEntry);
     TypeTree::applyToTree(subTree,localInterpolateVisitor);
   }
 }

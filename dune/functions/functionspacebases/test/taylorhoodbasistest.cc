@@ -59,7 +59,6 @@ int main (int argc, char* argv[]) try
 
   // Objects required in the local context
   auto localView = feBasis.localView();
-  auto localIndexSet = feBasis.localIndexSet();
   std::vector<double> coefficients(localView.maxSize());
 
   // Loop over elements and integrate over the function
@@ -67,18 +66,15 @@ int main (int argc, char* argv[]) try
   for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
   {
     localView.bind(*it);
-    localIndexSet.bind(localView);
 
     // paranoia checks
-    assert(localView.size() == localIndexSet.size());
     assert(&(localView.globalBasis()) == &(feBasis));
-    assert(&(localIndexSet.localView()) == &(localView));
 
     // copy data from global vector
-    coefficients.resize(localIndexSet.size());
-    for (size_t i=0; i<localIndexSet.size(); i++)
+    coefficients.resize(localView.size());
+    for (size_t i=0; i<localView.size(); i++)
     {
-      MultiIndex mi = localIndexSet.index(i);
+      MultiIndex mi = localView.index(i);
       coefficients[i] = x[mi[0]][mi[1]];
     }
 
@@ -113,7 +109,6 @@ int main (int argc, char* argv[]) try
     }
 
     // unbind
-    localIndexSet.unbind();
     localView.unbind();
   }
 

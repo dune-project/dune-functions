@@ -219,21 +219,19 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
 
   // A view on the FE basis on a single element
   auto localView = feBasis.localView();
-  auto localIndexSet = feBasis.localIndexSet();
 
   // Loop over all leaf elements
   for(const auto& e : elements(feBasis.gridView()))
   {
     // Bind the local FE basis view to the current element
     localView.bind(e);
-    localIndexSet.bind(localView);
 
     for (size_t i=0; i<localView.tree().size(); i++) {
 
       for (size_t j=0; j<localView.tree().size(); j++) {
 
-        auto iIdx = localIndexSet.index(i)[0];
-        auto jIdx = localIndexSet.index(j)[0];
+        auto iIdx = localView.index(i)[0];
+        auto jIdx = localView.index(j)[0];
 
         // Add a nonzero entry to the matrix
         nb.add(iIdx, jIdx);
@@ -250,21 +248,19 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
 
       // Get a local view and local index set for the element on the other side of the intersection
       auto outsideLocalView = feBasis.localView();
-      auto outsideLocalIndexSet = feBasis.localIndexSet();
       outsideLocalView.bind(is.outside());
-      outsideLocalIndexSet.bind(outsideLocalView);
 
       // Add element stiffness matrix onto the global stiffness matrix
       for (size_t i=0; i<localView.tree().size(); i++)
       {
         // The global index of the i-th local degree of freedom of the element 'e'
-        auto row = localIndexSet.index(i)[0];
+        auto row = localView.index(i)[0];
 
         for (size_t j=0; j<outsideLocalView.tree().size(); j++ )
         {
           // The global index of the j-th local degree of freedom
           // of the element on the other side of the intersection
-          auto col = outsideLocalIndexSet.index(j)[0];
+          auto col = outsideLocalView.index(j)[0];
           nb.add(row,col);
         }
 
@@ -314,14 +310,12 @@ void assembleStiffnessMatrix(const FEBasis& feBasis,
 
   // A view on the FE basis on a single element
   auto localView = feBasis.localView();
-  auto localIndexSet = feBasis.localIndexSet();
 
   // A loop over all elements of the grid
   for(const auto& element : elements(gridView))
   {
     // Bind the local FE basis view to the current element
     localView.bind(element);
-    localIndexSet.bind(localView);
 
     localVelocityField.bind(element);
     localReactionCoefficient.bind(element);
@@ -335,12 +329,12 @@ void assembleStiffnessMatrix(const FEBasis& feBasis,
     for (size_t i=0; i<elementMatrix.N(); i++) {
 
       // The global index of the i-th local degree of freedom of the element 'e'
-      auto row = localIndexSet.index(i)[0];
+      auto row = localView.index(i)[0];
 
       for (size_t j=0; j<elementMatrix.M(); j++ ) {
 
         // The global index of the j-th local degree of freedom of the element 'e'
-        auto col = localIndexSet.index(j)[0];
+        auto col = localView.index(j)[0];
         matrix[row][col] += elementMatrix[i][j];
 
       }
@@ -355,9 +349,7 @@ void assembleStiffnessMatrix(const FEBasis& feBasis,
 
       // Get a local view and local index set for the element on the other side of the intersection
       auto outsideLocalView = feBasis.localView();
-      auto outsideLocalIndexSet = feBasis.localIndexSet();
       outsideLocalView.bind(is.outside());
-      outsideLocalIndexSet.bind(outsideLocalView);
 
       getOffDiagonalLocalMatrix(is, localView, outsideLocalView, elementMatrix, localVelocityField);
 
@@ -365,13 +357,13 @@ void assembleStiffnessMatrix(const FEBasis& feBasis,
       for (size_t i=0; i<elementMatrix.N(); i++) {
 
         // The global index of the i-th local degree of freedom of the element 'e'
-        auto row = localIndexSet.index(i)[0];
+        auto row = localView.index(i)[0];
 
         for (size_t j=0; j<elementMatrix.M(); j++ ) {
 
           // The global index of the j-th local degree of freedom
           // of the element on the other side of the intersection
-          auto col = outsideLocalIndexSet.index(j)[0];
+          auto col = outsideLocalView.index(j)[0];
           matrix[row][col] += elementMatrix[i][j];
 
         }
@@ -386,7 +378,7 @@ void assembleStiffnessMatrix(const FEBasis& feBasis,
     for (size_t i=0; i<localRhs.size(); i++) {
 
       // The global index of the i-th vertex of the element 'e'
-      auto row = localIndexSet.index(i)[0];
+      auto row = localView.index(i)[0];
       rhs[row] += localRhs[i];
 
     }
