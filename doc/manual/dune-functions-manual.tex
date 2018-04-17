@@ -228,16 +228,18 @@ Installation instructions and an up-to-date class documentation can be found the
 
 
 \section*{Notation}
-Throughout this text we will introduce interfaces
+
+The \dunemodule{dune-functions} module is implemented in the C++ programming language.
+Throughout this text we will introduce programmer interfaces
 by presenting the interface declaration, explaining
 its meaning, and giving examples of its usage.
-In order to distinguish interface declaration
-and code examples, both are formated differently.
-Furthermore implementation defined types, arguments,
+In order to distinguish interface declarations
+from code examples, both are formatted differently.
+Furthermore, implementation defined types, arguments,
 and other omitted code fragments are highlighted.
-Interface declarations are formated like this:
+Interface declarations are formatted like this:
 \begin{lstlisting}[style=Interface]
-// Declaration of the typedef T referring to an implementation-defined type
+// Declaration of the type T referring to an implementation-defined type
 using T = @@<implementation defined>@@;
 
 // Declaration of the function foo
@@ -249,7 +251,7 @@ public:
   Bar(@@<args>@@);
 };
 \end{lstlisting}
-An example for using this interface would be formated like this:
+An example for using this interface would be formatted like this:
 \begin{lstlisting}[style=Example]
 // Call foo() and store result
 T t = foo(1);
@@ -259,7 +261,7 @@ auto bar = Bar(t, @@<more args>@@);
 \end{lstlisting}
 
 For two sets $R$ and $\Omega$ we denote by $R^\Omega = \{f:\Omega \to R\}$
-the set of all functions mapping from $R$ to $\Omega$. For domains $\Omega\subset \R^d$
+the set of all functions mapping from $\Omega$ to $R$. For domains $\Omega\subset \R^d$
 we denote by $P_k(\Omega) \subset \R^\Omega$ the space of all
 scalar-valued continuous piecewise polynomials of degree at most $k$ on $\Omega$
 with respect to some given triangulation.
@@ -272,8 +274,8 @@ and the $i$-th canonical basis vector $\mathbf{e}_i$ in $\R^m$.
 Then
 \begin{align*}
   \mathbf{e}_i \otimes f
-  = (0,\dots,0,\underbrace{f}_{\text{$i$-th entry}},0,\dots,0)
-  \in \prod_{j=0}^{m-1} \Bigl(R_j^\Omega\Bigr) = \Bigl(\prod_{j=0}^{m-1} R_j\Bigr)^\Omega
+  \colonequals (0,\dots,0,\underbrace{f}_{\text{$i$-th entry}},0,\dots,0)
+  \in \prod_{j=0}^{m-1} \Bigl(R_j^\Omega\Bigr) = \Bigl(\prod_{j=0}^{m-1} R_j\Bigr)^\Omega,
 \end{align*}
 where $0$ in the $j$-th position denotes the zero-function in $R_j^\Omega$.
 %denotes the function
