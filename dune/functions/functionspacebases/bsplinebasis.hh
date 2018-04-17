@@ -705,7 +705,7 @@ public:
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
-    return Node<TP>{tp,this};
+    return Node<TP>(tp,this);
   }
 
   /**
