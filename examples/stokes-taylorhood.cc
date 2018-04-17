@@ -26,6 +26,7 @@
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
+#include <dune/functions/functionspacebases/transformedindexbasis.hh>
 
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
@@ -281,14 +282,48 @@ int main (int argc, char *argv[]) try
 
   static const std::size_t K = 1; // pressure order for Taylor-Hood
 
+//  auto taylorHoodBasis = makeBasis(
+//    gridView,
+//    composite(
+//      power<dim>(
+//        lagrange<K+1>(),
+//        flatInterleaved()),
+//      lagrange<K>()
+//    ));
+
+
+  // Create an index transformation that transforms
+  // the BlockedInterleaved indices of the power pre-basis
+  // to FlatInterleaved indices.
+  auto transformation = indexTransformation(
+      [](auto& multiIndex, const auto& basis) {
+        if (multiIndex[0] == 0)
+        {
+          multiIndex[1] = multiIndex[1]*dim + multiIndex[2];
+          multiIndex.resize(2);
+        }
+      },
+      [](const auto& prefix, const auto& basis) -> std::size_t {
+        if (prefix.size()>1)
+          return 0;
+        if ((prefix.size()==1) and (prefix[0]==0))
+          return basis.size(prefix) * dim;
+        return basis.size(prefix);
+      },
+      Dune::Indices::_2, Dune::Indices::_3);
+
+  // This basis should behave like the basis created
+  // with the FlatInterleaved index merging strategy
+  // in the commented code above.
   auto taylorHoodBasis = makeBasis(
     gridView,
-    composite(
-      power<dim>(
-        lagrange<K+1>(),
-        flatInterleaved()),
-      lagrange<K>()
-    ));
+    transformIndices(
+      composite(
+        power<dim>(
+          lagrange<K+1>()
+        ),
+        lagrange<K>()),
+        transformation));
 
 
   // { function_space_basis_end }
