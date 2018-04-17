@@ -246,7 +246,7 @@ Similarly, for a scalar finite element space the tree of multi-indices used to i
 basis functions often takes the form of
 a contiguous, zero-starting set of natural numbers.
 
-\subsection{Trees of finite element spaces}
+\subsection{Trees of function spaces}
 
 Throughout this chapter we assume that we have a single fixed domain $\Omega$, and all function spaces
 that we consider are defined on this domain.  We are mainly thinking of spaces of functions that are
@@ -346,7 +346,7 @@ because we can treat the subtrees rooted in those nodes as individual trees in t
 reuse existing algorithms that expect to operate on those subtrees in more complex settings.
 
 
-\subsection{Trees of finite element space bases}
+\subsection{Trees of function space bases}
 \label{sec:basistree}
 
 The product of finite-dimensional spaces naturally induces a corresponding operation on bases
@@ -1196,7 +1196,7 @@ BL(BL) and BL(BI), respectively.
 
 
 
-\subsection{Localization to single elements}
+\subsection{Localization to single grid elements}
 \label{sec:localization}
 
 For the most part, access to finite element bases happens element by element.  It is therefore important
@@ -1895,13 +1895,13 @@ and a \cpp{std::integer_sequence}.
 
 
 
-\section{Constructing trees of finite element bases}
+\section{Constructing trees of function space bases}
 
 There are various ways to construct finite element bases in \dunemodule{dune-functions}.
 A set of standard bases is provided directly.  These can then be combined to form trees.
 Conversely, subtrees can be extracted, and they act like complete bases in their own right.
 
-\subsection{Function space basis implementations provided by \texorpdfstring{\dunemodule{dune-functions}}{dune-functions}}
+\subsection{Basis implementations provided by \texorpdfstring{\dunemodule{dune-functions}}{dune-functions}}
 \label{subsec:available_bases}
 
 The \dunemodule{dune-functions} module contains a collection of standard finite element bases.
@@ -2429,7 +2429,7 @@ const DefaultLocalView& rootLocalView() const
 
 
 
-\section{Solving the Stokes equation with \dunemodule{dune-functions}}
+\section{Example: Solving the Stokes equation with \dunemodule{dune-functions}}
 \label{sec:stokes_example}
 
 \subsection{The Stokes equation}
