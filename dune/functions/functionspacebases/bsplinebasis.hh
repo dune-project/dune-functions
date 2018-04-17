@@ -1367,6 +1367,52 @@ protected:
 
 
 
+namespace BasisFactory {
+
+namespace Imp {
+
+class BSplinePreBasisFactory
+{
+public:
+  static const std::size_t requiredMultiIndexSize=1;
+
+  BSplinePreBasisFactory(const std::vector<double>& knotVector,
+                         unsigned int order,
+                         bool makeOpen = true)
+  : knotVector_(knotVector),
+    order_(order),
+    makeOpen_(makeOpen)
+  {}
+
+  template<class MultiIndex, class GridView>
+  auto makePreBasis(const GridView& gridView) const
+  {
+    return BSplinePreBasis<GridView, MultiIndex>(gridView, knotVector_, order_, makeOpen_);
+  }
+
+private:
+  const std::vector<double>& knotVector_;
+  unsigned int order_;
+  bool makeOpen_;
+};
+
+} // end namespace BasisFactory::Imp
+
+/**
+ * \brief Create a pre-basis factory that can create a Taylor-Hood pre-basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ */
+auto bSpline(const std::vector<double>& knotVector,
+             unsigned int order,
+             bool makeOpen = true)
+{
+  return Imp::BSplinePreBasisFactory(knotVector, order, makeOpen);
+}
+
+} // end namespace BasisFactory
+
 // *****************************************************************************
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************

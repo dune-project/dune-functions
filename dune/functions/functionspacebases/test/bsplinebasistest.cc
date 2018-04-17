@@ -42,16 +42,36 @@ void testForDimension(TestSuite& test)
   std::cout << "  Testing B-spline basis with open knot vectors" << std::endl;
   for (unsigned int order : {0, 1, 2})
   {
-    Functions::BSplineBasis<GridView> bSplineBasis(gridView, knotVector, order);
-    test.subTest(checkBasis(bSplineBasis));
+    {
+      // Check basis created via its constructor
+      Functions::BSplineBasis<GridView> basis(gridView, knotVector, order);
+      test.subTest(checkBasis(basis));
+    }
+
+    {
+      // Check basis created via makeBasis
+      using namespace Functions::BasisFactory;
+      auto basis = makeBasis(gridView, bSpline(knotVector, order));
+      test.subTest(checkBasis(basis));
+    }
   }
 
   // Testing B-spline basis with non-open knot vectors
   std::cout << "  Testing B-spline basis with non-open knot vectors" << std::endl;
   for (unsigned int order : {0, 1, 2})
   {
-    Functions::BSplineBasis<GridView> bSplineBasis(gridView, knotVector, order, false);
-    test.subTest(checkBasis(bSplineBasis));
+    {
+      // Check basis created via its constructor
+      Functions::BSplineBasis<GridView> bSplineBasis(gridView, knotVector, order, false);
+      test.subTest(checkBasis(bSplineBasis));
+    }
+
+    {
+      // Check basis created via makeBasis
+      using namespace Functions::BasisFactory;
+      auto basis = makeBasis(gridView, bSpline(knotVector, order, false));
+      test.subTest(checkBasis(basis));
+    }
   }
 }
 
