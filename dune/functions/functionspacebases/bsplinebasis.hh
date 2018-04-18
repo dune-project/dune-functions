@@ -1399,7 +1399,7 @@ private:
 } // end namespace BasisFactory::Imp
 
 /**
- * \brief Create a pre-basis factory that can create a Taylor-Hood pre-basis
+ * \brief Create a pre-basis factory that can create a B-spline pre-basis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
