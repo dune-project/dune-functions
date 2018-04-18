@@ -8,6 +8,7 @@
 #include <dune/grid/yaspgrid.hh>
 
 #include <dune/functions/functionspacebases/bsplinebasis.hh>
+#include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
 
 using namespace Dune;
@@ -52,6 +53,16 @@ void testForDimension(TestSuite& test)
       // Check basis created via makeBasis
       using namespace Functions::BasisFactory;
       auto basis = makeBasis(gridView, bSpline(knotVector, order));
+      test.subTest(checkBasis(basis));
+    }
+
+    {
+      // Check whether a B-Spline basis can be combined with other bases.
+      using namespace Functions::BasisFactory;
+      auto basis = makeBasis(gridView,
+                             power<2>(
+                               bSpline(knotVector, order)
+                             ));
       test.subTest(checkBasis(basis));
     }
   }
