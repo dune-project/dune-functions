@@ -435,14 +435,14 @@ function space basis tree depicted in Figure~\ref{fig:taylor_hood_basis_tree}.
 \subsection{Indexing basis functions by multi-indices}
 \label{sec:index_trees}
 
-To work with the basis of a finite element space, the basis vectors need to be indexed.  Indexing the basis functions
+To work with the basis of a finite element space, the basis functions need to be indexed.  Indexing the basis functions
 is what allows to address the corresponding vector and matrix coefficients in suitable vector and matrix data structures.
 In simple cases, indexing means simply enumerating the basis functions with natural numbers, but for many applications
 hierarchically structured matrix and vector data structures are more natural or efficient.  This leads to the idea
 of hierarchically structured multi-indices.
 %
 \begin{definition}[Multi-indices]
- A tuple $I \in \N_0^k$ for some $k \in \N_0$ is called a multi-index of length $k$
+ A tuple $I \in \N_0^k$ for some $k \in \N_0$ is called a multi-index of length $k$,
  and we write $|I|=k$.
  The set of all multi-indices is denoted by
  $\mathcal{N} = \bigcup_{k \in \N_0} \N_0^k$.
@@ -450,7 +450,7 @@ of hierarchically structured multi-indices.
 %
 To establish some structure in a set of multi-indices it is convenient to consider prefixes.
 %
-\begin{definition}
+\begin{definition}\mbox{}  % Force a line break, otherwise the enumeration looks funny
     \begin{enumerate}
         \item
             If $I \in \mathcal{N}$ takes the form $I = (I^0,I^1)$ for $I^0,I^1 \in \mathcal{N}$,
@@ -474,24 +474,17 @@ To establish some structure in a set of multi-indices it is convenient to consid
 \end{definition}
 
 It is important to note that the multi-indices from a given set do not necessarily
-all have the same length.  For example, consider a possible indexing of the
-basis functions of the Taylor--Hood basis.
+all have the same length.
 Figure~\ref{fig:taylor_hood_basis_function_tree} illustrates the set of all basis
 functions by extending the ordered basis tree of Figure~\ref{fig:taylor_hood_basis_tree}
 by leaf nodes for individual basis functions.
-We start by assuming that the finite element basis functions $\lambda_i^{P_2}$ and $\lambda_k^{P_1}$
-of $P_2$ and $P_1$ both
-have a flat indexing by natural numbers $i=0,\dots,n_2-1$ and $k=0,\dots,n_1-1$,
-respectively.
-Then we enumerate the three coefficients of the velocity
-with the numbers $0$, $1$, and $2$.  Further, we denote velocity components with a leading digit $0$,
-and pressure components with a leading digit $1$.
-This construction leads to multi-indices of the form $(0,i,j)$ for velocity components, and $(1,k)$
+For example, a possible indexing of the basis functions of the Taylor--Hood basis $\Lambda_{TH}$
+uses multi-indices of the form $(0,i,j)$ for velocity components, and $(1,k)$
 for pressure components.
-For the velocity multi-indices $(0,i,j)$ the $i$ determines the component
+For the velocity multi-indices $(0,i,j)$ the $i = 0,\dots,n_2-1 \colonequals \abs{\Lambda_{P_2}}-1$ determines the component
 of the velocity vector field and the $j$ determines the number of the scalar $P_2$ basis
 function that determines this component.
-For the pressure multi-indices $(0,k)$ the $k$ determines the number of the $P_1$ basis
+For the pressure multi-indices $(0,k)$ the $k= 0,\dots,n_1-1 \colonequals \abs{\Lambda_{P_1}}-1$ determines the number of the $P_1$ basis
 function for the scalar $P_1$ function that determines the pressure.
 
 \begin{figure}
@@ -503,18 +496,18 @@ function for the scalar $P_1$ function that determines the pressure.
                 }
             ]
             \node [treenode] {$(\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}) \sqcup  \Lambda_{P_1}$}
-                child{ node [treenode] {$\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}$}
-                    child{ node [treenode] {$\Lambda_{P_2}$}
+                child[sibling distance = 7cm]{ node [treenode] {$\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}$}
+                    child [sibling distance = 3.3cm] { node [treenode] {$\Lambda_{P_2}$}
                         child{ node [basisnode] {$\lambda_0^{P_2}$} }
                         child{ node [] {$\dots$} }
                         child{ node [basisnode] {$\lambda_{n_2-1}^{P_2}$} }
                     }
-                    child{ node [treenode] {$\Lambda_{P_2}$}
+                    child [sibling distance = 3.3cm] { node [treenode] {$\Lambda_{P_2}$}
                         child{ node [basisnode] {$\lambda_0^{P_2}$} }
                         child{ node [] {$\dots$} }
                         child{ node [basisnode] {$\lambda_{n_2-1}^{P_2}$} }
                     }
-                    child{ node [treenode] {$\Lambda_{P_2}$}
+                    child [sibling distance = 3.3cm] { node [treenode] {$\Lambda_{P_2}$}
                         child{ node [basisnode] {$\lambda_0^{P_2}$} }
                         child{ node [] {$\dots$} }
                         child{ node [basisnode] {$\lambda_{n_2-1}^{P_2}$} }
@@ -532,21 +525,21 @@ function for the scalar $P_1$ function that determines the pressure.
 \end{figure}
 
 It is evident that the complete set of these multi-indices can again be interpreted as a rooted tree.
-In this tree, shown in Figure~\ref{fig:taylor_hood_index_tree}, the multi-indices correspond
-to the leaf nodes, and the multi-index digits labeling the \emph{edges} are the
-natural (zero-based) indices of the children within the ordered tree.  Prefixes can be
+In this tree, the multi-indices correspond
+to the leaf nodes, and the multi-index digits labeling the edges are the
+(zero-based) indices of the children within the ordered tree.  Prefixes can be
 interpreted as paths from the root to a given node.
 
 This latter fact can be seen as the defining property of index trees.  Indeed,
 sets of multi-indices form trees as long as they are consistent in the sense that they
 can be viewed as the paths to the leafs in an ordered tree.
 That is, the children of each node are enumerated using consecutive zero-based
-indices and paths to the leafs (i.e, the multi-indices) are built by concatenating
+indices and paths to the leafs (i.e., the multi-indices) are built by concatenating
 those indices starting from the root and ending in a leaf.
 
 \begin{definition}
  A set $\mathcal{I} \subset \mathcal{N}$ is called an \emph{index tree}
- if for any $(I,i,\dots) \in \mathcal{I}$ there are also $(I,0,\dots),(I,1,\dots),\dots,(I,i-1,\dots) \in \mathcal{I}$
+ if for any $(I,i,\dots) \in \mathcal{I}$ there are also $(I,0,\dots),(I,1,\dots),\dots,(I,i-1,\dots) \in \mathcal{I}$,
  but $I \notin \mathcal{I}$.
 \end{definition}
 The index tree for the example indexing of the Taylor--Hood basis given above is shown
@@ -562,19 +555,19 @@ in Figure~\ref{fig:taylor_hood_index_tree}.
             ]
             \node [smalltreenode] {$()$}
                 child [sibling distance=70mm] { node [smalltreenode] {$( 0 )$}
-                    child [sibling distance=43mm] { node [smalltreenode] {$( 0,0 )$}
+                    child [sibling distance=44mm] { node [smalltreenode] {$( 0,0 )$}
                         child [sibling distance=14mm] { node [smallbasisnode] {$( 0,0,0 )$} edge from parent node[left] {$0$}}
                         child [sibling distance=14mm] { node [] {$\dots$} }
                         child [sibling distance=14mm] { node [smallbasisnode] {$( 0,0,n_2-1 )$} edge from parent node[right] {$n_2-1$} }
                         edge from parent node[above left] {$0$}
                     }
-                    child [sibling distance=43mm] { node [smalltreenode] {$( 0,1 )$}
+                    child [sibling distance=44mm] { node [smalltreenode] {$( 0,1 )$}
                         child [sibling distance=14mm] { node [smallbasisnode] {$( 0,1,0 )$} edge from parent node[left] {$0$}}
                         child [sibling distance=14mm] { node [] {$\dots$} }
                         child [sibling distance=14mm] { node [smallbasisnode] {$( 0,1,n_2-1 )$} edge from parent node[right] {$n_2-1$} }
                         edge from parent node[left] {$1$}
                     }
-                    child [sibling distance=43mm] { node [smalltreenode] {$( 0,2 )$}
+                    child [sibling distance=44mm] { node [smalltreenode] {$( 0,2 )$}
                         child [sibling distance=14mm] { node [smallbasisnode] {$( 0,2,0 )$} edge from parent node[left] {$0$}}
                         child [sibling distance=14mm] { node [] {$\dots$} }
                         child [sibling distance=14mm] { node [smallbasisnode] {$( 0,2,n_2-1 )$} edge from parent node[right] {$n_2-1$} }
@@ -597,42 +590,42 @@ in Figure~\ref{fig:taylor_hood_index_tree}.
 
 \begin{definition}
 Let $(I,\dots) \in \mathcal{I}$, i.e., $I$ is a
-prefix of multi-indices in $\mathcal{I}$. Then the size relative
+prefix of multi-indices in $\mathcal{I}$. Then the size of $\mathcal{I}$ relative
 to $I$ is given by
 \begin{align}\label{eq:prefix_size}
   \operatorname{deg}^+_{\mathcal{I}}[I] \colonequals  \op{max}\{k \st \exists (I,k,\dots) \in \mathcal{I} \}+1.
 \end{align}
 \end{definition}
 In terms of the ordered tree associated with $\mathcal{I}$ this corresponds
-to the out-degree, i.e., the number of direct children of the node indexed by $I$.
+to the out-degree of $I$, i.e., the number of direct children of the node indexed by $I$.
 
-
-An indexing is then an injective map from the leaf nodes of a tree of basis functions to the leafs of an
+Using the idea of multi-index trees,
+an indexing of a function space basis is an injective map from the leaf nodes of a tree of basis functions to the leafs of an
 index tree.
 
 \begin{definition}
   Let $M$ a finite set and $\iota:M \to \mathcal{N}$ an injective map whose range
   $\iota(M)$ forms an index tree.
   Then $\iota$ is called an \emph{index-map} for $M$.
-  The index map is called \emph{uniform}, if additionally $\iota(M) \subset \mathbb{N}^k_0$ for some $k \in \mathbb{N}$
-  and \emph{flat}, if $\iota(M) \subset \mathbb{N}_0$.
+  The index map is called \emph{uniform} if additionally $\iota(M) \subset \mathbb{N}^k_0$ for some $k \in \mathbb{N}$,
+  and \emph{flat} if $\iota(M) \subset \mathbb{N}_0$.
 \end{definition}
 
 Continuing the Taylor--Hood example, if
-all basis functions $\lambda_I$ of the whole finite element tree are
+all basis functions $\Lambda_{TH} = \{\lambda_I \}$ of the whole finite element tree are
 indexed by multi-indices of the above given form,
 and if $X$ is a coefficient vector that has a compatible hierarchical structure,
-then a the finite element function $(v_h,p_h)$ with velocity
+then a finite element function $(v_h,p_h)$ with velocity
 $v_h$ and pressure $p_h$ defined by the coefficient vector $X$
 is given by
 \begin{align*}
   (v_h,p_h)
   &= \sum_{i=0}^2\sum_{j=0}^{n_2-1} X_{(0,i,j)}\lambda_{(0,i,j)}
-  + \sum_{k=0}^{n_1-1} X_{(1,k)}\lambda_{(1,k)}
+  + \sum_{k=0}^{n_1-1} X_{(1,k)}\lambda_{(1,k)},
 \end{align*}
 with basis functions
 \begin{equation*}
-  \lambda_{(0,i,j)} = \mathbf{e}_0 \otimes (\mathbf{e}_i \otimes \lambda^{P_2}_j) \qquad i=0,1,2,
+  \lambda_{(0,i,j)} = \mathbf{e}_0 \otimes (\mathbf{e}_i \otimes \lambda^{P_2}_j), \qquad i=0,1,2,
     \qquad \text{and} \qquad
     \lambda_{(1,k)} = \mathbf{e}_1 \otimes \lambda^{P_1}_k.
 \end{equation*}
@@ -648,7 +641,7 @@ $v_h$ and $p_h$ are given by
 \begin{align*}
   v_h &= \sum_{j=0}^{n_2-1} X_{(0,i,j)} (\mathbf{e}_i \otimes \lambda^{P_2}_j),
     &
-    p_h &= \sum_{k=0}^{n_1} X_{(1,k)}\lambda^{P_1}_k.
+    p_h &= \sum_{k=0}^{n_1-1} X_{(1,k)}\lambda^{P_1}_k.
 \end{align*}
 
 \begin{figure}
@@ -695,7 +688,7 @@ However, one may also be interested in constructing multi-indices
 that do not mimic the structure of the basis function tree:
 For example, to increase data locality in assembled matrices for the Taylor--Hood basis it may be
 preferable to group all velocity degrees of freedom corresponding to a single
-$P_2$ basis function together, i.\,e., to use the index $(0,j,i)$
+$P_2$ basis function together, i.e., to use the index $(0,j,i)$
 for the $j$-th $P_2$ basis function for the $i$-th component.
 The corresponding alternative index tree is shown in
 Figure~\ref{fig:taylor_hood_index_blocked_tree}.
