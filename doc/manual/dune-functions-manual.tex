@@ -703,15 +703,60 @@ Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a
 
 \begin{figure}
  \begin{center}
-   \includegraphics[width=0.4\textwidth]{taylor-hood-matrix-lexicographic}
-   \qquad
-   \includegraphics[width=0.4\textwidth]{taylor-hood-matrix-interleaved}
+  \begin{tikzpicture}[scale=.13]
+
+  % The occupation pattern
+  \foreach \x in {0,...,32}
+    \fill [lightgray] (0+\x,40-\x) rectangle (1+\x,39-\x);
+
+  % The fine grid
+  \foreach \x in {0,...,40}
+    \draw (\x,0)--(\x,40);
+
+  \foreach \y in {0,...,40}
+    \draw (0,\y)--(40,\y);
+
+  % The thick-line grid
+  \foreach \x in {0,11,22,33,40}
+    \draw [line width=0.4mm] (\x,0)--(\x,40);
+
+  \foreach \y in {0,7,18,29,40}
+    \draw [line width=0.4mm] (0,\y)--(40,\y);
+
+  \end{tikzpicture}
+  \qquad
+  \begin{tikzpicture}[scale=.13]
+
+  % The occupation pattern
+  \foreach \x in {0,...,9}
+    \fill [lightgray] (0+3*\x,40-3*\x) rectangle (3+3*\x,37-3*\x);
+
+  % The fine grid
+  \foreach \x in {0,...,10}
+    \draw (3*\x,0)--(3*\x,40);
+
+  \foreach \y in {0,...,10}
+    \draw (0,40-3*\y)--(40,40-3*\y);
+
+  \foreach \x in {0,...,9}
+    \draw (40 - 1*\x,0)--(40 - 1*\x,40);
+
+  \foreach \y in {0,...,9}
+    \draw (0,\y)--(40,\y);
+
+  % The thick-line grid
+  \foreach \x in {0,30,40}
+    \draw [line width=0.4mm] (\x,0)--(\x,40);
+
+  \foreach \y in {0,10,40}
+    \draw [line width=0.4mm] (0,\y)--(40,\y);
+
+  \end{tikzpicture}
  \end{center}
  \caption{Two matrix occupation patterns for different indexings of the Taylor--Hood bases.
    Left: Corresponding to the index tree of Figure~\ref{fig:taylor_hood_index_tree}.
    Right: Corresponding to the index tree of Figure~\ref{fig:taylor_hood_index_blocked_tree}.
-   \todosander{Das linke Bild gehört zu einem 2d-Gebiet, wir behandeln im Text aber immer
-    den dreidimensionalen Fall!}
+   \todosander{Die Matrizen müssen dichter besetzt sein.}
    }
  \label{fig:matrix_occupation_patterns}
 \end{figure}
