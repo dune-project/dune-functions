@@ -1343,17 +1343,18 @@ and it provides the three types of shape-function indices.
  \label{fig:febasis_interface_schematic}
 \end{figure}
 
-The user interface of localized function space bases is divided into two parts.  A \cpp{LocalView} on an
-element allows you to obtain the (tree of) local basis functions of that element, which in turn gives you access to all
+The user interface for localized function space bases is the \cpp{LocalView}.
+It allows you to obtain the (tree of) local basis functions of that element, which in turn gives you access to all
 shape functions, associations to element subentities, and local interpolation rules provided by
-\dunemodule{dune-localfunctions}.  A local view is attached to a particular grid element by an
+\dunemodule{dune-localfunctions}.
+Furthermore it maps these shape functions to global degrees of freedom
+by providing a map from element-local indices of these shape functions
+to global (multi-)indices.
+A local view is attached to a particular grid element by an
 action called \emph{binding}.
-The mapping of these shape functions to global degrees of freedom is
-delegated to a separate object called a \cpp{LocalIndexSet}, which you can bind to given
-\cpp{LocalView} objects.  Once bound, a \cpp{LocalIndexSet} will provide global (multi-)indices
-for each shape function on this element, and flat indices with respect to the local tree.
 The structure of the interface is visualized in
 Figure~\ref{fig:febasis_interface_schematic}.
+\todograeser{Remove LocalIndexSet from Figure~\ref{fig:febasis_interface_schematic}. Maybe redo this with tikz}
 
 All header include paths
 start with \cpp{dune/functions/}, and all code is contained in the namespace \cpp{Dune::Functions}.
@@ -1404,9 +1405,9 @@ We start by describing the user interface of global bases.  Since we are discuss
 all class names used below are generic. Trees of global bases are implemented by classes that implement
 the \cpp{GlobalBasis} interface. In the following, we will call the generic such class \cpp{GlobalBasis}.
 It can have an arbitrary number of template parameters.
-All types, templates, and functions listed in the following are public members of
-the generic class \cpp{GlobalBasis}. Implementation details are marked
-by placeholders of the form \cpp{@@<implementation defined>@@}.
+All types, templates, and functions listed in the following
+interface declaration are public members of
+the generic class \cpp{GlobalBasis}.
 
 In general each basis implementation may require its own specific data for construction.
 Hence we do not enforce an argument list for this.
@@ -1427,7 +1428,7 @@ providing a new grid view by the method
 void update(const GridView & gv);
 \end{lstlisting}
 
-Access to the basis functions is available via the
+Access to the basis functions and indices is available via the
 local view interface.
 \begin{lstlisting}[style=Interface]
 using LocalView = @@<implementation defined>@@;
@@ -1437,7 +1438,11 @@ The \cpp{localView()} method returns a new object that implements the \cpp{Local
 After binding this object to a
 grid element from the respective grid view, it provides access
 to the restriction of all basis functions whose support has a
-nontrivial intersection with this element.  With a global basis given in an object called \cpp{basis},
+nontrivial intersection with this element.
+Additionally it allows to map the local indices
+of all basis functions appearing in this local view to the
+corresponding global multi-indices.
+With a global basis given in an object called \cpp{basis},
 the corresponding code is
 \begin{lstlisting}[style=Example]
 auto localView = basis.localView();
@@ -1446,18 +1451,6 @@ localView.bind(element);
 where \cpp{element} is an element from the grid view.
 For details on the
 \cpp{LocalView} interface see below.
-
-To access the various types of indices of a shape function,
-the \cpp{localIndexSet()} method
-returns a new object of type \cpp{LocalIndexSet} that, after
-binding it to a local view, allows to map the local indices
-of all basis functions appearing in this local view to those
-global multi-indices.
-\begin{lstlisting}[style=Interface]
-using LocalIndexSet = @@<implementation defined>@@;
-LocalIndexSet localIndexSet() const;
-\end{lstlisting}
-The interface of the \cpp{LocalIndexSet} is discussed in Section~\ref{sec:localindexset_interface}.
 
 An additional group of methods provides information on the sizes of the bases
 contained in the tree.
@@ -1522,6 +1515,9 @@ static_assert(Dune::models<GlobalBasisConcept, Basis>(),
 
 The \cpp{LocalView} concept represents the localization of a basis tree to a single element.
 \cpp{LocalView} objects are returned by the method \cpp{GlobalBasis::localView()}.
+All types, templates, and functions listed in the following
+interface declaration are public members of
+the generic class \cpp{LocalView}.
 There is no way to construct such objects directly.
 The global basis of type \cpp{GlobalBasis}
 is known by the \cpp{LocalView} object, and exported by the \cpp{globalBasis()} method.
@@ -1541,7 +1537,10 @@ using Element = typename GridView::template Codim<0>::Entity;
 void bind(const Element& e);
 \end{lstlisting}
 This call may incorporate expensive computations needed to
-setup the those local basis functions. The local view can be
+setup the those local basis functions
+and to pre-compute their global indices
+which are stores in an internal cache.
+The local view can be
 bound to another element by calling this method again.
 To set the local view to unbound state again, you
 can call the
@@ -1572,7 +1571,7 @@ size_type size() const;
 size_type maxSize() const;
 \end{lstlisting}
 
-Finally access to the actual local basis functions are provided
+Access to the actual local basis functions is provided
 by the \cpp{tree()} method returning a reference to a
 \cpp{Tree} object. This encapsulates the basis functions
 in a hierarchical tree structure to also represent structured
@@ -1587,6 +1586,35 @@ given below.
 using Tree = @@<implementation defined>@@;
 const Tree& tree() const;
 \end{lstlisting}
+
+For any of the local basis functions in the local ansatz tree
+accessible by \cpp{tree()} the global
+multi-index of type \cpp{MultiIndex}
+is provided by the \cpp{index(size\_type)} method.
+The argument for this method is the local
+index of the basis function within the tree as
+returned by the \cpp{node.localIndex(k)}
+method, where \cpp{node} is a leaf node of the
+tree provided by \cpp{tree()} and \cpp{k}
+is the number of the shape function within the corresponding
+local finite element (see below).
+Hence the method \cpp{index(size\_type)}
+implements the map $\iota^{\text{local}\to\text{global}}_e$
+with bound-to element $e$
+introduced in Section~\ref{sec:localization}
+which maps local indices to global multi-indices.
+Accessing the same global index multiple times
+is cheap, because global indices are pre-computed
+and cached during \cpp{bind(Element)}.
+The result of calling \cpp{index(size\_type)} in
+unbound state is undefined.
+
+\begin{lstlisting}[style=Interface]
+using MultiIndex = @@<implementation defined>@@;
+MultiIndex index(size_type i) const;
+\end{lstlisting}
+
+
 
 \subsection{User interface of a local ansatz \texorpdfstring{\cpp{Tree}}{Tree}}
 The local view provides access to all local basis functions
@@ -1707,63 +1735,8 @@ const FiniteElement& finiteElement() const = 0;
 
 
 
-\subsection{User interface of a \texorpdfstring{\cpp{LocalIndexSet}}{LocalIndexSet}}
-\label{sec:localindexset_interface}
-
-\todograeser{IMHO we should merge \cpp{LocalIndexSet} into \cpp{LocalView}!
-I prepared a merge request implementing this and discussing the reasons:
-\url{https://gitlab.dune-project.org/staging/dune-functions/merge_requests/118}}
-
-The \cpp{LocalIndexSet} as returned by \cpp{GlobalBasis::localIndexSet()}
-provides access to global multi-indices for the
-local basis functions reachable from a local view.
-To this end the \cpp{LocalIndexSet} must
-first be bound to the \cpp{LocalView} using
-the \cpp{bind(LocalView)} method. Similar to the
-local view there is an \cpp{unbind()} method
-and the bound-to local view can be accessed
-using the \cpp{localView()} method.
-Notice that the \cpp{bind(LocalView)} operation
-can be costly, because it pre-computes
-all global indices and stores them in an internal cache.
-
-\begin{lstlisting}[style=Interface]
-class LocalIndexSet
-{
-public:
-using LocalView = @@<implementation defined>@@;
-const LocalView& localView() const;
-void bind(const LocalView& localView);
-void unbind();
-\end{lstlisting}
-
-If the local index set is in bound state
-the \cpp{size()} method can be used to query
-the number of local basis functions in the
-bound local view. This is a simple shortcut for
-\cpp{localView().size()} and \cpp{localView().tree().size()}.
-For any of these local basis functions the global
-multi-index is provided by the \cpp{index(size\_type)}
-method. The argument for this method is the local
-index of the basis function within the tree as
-returned by the \cpp{BasisNode::localIndex(size\_type)}
-method.
-Hence the method \cpp{index(size\_type)}
-implements the map $\iota^{\text{local}\to\text{global}}_e$
-with bound-to element $e$
-introduced in Section~\ref{sec:localization}
-which maps local indices to global multi-indices.
-Accessing the same global index multiple times
-is cheap, because global indices are pre-computed
-and cached during \cpp{bind(LocalView)}.
-
-\begin{lstlisting}[style=Interface]
-using MultiIndex = @@<implementation defined>@@;
-using size_type = @@<implementation defined>@@;
-size_type size() const;
-MultiIndex index(size_type i) const;
-}; // end LocalIndexSet
-\end{lstlisting}
+\subsection{Using the localized interface}
+\label{sec:localized_interface}
 
 We now give a short example on how to use the interface
 to compute global indices for local basis functions
@@ -1773,13 +1746,11 @@ local basis function in the finite element attached to
 a leaf node this can be done by the following snippet.
 
 \begin{lstlisting}[style=Example]
-// create a LocalView and a LocalIndexSet
+// create a LocalView
 auto localView = basis.localView();
-auto localIndexSet = basis.localIndexSet();
 
-// bind the LocalView to the element and the LocalIndexSet to the LocalView
+// bind the LocalView to the element
 localView.bind(element);
-localIndexSet.bind(localView);
 
 // obtain the basis tree
 const auto& node = localView.tree();
@@ -1788,7 +1759,7 @@ const auto& node = localView.tree();
 auto localIndex = node.localIndex(i);
 
 // compute global index of local basis function
-auto globalIndex = localIndex.index(localIndex);
+auto globalIndex = localView.index(localIndex);
 \end{lstlisting}
 
 Here we assumed that we do not have a nested local ansatz tree
