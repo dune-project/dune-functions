@@ -74,7 +74,7 @@ struct LeafBasisNode : Refines<BasisNode>
     requireType<typename N::FiniteElement>(),
     requireConvertible<typename N::Element>(node.element()),
     requireConvertible<const typename N::FiniteElement&>(node.finiteElement()),
-    requireConvertible<typename N::Element>(*(std::declval<GridView>().template begin<0>())),
+    requireSameType<typename N::Element, typename GridView::template Codim<0>::Entity>(),
     requireBaseOf<Dune::Functions::LeafBasisNode<typename N::size_type, typename N::TreePath>, N>()
   );
 };
