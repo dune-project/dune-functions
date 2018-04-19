@@ -16,6 +16,7 @@ install(FILES
         interpolate.hh
         lagrangebasis.hh
         lagrangedgbasis.hh
+        persistentgridview.hh
         powerbasis.hh
         pqknodalbasis.hh
         rannacherturekbasis.hh
