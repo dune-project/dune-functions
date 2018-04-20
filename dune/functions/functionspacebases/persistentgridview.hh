@@ -50,7 +50,7 @@ namespace Functions {
 
     enum {dimension = GV::dimension};
 
-    PersistentIndexSet(const OriginalGridView& gv)
+    PersistentIndexSet(const OriginalGridView& gv) :
       originalGridView_(gv),
       grid_(&gv.grid())
     {
