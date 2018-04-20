@@ -859,7 +859,7 @@ $\Lambda_i$ are identical.
     \end{tabular}
 
   \item
-    \textbf{LeafBlockedInterleaved}: This strategy appends the child index
+    \textbf{BlockedInterleaved}: This strategy appends the child index
     to the multi-index within the child basis.
     That is, the index map $\iota:\Lambda \to \mathcal{N}$
     is given by
@@ -1024,7 +1024,7 @@ $\Lambda_{\text{TH}}$.
 In the Table~\ref{tab:th_indexing_variants} we list all combinations, where the label $X(Y)$
 means, that we use strategy $X$ for the outer product and strategy $Y$
 for the inner product. For $X$ and $Y$ we use the abbreviations
-BlockedLexicographic (BL), LeafBlockedInterleaved (BI), FlatLexicographic (FL), FlatInterleaved (FI).
+BlockedLexicographic (BL), BlockedInterleaved (BI), FlatLexicographic (FL), FlatInterleaved (FI).
 
 The basis functions for the $k$-th component of the pressure
 are denoted by
@@ -2181,7 +2181,7 @@ flag indicating an \cpp{IndexMergingStrategy}. The four implemented strategies a
   \item
     \cpp{BlockedLexicographic}
   \item
-    \cpp{LeafBlockedInterleaved}
+    \cpp{BlockedInterleaved}
   \item
     \cpp{FlatLexicographic}
   \item
@@ -2190,7 +2190,6 @@ flag indicating an \cpp{IndexMergingStrategy}. The four implemented strategies a
 and have been described in Section~\ref{sec:index_strategies}.
 For each strategy \cpp{FooBar} there is a function \cpp{BasisFactory::fooBar()} creating
 the flag in the header \file{functionspacebases/basistags.hh}.
-\todograeser{Rename \cpp{LeafBlockedInterleaved} to \cpp{BlockedInterleaved}}
 
 For example, a Taylor--Hood basis with the indexing listed in the
 second column (labeled BL(BI)) of Table~\ref{tab:th_indexing_variants} can be created using
@@ -2200,7 +2199,7 @@ auto taylorHoodBasis = makeBasis(
   composite(
     power<dim>(
       lagrange<p+1>(),
-      leafBlockedInterleaved()),
+      blockedInterleaved()),
     lagrange<p>(),
     blockedLexicographic()
   ));
