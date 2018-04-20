@@ -1802,9 +1802,6 @@ const auto& node = localView.tree().child(treePath);
 const auto& node = TypeTree::child(localView.tree(), treePath);
 \end{lstlisting}
 
-\subsection{Combining global basis and coefficient vector to a finite element function}
-\todograeser{Write this section}
-
 \subsection{Multi-indices}
 
 \todograeser{General multi-indices, dynamic multi-indices, hybrid multi-indices, implementations}
@@ -2236,6 +2233,96 @@ auto taylorHoodBasis = makeBasis(
 
 
 
+\section{Treating subtrees as separate bases}
+\todograeser{Update, \cpp{DiscreteGlobalBasisFunction}, \cpp{interpolate()}}
+
+Additionally to the concept of a global basis as defined here, there
+is also the concept of a so called \cpp{SubspaceBasis} reflecting
+the basis of the subtree only spanned by those basis functions
+associated to a subtree of the local ansatz tree of the so-called
+root basis.
+The interface of \cpp{SubspaceBasis} mostly coincides with
+the interface of a global basis. Additionally to the \cpp{GlobalBasis}
+interface described above the \cpp{SubspaceBasis} provides
+information about the embedding into the global basis.
+Notice that a \cpp{SubspaceBasis} differs from a classical
+global basis, because the global multi-indices are the
+same as the ones of the root basis and thus in general
+not consecutive. As a consequence those multi-indices
+allow to access containers storing coefficients for the
+full root basis.
+
+\begin{lstlisting}[style=Interface]
+using PrefixPath = @@<implementation defined>@@;
+const @@<implementation defined>@@& rootBasis() const
+const PrefixPath& prefixPath() const
+\end{lstlisting}
+
+The method \cpp{rootBasis()} provides access to the root basis.
+Additionally the \cpp{prefixPath()} method returns the
+path of the subtree associated to the \cpp{SubspaceBasis}
+with the full tree.
+
+For convenience a global basis behaves like a trivial \cpp{SubspaceBasis},
+i.e., it contains the method \cpp{rootBasis()} returning the basis itself
+and \cpp{prefixPath()} returns an empty tree-path of the
+implementation defined type \cpp{PrefixPath}.
+
+A \cpp{SubspaceBasis} can be created using a global
+factory function providing the root basis and the path
+to the desired subtree. The path can either be passed
+as a single tree path object (see Section~\ref{}) or
+as a sequence of individual indices.
+
+\begin{lstlisting}[style=Interface]
+template<class RootBasis, class TreePath>
+auto subspaceBasis(const RootBasis& rootBasis, const TreePath& path);
+
+template<class RootBasis, class... PathIndices>
+auto subspaceBasis(const RootBasis& rootBasis, const PathIndices&... indices);
+\end{lstlisting}
+
+The interface is illustrated by the following
+example which extracts the velocity field
+from a Taylor--Hood basis.
+
+\begin{lstlisting}[style=Example]
+// Create Taylor-Hood basis as root basis
+auto taylorHoodBasis = makeBasis(
+  gridView,
+  composite(
+    power<dim>(
+      lagrange<p+1>(),
+      flatInterleaved()),
+    lagrange<p>(),
+    flatLexicographic()
+  ));
+
+// Setup and fill a coefficient vector x for the full taylorHoodBasis
+auto x = @@<...>@@
+
+// Create SubspaceBasis for the velocity field
+auto velocityBasis = subspaceBasis(taylorHoodBasis, _0);
+
+// Fix a range type for the velocity field
+using VelocityRange = FieldVector<double,dim>;
+
+// Create a function for the velocity field only
+// still using the vector x for the full taylorHoodBasis.
+auto velocityFunction = makeDiscreteGlobalBasisFunction<VelocityRange>(velocityBasis, x);
+\end{lstlisting}
+
+Notice that the function created in the last line can directly
+be passed to the \cpp{VTKWriter} implementations of the
+\dunemodule{dune-grid} module to write the velocity field
+as VTK vector field. The interface for the construction of
+a finite element function from a basis (or \cpp{SubspaceBasis})
+and a coefficient vector is discussed in the next section.
+
+\section{Combining global basis and coefficient vector to a finite element function}
+\todograeser{Write this section}
+
+
 
 \section{Interpolation}
 
@@ -2403,41 +2490,6 @@ void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices.
 
 template <class B, class... TreeIndices, class C, class F>
 void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f);
-\end{lstlisting}
-
-
-
-\section{Treating subtrees as separate bases}
-\todograeser{Update, \cpp{DiscreteGlobalBasisFunction}, \cpp{interpolate()}}
-
-Additionally to the concept of a global basis as defined here, there
-is also the concept of a so called \cpp{SubspaceBasis} reflecting
-the basis of the subtree only spanned by those basis functions
-associated to a subtree of the local ansatz tree of the so-called
-root basis.
-For convenience a global basis behaves like a trivial \cpp{SubspaceBasis},
-i.e., the method \cpp{rootBasis()} returns the basis itself
-and \cpp{prefixPath()} returns an empty tree-path of the
-implementation defined type \cpp{PrefixPath}.
-\todograeser{While describing the interface I had the impression that having
-those methods here is inconsistent and that they should maybe be free functions.}
-\todosander{Könnte man tatsächlich in Betracht ziehen.}
-
-\begin{lstlisting}[style=Interface]
-using PrefixPath = @@<implementation defined>@@;
-const @@<implementation defined>@@& rootBasis() const
-const PrefixPath& prefixPath() const
-\end{lstlisting}
-
-In order to be consistent with a \cpp{SubspaceBasis::LocalView}
-the additional method \cpp{rootLocalView()} returns the local view
-itself.
-\todograeser{While describing the interface I had the impression that having
-this method here is inconsistent and that it should maybe be a free function.}
-
-\begin{lstlisting}[style=Interface]
-const DefaultLocalView& rootLocalView() const
-}; // end LocalView
 \end{lstlisting}
 
 
