@@ -26,8 +26,8 @@ namespace Dune
 {
 namespace Functions {
 
-// A maze of dependencies between the different parts of this.  We need lots of forward declarations
 template<typename GV, typename R>
+// A maze of dependencies between the different parts of this.  We need a few forward declarations
 class BSplineLocalFiniteElement;
 
 template<typename GV, class MI>
@@ -52,8 +52,8 @@ class BSplineLocalBasis
 public:
 
   //! \brief export type traits for function signature
-  typedef LocalBasisTraits<D,dim,Dune::FieldVector<D,dim>,R,1,Dune::FieldVector<R,1>,
-  Dune::FieldMatrix<R,1,dim> > Traits;
+  typedef LocalBasisTraits<D,dim,FieldVector<D,dim>,R,1,FieldVector<R,1>,
+  FieldMatrix<R,1,dim> > Traits;
 
   /** \brief Constructor with a given B-spline patch
    *
@@ -357,7 +357,6 @@ public:
  *
  * \tparam D Number type used for domain coordinates
  * \tparam R Number type used for spline function values
- * \tparam dim Dimension of the patch
  */
 template<class GV, class R>
 class BSplineLocalFiniteElement
@@ -449,7 +448,7 @@ public:
    */
   GeometryType type () const
   {
-    return GeometryType(GeometryType::cube,dim);
+    return GeometryTypes::cube(dim);
   }
 
 //private:
