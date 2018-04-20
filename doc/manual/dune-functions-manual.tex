@@ -2327,11 +2327,11 @@ and a coefficient vector is discussed in the next section.
 \section{Interpolation}
 
 In various parts of a finite element or finite volume simulation code, given functions need to be interpolated
-into spaces of discrete functions.  For example, initial iterates may be given in closed form, but need to be
+into spaces spanned by a global basis.  For example, initial iterates may be given in closed form, but need to be
 transfered to a finite element representation to be usable.  Similarly, Dirichlet values given in closed form
 may need to be interpolated on the set of Dirichlet degrees of freedom.  Depending on the finite element space,
 interpolation may take different forms.  Nodal interpolation is the natural choice for Lagrange elements, but
-for other spaces $L^2$-projections of Hermite-type interpolation may be more appropriate.
+for other spaces $L^2$-projections or Hermite-type interpolation may be more appropriate.
 
 The \dunemodule{dune-functions} module provides a set of methods for interpolation in the file
 \file{dune/functions/functionspacebases/interpolation.hh}.  These methods are canonical in the sense that
@@ -2339,32 +2339,65 @@ they use the \cpp{LocalInterpolation} functionality on each element for the inte
 for a lot, but not all finite element spaces.  For example, no reasonable local interpolation can be defined
 for B-spline bases, and therefore the standard interpolation functionality cannot be used with the
 \cpp{BSplineBasis} class.
+This approach also fails for non-affine finite elements, where \cpp{LocalInterpolation} is
+missing an essential transformation.
 
-\todosander{Was machen wir stattdessen?  Einfach die \cpp{interpolate}-Methoden ausspezialisieren lassen?}
+The interpolation functionality is implemented in two global functions.
+The first is for the simple-most case, where you have a function,
+a basis, and a coefficient vector, and you want to interpolate
+the given function with respect to the basis.
 
-\bigskip
-
-Three global methods form the core of the interpolation functionality.  The first is for the simple-most case,
-where you have a function, a basis, and a coefficient vector, and you want to interpolate the given function
-with respect to the basis.
-\begin{lstlisting}
-template <class B, class C, class F>
-void interpolate(const B& basis, C&& coeff, const F& f);
+\begin{lstlisting}[style=Interface]
+template <class Basis, class C, class F>
+void interpolate(const Basis& basis, C&& coeff, const F& f);
 \end{lstlisting}
-Notice that this will only work if the range type of \cpp{f} and the block type of \cpp{coeff} are compatible and supported by
-\cpp{FlatVectorBackend}.
-\todosander{Hier müsste man noch erklären was \cpp{FlatVectorBackend} überhaupt ist...}
 
-This function will only work, if the local ansatz tree of the basis is trivial, i.e., a single leaf node.
-\todosander{Habe ich vor langer Zeit aus der Doku kopiert.  Stimmt das noch?}
+Notice that this will only work if the range type of \cpp{f},
+and the global basis \cpp{basis} are compatible.
+\dunemodule{dune-functions} implements a compatibility layer
+that allows to use different vector (or matrix) types
+from the dune core modules and scalar types like, e.g. \cpp{double}
+for the range of \cpp{f} as long as the number of scalar entries
+of this range type is the same as the dimension of the range space of
+the function space spanned by the basis.
+This also implies the assumption that the coefficients for
+individual basis functions are scalar.
+
+The \cpp{interpolate()} function
+requires that \cpp{coeff} supports the \cpp{VectorBackend}
+interface. That is, it implements the following methods.
+\begin{lstlisting}[style=Interface]
+  auto operator[](Basis::MultiIndex);
+  void resize(const Basis&);
+\end{lstlisting}
+Here \cpp{operator[]} allows to access entries using the
+global multi-indices provided by \cpp{basis} and \cpp{resize(basis)}
+resizes the vector, such that entries exist for any multi-index
+from the index tree of \cpp{basis}.
+
+For the vector types implemented in the dune core modules and
+the standard types \cpp{std::array} and \cpp{std::vector} such
+a backend can be obtained using
+\begin{lstlisting}[style=Interface]
+  template<class SomeDuneVector>
+  auto istlVectorBackend(SomeDuneVector& x);
+\end{lstlisting}
+To simplify using \cpp{interpolate()} for the supported vector types,
+such a wrapper is created automatically if the passed coefficient
+container \cpp{coeff} does not already satisfy the \cpp{VectorBackend}
+interface. Hence you can either directly pass those supported
+vector types or any other type implementing the \cpp{VectorBackend}
+interface. The latter allows to use \dunemodule{dune-functions}
+with other vector implementations.
 
 For example, suppose you have the example function
 \begin{equation*}
  f_1 : \R^d \to \R
  \qquad
- f_1 = exp(-\norm{x}^2)
+ f_1 =  \exp(-\norm{x}^2)
 \end{equation*}
 implemented as
+\todograeser{Update example code}
 %
 \lstinputlisting[linerange=definition_f1_begin-definition_f1_end,
                  numbers=left]{../../examples/interpolation.cc}
@@ -2392,33 +2425,7 @@ a matching coefficient vector
 \lstinputlisting[linerange=interpolation2_begin-interpolation2_end,
                  numbers=left]{../../examples/interpolation.cc}
 %
-As a special case, you can even interpolate a vector-valued function using a scalar basis:
-%
-\lstinputlisting[linerange=interpolation3_begin-interpolation3_end,
-                 numbers=left]{../../examples/interpolation.cc}
-%
 \todo[inline]{Kann ich auch mit einer kompletten Taylor--Hood-Basis interpolieren?}
-
-If you work with mixed or hybrid finite elements, frequently you do not want to interpolate into
-the entire basis, but rather only use a particular subtree.  You can do that with the second of the
-three global interpolation methods
-\begin{lstlisting}
- * Interpolation is done wrt the leaf node of the ansatz tree
- * corresponding to the given tree path.
- *
- * Notice that this will only work if the range type of f and
- * the block type of corresponding coeff entries are compatible
- * and supported by FlatVectorBackend.
-template <class B, class... TreeIndices, class C, class F>
-void interpolate(const B& basis,
-                 const TypeTree::HybridTreePath<TreeIndices...>& treePath,
-                 C&& coeff,
-                 const F& f);
-\end{lstlisting}
-In addition to the three arguments of the previous \cpp{interpolate} method, it has an argument \cpp{TreePath},
-which allows to select a subtree of tree of finite element bases.
-
-\bigskip
 
 In some situations it is also desirable to interpolate only on a part of the domain.  Algebraically, the interpolation
 is performed as before, but only a subset of all coefficients are written.  The most frequent use-case is the interpolation
@@ -2426,26 +2433,26 @@ of Dirichlet data given in closed form onto the algebraic degrees of freedom on 
 degrees of freedom must not be touched, as they contain, e.g., a suitable initial iterate obtained by some other
 means.
 
-To support this kind of interpolation, the file \file{interpolate.hh} offers two dedicated methods.  These are very
-similar to the two methods previously discussed; in fact, they simply extend those methods' signatures by an
-additional bitvector argument:
-\begin{lstlisting}
-template <class B, class... TreeIndices, class C, class F, class BV>
-void interpolate(const B& basis,
-                 const TypeTree::HybridTreePath<TreeIndices...>& treePath,
-                 C&& coeff,
-                 const F& f,
-                 const BV& bitVector);
-
-template <class B, class C, class F, class BV>
-void interpolate(const B& basis, C&& coeff, const F& f, const BV& bitVector);
+To support this kind of interpolation another variant of
+\cpp{interpolate()} allows to explicitly mark a subset of
+coefficient vector entries to be written.
+\begin{lstlisting}[style=Interface]
+template <class Basis, class C, class F, class BV>
+void interpolate(const Basis& basis, C&& coeff, const F& f, const BV& bitVector)
 \end{lstlisting}
-Conceptually, the bitvector argument must be a container of booleans.  It must support random access using \cpp{operator[]},
-and can have a nesting structure just like \dunemodule{dune-istl} vectors.  It fact, the nesting structure is expected
-to match the one of the \cpp{coeff} container.  For example, for scalar bases \cpp{std::vector<bool>} and
-\cpp{std::vector<char>} work nicely.  If the blocking depth is~2, \cpp{std::vector<std::bitset<N> >} or
-\cpp{BitSetVector<N>} (from the \dunemodule{dune-common} module) can be used.
+Conceptually, the additional \cpp{bitVector}
+argument must be a container of booleans having
+the same structure as \cpp{coeff} and satisfying
+the same assumptions.  Its entries are treated as boolean
+values indicating if the corresponding entry of \cpp{coeff}
+should be written.
+For example, for flat global indices \cpp{std::vector<bool>} and
+\cpp{std::vector<char>} work nicely.
+The class \cpp{BitSetVector<N>} (from the \dunemodule{dune-common} module) can be used
+as a space-optimized alternative to \cpp{std::vector<std::bitset<N>>}.
 
+
+\todograeser{Update example code}
 For example, to interpolate the scalar example function $f_1$ from above only on the boundary degrees of the scalar basis
 \cpp{basis1}, write
 %
@@ -2459,38 +2466,6 @@ To interpolate only into the $x$ and $y$ velocity components of a Taylor--Hood b
 %
 
 
-
-\todosander{Weitere Methoden in der Datei \file{interpolate.hh}. Ich weiß nicht recht ob man die auch beschreiben will.}
-\begin{lstlisting}
-/**
- * \brief Interpolate given function in discrete function space
- *
- * Interpolation is done wrt the leaf node of the ansatz tree
- * corresponding to the given tree path.
- *
- * Notice that this will only work if the range type of f and
- * the block type of coeff are compatible and supported by
- * FlatVectorBackend.
- *
- * \param basis Global function space basis of discrete function space
- * \param treePath Tree path specifying the part of the ansatz tree to use
- * \param coeff Coefficient vector to represent the interpolation
- * \param f Function to interpolate
- * \param nodeToRangeEntry Polymorphic functor mapping local ansatz nodes to range-indices of given function
- * \param bitVector A vector with flags marking all DOFs that should be interpolated
- */
-template <class B, class... TreeIndices, class NTRE, class C, class F, class BV>
-void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f, const NTRE& nodeToRangeEntry, const BV& bv)
-
-template <class B, class... TreeIndices, class C, class F, class BV>
-void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f, const BV& bitVector);
-
-template <class B, class... TreeIndices, class NTRE, class C, class F>
-void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f, const NTRE& nodeToRangeEntry);
-
-template <class B, class... TreeIndices, class C, class F>
-void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f);
-\end{lstlisting}
 
 
 
