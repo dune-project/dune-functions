@@ -26,8 +26,8 @@ namespace Dune
 {
 namespace Functions {
 
-template<typename GV, typename R>
 // A maze of dependencies between the different parts of this.  We need a few forward declarations
+template<typename GV, typename R, typename MI>
 class BSplineLocalFiniteElement;
 
 template<typename GV, class MI>
@@ -42,10 +42,10 @@ class BSplinePreBasis;
  * \tparam GV Grid view that the basis is defined on
  * \tparam R Number type used for spline function values
  */
-template<class GV, class R>
+template<class GV, class R, class MI>
 class BSplineLocalBasis
 {
-  friend class BSplineLocalFiniteElement<GV,R>;
+  friend class BSplineLocalFiniteElement<GV,R,MI>;
 
   typedef typename GV::ctype D;
   enum {dim = GV::dimension};
@@ -59,8 +59,8 @@ public:
    *
    * The patch object does all the work.
    */
-  BSplineLocalBasis(const BSplinePreBasis<GV,FlatMultiIndex<std::size_t>>& preBasis,
-                    const BSplineLocalFiniteElement<GV,R>& lFE)
+  BSplineLocalBasis(const BSplinePreBasis<GV,MI>& preBasis,
+                    const BSplineLocalFiniteElement<GV,R,MI>& lFE)
   : preBasis_(preBasis),
     lFE_(lFE)
   {}
@@ -151,9 +151,9 @@ public:
   }
 
 private:
-  const BSplinePreBasis<GV,FlatMultiIndex<std::size_t>>& preBasis_;
+  const BSplinePreBasis<GV,MI>& preBasis_;
 
-  const BSplineLocalFiniteElement<GV,R>& lFE_;
+  const BSplineLocalFiniteElement<GV,R,MI>& lFE_;
 
   // Coordinates in a single knot span differ from coordinates on the B-spline patch
   // by an affine transformation.  This transformation is stored in offset_ and scaling_.
@@ -357,24 +357,25 @@ public:
  *
  * \tparam D Number type used for domain coordinates
  * \tparam R Number type used for spline function values
+ * \tparam MI Global multi-index type.  Only here for technical reasons
  */
-template<class GV, class R>
+template<class GV, class R, class MI>
 class BSplineLocalFiniteElement
 {
   typedef typename GV::ctype D;
   enum {dim = GV::dimension};
-  friend class BSplineLocalBasis<GV,R>;
+  friend class BSplineLocalBasis<GV,R,MI>;
 public:
 
   /** \brief Export various types related to this LocalFiniteElement
    */
-  typedef LocalFiniteElementTraits<BSplineLocalBasis<GV,R>,
+  typedef LocalFiniteElementTraits<BSplineLocalBasis<GV,R,MI>,
   BSplineLocalCoefficients<dim>,
-  BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R> > > Traits;
+  BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R,MI> > > Traits;
 
   /** \brief Constructor with a given B-spline basis
    */
-  BSplineLocalFiniteElement(const BSplinePreBasis<GV,FlatMultiIndex<std::size_t>>& preBasis)
+  BSplineLocalFiniteElement(const BSplinePreBasis<GV,MI>& preBasis)
   : preBasis_(preBasis),
     localBasis_(preBasis,*this)
   {}
@@ -418,7 +419,7 @@ public:
   }
 
   /** \brief Hand out a LocalBasis object */
-  const BSplineLocalBasis<GV,R>& localBasis() const
+  const BSplineLocalBasis<GV,R,MI>& localBasis() const
   {
     return localBasis_;
   }
@@ -430,7 +431,7 @@ public:
   }
 
   /** \brief Hand out a LocalInterpolation object */
-  const BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R> >& localInterpolation() const
+  const BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R,MI> >& localInterpolation() const
   {
     return localInterpolation_;
   }
@@ -465,18 +466,18 @@ public:
     return r;
   }
 
-  const BSplinePreBasis<GV,FlatMultiIndex<std::size_t>>& preBasis_;
+  const BSplinePreBasis<GV,MI>& preBasis_;
 
-  BSplineLocalBasis<GV,R> localBasis_;
+  BSplineLocalBasis<GV,R,MI> localBasis_;
   BSplineLocalCoefficients<dim> localCoefficients_;
-  BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R> > localInterpolation_;
+  BSplineLocalInterpolation<dim,BSplineLocalBasis<GV,R,MI> > localInterpolation_;
 
   // The knot span we are bound to
   std::array<unsigned,dim> currentKnotSpan_;
 };
 
 
-template<typename GV, typename TP>
+template<typename GV, typename MI, typename TP>
 class BSplineNode;
 
 template<typename GV, class MI, class TP>
@@ -559,7 +560,7 @@ public:
   using size_type = std::size_t;
 
   template<class TP>
-  using Node = BSplineNode<GV, TP>;
+  using Node = BSplineNode<GV, MI, TP>;
 
   template<class TP>
   using IndexSet = BSplineNodeIndexSet<GV, MI, TP>;
@@ -1227,7 +1228,7 @@ public:
 
 
 
-template<typename GV, typename TP>
+template<typename GV, typename MI, typename TP>
 class BSplineNode :
   public LeafBasisNode<std::size_t, TP>
 {
@@ -1240,9 +1241,9 @@ public:
   using size_type = std::size_t;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElement = BSplineLocalFiniteElement<GV,double>;
+  using FiniteElement = BSplineLocalFiniteElement<GV,double,MI>;
 
-  BSplineNode(const TreePath& treePath, const BSplinePreBasis<GV, FlatMultiIndex<std::size_t>>* preBasis) :
+  BSplineNode(const TreePath& treePath, const BSplinePreBasis<GV, MI>* preBasis) :
     Base(treePath),
     preBasis_(preBasis),
     finiteElement_(*preBasis)
@@ -1274,7 +1275,7 @@ public:
 
 protected:
 
-  const BSplinePreBasis<GV, FlatMultiIndex<std::size_t>>* preBasis_;
+  const BSplinePreBasis<GV,MI>* preBasis_;
 
   FiniteElement finiteElement_;
   Element element_;
