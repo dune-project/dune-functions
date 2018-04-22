@@ -90,9 +90,10 @@ namespace Impl {
     static const std::size_t Variants = 64;
   };
 
-  template<typename GV, int dim, typename D, typename R, std::size_t k>
+  template<typename GV, int dim, typename R, std::size_t k>
   class RaviartThomasLocalFiniteElementMap
   {
+    using D = typename GV::ctype;
     using CubeFiniteElement    = typename RaviartThomasCubeLocalInfo<dim, D, R, k>::FiniteElement;
     using SimplexFiniteElement = typename RaviartThomasSimplexLocalInfo<dim, D, R, k>::FiniteElement;
 
@@ -172,7 +173,7 @@ template<typename GV, int k, class MI, class ST>
 class RaviartThomasPreBasis
 {
   static const int dim = GV::dimension;
-  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, typename GV::ctype, double, k>;
+  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, double, k>;
 
   template<typename, int, class, class, class>
   friend class RaviartThomasNodeIndexSet;
@@ -297,7 +298,7 @@ public:
   using size_type = ST;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, typename GV::ctype, double, k>;
+  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, double, k>;
   using FiniteElement = typename FiniteElementMap::FiniteElement;
 
   RaviartThomasNode(const TreePath& treePath, const FiniteElementMap* finiteElementMap) :
