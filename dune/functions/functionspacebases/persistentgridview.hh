@@ -151,7 +151,8 @@ namespace Experimental {
     template<class Entity >
     bool contains(const Entity& e) const
     {
-      DUNE_THROW(Dune::NotImplemented, "PersistentIndexSet::contains() is not implemented!");
+      auto it = idToIndex_.find(grid_->globalIdSet().id(e));
+      return it != std::end(idToIndex_);
     }
 
     Types types(int codim) const
@@ -178,6 +179,13 @@ namespace Experimental {
           sizePerGT_[gtIndex] = originalIndexSet.size(gt);
         }
       }
+
+      for(const auto& element : elements(originalGridView_)) {
+        auto index = originalGridView_.indexSet().index(element);
+        auto id = grid_->globalIdSet().id(element);
+        idToIndex_.insert({id, index});
+      }
+
       // prepare mutable index cache
       idToIndex_.clear();
       isMutable_ = true;

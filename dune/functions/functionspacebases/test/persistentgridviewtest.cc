@@ -85,6 +85,28 @@ int main (int argc, char* argv[])
       }))
       << "Accessing PersistentGridView indices in non-mutable state failed after grid refinement.";
 
+    // Check if the coarse elements are known to the PersistentGridView
+    {
+      bool containsCoarseElements = true;
+      auto pgv = persistentBasis.gridView();
+
+      auto coarseGridView = grid.levelGridView(grid.maxLevel()-1);
+      for (const auto& e : Dune::elements(coarseGridView)) {
+        containsCoarseElements = containsCoarseElements && pgv.contains(e);
+      }
+      test.require(containsCoarseElements, "Check contains()") << "Some elements that are part of the PersistentGridView are not contained.";
+    }
+
+    // Reversely, check if the new elements are unknown to the PersistentGridView
+    {
+      bool containsNoFineElements = true;
+      auto pgv = persistentBasis.gridView();
+
+      for (const auto& e : Dune::elements(grid.leafGridView())) {
+        containsNoFineElements = containsNoFineElements && not pgv.contains(e);
+      }
+      test.require(containsNoFineElements, "Check contains()") << "Some elements that are part of the PersistentGridView are not contained.";
+    }
   }
 
   return test.exit();
