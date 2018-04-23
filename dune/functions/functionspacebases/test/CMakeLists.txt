@@ -19,6 +19,8 @@ dune_add_test(SOURCES hierarchicvectorwrappertest.cc)
 
 dune_add_test(SOURCES compositebasistest.cc)
 
+dune_add_test(SOURCES persistentgridviewtest.cc)
+
 install(
   FILES
   basistest.hh
