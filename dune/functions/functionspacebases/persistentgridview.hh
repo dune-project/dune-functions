@@ -180,15 +180,17 @@ namespace Experimental {
         }
       }
 
+      // prepare mutable index cache
+      idToIndex_.clear();
+      isMutable_ = true;
+
+      // Add all (codim-0) elements to the index map. These should be known
+      // to the PersistentGridView for the contains() method.
       for(const auto& element : elements(originalGridView_)) {
         auto index = originalGridView_.indexSet().index(element);
         auto id = grid_->globalIdSet().id(element);
         idToIndex_.insert({id, index});
       }
-
-      // prepare mutable index cache
-      idToIndex_.clear();
-      isMutable_ = true;
     }
 
     // global information
