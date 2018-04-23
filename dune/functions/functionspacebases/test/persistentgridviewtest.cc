@@ -50,7 +50,7 @@ int main (int argc, char* argv[])
   {
     auto gridView = grid.leafGridView();
 
-    auto persistentBasis = makeBasis(persistentGridView(gridView), lagrange<3>());
+    auto persistentBasis = makeBasis(Experimental::persistentGridView(gridView), lagrange<3>());
 
     // Check if filling the PersistentGridView lazily
     // in mutable state works

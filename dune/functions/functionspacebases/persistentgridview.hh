@@ -17,11 +17,17 @@
 
 namespace Dune {
 namespace Functions {
+namespace Experimental {
 
 
 
   /**
    * \brief A persistent index set
+   *
+   * \warning This is experimental and may be removed or
+   * modified in a non-compatible way. When using this
+   * functionality take care to follow the dune-functions
+   * development to be aware of possible changes.
    *
    * A PersistentIndexSet caches the grid indices of
    * the grid view passed during creation in a persistent
@@ -274,6 +280,11 @@ namespace Functions {
   /**
    * \brief Create a PersistentGridView
    *
+   * \warning This is experimental and may be removed or
+   * modified in a non-compatible way. When using this
+   * functionality take care to follow the dune-functions
+   * development to be aware of possible changes.
+   *
    * The result provides access to the indices
    * of the passed grid view.
    */
@@ -285,6 +296,6 @@ namespace Functions {
 
 
 
-}} // namespace Dune::Functions
+}}} // namespace Dune::Functions::Experimental
 
 #endif// DUNE_FUNCTIONS_COMMON_PERSISTENT_GRIDVIEW_HH
