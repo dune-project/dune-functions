@@ -33,7 +33,7 @@ int main (int argc, char* argv[])
   FieldVector<double,dim> l(1);
   std::array<int,dim> elements = {{10, 10}};
 
-  auto grid = Grid(l,elements);
+  Grid grid(l,elements);
 
 
   // Helper to change thrown exception to checkable condition
