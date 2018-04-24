@@ -123,6 +123,9 @@ namespace Experimental {
       return subIndex<typename Codim<cc>::Entity>(e, subEntity, codim);
     }
 
+    // *********************************
+    // other methods
+    // *********************************
 
     /**
      * \brief Set mutability
@@ -145,9 +148,6 @@ namespace Experimental {
       isMutable_ = m;
     }
 
-    // *********************************
-    // other methods
-    // *********************************
     template<class Entity >
     bool contains(const Entity& e) const
     {
