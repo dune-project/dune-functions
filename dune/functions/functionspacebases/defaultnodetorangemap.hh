@@ -45,7 +45,6 @@ struct DefaultNodeToRangeMap
   // index in a vector indexed by the tree indices.
   struct Visitor
     : public TypeTree::TreeVisitor
-    , public TypeTree::DynamicTraversal
   {
     Visitor(std::vector<std::size_t>& indices) :
       indices_(indices),
