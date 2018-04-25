@@ -19,7 +19,6 @@ namespace Dune {
       template<typename size_type>
       struct ClearSizeVisitor
         : public TypeTree::TreeVisitor
-        , public TypeTree::DynamicTraversal
       {
 
         template<typename Node, typename TreePath>
@@ -47,7 +46,6 @@ namespace Dune {
       template<typename Entity, typename size_type>
       struct BindVisitor
         : public TypeTree::TreeVisitor
-        , public TypeTree::DynamicTraversal
       {
 
         template<typename Node, typename TreePath>
@@ -83,8 +81,7 @@ namespace Dune {
 
       template<typename size_type>
       struct InitializeTreeVisitor :
-        public TypeTree::TreeVisitor,
-        public TypeTree::DynamicTraversal
+        public TypeTree::TreeVisitor
       {
         template<typename Node, typename TreePath>
         void pre(Node& node, TreePath treePath)
