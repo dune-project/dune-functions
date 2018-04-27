@@ -59,6 +59,7 @@ struct AllTrueBitSetVector
 template <class B, class T, class NTRE, class HV, class LF, class HBV>
 class LocalInterpolateVisitor
   : public TypeTree::TreeVisitor
+  , public TypeTree::DynamicTraversal
 {
 
 public:
