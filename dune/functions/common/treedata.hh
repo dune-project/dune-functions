@@ -26,7 +26,8 @@ namespace Functions {
  */
 template<class SimpleNodeVisitorImp, bool leafOnly>
 struct UniformNodeVisitor :
-    public TypeTree::TreeVisitor
+    public TypeTree::TreeVisitor,
+    public TypeTree::DynamicTraversal
 {
     // This is only enabled, if we want to incorporate inner nodes.
     // Checking leafOnly would be sufficient, but for SFINAE the
