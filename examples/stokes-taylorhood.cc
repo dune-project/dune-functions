@@ -7,6 +7,7 @@
 
 #include <dune/common/function.hh>
 #include <dune/common/bitsetvector.hh>
+#include <dune/common/indices.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -18,6 +19,8 @@
 #include <dune/istl/matrixindexset.hh>
 #include <dune/istl/solvers.hh>
 #include <dune/istl/preconditioners.hh>
+#include <dune/istl/multitypeblockmatrix.hh>
+#include <dune/istl/multitypeblockvector.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
@@ -29,6 +32,8 @@
 
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
+
+#define BLOCKEDBASIS 1
 
 // { using_namespace_dune_begin }
 using namespace Dune;
@@ -58,7 +63,7 @@ void getLocalMatrix(const LocalView& localView,
 
   // Get set of shape functions for this element
   // { get_local_fe_begin }
-  using namespace Dune::Indices;
+  using namespace Indices;
   const auto& velocityLocalFiniteElement = localView.tree().child(_0,0).finiteElement();  /*@\label{li:stokes_taylorhood_get_velocity_lfe}@*/
   const auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();    /*@\label{li:stokes_taylorhood_get_pressure_lfe}@*/
   // { get_local_fe_end }
@@ -179,11 +184,29 @@ void getOccupationPattern(const Basis& basis,
 }
 
 
+template<class Matrix, class MultiIndex>
+decltype(auto) matrixEntry(Matrix& matrix, const MultiIndex& row, const MultiIndex& col)
+{
+#if BLOCKEDBASIS
+  using namespace Indices;
+  if ((row[0]==0) and (col[0]==0))
+    return matrix[_0][_0][row[1]][col[1]][row[2]][col[2]];
+  if ((row[0]==0) and (col[0]==1))
+    return matrix[_0][_1][row[1]][col[1]][row[2]][0];
+  if ((row[0]==1) and (col[0]==0))
+    return matrix[_1][_0][row[1]][col[1]][0][col[2]];
+  return matrix[_1][_1][row[1]][col[1]][0][0];
+#else
+  return matrix[row[0]][col[0]][row[1]][col[1]];
+#endif
+}
+
+
 /** \brief Assemble the Laplace stiffness matrix on the given grid view */
 // { global_assembler_signature_begin }
-template <class Basis>
+template <class Basis, class MatrixType>
 void assembleStokesMatrix(const Basis& basis,
-                          Matrix<BCRSMatrix<FieldMatrix<double,1,1> > >& matrix)
+                          MatrixType& matrix)
 // { global_assembler_signature_end }
 {
   // MatrixIndexSets store the occupation pattern of a sparse matrix.
@@ -193,10 +216,15 @@ void assembleStokesMatrix(const Basis& basis,
   getOccupationPattern(basis, occupationPattern);
 
   // ... and give it the occupation pattern we want.
+  using namespace Indices;
+
+#if !BLOCKEDBASIS
   matrix.setSize(2,2);
-  for (int i=0; i<2; i++)
-    for (int j=0; j<2; j++)
-      occupationPattern[i][j].exportIdx(matrix[i][j]);  /*@\label{li:stokes_taylorhood_setup_matrix_patterns}@*/
+#endif
+  occupationPattern[0][0].exportIdx(matrix[_0][_0]);
+  occupationPattern[0][1].exportIdx(matrix[_0][_1]);
+  occupationPattern[1][0].exportIdx(matrix[_1][_0]);
+  occupationPattern[1][1].exportIdx(matrix[_1][_1]);
 
   // Set all entries to zero
   matrix = 0;                           /*@\label{li:stokes_taylorhood_set_matrix_to_zero}@*/
@@ -233,7 +261,7 @@ void assembleStokesMatrix(const Basis& basis,
       {
         // The global index of the j-th local degree of freedom of the element 'e'
         auto col = localView.index(j);                /*@\label{li:stokes_taylorhood_get_global_column_index}@*/
-        matrix[row[0]][col[0]][row[1]][col[1]] += elementMatrix[i][j];  /*@\label{li:stokes_taylorhood_scatter_matrix_indices}@*/
+        matrixEntry(matrix, row, col) += elementMatrix[i][j];  /*@\label{li:stokes_taylorhood_scatter_matrix_indices}@*/
       }
 
     }
@@ -275,6 +303,16 @@ int main (int argc, char *argv[]) try
 
   static const std::size_t K = 1; // pressure order for Taylor-Hood
 
+#if BLOCKEDBASIS
+  auto taylorHoodBasis = makeBasis(  /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
+    gridView,
+    composite(
+      power<dim>(
+        lagrange<K+1>(),
+        blockedInterleaved()),
+      lagrange<K>()
+    ));
+#else
   auto taylorHoodBasis = makeBasis(  /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
     gridView,
     composite(
@@ -283,6 +321,7 @@ int main (int argc, char *argv[]) try
         flatInterleaved()),
       lagrange<K>()
     ));
+#endif
 
 
   // { function_space_basis_end }
@@ -292,8 +331,18 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   // { linear_algebra_setup_begin }
+#if BLOCKEDBASIS
+  using VelocityVector = BlockVector<FieldVector<double,dim>>;
+  using PressureVector = BlockVector<FieldVector<double,1>>;
+  using VectorType = MultiTypeBlockVector<VelocityVector, PressureVector>;
+
+  using MatrixRow0 = MultiTypeBlockVector<BCRSMatrix<FieldMatrix<double,dim,dim> >, BCRSMatrix<FieldMatrix<double,dim,1>>>;
+  using MatrixRow1 = MultiTypeBlockVector<BCRSMatrix<FieldMatrix<double,1,dim> >, BCRSMatrix<FieldMatrix<double,1,1>>>;
+  using MatrixType = MultiTypeBlockMatrix<MatrixRow0,MatrixRow1>;
+#else
   using VectorType = BlockVector<BlockVector<FieldVector<double,1> > >;
   using MatrixType = Matrix<BCRSMatrix<FieldMatrix<double,1,1> > >;
+#endif
   // { linear_algebra_setup_end }
 
   /////////////////////////////////////////////////////////
@@ -331,9 +380,16 @@ int main (int argc, char *argv[]) try
   // { boundary_predicate_end }
 
   // { interpolate_boundary_predicate_begin }
-  using namespace Dune::Indices;
+  using namespace Indices;
 
+#if BLOCKEDBASIS
+  using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
+  using PressureBitVector = BlockVector<FieldVector<char,1>>;
+  using BitVectorType = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
+#else
   using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
+#endif
+
   using BitVectorBackend = Functions::HierarchicVectorWrapper<BitVectorType, char>;
 
   BitVectorType isBoundary;
@@ -359,23 +415,43 @@ int main (int argc, char *argv[]) try
 
   // loop over the matrix rows
   // { set_dirichlet_matrix_begin }
-  for (size_t i=0; i<stiffnessMatrix[0][0].N(); i++)
+
+
   {
-    if (isBoundary[0][i])
+    auto localView = taylorHoodBasis.localView();
+    for(const auto& e : Dune::elements(taylorHoodBasis.gridView())) {
+      localView.bind(e);
+      for (size_t i=0; i<localView.size(); ++i) {
+        auto row = localView.index(i);
+        // If row corresponds to a boundary entry, modify
+        // it to be an identity matrix row
+        if (BitVectorBackend(isBoundary)[row])
+          for (size_t j=0; j<localView.size(); ++j) {
+            auto col = localView.index(j);
+            matrixEntry(stiffnessMatrix, row, col) = (i==j) ? 1 : 0;
+          }
+      }
+    }
+  }
+
+
+#if 0
+  for (std::size_t i=0; i<stiffnessMatrix[_0][_0].N(); ++i)
+  {
+    if (isBoundary[_0][i][0])
     {
       // Upper left matrix block
-      auto cIt    = stiffnessMatrix[0][0][i].begin();
-      auto cEndIt = stiffnessMatrix[0][0][i].end();
+      auto cIt    = stiffnessMatrix[_0][_0][i].begin();
+      auto cEndIt = stiffnessMatrix[_0][_0][i].end();
       // loop over nonzero matrix entries in current row
       for (; cIt!=cEndIt; ++cIt)
-        *cIt = (i==cIt.index()) ? 1 : 0;
+        *cIt = (i==cIt.index()) ? ScaledIdentityMatrix<double,dim>(1) : 0;
 
       // Upper right matrix block
-      for(auto&& entry: stiffnessMatrix[0][1][i])
-        entry = 0.0;
+      stiffnessMatrix[_0][_1][i] = 0;   // zeros out the entire matrix row
     }
-
   }
+#endif
   // { set_dirichlet_matrix_end }
 
   ////////////////////////////
