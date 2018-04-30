@@ -59,7 +59,7 @@ class TaylorHoodNodeIndexSet;
  * using PressurePreBasis = PQkPreBasis<GV,k,MI>;
  * using TaylorHoodKPreBasis = CompositePreBasis<MI, BlockedLexicographic, VelocityPreBasis, PressurePreBasis>;
  * \endcode
- * Where IMS is LeafBlockedInterleaved if HI is set and
+ * Where IMS is BlockedInterleaved if HI is set and
  * FlatInterleaved otherwise.
  */
 template<typename GV, class MI, bool HI=false>
@@ -404,6 +404,38 @@ private:
 };
 
 
+
+namespace BasisFactory {
+
+namespace Imp {
+
+class TaylorHoodPreBasisFactory
+{
+public:
+  static const std::size_t requiredMultiIndexSize=2;
+
+  template<class MultiIndex, class GridView>
+  auto makePreBasis(const GridView& gridView) const
+  {
+    return TaylorHoodPreBasis<GridView, MultiIndex>(gridView);
+  }
+
+};
+
+} // end namespace BasisFactory::Imp
+
+/**
+ * \brief Create a pre-basis factory that can create a Taylor-Hood pre-basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ */
+auto taylorHood()
+{
+  return Imp::TaylorHoodPreBasisFactory();
+}
+
+} // end namespace BasisFactory
 
 // *****************************************************************************
 // This is the actual global basis implementation based on the reusable parts.

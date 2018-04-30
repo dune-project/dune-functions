@@ -1,15 +1,20 @@
-dune-functions
-========
+# Dune-functions changes
 
-This is the development version of dune-functions leading up to version 2.6.
+Any version of dune-functions is supposed to be compatible with the
+correponding version of the Dune core modules.
 
-It is supposed to be compatible with the Dune core modules of the same version.
+## Master (will become release 2.7)
 
-Changes
-=======
+- `FlatVectorBackend` is now officially an implementation detail and thus moved
+  to the namespace `Impl::`. The header `flatvectorbackend.hh` was removed.
+  As a replacement the new free function `flatVectorView(c)` create a view
+  object providing `operator[]` and `size()` methods for flat-vector-like
+  access to the underlying container `c`.
+- The `BasisBuilder` namespace has been renamed to `BasisFactory`.
+  The old name still exists and should work as before, but its use
+  is discouraged.
 
-dune-functions 2.6-dev
-------------
+## Release 2.6
 
 - Added an implementation of a Rannacher-Turek basis
 - Add a set of unit tests for bases
@@ -29,8 +34,7 @@ dune-functions 2.6-dev
   for the code.
 - `Dune::Functions::TupleVector` was deprecated. Use `Dune::TupleVector` from dune-common instead.
 
-dune-functions 2.5
-------------
+## Release 2.5
 
 TODO...
 

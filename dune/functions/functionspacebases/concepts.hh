@@ -55,7 +55,6 @@ struct BasisNode
     requireType<typename N::size_type>(),
     requireType<typename N::TreePath>(),
     requireConvertible<typename N::size_type>(node.size()),
-    requireConvertible<typename N::size_type>(node.offset()),
     requireConvertible<typename N::size_type>(node.localIndex(std::declval<typename N::size_type>())),
     requireConvertible<typename N::size_type>(node.treeIndex()),
     requireConvertible<typename N::TreePath>(node.treePath()),
@@ -75,7 +74,7 @@ struct LeafBasisNode : Refines<BasisNode>
     requireType<typename N::FiniteElement>(),
     requireConvertible<typename N::Element>(node.element()),
     requireConvertible<const typename N::FiniteElement&>(node.finiteElement()),
-    requireConvertible<typename N::Element>(*(std::declval<GridView>().template begin<0>())),
+    requireSameType<typename N::Element, typename GridView::template Codim<0>::Entity>(),
     requireBaseOf<Dune::Functions::LeafBasisNode<typename N::size_type, typename N::TreePath>, N>()
   );
 };
@@ -171,6 +170,7 @@ struct PreBasis
     requireConvertible<typename PB::size_type>(preBasis.size(std::declval<typename PB::SizePrefix>())),
     requireConvertible<typename PB::size_type>(preBasis.dimension()),
     requireConvertible<typename PB::size_type>(preBasis.maxNodeSize()),
+    requireSameType<decltype(const_cast<PB&>(preBasis).update(preBasis.gridView())),void>(),
     requireConcept<BasisTree<typename PB::GridView>>(preBasis.node(RootTreePath())),
     requireConcept<NodeIndexSet<PB>>(preBasis.template indexSet<RootTreePath>())
   );
@@ -185,6 +185,7 @@ struct LocalView
   template<class V>
   auto require(const V& localView) -> decltype(
     requireType<typename V::size_type>(),
+    requireType<typename V::MultiIndex>(),
     requireType<typename V::GlobalBasis>(),
     requireType<typename V::Tree>(),
     requireType<typename V::GridView>(),
@@ -197,6 +198,7 @@ struct LocalView
     const_cast<V&>(localView).unbind(),
     requireConvertible<typename V::Tree>(localView.tree()),
     requireConvertible<typename V::size_type>(localView.size()),
+    requireConvertible<typename V::MultiIndex>(localView.index(std::declval<typename V::size_type>())),
     requireConvertible<typename V::size_type>(localView.maxSize()),
     requireConvertible<typename V::GlobalBasis>(localView.globalBasis()),
     requireConcept<BasisTree<typename V::GridView>>(localView.tree()),
@@ -245,6 +247,7 @@ struct GlobalBasis
     requireConvertible<typename B::size_type>(basis.size()),
     requireConvertible<typename B::size_type>(basis.size(std::declval<typename B::SizePrefix>())),
     requireConvertible<typename B::size_type>(basis.dimension()),
+    requireSameType<decltype(const_cast<B&>(basis).update(basis.gridView())),void>(),
     requireConcept<LocalIndexSet<typename B::LocalView>>(basis.localIndexSet()),
     requireConcept<LocalView<B>>(basis.localView())
   );

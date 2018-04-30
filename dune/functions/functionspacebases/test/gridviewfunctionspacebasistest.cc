@@ -18,7 +18,6 @@
 #include <dune/localfunctions/test/test-localfe.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/pq1nodalbasis.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/functions/functionspacebases/bsplinebasis.hh>
@@ -48,7 +47,7 @@ void testScalarBasisConst(const Basis& feBasis,
   typedef typename Basis::GridView GridView;
   GridView gridView = feBasis.gridView();
 
-  typename Basis::LocalView localView(feBasis);
+  auto localView = feBasis.localView();
 
 
   // Test the LocalFiniteElement
@@ -124,7 +123,7 @@ void testScalarBasisConst(const Basis& feBasis,
   typedef typename Basis::MultiIndex MultiIndex;
 
   // And this type must be indexable
-  static_assert(is_indexable<MultiIndex>(), "MultiIndex must support operator[]");
+  static_assert(IsIndexable<MultiIndex>(), "MultiIndex must support operator[]");
 
   ///////////////////////////////////////////////////////////////////////////////////
   //  Check whether the global indices are in the correct range,
@@ -134,26 +133,23 @@ void testScalarBasisConst(const Basis& feBasis,
   std::vector<bool> seen(feBasis.size());
   std::fill(seen.begin(), seen.end(), false);
 
-  auto localIndexSet = feBasis.localIndexSet();
-
   // Loop over all leaf elements
   for (auto it = gridView.template begin<0>(); it!=gridView.template end<0>(); ++it)
   {
     // Bind the local FE basis view to the current element
     localView.bind(*it);
-    localIndexSet.bind(localView);
 
     for (size_t i=0; i<localView.tree().size(); i++)
     {
-      if (localIndexSet.index(i)[0] < 0)
+      if (localView.index(i)[0] < 0)
         DUNE_THROW(Exception, "Index is negative, which is not allowed");
 
-      if (localIndexSet.index(i)[0] >= seen.size())
+      if (localView.index(i)[0] >= seen.size())
         DUNE_THROW(Exception, "Local index " << i
-                           << " is mapped to global index " << localIndexSet.index(i)
+                           << " is mapped to global index " << localView.index(i)
                            << ", which is larger than allowed");
 
-      seen[localIndexSet.index(i)[0]] = true;
+      seen[localView.index(i)[0]] = true;
     }
   }
 
@@ -173,7 +169,7 @@ void testScalarBasisConst(const Basis& feBasis,
     std::fill(x.begin(), x.end(), 0.5);
 
   // Objects required in the local context
-  auto localIndexSet2 = feBasis.localIndexSet();
+  auto localView2 = feBasis.localView();
   std::vector<double> localCoefficients(localView.maxSize());
 
   // Loop over elements and integrate over the function
@@ -181,22 +177,19 @@ void testScalarBasisConst(const Basis& feBasis,
   for (const auto& element : elements(gridView))
   {
     localView.bind(element);
-    localIndexSet.bind(localView);
-    localIndexSet2.bind(localView);
+    localView2.bind(element);
 
     // paranoia checks
-    assert(localView.size() == localIndexSet.size());
     assert(&(localView.globalBasis()) == &(feBasis));
-    assert(&(localIndexSet.localView()) == &(localView));
 
-    assert(localIndexSet.size() == localIndexSet2.size());
-    for (size_t i=0; i<localIndexSet.size(); i++)
-      assert(localIndexSet.index(i) == localIndexSet2.index(i));
+    assert(localView.size() == localView2.size());
+    for (size_t i=0; i<localView.size(); i++)
+      assert(localView.index(i) == localView2.index(i));
 
     // copy data from global vector
-    localCoefficients.resize(localIndexSet.size());
-    for (size_t i=0; i<localIndexSet.size(); i++)
-      localCoefficients[i] = x[localIndexSet.index(i)[0]];
+    localCoefficients.resize(localView.size());
+    for (size_t i=0; i<localView.size(); i++)
+      localCoefficients[i] = x[localView.index(i)[0]];
 
     // get access to the finite element
     typedef typename Basis::LocalView::Tree Tree;
@@ -233,7 +226,6 @@ void testScalarBasisConst(const Basis& feBasis,
     }
 
     // unbind
-    localIndexSet.unbind();
     localView.unbind();
   }
 
@@ -272,11 +264,10 @@ void testOnStructuredGrid()
   std::fill(elements.begin(), elements.end(), 2);
   GridType grid(l,elements);
 
-  // Test whether PQ1FunctionSpaceBasis.hh can be instantiated on the leaf view
+  // Test whether function space basis can be instantiated on the leaf view
   typedef typename GridType::LeafGridView GridView;
   GridView gridView = grid.leafGridView();
 
-  PQ1NodalBasis<GridView> pq1Basis(gridView);
   PQkNodalBasis<GridView, 3> pq3Basis(gridView);
   PQkNodalBasis<GridView, 4> pq4Basis(gridView);
   PQkNodalBasis<GridView, 0> pq0Basis(gridView);
@@ -285,9 +276,6 @@ void testOnStructuredGrid()
   LagrangeDGBasis<GridView, 3> lagrangeDG3Basis(gridView);
 
   grid.globalRefine(2);
-
-  // Test PQ1NodalBasis
-  testScalarBasis(pq1Basis, gridView, true);
 
   // Test PQkNodalBasis for k==3
   if (dim<3) // Currently not implemented for dim >= 3
@@ -367,11 +355,7 @@ void testOnHybridGrid()
   // reference value is wrong.
   bool disableInterpolate = (dim==3);
 
-  // Test PQ1NodalBasis -- dedicated implementation
-  PQ1NodalBasis<GridView> pq1DedicatedBasis(gridView);
-  testScalarBasisConst(pq1DedicatedBasis, true, disableInterpolate);
-
-  // Test PQ1NodalBasis -- generic basis
+  // Test PQkNodalBasis for k==1
   PQkNodalBasis<GridView, 1> pq1Basis(gridView);
   testScalarBasisConst(pq1Basis, true, disableInterpolate);
 

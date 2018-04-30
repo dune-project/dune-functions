@@ -174,6 +174,12 @@ public:
     //if (dim==3) codimOffset_[2] = codimOffset_[1] + dofsPerCodim[1] * gridView_.size(1);
   }
 
+  /* \brief Update the stored grid view, to be called if the grid has changed */
+  void update (const GridView& gv)
+  {
+    gridView_ = gv;
+  }
+
   /** \brief Obtain the grid view that the basis is defined on
    */
   const GridView& gridView() const
@@ -388,7 +394,7 @@ protected:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 namespace Imp {
 
@@ -406,15 +412,15 @@ public:
   }
 };
 
-} // end namespace BasisBuilder::Imp
+} // end namespace BasisFactory::Imp
 
 template<std::size_t k, GeometryType::BasicType basic_type>
-Imp::BrezziDouglasMariniPreBasisFactory<k, basic_type> bdm()
+Imp::BrezziDouglasMariniPreBasisFactory<k, basic_type> brezziDouglasMarini()
 {
   return{};
 }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
 
 
 

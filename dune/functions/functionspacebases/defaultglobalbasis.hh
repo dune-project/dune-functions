@@ -3,14 +3,20 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTGLOBALBASIS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTGLOBALBASIS_HH
 
+#include <cstddef>
+#include <type_traits>
+#include <utility>
+
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
 #include <dune/common/concept.hh>
+#include <dune/common/deprecated.hh>
 
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/defaultlocalindexset.hh>
 #include <dune/functions/functionspacebases/defaultlocalview.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/flatmultiindex.hh>
 
 
 
@@ -139,7 +145,9 @@ public:
   }
 
   //! Return local index set for basis
-  LocalIndexSet localIndexSet() const
+  LocalIndexSet
+    DUNE_DEPRECATED_MSG("localIndexSet() is deprecated. The index() method and the MultiIndex alias are now available on the LocalView. Indices are computed when binding the LocalView.")
+    localIndexSet() const
   {
     return LocalIndexSet(preBasis_.template indexSet<PrefixPath>());
   }
@@ -163,12 +171,15 @@ protected:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 template<class GridView, class PreBasisFactory>
 auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory)
 {
-  using MultiIndex = typename Dune::ReservedVector<std::size_t, PreBasisFactory::requiredMultiIndexSize>;
+  using MultiIndex = std::conditional_t<
+    PreBasisFactory::requiredMultiIndexSize==1,
+    FlatMultiIndex<std::size_t>,
+    Dune::ReservedVector<std::size_t, PreBasisFactory::requiredMultiIndexSize>>;
   auto preBasis = preBasisFactory.template makePreBasis<MultiIndex>(gridView);
   using PreBasis = std::decay_t<decltype(preBasis)>;
 
@@ -184,8 +195,14 @@ auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory)
   return DefaultGlobalBasis<PreBasis>(std::move(preBasis));
 }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
 
+// Backward compatibility
+namespace BasisBuilder {
+
+  using namespace BasisFactory;
+
+}
 
 
 } // end namespace Functions

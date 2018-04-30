@@ -19,7 +19,7 @@
 
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 #include <dune/functions/functionspacebases/sizeinfo.hh>
-#include <dune/functions/functionspacebases/flatvectorbackend.hh>
+#include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
 
 #include <dune/typetree/traversal.hh>
@@ -65,8 +65,8 @@ class LocalInterpolateVisitor
 public:
 
   using Basis = B;
-  using LocalIndexSet = typename B::LocalIndexSet;
-  using MultiIndex = typename LocalIndexSet::MultiIndex;
+  using LocalView = typename B::LocalView;
+  using MultiIndex = typename LocalView::MultiIndex;
 
   using LocalFunction = LF;
 
@@ -84,14 +84,11 @@ public:
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
-  using CoefficientBlock = typename std::decay<decltype(std::declval<HierarchicVector>()[std::declval<MultiIndex>()])>::type;
-  using BitVectorBlock = typename std::decay<decltype(std::declval<HierarchicBitVector>()[std::declval<MultiIndex>()])>::type;
-
-  LocalInterpolateVisitor(const B& basis, HV& coeff, const HBV& bitVector, const LF& localF, const LocalIndexSet& localIndexSet, const NodeToRangeEntry& nodeToRangeEntry) :
+  LocalInterpolateVisitor(const B& basis, HV& coeff, const HBV& bitVector, const LF& localF, const LocalView& localView, const NodeToRangeEntry& nodeToRangeEntry) :
     vector_(coeff),
     localF_(localF),
     bitVector_(bitVector),
-    localIndexSet_(localIndexSet),
+    localView_(localView),
     nodeToRangeEntry_(nodeToRangeEntry)
   {
     static_assert(Dune::Functions::Concept::isCallable<LocalFunction, LocalDomain>(), "Function passed to LocalInterpolateVisitor does not model the Callable<LocalCoordinate> concept");
@@ -120,9 +117,7 @@ public:
     std::size_t j=0;
     auto localFj = [&](const LocalDomain& x){
       const auto& y = localF_(x);
-      const auto& y_node = nodeToRangeEntry_(node, y);
-      using FunctionRange = typename std::decay<decltype(y_node)>::type;
-      return FlatVectorBackend<FunctionRange>::getEntry(y_node, j);
+      return flatVectorView(nodeToRangeEntry_(node, y))[j];
     };
 
     using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<FiniteElementRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
@@ -134,7 +129,7 @@ public:
     // We loop over j defined above and thus over the components of the
     // range type of localF_.
 
-    auto blockSize = FlatVectorBackend<CoefficientBlock>::size(vector_[localIndexSet_.index(0)]);
+    auto blockSize = flatVectorView(vector_[localView_.index(0)]).size();
 
     for(j=0; j<blockSize; ++j)
     {
@@ -143,14 +138,12 @@ public:
       fe.localInterpolation().interpolate(FunctionFromCallable(localFj), interpolationCoefficients);
       for (size_t i=0; i<fe.localBasis().size(); ++i)
       {
-        auto multiIndex = localIndexSet_.index(node.localIndex(i));
-        const auto& bitVectorBlock = bitVector_[multiIndex];
-        const auto& interpolateHere = FlatVectorBackend<BitVectorBlock>::getEntry(bitVectorBlock,j);
-
-        if (interpolateHere)
+        auto multiIndex = localView_.index(node.localIndex(i));
+        auto bitVectorBlock = flatVectorView(bitVector_[multiIndex]);
+        if (bitVectorBlock[j])
         {
-          auto&& vectorBlock = vector_[multiIndex];
-          FlatVectorBackend<CoefficientBlock>::getEntry(vectorBlock, j) = interpolationCoefficients[i];
+          auto vectorBlock = flatVectorView(vector_[multiIndex]);
+          vectorBlock[j] = interpolationCoefficients[i];
         }
       }
     }
@@ -162,7 +155,7 @@ protected:
   HierarchicVector& vector_;
   const LocalFunction& localF_;
   const HierarchicBitVector& bitVector_;
-  const LocalIndexSet& localIndexSet_;
+  const LocalView& localView_;
   const NodeToRangeEntry& nodeToRangeEntry_;
 };
 
@@ -180,7 +173,7 @@ protected:
  *
  * Notice that this will only work if the range type of f and
  * the block type of coeff are compatible and supported by
- * FlatVectorBackend.
+ * flatVectorView.
  *
  * \param basis Global function space basis of discrete function space
  * \param treePath Tree path specifying the part of the ansatz tree to use
@@ -216,17 +209,15 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
   auto localF = localFunction(gf);
 
   auto localView = basis.localView();
-  auto localIndexSet = basis.localIndexSet();
 
   for (const auto& e : elements(gridView))
   {
     localView.bind(e);
-    localIndexSet.bind(localView);
     localF.bind(e);
 
     auto&& subTree = TypeTree::child(localView.tree(),treePath);
 
-    Imp::LocalInterpolateVisitor<B, Tree, NTRE, decltype(vector), decltype(localF), decltype(bitVector)> localInterpolateVisitor(basis, vector, bitVector, localF, localIndexSet, nodeToRangeEntry);
+    Imp::LocalInterpolateVisitor<B, Tree, NTRE, decltype(vector), decltype(localF), decltype(bitVector)> localInterpolateVisitor(basis, vector, bitVector, localF, localView, nodeToRangeEntry);
     TypeTree::applyToTree(subTree,localInterpolateVisitor);
   }
 }
@@ -262,7 +253,7 @@ void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices.
  *
  * Notice that this will only work if the range type of f and
  * the block type of coeff are compatible and supported by
- * FlatVectorBackend.
+ * flatVectorView.
  *
  * \param basis Global function space basis of discrete function space
  * \param treePath Tree path specifying the part of the ansatz tree to use
@@ -301,7 +292,7 @@ namespace Imp {
  *
  * Notice that this will only work if the range type of f and
  * the block type of coeff are compatible and supported by
- * FlatVectorBackend.
+ * flatVectorView.
  *
  * \param basis Global function space basis of discrete function space
  * \param coeff Coefficient vector to represent the interpolation
@@ -323,7 +314,7 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bitVector)
  *
  * Notice that this will only work if the range type of f and
  * the block type of coeff are compatible and supported by
- * FlatVectorBackend.
+ * flatVectorView.
  *
  * This function will only work, if the local ansatz tree of
  * the basis is trivial, i.e., a single leaf node.
@@ -346,7 +337,7 @@ void interpolate(const B& basis, C&& coeff, const F& f)
  *
  * Notice that this will only work if the range type of f and
  * the block type of corresponding coeff entries are compatible
- * and supported by FlatVectorBackend.
+ * and supported by flatVectorView.
  *
  * \param basis Global function space basis of discrete function space
  * \param treePath Tree path specifying the part of the ansatz tree to use

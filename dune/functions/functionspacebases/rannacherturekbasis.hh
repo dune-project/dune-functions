@@ -285,7 +285,7 @@ protected:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 namespace Imp {
 
@@ -303,7 +303,7 @@ public:
 
 };
 
-} // end namespace BasisBuilder::Imp
+} // end namespace BasisFactory::Imp
 
 
 
@@ -318,8 +318,7 @@ auto rannacherTurek()
   return Imp::RannacherTurekPreBasisFactory<void>();
 }
 
-} // end namespace BasisBuilder
-
+} // end namespace BasisFactory
 
 
 

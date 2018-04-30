@@ -13,7 +13,7 @@ namespace Functions {
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 /**
  * \brief Create a pre-basis factory that can create a PQ_k pre-basis
@@ -28,7 +28,7 @@ auto lagrange()
   return Imp::PQkPreBasisFactory<k>();
 }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
 
 
 

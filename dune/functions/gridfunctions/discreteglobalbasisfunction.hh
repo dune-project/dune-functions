@@ -8,7 +8,7 @@
 #include <dune/common/shared_ptr.hh>
 
 #include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
-#include <dune/functions/functionspacebases/flatvectorbackend.hh>
+#include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/common/treedata.hh>
@@ -40,13 +40,13 @@ namespace Functions {
  * V the value of this basis function at the evaluation point. Notice
  * that both may be scalar, vector, matrix, or general container valued.
  *
- * 2.Each entry of C is associated with a flat index j via FlatVectorBackend.
+ * 2.Each entry of C is associated with a flat index j via flatVectorView.
  *   This is normally a lexicographic index. The total scalar dimension according
  *   to those flat indices is dim(C).
- * 3.Each entry of V is associated with a flat index k via FlatVectorBackend.
+ * 3.Each entry of V is associated with a flat index k via flatVectorView.
  *   This is normally a lexicographic index. The total scalar dimension according
  *   to those flat indices dim(V).
- * 4.Each entry of RE is associated with a flat index k via FlatVectorBackend.
+ * 4.Each entry of RE is associated with a flat index k via flatVectorView.
  *   This is normally a lexicographic index. The total scalar dimension according
  *   to those flat indices dim(RE).
  * 5.Via those flat indices we now interpret C,V, and RE as vectors and compute the diadic
@@ -89,8 +89,7 @@ public:
 
   class LocalFunction
   {
-    using LocalBasisView = typename Basis::LocalView;
-    using LocalIndexSet = typename Basis::LocalIndexSet;
+    using LocalView = typename Basis::LocalView;
     using size_type = typename SubTree::size_type;
 
     template<class Node>
@@ -105,10 +104,10 @@ public:
       : public TypeTree::TreeVisitor
       , public TypeTree::DynamicTraversal
     {
-      LocalEvaluateVisitor(const LocalDomain& x, Range& y, const LocalIndexSet& localIndexSet, const Vector& coefficients, const NodeToRangeEntry& nodeToRangeEntry, ShapeFunctionValueContainer& shapeFunctionValueContainer):
+      LocalEvaluateVisitor(const LocalDomain& x, Range& y, const LocalView& localView, const Vector& coefficients, const NodeToRangeEntry& nodeToRangeEntry, ShapeFunctionValueContainer& shapeFunctionValueContainer):
         x_(x),
         y_(y),
-        localIndexSet_(localIndexSet),
+        localView_(localView),
         coefficients_(coefficients),
         nodeToRangeEntry_(nodeToRangeEntry),
         shapeFunctionValueContainer_(shapeFunctionValueContainer)
@@ -117,11 +116,6 @@ public:
       template<typename Node, typename TreePath>
       void leaf(Node& node, TreePath treePath)
       {
-        using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
-        using MultiIndex = typename LocalIndexSet::MultiIndex;
-        using CoefficientBlock = typename std::decay<decltype(std::declval<Vector>()[std::declval<MultiIndex>()])>::type;
-        using RangeBlock = typename std::decay<decltype(nodeToRangeEntry_(node, y_))>::type;
-
         auto&& fe = node.finiteElement();
         auto&& localBasis = fe.localBasis();
 
@@ -129,41 +123,40 @@ public:
         localBasis.evaluateFunction(x_, shapeFunctionValues);
 
         // Get range entry associated to this node
-        auto&& re = nodeToRangeEntry_(node, y_);
+        auto re = flatVectorView(nodeToRangeEntry_(node, y_));
 
 
         for (size_type i = 0; i < localBasis.size(); ++i)
         {
-          auto&& multiIndex = localIndexSet_.index(node.localIndex(i));
+          auto&& multiIndex = localView_.index(node.localIndex(i));
 
           // Get coefficient associated to i-th shape function
-          auto&& c = coefficients_[multiIndex];
+          auto c = flatVectorView(coefficients_[multiIndex]);
 
           // Get value of i-th shape function
-          auto&& v = shapeFunctionValues[i];
+          auto v = flatVectorView(shapeFunctionValues[i]);
+
+
 
           // Notice that the range entry re, the coefficient c, and the shape functions
           // value v may all be scalar, vector, matrix, or general container valued.
           // The matching of their entries is done via the multistage procedure described
           // in the class documentation of DiscreteGlobalBasisFunction.
-          auto dimC = FlatVectorBackend<CoefficientBlock>::size(c);
-          auto dimV = FlatVectorBackend<LocalBasisRange>::size(v);
-          assert(dimC*dimV == FlatVectorBackend<RangeBlock>::size(re));
+          auto&& dimC = c.size();
+          auto dimV = v.size();
+          assert(dimC*dimV == re.size());
           for(size_type j=0; j<dimC; ++j)
           {
-            auto&& c_j = FlatVectorBackend<CoefficientBlock>::getEntry(c, j);
+            auto&& c_j = c[j];
             for(size_type k=0; k<dimV; ++k)
-            {
-              auto&& v_k = FlatVectorBackend<LocalBasisRange>::getEntry(v, k);
-              FlatVectorBackend<RangeBlock>::getEntry(re, j*dimV + k) += c_j*v_k;
-            }
+              re[j*dimV + k] += c_j*v[k];
           }
         }
       }
 
       const LocalDomain& x_;
       Range& y_;
-      const LocalIndexSet& localIndexSet_;
+      const LocalView& localView_;
       const Vector& coefficients_;
       const NodeToRangeEntry& nodeToRangeEntry_;
       ShapeFunctionValueContainer& shapeFunctionValueContainer_;
@@ -179,37 +172,31 @@ public:
 
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
       : globalFunction_(&globalFunction)
-      , localBasisView_(globalFunction.basis().localView())
-      , localIndexSet_(globalFunction.basis().localIndexSet())
+      , localView_(globalFunction.basis().localView())
     {
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
-      subTree_ = &TypeTree::child(localBasisView_.tree(), globalFunction_->treePath());
+      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
       shapeFunctionValueContainer_.init(*subTree_);
-//      localDoFs_.reserve(localBasisView_.maxSize());
+//      localDoFs_.reserve(localView_.maxSize());
     }
 
     LocalFunction(const LocalFunction& other)
       : globalFunction_(other.globalFunction_)
-      , localBasisView_(other.localBasisView_)
-      , localIndexSet_(globalFunction_->basis().localIndexSet())
+      , localView_(other.localView_)
       , bound_(other.bound_)
     {
-      if (other.bound_)
-        localIndexSet_.bind(localBasisView_);
-
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
-      subTree_ = &TypeTree::child(localBasisView_.tree(), globalFunction_->treePath());
+      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
       shapeFunctionValueContainer_.init(*subTree_);
     }
 
     LocalFunction operator=(const LocalFunction& other)
     {
       globalFunction_ = other.globalFunction_;
-      localBasisView_ = other.localBasisView_;
-      localIndexSet_ = other.localIndexSet_;
-      subTree_ = &TypeTree::child(localBasisView_.tree(), globalFunction_->treePath());
+      localView_ = other.localView_;
+      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
 
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
@@ -224,20 +211,18 @@ public:
      */
     void bind(const Element& element)
     {
-      localBasisView_.bind(element);
-      localIndexSet_.bind(localBasisView_);
+      localView_.bind(element);
       bound_ = true;
 
       // Read dofs associated to bound element
 //      localDoFs_.resize(subTree.size());
 //      for (size_type i = 0; i < subTree.size(); ++i)
-//        localDoFs_[i] = globalFunction_->dofs()[localIndexSet_.index(i)];
+//        localDoFs_[i] = globalFunction_->dofs()[localView.index(i)];
     }
 
     void unbind()
     {
-      localIndexSet_.unbind();
-      localBasisView_.unbind();
+      localView_.unbind();
       bound_ = false;
     }
 
@@ -261,7 +246,7 @@ public:
     {
       auto y = Range(0);
 
-      LocalEvaluateVisitor localEvaluateVisitor(x, y, localIndexSet_, globalFunction_->dofs(), globalFunction_->nodeToRangeEntry(), shapeFunctionValueContainer_);
+      LocalEvaluateVisitor localEvaluateVisitor(x, y, localView_, globalFunction_->dofs(), globalFunction_->nodeToRangeEntry(), shapeFunctionValueContainer_);
       TypeTree::applyToTree(*subTree_, localEvaluateVisitor);
 
       return y;
@@ -269,7 +254,7 @@ public:
 
     const Element& localContext() const
     {
-      return localBasisView_.element();
+      return localView_.element();
     }
 
     friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction& t)
@@ -280,8 +265,7 @@ public:
   private:
 
     const DiscreteGlobalBasisFunction* globalFunction_;
-    LocalBasisView localBasisView_;
-    LocalIndexSet localIndexSet_;
+    LocalView localView_;
 
     mutable ShapeFunctionValueContainer shapeFunctionValueContainer_;
 //    std::vector<typename V::value_type> localDoFs_;

@@ -5,7 +5,11 @@ add_definitions(-DDUNE_GRID_EXAMPLE_GRIDS_PATH=\"${DUNE_GRID_EXAMPLE_GRIDS_PATH}
 
 dune_add_test(SOURCES brezzidouglasmarinibasistest.cc)
 
+dune_add_test(SOURCES bsplinebasistest.cc)
+
 dune_add_test(SOURCES gridviewfunctionspacebasistest.cc)
+
+dune_add_test(SOURCES lagrangedgbasistest.cc)
 
 dune_add_test(SOURCES taylorhoodbasistest.cc)
 

@@ -24,7 +24,7 @@ namespace Dune {
 namespace Functions {
 
   /**
-     \brief A Vector class with statically reserved memory.
+     \brief A double-ended queue (deque) class with statically reserved memory
 
      \ingroup Utility
 
@@ -33,11 +33,11 @@ namespace Functions {
      push_back and pop_back at the end, or via push_front and pop_front,
      but reserved memory is predefined.
 
-     This implies that the vector can not grow bigger than the predefined
+     This implies that the deque cannot grow bigger than the predefined
      maximum size.
 
-     \tparam T The data type ReservedVector stores.
-     \tparam n The maximum number of objects the ReservedVector can store.
+     \tparam T The data type ReservedDeque stores
+     \tparam n The maximum number of objects the ReservedDeque can store
 
    */
   template<class T, int n>
@@ -224,7 +224,7 @@ namespace Functions {
 
     /** @} */
 
-    //! Send ReservedVector to an output stream
+    //! Send ReservedDeque to an output stream
     friend std::ostream& operator<< (std::ostream& s, const ReservedDeque& v)
     {
       for (size_t i=0; i<v.size(); i++)

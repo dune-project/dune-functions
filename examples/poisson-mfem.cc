@@ -203,25 +203,23 @@ void getOccupationPattern(const Basis& basis,
 
   // A view on the FE basis on a single element
   auto localView = basis.localView();
-  auto localIndexSet = basis.localIndexSet();
 
   // Loop over all leaf elements
   for(const auto& element : elements(basis.gridView()))
   {
     // Bind the local FE basis view to the current element
     localView.bind(element);
-    localIndexSet.bind(localView);
 
     // Add element stiffness matrix onto global stiffness matrix
-    for (size_t i=0; i<localIndexSet.size(); i++)
+    for (size_t i=0; i<localView.size(); i++)
     {
       // The global index of the i-th local degree of freedom of the element 'e'
-      auto row = localIndexSet.index(i);
+      auto row = localView.index(i);
 
-      for (size_t j=0; j<localIndexSet.size(); ++j)
+      for (size_t j=0; j<localView.size(); ++j)
       {
         // The global index set of the j-th local degree of freedom of the element 'e'
-        auto col = localIndexSet.index(j);
+        auto col = localView.index(j);
 
         nb[row[0]][col[0]].add(row[1], col[1]);
       }
@@ -253,14 +251,12 @@ void assembleMixedPoissonMatrix(const Basis& basis,
 
   // A view on the FE basis on a single element
   auto localView = basis.localView();
-  auto localIndexSet = basis.localIndexSet();
 
   // A loop over all elements of the grid
   for(const auto& element : elements(gridView))
   {
     // Bind the local FE basis view to the current element
     localView.bind(element);
-    localIndexSet.bind(localView);
 
     // Now let's get the element stiffness matrix
     // A dense matrix is used for the element stiffness matrix
@@ -271,12 +267,12 @@ void assembleMixedPoissonMatrix(const Basis& basis,
     for (size_t i=0; i<elementMatrix.N(); i++)
     {
       // The global index of the i-th local degree of freedom of the element 'e'
-      auto row = localIndexSet.index(i);
+      auto row = localView.index(i);
 
       for (size_t j=0; j<elementMatrix.M(); j++ )
       {
         // The global index of the j-th local degree of freedom of the element 'e'
-        auto col = localIndexSet.index(j);
+        auto col = localView.index(j);
         matrix[row[0]][col[0]][row[1]][col[1]] += elementMatrix[i][j];
       }
     }
@@ -304,14 +300,12 @@ void assembleMixedPoissonRhs(const Basis& basis,
 
   // A view on the FE basis on a single element
   auto localView = basis.localView();
-  auto localIndexSet = basis.localIndexSet();
 
   // A loop over all elements of the grid
   for(const auto& element : elements(gridView))
   {
     // Bind the local FE basis view to the current element
     localView.bind(element);
-    localIndexSet.bind(localView);
 
     // Now get the local contribution to the right-hand side vector
     BlockVector<FieldVector<double,1> > localRhs;
@@ -321,7 +315,7 @@ void assembleMixedPoissonRhs(const Basis& basis,
     for (size_t i=0; i<localRhs.size(); i++)
     {
       // The global index of the i-th vertex of the element 'e'
-      auto row = localIndexSet.index(i);
+      auto row = localView.index(i);
       rhs[row[0]][row[1]] += localRhs[i];
     }
   }
@@ -338,10 +332,10 @@ int main (int argc, char *argv[])
 
 #ifdef DIM2
   const int dim = 2;
-  std::array<int,dim> elements = {50, 50};
+  std::array<int,dim> elements = {{50, 50}};
 #else
   const int dim = 3;
-  std::array<int,dim> elements = {10, 10, 10};
+  std::array<int,dim> elements = {{10, 10, 10}};
 #endif
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> l(1);
@@ -354,14 +348,14 @@ int main (int argc, char *argv[])
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
-  using namespace Functions::BasisBuilder;
+  using namespace Functions::BasisFactory;
 
   const int k = 0;
 
   auto basis = makeBasis(
     gridView,
     composite(
-      rt<k, GeometryType::BasicType::cube>(),
+      raviartThomas<k>(),
       pq<k>()
     ));
 
@@ -502,7 +496,7 @@ int main (int argc, char *argv[])
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
   //////////////////////////////////////////////////////////////////////////////////////////////
-  SubsamplingVTKWriter<GridView> vtkWriter(gridView,0);
+  SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(0));
   vtkWriter.addVertexData(fluxFunction, VTK::FieldInfo("flux", VTK::FieldInfo::Type::vector, dim));
   if (k==0)
     vtkWriter.addCellData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));

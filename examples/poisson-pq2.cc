@@ -135,23 +135,21 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
   nb.resize(n, n);
 
   // A view on the FE basis on a single element
-  typename FEBasis::LocalView localView(feBasis);
-  auto localIndexSet = feBasis.localIndexSet();
+  auto localView = feBasis.localView();
 
   // Loop over all leaf elements
   for(const auto& e : elements(feBasis.gridView()))
   {
     // Bind the local FE basis view to the current element
     localView.bind(e);
-    localIndexSet.bind(localView);
 
     // There is a matrix entry a_ij if the i-th and j-th vertex are connected in the grid
     for (size_t i=0; i<localView.tree().size(); i++) {
 
       for (size_t j=0; j<localView.tree().size(); j++) {
 
-        auto iIdx = localIndexSet.index(i);
-        auto jIdx = localIndexSet.index(j);
+        auto iIdx = localView.index(i);
+        auto jIdx = localView.index(j);
 
         // Add a nonzero entry to the matrix
         nb.add(iIdx, jIdx);
@@ -198,7 +196,6 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
 
   // A view on the FE basis on a single element
   auto localView = feBasis.localView();
-  auto localIndexSet = feBasis.localIndexSet();
 
   // A loop over all elements of the grid
   for(const auto& e : elements(gridView))
@@ -206,7 +203,6 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
 
     // Bind the local FE basis view to the current element
     localView.bind(e);
-    localIndexSet.bind(localView);
 
     // Now let's get the element stiffness matrix
     // A dense matrix is used for the element stiffness matrix
@@ -217,12 +213,12 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
     for (size_t i=0; i<elementMatrix.N(); i++) {
 
       // The global index of the i-th local degree of freedom of the element 'e'
-      auto row = localIndexSet.index(i);
+      auto row = localView.index(i);
 
       for (size_t j=0; j<elementMatrix.M(); j++ ) {
 
         // The global index of the j-th local degree of freedom of the element 'e'
-        auto col = localIndexSet.index(j);
+        auto col = localView.index(j);
         matrix[row][col] += elementMatrix[i][j];
 
       }
@@ -237,7 +233,7 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
     for (size_t i=0; i<localRhs.size(); i++) {
 
       // The global index of the i-th vertex of the element 'e'
-      auto row = localIndexSet.index(i);
+      auto row = localView.index(i);
       rhs[row] += localRhs[i];
 
     }
@@ -287,7 +283,7 @@ int main (int argc, char *argv[]) try
   const int dim = 2;
   typedef YaspGrid<dim> GridType;
   FieldVector<double,dim> l(1);
-  std::array<int,dim> elements = {10, 10};
+  std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
   typedef GridType::LeafGridView GridView;
@@ -390,7 +386,7 @@ int main (int argc, char *argv[]) try
   //  Write result to VTK file
   //  We need to subsample, because VTK cannot natively display real second-order functions
   //////////////////////////////////////////////////////////////////////////////////////////////
-  SubsamplingVTKWriter<GridView> vtkWriter(gridView,2);
+  SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(2));
   vtkWriter.addVertexData(xFunction, VTK::FieldInfo("x", VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.write("poisson-pq2");
 

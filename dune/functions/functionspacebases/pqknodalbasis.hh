@@ -355,7 +355,12 @@ public:
         // The dimension of the entity that the current dof is related to
         auto dofDim = dim - localKey.codim();
 
-        if (dofDim==0) {  // vertex dof
+        // Test for a vertex dof
+        // The test for k==1 is redundant, but having it here allows the compiler to conclude
+        // at compile-time that the dofDim==0 case is the only one that will ever happen.
+        // This leads to measurable speed-up: see
+        //   https://gitlab.dune-project.org/staging/dune-functions/issues/30
+        if (k==1 || dofDim==0) {
           *it = {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
           continue;
         }
@@ -466,7 +471,7 @@ protected:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 namespace Imp {
 
@@ -484,7 +489,7 @@ public:
 
 };
 
-} // end namespace BasisBuilder::Imp
+} // end namespace BasisFactory::Imp
 
 
 
@@ -501,8 +506,7 @@ auto pq()
   return Imp::PQkPreBasisFactory<k>();
 }
 
-} // end namespace BasisBuilder
-
+} // end namespace BasisFactory
 
 
 // *****************************************************************************

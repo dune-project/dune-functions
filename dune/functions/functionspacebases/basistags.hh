@@ -34,7 +34,7 @@ namespace Functions {
   } // namespace Concept
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
   /**
    * \brief Base class for index merging strategies to simplify detection
@@ -177,7 +177,19 @@ namespace BasisBuilder {
    *  f_2             | (i2,0)
    *  g_2             | (i2,1)
    */
-  struct LeafBlockedInterleaved : public IndexMergingStrategy {};
+  struct BlockedInterleaved : public IndexMergingStrategy {};
+
+
+  /**
+   * \brief Same as BlockedInterleaved
+   *
+   * This alias is deprecated, use BlockedInterleaved instead.
+   *
+   * \deprecated
+   *
+   * \ingroup FunctionSpaceBasesUtilities
+   */
+  using LeafBlockedInterleaved  = BlockedInterleaved;
 
 
   /**
@@ -215,12 +227,34 @@ namespace BasisBuilder {
    *
    * \ingroup FunctionSpaceBasesUtilities
    */
-  constexpr LeafBlockedInterleaved leafBlockedInterleaved()
+  constexpr BlockedInterleaved blockedInterleaved()
   {
     return {};
   }
 
-} // end namespace BasisBuilder
+  /**
+   * \brief Same as blockedInterleaved()
+   *
+   * This function is deprecated, use blockedInterleaved() instead.
+   *
+   * \deprecated
+   *
+   * \ingroup FunctionSpaceBasesUtilities
+   */
+  constexpr BlockedInterleaved DUNE_DEPRECATED_MSG("leafBlockedInterleaved() is deprecated, use blockedInterleaved() instead.") leafBlockedInterleaved ()
+  {
+    return {};
+  }
+
+} // end namespace BasisFactory
+
+// Backward compatibility
+namespace BasisBuilder {
+
+  using namespace BasisFactory;
+
+}
+
 } // end namespace Functions
 } // end namespace Dune
 

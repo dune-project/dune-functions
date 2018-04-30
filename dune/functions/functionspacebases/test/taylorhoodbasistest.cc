@@ -4,6 +4,7 @@
 
 #include <iostream>
 
+#include <dune/common/unused.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
@@ -58,7 +59,6 @@ int main (int argc, char* argv[]) try
 
   // Objects required in the local context
   auto localView = feBasis.localView();
-  auto localIndexSet = feBasis.localIndexSet();
   std::vector<double> coefficients(localView.maxSize());
 
   // Loop over elements and integrate over the function
@@ -66,26 +66,23 @@ int main (int argc, char* argv[]) try
   for (auto it = gridView.begin<0>(); it != gridView.end<0>(); ++it)
   {
     localView.bind(*it);
-    localIndexSet.bind(localView);
 
     // paranoia checks
-    assert(localView.size() == localIndexSet.size());
     assert(&(localView.globalBasis()) == &(feBasis));
-    assert(&(localIndexSet.localView()) == &(localView));
 
     // copy data from global vector
-    coefficients.resize(localIndexSet.size());
-    for (size_t i=0; i<localIndexSet.size(); i++)
+    coefficients.resize(localView.size());
+    for (size_t i=0; i<localView.size(); i++)
     {
-      MultiIndex mi = localIndexSet.index(i);
+      MultiIndex mi = localView.index(i);
       coefficients[i] = x[mi[0]][mi[1]];
     }
 
     // get access to the finite element
     using namespace Dune::TypeTree::Indices;
-    typedef Basis::LocalView::Tree Tree;
+    typedef Basis::LocalView::Tree Tree DUNE_UNUSED;
     auto& p_leaf = TypeTree::child(localView.tree(),_1);
-    auto& v_leaf = TypeTree::child(localView.tree(),_0,1);
+    auto& v_leaf DUNE_UNUSED = TypeTree::child(localView.tree(),_0,1);
     auto& localFiniteElement = p_leaf.finiteElement();
 
     // A quadrature rule
@@ -112,12 +109,30 @@ int main (int argc, char* argv[]) try
     }
 
     // unbind
-    localIndexSet.unbind();
     localView.unbind();
   }
 
   std::cout << "Computed integral is " << integral << std::endl;
   assert(std::abs(integral-0.5)< 1e-10);
+
+  /////////////////////////////////////////////////////////////////
+  //  Standard tests
+  /////////////////////////////////////////////////////////////////
+
+  // check TaylorHoodBasis created 'manually'
+  {
+    typedef GridType::LeafGridView GridView;
+    const GridView& gridView = grid.leafGridView();
+    Functions::TaylorHoodBasis<GridView> basis(gridView);
+    test.subTest(checkBasis(basis));
+  }
+
+  // check RaviartThomasBasis created using basis builder mechanism
+  {
+    using namespace Functions::BasisFactory;
+    auto basis = makeBasis(grid.leafGridView(), taylorHood());
+    test.subTest(checkBasis(basis));
+  }
 
   return test.exit();
 

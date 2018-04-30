@@ -291,6 +291,46 @@ protected:
 
 
 
+
+namespace BasisFactory {
+
+namespace Imp {
+
+template<std::size_t k>
+class LagrangeDGPreBasisFactory
+{
+public:
+  static const std::size_t requiredMultiIndexSize = 1;
+
+  template<class MultiIndex, class GridView>
+  auto makePreBasis(const GridView& gridView) const
+  {
+    return LagrangeDGPreBasis<GridView, k, MultiIndex>(gridView);
+  }
+
+};
+
+} // end namespace BasisFactory::Imp
+
+
+
+/**
+ * \brief Create a pre-basis factory that can create a LagrangeDG pre-basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam k   The polynomial order of the ansatz functions
+ */
+template<std::size_t k>
+auto lagrangeDG()
+{
+  return Imp::LagrangeDGPreBasisFactory<k>();
+}
+
+} // end namespace BasisFactory
+
+
+
 // *****************************************************************************
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************

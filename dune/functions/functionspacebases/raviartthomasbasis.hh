@@ -6,6 +6,9 @@
 #include <array>
 #include <dune/common/exceptions.hh>
 
+#include <dune/localfunctions/common/virtualinterface.hh>
+#include <dune/localfunctions/common/virtualwrappers.hh>
+
 #include <dune/localfunctions/raviartthomas.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas0cube2d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas0cube3d.hh>
@@ -26,76 +29,91 @@ namespace Functions {
 
 namespace Impl {
 
-  template<int dim, GeometryType::BasicType basic_type, typename D, typename R, std::size_t k>
-  struct RaviartThomasLocalInfo
+  template<int dim, typename D, typename R, std::size_t k>
+  struct RaviartThomasSimplexLocalInfo
   {
     static_assert((AlwaysFalse<D>::value),"The requested type of Raviart-Thomas element is not implemented, sorry!");
   };
 
   template<typename D, typename R>
-  struct RaviartThomasLocalInfo<2,GeometryType::simplex,D,R,0>
+  struct RaviartThomasSimplexLocalInfo<2,D,R,0>
   {
     using FiniteElement = RT02DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 8;
   };
 
   template<typename D, typename R>
-  struct RaviartThomasLocalInfo<2,GeometryType::simplex,D,R,1>
+  struct RaviartThomasSimplexLocalInfo<2,D,R,1>
   {
     using FiniteElement = RT12DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 8;
   };
 
+  template<int dim, typename D, typename R, std::size_t k>
+  struct RaviartThomasCubeLocalInfo
+  {
+    static_assert((AlwaysFalse<D>::value),"The requested type of Raviart-Thomas element is not implemented, sorry!");
+  };
+
   template<typename D, typename R>
-  struct RaviartThomasLocalInfo<2,GeometryType::cube,D,R,0>
+  struct RaviartThomasCubeLocalInfo<2,D,R,0>
   {
     using FiniteElement = RT0Cube2DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
-  struct RaviartThomasLocalInfo<2,GeometryType::cube,D,R,1>
+  struct RaviartThomasCubeLocalInfo<2,D,R,1>
   {
     using FiniteElement = RT1Cube2DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
-  struct RaviartThomasLocalInfo<2,GeometryType::cube,D,R,2>
+  struct RaviartThomasCubeLocalInfo<2,D,R,2>
   {
     using FiniteElement = RT2Cube2DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
-  struct RaviartThomasLocalInfo<3,GeometryType::cube,D,R,0>
+  struct RaviartThomasCubeLocalInfo<3,D,R,0>
   {
     using FiniteElement = RT0Cube3DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 64;
   };
 
   template<typename D, typename R>
-  struct RaviartThomasLocalInfo<3,GeometryType::cube,D,R,1>
+  struct RaviartThomasCubeLocalInfo<3,D,R,1>
   {
     using FiniteElement = RT1Cube3DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 64;
   };
 
-  template<typename GV, int dim, GeometryType::BasicType basic_type, typename D, typename R, std::size_t k>
+  template<typename GV, int dim, typename R, std::size_t k>
   class RaviartThomasLocalFiniteElementMap
   {
-    static const std::size_t Variants = RaviartThomasLocalInfo<dim, basic_type, D, R, k>::Variants;
+    using D = typename GV::ctype;
+    using CubeFiniteElement    = typename RaviartThomasCubeLocalInfo<dim, D, R, k>::FiniteElement;
+    using SimplexFiniteElement = typename RaviartThomasSimplexLocalInfo<dim, D, R, k>::FiniteElement;
 
   public:
 
-    using FiniteElement = typename RaviartThomasLocalInfo<dim, basic_type, D, R, k>::FiniteElement;
+    using T = LocalBasisTraits<D, dim, FieldVector<D,dim>, R, dim, FieldVector<R,dim>, FieldMatrix<D,dim,dim> >;
+    using FiniteElement = LocalFiniteElementVirtualInterface<T>;
 
     RaviartThomasLocalFiniteElementMap(const GV& gv)
-      : gv_(gv), is_(&(gv_.indexSet())), orient_(gv.size(0))
+      : is_(&(gv.indexSet())), orient_(gv.size(0))
     {
+      cubeVariant_.resize(RaviartThomasCubeLocalInfo<dim, D, R, k>::Variants);
+      simplexVariant_.resize(RaviartThomasSimplexLocalInfo<dim, D, R, k>::Variants);
+
       // create all variants
-      for (size_t i = 0; i < Variants; i++)
-        variant_[i] = FiniteElement(i);
+      for (size_t i = 0; i < cubeVariant_.size(); i++)
+        cubeVariant_[i] = std::make_unique<LocalFiniteElementVirtualImp<CubeFiniteElement> >(CubeFiniteElement(i));
+
+      for (size_t i = 0; i < simplexVariant_.size(); i++)
+        simplexVariant_[i] = std::make_unique<LocalFiniteElementVirtualImp<SimplexFiniteElement> >(SimplexFiniteElement(i));
 
       // compute orientation for all elements
       // loop once over the grid
@@ -116,12 +134,15 @@ namespace Impl {
     template<class EntityType>
     const FiniteElement& find(const EntityType& e) const
     {
-      return variant_[orient_[is_->index(e)]];
+      if (e.type().isCube())
+        return *cubeVariant_[orient_[is_->index(e)]];
+      else
+        return *simplexVariant_[orient_[is_->index(e)]];
     }
 
     private:
-      GV gv_;
-      std::array<FiniteElement,Variants> variant_;
+      std::vector<std::unique_ptr<LocalFiniteElementVirtualImp<CubeFiniteElement> > > cubeVariant_;
+      std::vector<std::unique_ptr<LocalFiniteElementVirtualImp<SimplexFiniteElement> > > simplexVariant_;
       const typename GV::IndexSet* is_;
       std::vector<unsigned char> orient_;
   };
@@ -142,19 +163,19 @@ namespace Impl {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k, typename ST, typename TP, GeometryType::BasicType basic_type>
+template<typename GV, int k, typename ST, typename TP>
 class RaviartThomasNode;
 
-template<typename GV, int k, class MI, class TP, class ST, GeometryType::BasicType basic_type>
+template<typename GV, int k, class MI, class TP, class ST>
 class RaviartThomasNodeIndexSet;
 
-template<typename GV, int k, class MI, class ST, GeometryType::BasicType basic_type>
+template<typename GV, int k, class MI, class ST>
 class RaviartThomasPreBasis
 {
   static const int dim = GV::dimension;
-  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, basic_type, typename GV::ctype, double, k>;
+  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, double, k>;
 
-  template<typename, int, class, class, class, GeometryType::BasicType>
+  template<typename, int, class, class, class>
   friend class RaviartThomasNodeIndexSet;
 
 public:
@@ -163,21 +184,11 @@ public:
   using GridView = GV;
   using size_type = ST;
 
-  // Precompute the number of dofs per entity type depending on the entity's codimension and the grid's type (only valid for cube and simplex grids)
-
-  // for 3D only for cubes k=0,1
-  // Note: dofsPerElement = dofsPerFace * dim for cubes, k=0,1
-
-  const static int dofsPerFace    = dim == 2 ? k+1 : 3*k+1;
-  const static int dofsPerElement = dim == 2 ? (basic_type == GeometryType::cube ? k*(k+1)*dim : k*dim) : k*(k+1)*(k+1)*dim;
-
-  const std::vector<int> dofsPerCodim {dofsPerElement, dofsPerFace};
+  template<class TP>
+  using Node = RaviartThomasNode<GV, k, size_type, TP>;
 
   template<class TP>
-  using Node = RaviartThomasNode<GV, k, size_type, TP, basic_type>;
-
-  template<class TP>
-  using IndexSet = RaviartThomasNodeIndexSet<GV, k, MI, TP, ST, basic_type>;
+  using IndexSet = RaviartThomasNodeIndexSet<GV, k, MI, TP, ST>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -188,13 +199,23 @@ public:
   RaviartThomasPreBasis(const GridView& gv) :
     gridView_(gv),
     finiteElementMap_(gv)
-  { }
+  {
+    // There is no inherent reason why the basis shouldn't work for grids with more than one
+    // element types.  Somebody simply has to sit down and implement the missing bits.
+    if (gv.indexSet().types(0).size() > 1)
+      DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas basis is only implemented for grids with a single element type");
+
+    GeometryType type = gv.template begin<0>()->type();
+    const static int dofsPerElement = (dim == 2) ? (type.isCube() ? k*(k+1)*dim : k*dim) : k*(k+1)*(k+1)*dim;
+    constexpr int dofsPerFace    = (dim == 2) ? k+1 : 3*k+1;
+
+    dofsPerCodim_ = {dofsPerElement, dofsPerFace};
+  }
 
   void initializeIndices()
   {
-    codimOffset_.resize(2);
     codimOffset_[0] = 0;
-    codimOffset_[1] = codimOffset_[0] + dofsPerCodim[0] * gridView_.size(0);
+    codimOffset_[1] = codimOffset_[0] + dofsPerCodim_[0] * gridView_.size(0);
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -224,7 +245,7 @@ public:
 
   size_type size() const
   {
-    return dofsPerCodim[0] * gridView_.size(0) + dofsPerCodim[1] * gridView_.size(1);
+    return dofsPerCodim_[0] * gridView_.size(0) + dofsPerCodim_[1] * gridView_.size(1);
   }
 
   //! Return number possible values for next position in multi index
@@ -242,22 +263,29 @@ public:
 
   size_type maxNodeSize() const
   {
-    // The implementation currently only supports grids with a single element type.
-    // We can therefore return the actual number of dofs here.
-    GeometryType elementType = *(gridView_.indexSet().types(0).begin());
-    size_t numFaces = ReferenceElements<double,dim>::general(elementType).size(1);
-    return dofsPerCodim[0] + dofsPerCodim[1] * numFaces;
+    size_type result = 0;
+    for (auto&& type : gridView_.indexSet().types(0))
+    {
+      size_t numFaces = ReferenceElements<double,dim>::general(type).size(1);
+      const static int dofsPerCodim0 = (dim == 2) ? (type.isCube() ? k*(k+1)*dim : k*dim) : k*(k+1)*(k+1)*dim;
+      constexpr int dofsPerCodim1 = (dim == 2) ? k+1 : 3*k+1;
+      result = std::max(result, dofsPerCodim0 + dofsPerCodim1 * numFaces);
+    }
+
+    return result;
   }
 
 protected:
   const GridView gridView_;
-  std::vector<size_t> codimOffset_;
+  std::array<size_t,dim+1> codimOffset_;
   FiniteElementMap finiteElementMap_;
+  // Number of dofs per entity type depending on the entity's codimension and type
+  std::array<int,dim+1> dofsPerCodim_;
 };
 
 
 
-template<typename GV, int k, typename ST, typename TP, GeometryType::BasicType basic_type>
+template<typename GV, int k, typename ST, typename TP>
 class RaviartThomasNode :
   public LeafBasisNode<ST, TP>
 {
@@ -270,7 +298,7 @@ public:
   using size_type = ST;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, basic_type, typename GV::ctype, double, k>;
+  using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, double, k>;
   using FiniteElement = typename FiniteElementMap::FiniteElement;
 
   RaviartThomasNode(const TreePath& treePath, const FiniteElementMap* finiteElementMap) :
@@ -310,7 +338,7 @@ protected:
   const FiniteElementMap* finiteElementMap_;
 };
 
-template<typename GV, int k, class MI, class TP, class ST, GeometryType::BasicType basic_type>
+template<typename GV, int k, class MI, class TP, class ST>
 class RaviartThomasNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -322,7 +350,7 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using PreBasis = RaviartThomasPreBasis<GV, k, MI, ST, basic_type>;
+  using PreBasis = RaviartThomasPreBasis<GV, k, MI, ST>;
 
   using Node = typename PreBasis::template Node<TP>;
 
@@ -366,8 +394,8 @@ public:
     const auto& element = node_->element();
 
     // throw if Element is not of predefined type
-    if (not(basic_type==GeometryType::BasicType::cube and element.type().isCube()) and
-        not(basic_type==GeometryType::BasicType::simplex and element.type().isSimplex())) DUNE_THROW(Dune::NotImplemented, "RaviartThomasNodalBasis only implemented for cube and simplex elements.");
+    if (not(element.type().isCube()) and not(element.type().isSimplex()))
+      DUNE_THROW(Dune::NotImplemented, "RaviartThomasBasis only implemented for cube and simplex elements.");
 
     for(std::size_t i=0, end=size(); i<end; ++i, ++it)
     {
@@ -381,7 +409,7 @@ public:
         DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasBasis");
 
       *it = { preBasis_->codimOffset_[codim] +
-        preBasis_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
+        preBasis_->dofsPerCodim_[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
     }
 
     return it;
@@ -394,11 +422,11 @@ protected:
 
 
 
-namespace BasisBuilder {
+namespace BasisFactory {
 
 namespace Imp {
 
-template<std::size_t k, GeometryType::BasicType basic_type, class size_type=std::size_t>
+template<std::size_t k, class size_type=std::size_t>
 class RaviartThomasPreBasisFactory
 {
 public:
@@ -407,12 +435,12 @@ public:
   template<class MultiIndex, class GridView>
   auto makePreBasis(const GridView& gridView) const
   {
-    return RaviartThomasPreBasis<GridView, k, MultiIndex, size_type, basic_type>(gridView);
+    return RaviartThomasPreBasis<GridView, k, MultiIndex, size_type>(gridView);
   }
 
 };
 
-} // end namespace BasisBuilder::Imp
+} // end namespace BasisFactory::Imp
 
 /**
  * \brief Create a pre-basis factory that can create a Raviart-Thomas pre-basis
@@ -420,15 +448,14 @@ public:
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam k Order of the Raviart-Thomas element
- * \tparam basic_type Basic geometry type
  */
-template<std::size_t k, GeometryType::BasicType basic_type, class size_type=std::size_t>
-auto rt()
+template<std::size_t k, class size_type=std::size_t>
+auto raviartThomas()
 {
-  return Imp::RaviartThomasPreBasisFactory<k, basic_type, size_type>();
+  return Imp::RaviartThomasPreBasisFactory<k, size_type>();
 }
 
-} // end namespace BasisBuilder
+} // end namespace BasisFactory
 
 
 
@@ -436,15 +463,15 @@ auto rt()
 // This is the actual global basis implementation based on the reusable parts.
 // *****************************************************************************
 
-/** \brief Nodal basis of a scalar k-th-order Raviart Thomas finite element space
+/** \brief Basis of a k-th-order Raviart Thomas finite element space
  *
- * TODO
+ * TODO: Fix this for grids with more than one element type
  *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
-template<typename GV, int k, GeometryType::BasicType basic_type, class ST = std::size_t>
-using RaviartThomasNodalBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<ST>, ST, basic_type> >;
+template<typename GV, int k, class ST = std::size_t>
+using RaviartThomasBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<ST>, ST> >;
 
 } // end namespace Functions
 } // end namespace Dune
