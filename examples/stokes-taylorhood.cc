@@ -296,6 +296,10 @@ int main (int argc, char *argv[]) try
   using MatrixType = Matrix<BCRSMatrix<FieldMatrix<double,1,1> > >;
   // { linear_algebra_setup_end }
 
+  /////////////////////////////////////////////////////////
+  //  Assemble the system
+  /////////////////////////////////////////////////////////
+
   // { rhs_assembly_begin }
   VectorType rhs;
 
@@ -305,16 +309,16 @@ int main (int argc, char *argv[]) try
   rhs = 0;                                 /*@\label{li:stokes_taylorhood_set_rhs_to_zero}@*/
   // { rhs_assembly_end }
 
-  /////////////////////////////////////////////////////////
-  //  Assemble the system
-  /////////////////////////////////////////////////////////
   // { matrix_assembly_begin }
   MatrixType stiffnessMatrix;
   assembleStokesMatrix(taylorHoodBasis, stiffnessMatrix);   /*@\label{li:stokes_taylorhood_call_to_assemblestokesmatrix}@*/
   // { matrix_assembly_end }
 
-  // Set Dirichlet values
+  /////////////////////////////////////////////////////////
+  // Set Dirichlet values.
   // Only velocity components have Dirichlet boundary values
+  /////////////////////////////////////////////////////////
+
   // { boundary_predicate_begin }
   using Coordinate = GridView::Codim<0> ::Geometry::GlobalCoordinate;
 
@@ -334,13 +338,14 @@ int main (int argc, char *argv[]) try
 
   BitVectorType isBoundary;
 
-  for(int i=0; i<dim; ++i)
-    interpolate(Functions::subspaceBasis(taylorHoodBasis, _0, i), BitVectorBackend(isBoundary), boundaryIndicator);
+  interpolate(Functions::subspaceBasis(taylorHoodBasis, _0), BitVectorBackend(isBoundary), boundaryIndicator);
   // { interpolate_boundary_predicate_end }
 
   // { interpolate_dirichlet_values_begin }
   using VelocityRange = FieldVector<double,dim>;
-  auto&& velocityDirichletData = [](Coordinate x)->VelocityRange { return {0.0, double(x[0] < 1e-8)};};
+  auto&& velocityDirichletData = [](Coordinate x) {
+    return VelocityRange{0.0, double(x[0] < 1e-8)};
+  };
 
   interpolate(Functions::subspaceBasis(taylorHoodBasis, _0),
                         VectorBackend(rhs),
