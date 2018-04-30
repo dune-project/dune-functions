@@ -43,7 +43,7 @@ void getLocalMatrix(const LocalView& localView,
 {
   // Get the grid element from the local FE basis view
   // { local_assembler_get_element_information_begin }
-  typedef typename LocalView::Element Element;
+  using Element = typename LocalView::Element;
   const Element& element = localView.element();
 
   const int dim = Element::dimension;
@@ -58,7 +58,7 @@ void getLocalMatrix(const LocalView& localView,
 
   // Get set of shape functions for this element
   // { get_local_fe_begin }
-  using namespace Dune::TypeTree::Indices;
+  using namespace TypeTree::Indices;
   const auto& velocityLocalFiniteElement = localView.tree().child(_0,0).finiteElement();  /*@\label{li:stokes_taylorhood_get_velocity_lfe}@*/
   const auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();    /*@\label{li:stokes_taylorhood_get_pressure_lfe}@*/
   // { get_local_fe_end }
@@ -256,12 +256,12 @@ int main (int argc, char *argv[]) try
   ///////////////////////////////////
 
   const int dim = 2;
-  typedef YaspGrid<dim> GridType;
+  using GridType = YaspGrid<dim>;
   FieldVector<double,dim> bbox = {1, 1};
   std::array<int,dim> elements = {{4, 4}};
   GridType grid(bbox,elements);
 
-  typedef GridType::LeafGridView GridView;
+  using GridView = typename GridType::LeafGridView;
   GridView gridView = grid.leafGridView();
   // { grid_setup_end }
 
@@ -270,14 +270,12 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   // { function_space_basis_begin }
-//  typedef Functions::TaylorHoodBasis<GridView> TaylorHoodBasis;        /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
-//  TaylorHoodBasis taylorHoodBasis(gridView);
 
   using namespace Functions::BasisFactory;
 
   static const std::size_t K = 1; // pressure order for Taylor-Hood
 
-  auto taylorHoodBasis = makeBasis(
+  auto taylorHoodBasis = makeBasis(  /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
     gridView,
     composite(
       power<dim>(
@@ -294,15 +292,15 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   // { linear_algebra_setup_begin }
-  typedef BlockVector<BlockVector<FieldVector<double,1> > > VectorType;
-  typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
+  using VectorType = BlockVector<BlockVector<FieldVector<double,1> > >;
+  using MatrixType = Matrix<BCRSMatrix<FieldMatrix<double,1,1> > >;
   // { linear_algebra_setup_end }
 
   // { rhs_assembly_begin }
   VectorType rhs;
 
-  typedef Dune::Functions::HierarchicVectorWrapper<VectorType, double> HierarchicVectorView;
-  HierarchicVectorView(rhs).resize(taylorHoodBasis);
+  using VectorBackend = typename Functions::HierarchicVectorWrapper<VectorType, double> 
+  VectorBackend(rhs).resize(taylorHoodBasis);
 
   rhs = 0;                                 /*@\label{li:stokes_taylorhood_set_rhs_to_zero}@*/
   // { rhs_assembly_end }
@@ -344,11 +342,11 @@ int main (int argc, char *argv[]) try
   // { interpolate_boundary_predicate_end }
 
   // { interpolate_dirichlet_values_begin }
-  typedef FieldVector<double,dim> VelocityRange;
+  using VelocityRange = FieldVector<double,dim>;
   auto&& velocityDirichletData = [](Coordinate x)->VelocityRange { return {0.0, double(x[0] < 1e-8)};};
 
   interpolate(Functions::subspaceBasis(taylorHoodBasis, _0),
-                        HierarchicVectorView(rhs),
+                        VectorBackend(rhs),
                         velocityDirichletData,
                         HierarchicBitVectorView(isBoundary));
   // { interpolate_dirichlet_values_end }
@@ -415,9 +413,9 @@ int main (int argc, char *argv[]) try
   using PressureRange = double;
 
   auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(Functions::subspaceBasis(taylorHoodBasis, _0),
-                                                                                    HierarchicVectorView(x));
+                                                                                    VectorBackend(x));
   auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(Functions::subspaceBasis(taylorHoodBasis, _1),
-                                                                                    HierarchicVectorView(x));
+                                                                                    VectorBackend(x));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
