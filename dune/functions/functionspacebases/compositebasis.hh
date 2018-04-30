@@ -147,8 +147,7 @@ public:
   CompositePreBasis(SFArgs&&... sfArgs) :
     subPreBases_(std::forward<SFArgs>(sfArgs)...)
   {
-    using namespace Dune::Hybrid;
-    forEach(subPreBases_, [&](const auto& subPreBasis){
+    Hybrid::forEach(subPreBases_, [&](const auto& subPreBasis){
       static_assert(models<Concept::PreBasis<GridView>, std::decay_t<decltype(subPreBasis)>>(), "Subprebases passed to CompositePreBasis does not model the PreBasis concept.");
     });
   }
@@ -156,9 +155,8 @@ public:
   //! Initialize the global indices
   void initializeIndices()
   {
-    using namespace Dune::Hybrid;
-    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      elementAt(subPreBases_, i).initializeIndices();
+    Hybrid::forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      Hybrid::elementAt(subPreBases_, i).initializeIndices();
     });
   }
 
@@ -171,9 +169,8 @@ public:
   //! Update the stored grid view, to be called if the grid has changed
   void update(const GridView& gv)
   {
-    using namespace Dune::Hybrid;
-    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      elementAt(subPreBases_, i).update(gv);
+    Hybrid::forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      Hybrid::elementAt(subPreBases_, i).update(gv);
     });
   }
 
@@ -191,9 +188,8 @@ public:
   Node<TP> node(const TP& tp) const
   {
     auto node = Node<TP>(tp);
-    using namespace Dune::Hybrid;
-    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      node.setChild( elementAt(subPreBases_, i).node(TypeTree::push_back(tp, i)), i);
+    Hybrid::forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      node.setChild( Hybrid::elementAt(subPreBases_, i).node(TypeTree::push_back(tp, i)), i);
     });
     return node;
   }
@@ -267,10 +263,9 @@ private:
   size_type size(const SizePrefix& prefix, BasisFactory::FlatLexicographic) const
   {
     size_type r = 0;
-    using namespace Dune::Hybrid;
     if (prefix.size() == 0)
-      forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-        r += elementAt(subPreBases_, i).size();
+      Hybrid::forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+        r += Hybrid::elementAt(subPreBases_, i).size();
       });
     else {
       size_type shiftedFirst = prefix[0];
@@ -286,9 +281,8 @@ public:
   {
     size_type r=0;
     // Accumulate dimension() for all subprebases
-    using namespace Dune::Hybrid;
-    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      r += elementAt(subPreBases_, i).dimension();
+    Hybrid::forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      r += Hybrid::elementAt(subPreBases_, i).dimension();
     });
     return r;
   }
@@ -298,9 +292,8 @@ public:
   {
     size_type r=0;
     // Accumulate maxNodeSize() for all subprebases
-    using namespace Dune::Hybrid;
-    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      r += elementAt(subPreBases_, i).maxNodeSize();
+    Hybrid::forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      r += Hybrid::elementAt(subPreBases_, i).maxNodeSize();
     });
     return r;
   }
@@ -355,18 +348,16 @@ public:
   void bind(const Node& node)
   {
     node_ = &node;
-    using namespace Dune::Hybrid;
-    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      elementAt(subNodeIndexSetTuple_, i).bind(node.child(i));
+    Hybrid::forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      Hybrid::elementAt(subNodeIndexSetTuple_, i).bind(node.child(i));
     });
   }
 
   void unbind()
   {
     node_ = nullptr;
-    using namespace Dune::Hybrid;
-    forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
-      elementAt(subNodeIndexSetTuple_, i).unbind();
+    Hybrid::forEach(Dune::Std::make_index_sequence<children>(), [&](auto i) {
+      Hybrid::elementAt(subNodeIndexSetTuple_, i).unbind();
     });
   }
 
@@ -385,12 +376,11 @@ public:
   template<typename It>
   It indices(It multiIndices, BasisFactory::FlatLexicographic) const
   {
-    using namespace Dune::Hybrid;
     size_type firstComponentOffset = 0;
     // Loop over all children
-    forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
-      const auto& subNodeIndexSet = elementAt(subNodeIndexSetTuple_, child);
-      const auto& subPreBasis = elementAt(preBasis_->subPreBases_, child);
+    Hybrid::forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
+      const auto& subNodeIndexSet = Hybrid::elementAt(subNodeIndexSetTuple_, child);
+      const auto& subPreBasis = Hybrid::elementAt(preBasis_->subPreBases_, child);
       size_type subTreeSize = subNodeIndexSet.size();
       // Fill indices for current child into index buffer starting from current
       // buffer position and shift first index component of any index for current
@@ -417,10 +407,9 @@ public:
   template<typename It>
   It indices(It multiIndices, BasisFactory::BlockedLexicographic) const
   {
-    using namespace Dune::Hybrid;
     // Loop over all children
-    forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
-      const auto& subNodeIndexSet = elementAt(subNodeIndexSetTuple_, child);
+    Hybrid::forEach(Dune::Std::make_index_sequence<children>(), [&](auto child){
+      const auto& subNodeIndexSet = Hybrid::elementAt(subNodeIndexSetTuple_, child);
       size_type subTreeSize = subNodeIndexSet.size();
       // Fill indices for current child into index buffer starting from current position
       subNodeIndexSet.indices(multiIndices);
