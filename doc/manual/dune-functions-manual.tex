@@ -1332,40 +1332,32 @@ mapping local indices to global multi-indices.
 \section{Programmer interface for function space bases}
 \label{sec:function_space_bases_implementation}
 
-The design of the \dunemodule{dune-functions} interfaces for bases of discrete function spaces
+The design of the \dunemodule{dune-functions} interface for bases of discrete function spaces
 follows the ideas of the previous section. The main interface concept are global basis objects
 that represent trees of function space bases. These trees can be localized to individual elements
 of the grid.  Such a localization gives you access to the (tree of) shape functions there,
 and it provides the three types of shape-function indices.
+The structure of the interface is visualized in Figure~\ref{fig:febasis_interface_schematic}.
+\todograeser{Maybe redo Figure~\ref{fig:febasis_interface_schematic} with tikz.}
 
 \begin{figure}
  \begin{center}
-  \begin{overpic}[width=\textwidth]{febasis_interface_schematic}
-  \put(54.5,37){$\times$}
-  \put(49,32){$\times$}
-  \put(60,32){\tiny $P_1$}
-  \put(44,27){\tiny $P_2$}
-  \put(49,27){\tiny $P_2$}
-  \put(54,27){\tiny $P_2$}
+  \begin{overpic}[width=0.7\textwidth]{febasis_interface_schematic}
+  \put(28,58){$\sqcup$}
+  \put(20,50){$\sqcup$}
+  \put(35,50){\tiny $\Lambda_{P_1}|_e$}
+  \put(12,43){\tiny $\Lambda_{P_2}|_e$}
+  \put(20,43){\tiny $\Lambda_{P_2}|_e$}
+  \put(28,43){\tiny $\Lambda_{P_2}|_e$}
   \end{overpic}
  \end{center}
  \caption{Overview of the classes making up the interface to finite element space bases}
  \label{fig:febasis_interface_schematic}
 \end{figure}
 
-The user interface for localized function space bases is the \cpp{LocalView}.
-It allows you to obtain the (tree of) local basis functions of that element, which in turn gives you access to all
-shape functions, associations to element subentities, and local interpolation rules provided by
-\dunemodule{dune-localfunctions}.
-Furthermore it maps these shape functions to global degrees of freedom
-by providing a map from element-local indices of these shape functions
-to global (multi-)indices.
-A local view is attached to a particular grid element by an
-action called \emph{binding}.
-The structure of the interface is visualized in
-Figure~\ref{fig:febasis_interface_schematic}.
-\todograeser{Remove LocalIndexSet from Figure~\ref{fig:febasis_interface_schematic}. Maybe redo this with tikz}
+\subsection*{Notation}
 
+The \dunemodule{dune-functions} module is implemented in the C++ programming languange.
 All header include paths
 start with \cpp{dune/functions/}, and all code is contained in the namespace \cpp{Dune::Functions}.
 Internally, \dunemodule{dune-functions} depends on the \dunemodule{dune-typetree} module,
@@ -1376,17 +1368,13 @@ C++-style duck-typing~\cite{koenig_moo:2005}
 i.e., any object providing the required
 interface is a valid global basis.
 
-
-\subsection*{Notation}
-
-Throughout this text we will introduce programmer interfaces
+Throughout this text we will introduce these programmer interfaces
 by presenting the interface declaration, explaining
 its meaning, and giving examples of its usage.
 In order to distinguish interface declarations
-from code examples, both are formatted differently.
-Furthermore, implementation defined types, arguments,
-and other omitted code fragments are highlighted.
-Interface declarations are formatted like this:
+from code examples they are formatted differently.
+Furthermore, implementation defined types and arguments are highlighted.
+The following shows an example of an interface declaration:
 \begin{lstlisting}[style=Interface]
 // Declaration of the type T referring to an implementation-defined type
 using T = @@<implementation defined>@@;
@@ -1400,7 +1388,8 @@ public:
   Bar(@@<args>@@);
 };
 \end{lstlisting}
-An example for using this interface would be formatted like this:
+In contrast,
+an example for using this interface would be formatted like this:
 \begin{lstlisting}[style=Example]
 // Call foo() and store result
 T t = foo(1);
@@ -1410,20 +1399,22 @@ auto bar = Bar(t, @@<more args>@@);
 \end{lstlisting}
 
 
-\subsection{User interface of a \texorpdfstring{\cpp{GlobalBasis}}{GlobalBasis}}
+\subsection{The interface for a global function space basis}
 We start by describing the user interface of global bases.  Since we are discussing duck-typing interfaces,
-all class names used below are generic. Trees of global bases are implemented by classes that implement
-the \cpp{GlobalBasis} interface. In the following, we will call the generic such class \cpp{GlobalBasis}.
-It can have an arbitrary number of template parameters.
-All types, templates, and functions listed in the following
+all class names used below are generic. A tree of global bases is implemented by one class which,
+in the following, we will call \cpp{GlobalBasis}, and which
+can have an arbitrary number of template parameters.
+All types and methods listed in the following
 interface declaration are public members of
 the generic class \cpp{GlobalBasis}.
 
-In general each basis implementation may require its own specific data for construction.
-Hence we do not enforce an argument list for this.
+As each basis implementation may require its own specific data for construction,
+we do not enforce a precise set of constructors.
 \begin{lstlisting}[style=Interface]
 GlobalBasis(@@<implementation defined>@@);
 \end{lstlisting}
+There may be one or several constructors with implementation-dependent lists of arguments.
+
 The global basis represents a function space defined on a grid view, and access to
 this view is provided by the
 \begin{lstlisting}[style=Interface]
@@ -1444,40 +1435,40 @@ local view interface.
 using LocalView = @@<implementation defined>@@;
 LocalView localView() const;
 \end{lstlisting}
-The \cpp{localView()} method returns a new object that implements the \cpp{LocalView} interface.
-After binding this object to a
-grid element from the respective grid view, it provides access
-to the restriction of all basis functions whose support has a
-nontrivial intersection with this element.
-Additionally it allows to map the local indices
-of all basis functions appearing in this local view to the
-corresponding global multi-indices.
-With a global basis given in an object called \cpp{basis},
-the corresponding code is
-\begin{lstlisting}[style=Example]
-auto localView = basis.localView();
-localView.bind(element);
-\end{lstlisting}
-where \cpp{element} is an element from the grid view.
-For details on the
-\cpp{LocalView} interface see below.
+The \cpp{localView()} method returns a new object that implements the
+localization of a basis to a single grid element, as described in Section~\ref{sec:localization}.
+The return type of the \cpp{localView()} method is implementation-dependent. Objects
+created by the method have undefined state, and need to be attached to individual grid
+elements in a process called \emph{binding}.%
+%
+\footnote{To be precise, some functionality of \cpp{LocalView} objects is
+  even available for unbound objects.}
+%
+The details are explained in Section~\ref{sec:localview_interface}.
 
-An additional group of methods provides information on the sizes of the bases
+A second group of methods provides information on the sizes of the bases
 contained in the tree.
 The total number of basis functions of the global basis is
-exported via the \cpp{dimension()} method. However, since
-the global indices are hierarchically structured multi-indices,
-this information is generally not
-sufficient to allocate hierarchical containers for storing,
-e.g., coefficients with respect to all basis functions.
+exported via the method
+\begin{lstlisting}[style=Interface]
+using size_type = @@<implementation defined>@@;
+size_type dimension() const;
+\end{lstlisting}
+However, this information is generally not
+sufficient to allocate hierarchical containers that can be
+accessed by multi-indices.
 Therefore, the basis provides access to the structural
-information of those multi-indices via the \cpp{size(SizePrefix)}
-method. The given prefix takes the form of a multi-index itself.
+information of those multi-indices via the method
+\begin{lstlisting}[style=Interface]
+using SizePrefix = @@<implementation defined>@@;
+size_type size(const SizePrefix& prefix) const;
+\end{lstlisting}
+The given parameter \cpp{prefix} is a multi-index itself.
 If $\mathcal{I}$ is the set of all global multi-indices of the
 basis and $P \in \mathcal{N}$ is a prefix for this set,
-i.e. there is a $(P,\dots) \in \mathcal{I}$, then
+i.e., there is a $(P,\dots) \in \mathcal{I}$, then
 \cpp{size(P)} returns the size $\operatorname{deg}^+_{\mathcal{I}}[P]$ of
-$\mathcal{I}$ relative to $P$ defined according to \eqref{eq:prefix_size}.
+$\mathcal{I}$ relative to $P$ defined in \eqref{eq:prefix_size}.
 %For a prefix $(p_1,\dots,p_k)$ the method returns the maximal value $q$ such that there
 %is a global index of the form $(p_1,\dots,p_k,q-1,\dots)$.
 If $P$ is not a prefix for $\mathcal{I}$ the result is undefined.
@@ -1485,71 +1476,45 @@ If $P \in \mathcal{I}$, i.e., the prefix is itself one of the multi-indices
 then the result is zero.
 In any case the result corresponds to the number of direct children
 of the node $P$ in the index tree.
-For convenience there is also a method \cpp{size()} returning the same
-value as the method with an empty prefix, i.e., \cpp{size(\{\})}.
-For a scalar basis, this method again returns the number of basis functions.
+For convenience there is also a method
+\begin{lstlisting}[style=Interface]
+size_type size() const;
+\end{lstlisting}
+returning the same value as the method with an empty prefix.
+For a scalar basis, this method again returns the overall number of basis functions.
 
 Since prefixes may have variable size, it is guaranteed that the type \cpp{SizePrefix}
 is always a \cpp{Dune::ReservedVector<size\_type,k>} where \cpp{k}
 is as least as large as the maximal length of a multi-index. The result
 type of all size-related methods is exported as \cpp{size\_type}.
 
-The typo of used global multi-indices is exported as \cpp{MultiIndex}.
+The type used for global multi-indices is exported as \cpp{MultiIndex}.
 The interface of this type is discussed later.
 
-\begin{lstlisting}[style=Interface]
-using size_type = @@<implementation defined>@@;
-using SizePrefix = @@<implementation defined>@@;
-using MultiIndex = @@<implementation defined>@@;
-size_type dimension() const;
-size_type size() const;
-size_type size(const SizePrefix& prefix) const;
-\end{lstlisting}
 
+\subsection{The user interface for a localized basis}
+\label{sec:localview_interface}
 
-
-To statically check for the interface,
-\dunemodule{dune-functions} provides a concept definition of a global
-basis which can, e.g., be used to check validity in a static assertion.
-
-\begin{lstlisting}[style=Example]
-// The global basis concept for given grid view
-using GlobalBasisConcept = Dune::Functions::Concept::GlobalBasis<GridView>;
-
-// Check if Basis models the concept
-static_assert(Dune::models<GlobalBasisConcept, Basis>(),
-  "Basis does not model the global basis concept.")
-\end{lstlisting}
-
-\subsection{User interface of a \texorpdfstring{\cpp{LocalView}}{LocalView}}
-
-The \cpp{LocalView} concept represents the localization of a basis tree to a single element.
-\cpp{LocalView} objects are returned by the method \cpp{GlobalBasis::localView()}.
-All types, templates, and functions listed in the following
+The localization of a function space basis to a single grid element is represented
+by an interface called \cpp{LocalView}.
+\cpp{LocalView} objects are returned by the method \cpp{GlobalBasis::localView()},
+and there is no way to construct such objects directly.
+All types and methods listed in the following
 interface declaration are public members of
 the generic class \cpp{LocalView}.
-There is no way to construct such objects directly.
-The global basis of type \cpp{GlobalBasis}
-is known by the \cpp{LocalView} object, and exported by the \cpp{globalBasis()} method.
-\begin{lstlisting}[style=Interface]
-using GlobalBasis = @@<implementation defined>@@;
-const GlobalBasis& globalBasis() const;
-\end{lstlisting}
 
-A local view provides access to all basis
-functions whose support has nontrivial intersection with
-a given element (the \emph{local basis functions}).
-To achieve this, the local view must
-first be bound to this element by calling
+A freshly constructed \cpp{LocalView} object is not completely initialized yet.
+To truly have the object represent the basis localization to a particular element,
+it must be \emph{bound} to that element.  This is achieved by called
 \begin{lstlisting}[style=Interface]
 using GridView = typename GlobalBasis::GridView;
 using Element = typename GridView::template Codim<0>::Entity;
 void bind(const Element& e);
 \end{lstlisting}
-This call may incorporate expensive computations needed to
-setup the those local basis functions
-and to pre-compute their global indices
-which are stores in an internal cache.
+Once this method has been called, the \cpp{LocalView} object is fully set up
+and can be used.
+The call may incorporate expensive computations needed to
+setup the local basis functions and to pre-compute their global indices.
 The local view can be
 bound to another element by calling this method again.
 To set the local view to unbound state again, you
@@ -1558,49 +1523,52 @@ can call the
 void unbind();
 \end{lstlisting}
 method.
-Notice that the local view will store a copy of the bound
-element that is accessible via \cpp{element()}.
+Note that the local view will store a copy of the bound
+element that is accessible via
 \begin{lstlisting}[style=Interface]
-using Element = typename GridView::template Codim<0>::Entity;
 const Element& element() const;
 \end{lstlisting}
 
+First of all, a bound \cpp{LocalView} object provided information
+about the size of the local basis at the current element.
 The total number of basis functions associated to the
-local view at the currently bound element is returned
-by \cpp{size()}. The result of calling this method in
-unbound state is undefined.
-To allow preallocation of buffers for local functions
-the \cpp{maxSize()} method returns the maximum of the
-\cpp{size()} method for all elements in the grid view
-associated to the global basis. This can be called in
-unbound state.
-
+local view at the currently bound element is returned by
 \begin{lstlisting}[style=Interface]
 using size_type = typename GlobalBasis::size_type;
 size_type size() const;
+\end{lstlisting}
+To allow preallocation of buffers for local functions, the
+\begin{lstlisting}[style=Interface]
 size_type maxSize() const;
 \end{lstlisting}
+method returns the maximum of the
+\cpp{size()} method for all elements in the grid view
+associated to the global basis.  Unlike the method \cpp{size()},
+the method \cpp{maxSize()} can be called in unbound state.
+
 
 Access to the actual local basis functions is provided
 by the \cpp{tree()} method returning a reference to a
-\cpp{Tree} object. This encapsulates the basis functions
-in a hierarchical tree structure to also represent structured
-function spaces.
+\cpp{Tree} object.
+\begin{lstlisting}[style=Interface]
+using Tree = @@<implementation defined>@@;
+const Tree& tree() const;
+\end{lstlisting}
+This encapsulates the set $\Lambda|_e$ of basis functions localized to the
+element $e$, organized in the tree of function space bases.
 While the tree  itself can be queried in unbound state,
 the local view must be bound in order to use most of the
 trees methods.
 A detailed discussion of the interface of the tree object is
 given below.
 
-\begin{lstlisting}[style=Interface]
-using Tree = @@<implementation defined>@@;
-const Tree& tree() const;
-\end{lstlisting}
-
 For any of the local basis functions in the local ansatz tree
-accessible by \cpp{tree()} the global
-multi-index of type \cpp{MultiIndex}
+accessible by \cpp{tree()} the global multi-index
 is provided by the \cpp{index(size\_type)} method.
+\begin{lstlisting}[style=Interface]
+using MultiIndex = @@<implementation defined>@@;
+MultiIndex index(size_type i) const;
+\end{lstlisting}
 The argument for this method is the local
 index of the basis function within the tree as
 returned by the \cpp{node.localIndex(k)}
@@ -1614,30 +1582,53 @@ with bound-to element $e$
 introduced in Section~\ref{sec:localization}
 which maps local indices to global multi-indices.
 Accessing the same global index multiple times
-is cheap, because global indices are pre-computed
-and cached during \cpp{bind(Element)}.
+is expected to be cheap, because implementations are supposed to pre-compute
+and cache indices during \cpp{bind(Element)}.
 The result of calling \cpp{index(size\_type)} in
 unbound state is undefined.
 
+Finally, the global basis of type \cpp{GlobalBasis}
+is known by the \cpp{LocalView} object, and exported by the \cpp{globalBasis()} method.
 \begin{lstlisting}[style=Interface]
-using MultiIndex = @@<implementation defined>@@;
-MultiIndex index(size_type i) const;
+using GlobalBasis = @@<implementation defined>@@;
+const GlobalBasis& globalBasis() const;
 \end{lstlisting}
 
 
 
-\subsection{User interface of a local ansatz \texorpdfstring{\cpp{Tree}}{Tree}}
+\subsection{The user interface of the tree of local bases}
 The local view provides access to all local basis functions
-by exporting a \cpp{Tree} object. This implements a tree
-data structure using the foundation classes of the
-\dunemodule{dune-typetree} library, where the actual local basis
-functions for each factor are associated to a leaf node
-in the tree. As a consequence the interface of leaf nodes
-provides some additional features.
-Both node types are not meant to be constructed by the
-user so there is no constructor in the interface.
-First we describe the interface shared by interior
-and leaf nodes.
+by exporting a \cpp{Tree} object, which keeps the local basis functions in its leaves.
+The tree data structure is implemented using the infrastructure of the \dunemodule{dune-typetree}
+module, which provides compile-time tree data structures.
+
+The object returned by the \cpp{LocalView::tree()} method is not actually a tree,
+but rather (a const reference to) the root node of the tree.  To navigate within
+this tree, any interior node allows to access
+its children using the \cpp{child()} method.
+The path to the desired child can either be passed
+as a \cpp{Dune::TypeTree::HybridTreePath} object (see Section~\ref{sec:multi_indices} below),
+or as a sequence of indices. Indices referring
+to children of a power node can be passed as
+an integral value, e.g., as \cpp{std::size_t}.
+Indices referring to children of a composite node
+have to be passed statically as \cpp{Dune::index_constant<i>}
+(which is a short cut for \cpp{std::integral_constant<std::size_t, i>}).
+For convenience global constants \cpp{_0},\cpp{_1}, \dots
+of this type are implemented in the \cpp{Dune::Indices}
+namespace.
+\todosander{Sollten auch Leaf Nodes eine \cpp{child}-Methode bekommen?
+Einfach für die Konsistenz? (Brauchen tue ich sie nicht.)}
+\begin{lstlisting}[style=Interface]
+// The following methods only exists for interior nodes
+template<class... ChildIndices>
+auto child(ChildIndices... childIndices);
+
+template<class ChildTreePath>
+auto child(ChildTreePath childTreePath);
+}; // end BasisNode
+\end{lstlisting}
+
 
 The \cpp{size()} method returns the total number of
 local basis functions within the subtree rooted at the
@@ -1645,6 +1636,8 @@ present node. For each of these local basis functions
 the \cpp{localIndex(size\_type)} method returns a unique
 local index within all local basis functions associated to the full
 tree.
+\todosander{Mir scheint der folgende Satz unpräzise.  Man sollte ihn in der Sprache
+von Kapitel~1 umschreiben.}
 The argument to this method is the lexicographic
 index of the local basis functions within the subtree
 and the result is the lexicographic index within the full
@@ -1654,6 +1647,7 @@ within this subtree form a consecutive range.
 The result of these methods is undefined if the
 local view containing the tree is in unbound state.
 All these indices are of type \cpp{size\_type}.
+
 
 If the node corresponds to a leaf,
 then the method \cpp{localIndex(size\_type)}
@@ -1671,50 +1665,37 @@ size_type size() const;
 size_type localIndex(size_type i) const;
 \end{lstlisting}
 
-For some computations it is important to identify
-individual nodes in the tree. To this end the node
+To obtain its position in the tree, each node
 exports its path with respect to the full tree root
-via the \cpp{treePath()} method.
+via the  method
+\begin{lstlisting}[style=Interface]
+using TreePath = @@<implementation defined>@@;
+const TreePath& treePath() const;
+\end{lstlisting}
+\todosander{Warum steht hier \cpp{implementation defined} bei \cpp{TreePath}?
+Ein \cpp{TreePath} ist doch immer ein \cpp{TypeTree::HybridTreePath}.}
 The result is a multi-index
 implemented by the \cpp{Dune::TypeTree::HybridTreePath}
-class defined in the \dunemodule{dune-typetree} module.
-On the other hand any interior node allows to access
-its children using the \cpp{child()} method.
-The path to the desired child can either be passed
-as a \cpp{Dune::TypeTree::HybridTreePath} object
-or as a sequence of indices. Indices referring
-to the child of a power node can be passed as
-an integral value, e.g., as \cpp{std::size_t}.
-Indices referring to children of a composite node
-have to be passed statically as \cpp{Dune::index_constant<i>}.
-For convenience global constants \cpp{_0},\cpp{_1}, \dots
-of this type are implemented in the \cpp{Dune::Indices}
-namespace.
+class.
+
 If data needs to be attached to nodes,
-the \cpp{treeIndex()} can be used. The latter returns
+the method
+\begin{lstlisting}[style=Interface]
+size_type treeIndex() const;
+\end{lstlisting}
+can be used. It returns
 the lexicographic index of the node within the full
 tree in a fixed type for all nodes.
 These methods can also be used if the local view containing
 the tree is in unbound state.
 
-\begin{lstlisting}[style=Interface]
-using TreePath = @@<implementation defined>@@;
-const TreePath& treePath() const;
-size_type treeIndex() const;
-
-// The following methods do only exist for interior nodes
-template<class... ChildIndices>
-auto child(ChildIndices... childIndices);
-
-template<class ChildTreePath>
-auto child(ChildTreePath childTreePath);
-}; // end BasisNode
-\end{lstlisting}
-
 Leaf nodes share the same interface as interior
 nodes. Additionally they provide access to the
 element which the local view and thus the tree is bound
-to via the \cpp{element()} method. Probably most important
+to via the \cpp{element()} method.
+\todosander{Auch hier fände ich es konsistenter wenn es die Methode \cpp{element}
+für alle Knoten gäbe, nicht nur für Leafs.}
+Probably most important
 is the \cpp{finiteElement()} method that gives access
 to the local finite element. The finite element
 itself provides access to the local basis functions
@@ -1815,6 +1796,7 @@ const auto& node = TypeTree::child(localView.tree(), treePath);
 
 
 \subsection{Multi-indices}
+\label{sec:multi_indices}
 Multi-indices are used in several places in \dunemodule{dune-functions}.
 On the one hand, the global indices used to identify individual
 basis functions of a function space bases are in general multi-indices.
