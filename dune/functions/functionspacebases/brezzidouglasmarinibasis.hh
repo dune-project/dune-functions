@@ -74,7 +74,7 @@ namespace Impl {
     using FiniteElement = typename BDMLocalInfo<dim, basic_type, D, R, k>::FiniteElement;
 
     BDMLocalFiniteElementMap(const GV& gv)
-      : gv_(gv), is_(&(gv_.indexSet())), orient_(gv.size(0))
+      : is_(&(gv.indexSet())), orient_(gv.size(0))
     {
       // create all variants
       for (size_t i = 0; i < Variants; i++)
@@ -103,7 +103,6 @@ namespace Impl {
     }
 
     private:
-      GV gv_;
       std::array<FiniteElement,Variants> variant_;
       const typename GV::IndexSet* is_;
       std::vector<unsigned char> orient_;
