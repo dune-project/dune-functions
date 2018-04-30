@@ -50,7 +50,7 @@ public:
 private:
 
   template<typename NodeIndexSet_>
-  using hasIndices = decltype(std::declval<NodeIndexSet_>().indices(std::declval<std::vector<MultiIndex>>().begin()));
+  using hasIndices = decltype(std::declval<NodeIndexSet_>().indices(std::declval<std::vector<typename NodeIndexSet_::MultiIndex>>().begin()));
 
 public:
 
