@@ -58,7 +58,7 @@ void getLocalMatrix(const LocalView& localView,
 
   // Get set of shape functions for this element
   // { get_local_fe_begin }
-  using namespace TypeTree::Indices;
+  using namespace Dune::Indices;
   const auto& velocityLocalFiniteElement = localView.tree().child(_0,0).finiteElement();  /*@\label{li:stokes_taylorhood_get_velocity_lfe}@*/
   const auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();    /*@\label{li:stokes_taylorhood_get_pressure_lfe}@*/
   // { get_local_fe_end }
@@ -327,18 +327,15 @@ int main (int argc, char *argv[]) try
   // { boundary_predicate_end }
 
   // { interpolate_boundary_predicate_begin }
-  using namespace TypeTree::Indices;
+  using namespace Dune::Indices;
 
   using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
-  using HierarchicBitVectorView = Functions::HierarchicVectorWrapper<BitVectorType, char>;
+  using BitVectorBackend = Functions::HierarchicVectorWrapper<BitVectorType, char>;
 
   BitVectorType isBoundary;
 
   for(int i=0; i<dim; ++i)
-  {
-    auto velocityComponentSpace = Functions::subspaceBasis(taylorHoodBasis, _0, i);
-    interpolate(velocityComponentSpace, HierarchicBitVectorView(isBoundary), boundaryIndicator);
-  }
+    interpolate(Functions::subspaceBasis(taylorHoodBasis, _0, i), BitVectorBackend(isBoundary), boundaryIndicator);
   // { interpolate_boundary_predicate_end }
 
   // { interpolate_dirichlet_values_begin }
@@ -348,7 +345,7 @@ int main (int argc, char *argv[]) try
   interpolate(Functions::subspaceBasis(taylorHoodBasis, _0),
                         VectorBackend(rhs),
                         velocityDirichletData,
-                        HierarchicBitVectorView(isBoundary));
+                        BitVectorBackend(isBoundary));
   // { interpolate_dirichlet_values_end }
 
   ////////////////////////////////////////////
