@@ -332,30 +332,6 @@ public:
   {
     return node_->finiteElement().size();
   }
-#if 0
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  //! Assume dim \in \lbrace 2, 3 \rbrace.
-  MultiIndex index(size_type i) const
-  {
-    Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
-    const auto& gridIndexSet = preBasis_->gridView().indexSet();
-    const auto& element = node_->element();
-
-    // The dimension of the entity that the current dof is related to
-    size_t subentity = localKey.subEntity();
-    size_t codim = localKey.codim();
-
-    // Throw if Element is no cube or simplex
-    if (not(basic_type==GeometryType::BasicType::cube and element.type().isCube()) and
-        not(basic_type==GeometryType::BasicType::simplex and element.type().isSimplex())) DUNE_THROW(Dune::NotImplemented, "BDMNodalBasis only implemented for cube and simplex elements.");
-
-    if (not(codim==0 or codim==1))
-      DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the BDMThomasBasis");
-
-    return { preBasis_->CodimOffset_[codim] +
-             preBasis_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
-  }
-#endif
 
   /**
    * \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
