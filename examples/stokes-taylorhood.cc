@@ -299,7 +299,7 @@ int main (int argc, char *argv[]) try
   // { rhs_assembly_begin }
   VectorType rhs;
 
-  using VectorBackend = typename Functions::HierarchicVectorWrapper<VectorType, double> 
+  using VectorBackend = typename Functions::HierarchicVectorWrapper<VectorType, double>;
   VectorBackend(rhs).resize(taylorHoodBasis);
 
   rhs = 0;                                 /*@\label{li:stokes_taylorhood_set_rhs_to_zero}@*/
