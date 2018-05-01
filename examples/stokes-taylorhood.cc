@@ -299,7 +299,6 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   // { function_space_basis_begin }
-
   using namespace Functions::BasisFactory;
 
   static const std::size_t K = 1; // pressure order for Taylor-Hood
@@ -337,8 +336,12 @@ int main (int argc, char *argv[]) try
   using PressureVector = BlockVector<FieldVector<double,1>>;
   using VectorType = MultiTypeBlockVector<VelocityVector, PressureVector>;
 
-  using MatrixRow0 = MultiTypeBlockVector<BCRSMatrix<FieldMatrix<double,dim,dim> >, BCRSMatrix<FieldMatrix<double,dim,1>>>;
-  using MatrixRow1 = MultiTypeBlockVector<BCRSMatrix<FieldMatrix<double,1,dim> >, BCRSMatrix<FieldMatrix<double,1,1>>>;
+  using Matrix00 = BCRSMatrix<FieldMatrix<double,dim,dim>>;
+  using Matrix01 = BCRSMatrix<FieldMatrix<double,dim,1>>;
+  using Matrix10 = BCRSMatrix<FieldMatrix<double,1,dim>>;
+  using Matrix11 = BCRSMatrix<FieldMatrix<double,1,1>>;
+  using MatrixRow0 = MultiTypeBlockVector<Matrix00, Matrix01>;
+  using MatrixRow1 = MultiTypeBlockVector<Matrix10, Matrix11>;
   using MatrixType = MultiTypeBlockMatrix<MatrixRow0,MatrixRow1>;
 #else
   using VectorType = BlockVector<BlockVector<FieldVector<double,1> > >;
@@ -354,8 +357,9 @@ int main (int argc, char *argv[]) try
   VectorType rhs;
 
   using VectorBackend = typename Functions::HierarchicVectorWrapper<VectorType, double>;
-  VectorBackend(rhs).resize(taylorHoodBasis);
 
+  auto rhsBackend = VectorBackend(rhs);
+  rhsBackend.resize(taylorHoodBasis);
   rhs = 0;                                 /*@\label{li:stokes_taylorhood_set_rhs_to_zero}@*/
   // { rhs_assembly_end }
 
@@ -369,12 +373,7 @@ int main (int argc, char *argv[]) try
   // Only velocity components have Dirichlet boundary values
   /////////////////////////////////////////////////////////
 
-  // { boundary_predicate_begin }
-  // { boundary_predicate_end }
-
-  // { interpolate_boundary_predicate_begin }
-  using namespace Indices;
-
+  // { initialize_boundary_dofs_vector_begin }
 #if BLOCKEDBASIS
   using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
   using PressureBitVector = BlockVector<FieldVector<char,1>>;
@@ -383,17 +382,21 @@ int main (int argc, char *argv[]) try
   using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
 #endif
 
-  using BitVectorBackend = Functions::HierarchicVectorWrapper<BitVectorType, char>;
-
   BitVectorType isBoundary;
+
+  using BitVectorBackend = Functions::HierarchicVectorWrapper<BitVectorType, char>;
 
   auto isBoundaryBackend = BitVectorBackend(isBoundary);
   isBoundaryBackend.resize(taylorHoodBasis);
   isBoundary = false;
+  // { initialize_boundary_dofs_vector_end }
+
+  // { determine_boundary_dofs_begin }
+  using namespace Indices;
   Dune::Functions::forEachBoundaryDOF(Functions::subspaceBasis(taylorHoodBasis, _0), [&] (auto&& index) {
     isBoundaryBackend[index] = true;
   });
-  // { interpolate_boundary_predicate_end }
+  // { determine_boundary_dofs_end }
 
   // { interpolate_dirichlet_values_begin }
   using Coordinate = GridView::Codim<0> ::Geometry::GlobalCoordinate;
@@ -403,7 +406,7 @@ int main (int argc, char *argv[]) try
   };
 
   interpolate(Functions::subspaceBasis(taylorHoodBasis, _0),
-                        VectorBackend(rhs),
+                        rhsBackend,
                         velocityDirichletData,
                         isBoundaryBackend);
   // { interpolate_dirichlet_values_end }
@@ -413,10 +416,8 @@ int main (int argc, char *argv[]) try
   ////////////////////////////////////////////
 
   // loop over the matrix rows
-  // { set_dirichlet_matrix_begin }
-
-
   {
+  // { set_dirichlet_matrix_begin }
     auto localView = taylorHoodBasis.localView();
     for(const auto& e : Dune::elements(taylorHoodBasis.gridView())) {
       localView.bind(e);
@@ -431,6 +432,7 @@ int main (int argc, char *argv[]) try
           }
       }
     }
+  // { set_dirichlet_matrix_end }
   }
 
 
@@ -451,7 +453,6 @@ int main (int argc, char *argv[]) try
     }
   }
 #endif
-  // { set_dirichlet_matrix_end }
 
   ////////////////////////////
   //   Compute solution

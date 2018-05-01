@@ -2608,7 +2608,7 @@ Each global basis function additionally gets a global index used to address the 
 matrix.  In principle, \dunemodule{dune-functions} provides several types of multi-indices here.
 The possible indexing schemes for the Taylor--Hood basis function have been listed in
 Table~\ref{tab:th_indexing_variants}.
-Here we use the indexing scheme BL(FI) contained in the fourth column of this table.
+Here we use the indexing scheme BL(BI) contained in the second column of this table.
 
 
 \subsection{Implementation}
@@ -2655,14 +2655,25 @@ for the linear algebra.
 The implementation of the Taylor--Hood basis selected in Line~\ref{li:stokes_taylorhood_select_taylorhoodbasis} orders the
 velocity degrees of freedom before the pressure degrees of freedom.  Further, the velocity
 components are interleaved.  The indexing scheme results from grouping degrees of freedom at the
-tree root.  The resulting multi-indices all have length~2, and are given in column four of Table~\ref{tbl:th_indexing_variants}.
-Consequently, the appropriate vector type is a pair of scalar vectors, one for the velocity and one for the pressure
-degrees of freedom.  Analogously, the matrix must consist of $2 \times 2$ large sparse scalar matrices.
-The following code sets up vector and matrix types for this, using the nesting machinery from \dunemodule{dune-istl}.
+tree root and grouping the two velocity components for each node. The resulting multi-indices
+have length~3 for velocity degrees of freedom and length~2 for pressure degrees of freedom,
+and are given in column two of Table~\ref{tab:th_indexing_variants}.
+Consequently, the appropriate vector type is a pair of vectors, where the first one
+has entries in $\mathbb{R}^2$ for the velocity and the second one has entries in $\mathbb{R}$
+for the pressure degrees of freedom.  Analogously, the matrix must consist of
+$2 \times 2$ large sparse matrices where
+the $(0,0)$-block has entries in $\mathbb{R}^{2\times 2}$,
+the $(0,1)$-block has entries in $\mathbb{R}^{2\times 1}$,
+the $(1,0)$-block has entries in $\mathbb{R}^{1\times 2}$,
+the $(1,1)$-block has entries in $\mathbb{R}$.
+The following code sets up vector and matrix types for this,
+using the nesting machinery from \dunemodule{dune-istl}.
 %
 \lstinputlisting[linerange={linear_algebra_setup_begin-linear_algebra_setup_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
+Notice that the vector and matrix types \cpp{VectorType} and \cpp{MatrixType}
+are no classical containers, because the entries have non-uniform types.
 Other index types are possible and possibly desirable here.  These would correspond to other vector and
 matrix data types.
 
@@ -2689,50 +2700,69 @@ As the matrix assembly is the central part of this example we explain it in deta
 
 Suppose now that we have the correct stiffness matrix assembled in the object \cpp{stiffnessMatrix}.  We still need
 to modify the linear system to include the Dirichlet information.
-In a first step we need to determine all degrees of freedom with Dirichlet data.  These are all the velocity degrees of freedom
-on the domain boundary.  We could do this by using the \cpp{LocalKey} object of each basis function
-to single out all those that are assigned to a boundary entity.  However, on a simple domain as the unit square
-used here it is easier to use a geometric criterion.  We first define a predicate that returns \cpp{true}
-if a given global coordinate \cpp{x} is on the domain boundary:
+In a first step we need to determine all degrees of freedom with Dirichlet data.
+To store this information we use a vector of flags which has the same structure
+as \cpp{VectorType} and is again initialized using the \cpp{HierarchicVectorWrapper}.
 %
-\lstinputlisting[linerange={boundary_predicate_begin-boundary_predicate_end},
+\lstinputlisting[linerange={initialize_boundary_dofs_vector_begin-initialize_boundary_dofs_vector_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-The we interpolate this boolean-valued function in the space spanned by the velocity basis functions.
+We now want to mark all the velocity degrees of freedom on the domain boundary.
+The latter information can be derived from the \cpp{LocalKey} objects of each basis function.
+For convenience \dunemodule{dune-functions} provides the algorithm \cpp{forEachBoundaryDOF()}
+which implements a loop over all degrees of freedom associated to entities located
+on the domain boundary. To identify those degrees of freedom the algorithm
+hands their global indices to the passed callback function.
+Using this algorithm we can simply mark the boundary degrees of freedom
+for the velocity subtree using:
 %
-\lstinputlisting[linerange={interpolate_boundary_predicate_begin-interpolate_boundary_predicate_end},
+\lstinputlisting[linerange={determine_boundary_dofs_begin-determine_boundary_dofs_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-Observe how the \dunemodule{dune-functions} interface allows to interpolate C++11 lambdas, which makes the code
-very short and readable.  The expression \cpp{TypeTree::treePath(_0,i)} selects the different coordinate
-directions of the velocity basis from the tree representation given in Figure~\ref{fig:taylor_hood_basis_tree}.
-As the bases for the velocity components are all the same, an ordinary integer \cpp{i} is sufficient to choose
-one of them.  In contrast, the velocity and pressure bases are different C++ types, and a compile-time
-construction is needed to choose between them.  The object \cpp{_0} is defined in
-\file{dune/typetree/utility.hh} as (roughly)
-\begin{lstlisting}[style=Interface]
-std::integer_constant<std::size_t, 0> _0;
+Notice that \cpp{HierarchicVectorWrapper} is used to directly
+access the \cpp{isBoundary} vector using the multi-indices provided by the basis.
+The \cpp{forEachBoundaryDOF()} algorithm only considers velocity
+degrees of freedom because we passed the corresponding subspace to it.
+The latter is addressed using its path from the root in the ansatz tree
+depicted in Figure~\ref{fig:taylor_hood_basis_tree}.
+Here, the path is a single index $0$ selecting the first child.
+This is encoded using the compile time constant index \cpp{_0} from the
+\cpp{Dune::Indices} namespace. This constant and analogues \cpp{_1}, \cpp{_2}, \dots
+for larger indices are defined in the header \file{dune/common/indices.hh}.
+In a similar way subspace bases for the pressure and the second velocity
+component could be obtained using
+\begin{lstlisting}[style=Example]
+auto pressureBasis = Functions::subspaceBasis(taylorHoodBasis, _1);
+auto secondVelocityBasis = Functions::subspaceBasis(taylorHoodBasis, _0, 1);
 \end{lstlisting}
-In the \cpp{TaylorHoodBasis} implementation, \cpp{_0} selects the velocity subtree and \cpp{_1} selects
-the pressure subtree.
+Notice that the last index for the velocity component can be a classical runtime index
+because all velocity components have the same type.
 
-Finally, we define a function implementing the actual Dirichlet values function $\mathbf{u}_D$, and interpolate
+
+Finally, we define a function implementing the actual Dirichlet values function $\mathbf{g}$, and interpolate
 that into the right-hand-side vector \cpp{rhs}.
 %
 \lstinputlisting[linerange={interpolate_dirichlet_values_begin-interpolate_dirichlet_values_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-The expression \cpp{TypeTree::treePath(_0)} demands that only velocity degrees of freedom are
-interpolated.  The \cpp{isBoundary} vector given as the last argument restricts the interpolation
-to only the boundary degrees of freedom.
+Observe how the \dunemodule{dune-functions} interface allows to interpolate C++11 lambdas, which makes the code
+very short and readable. Again the operation is constrained to the velocity degrees of freedom
+by passing the corresponding subspace basis only.
+The \cpp{isBoundary} vector given as the last argument restricts the interpolation
+to only the boundary degrees of freedom that we marked before.
 
 The stiffness matrix is modified in a more manual fashion.  For each Dirichlet degree of freedom we need to fill the corresponding matrix row
-with zeros, and write a~1 on the diagonal.  As only velocity
-degrees of freedom have Dirichlet values, we need to modify the two upper matrix blocks only.
+with zeros, and write a~1 on the diagonal.
+%As only velocity
+%degrees of freedom have Dirichlet values, we need to modify the two upper matrix blocks only.
+\todograeser{Should we manipulate the matrix manually or use the basis to access the entries?
+The former is more efficient but also leads to code that is very specific to the indexing scheme
+and matrix type while the latter works generically.}
 %
 \lstinputlisting[linerange={set_dirichlet_matrix_begin-set_dirichlet_matrix_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
+\todograeser{Describe \cpp{matrixEntry()} function}
 Finally, we can solve the linear system.  Efficiently solving the Stokes system is an art, which we do not want to
 get into here.  Instead, we a GMRes solver, without any preconditioner at all.  This is known to converge,
 albeit slowly.
@@ -2743,9 +2773,9 @@ The advantage is that it can be written down in very few lines.
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 Observe how the \cpp{RestartedGMResSolver} object is completely oblivious to the fact that the matrix
-has a two-level nesting structure.  On the other hand, dedicated Stokes solvers usually operate
+has a two-to-three-level nesting structure.  On the other hand, dedicated Stokes solvers usually operate
 on some sort of Schur complement, and hence they need direct access
-to the four submatrices.  This can be elegantly done using the nested matrix type
+to the submatrices.  This can be elegantly done using the nested matrix type
 used for the stiffness matrix.
 
 Once the iterative solver has terminated, we write the result to a VTK file.  For this, we write the resulting velocity as a vector field,
