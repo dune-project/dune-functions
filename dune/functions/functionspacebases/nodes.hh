@@ -13,7 +13,7 @@ namespace Dune {
   namespace Functions {
 
 
-    namespace {
+    namespace Impl {
 
 
       template<typename size_type>
@@ -107,7 +107,7 @@ namespace Dune {
         size_type treeIndex_;
       };
 
-    }
+    } // end namespace Impl
 
 
     template<typename TP>
@@ -115,13 +115,13 @@ namespace Dune {
     {
 
       template<typename>
-      friend struct ClearSizeVisitor;
+      friend struct Impl::ClearSizeVisitor;
 
       template<typename,typename>
-      friend struct BindVisitor;
+      friend struct Impl::BindVisitor;
 
       template<typename>
-      friend struct InitializeTreeVisitor;
+      friend struct Impl::InitializeTreeVisitor;
 
     public:
 
@@ -262,20 +262,20 @@ namespace Dune {
     template<typename Tree>
     void clearSize(Tree& tree, std::size_t offset)
     {
-      TypeTree::applyToTree(tree,ClearSizeVisitor<std::size_t>(offset));
+      TypeTree::applyToTree(tree,Impl::ClearSizeVisitor<std::size_t>(offset));
     }
 
     template<typename Tree, typename Entity>
     void bindTree(Tree& tree, const Entity& entity, std::size_t offset = 0)
     {
-      BindVisitor<Entity,std::size_t> visitor(entity,offset);
+      Impl::BindVisitor<Entity,std::size_t> visitor(entity,offset);
       TypeTree::applyToTree(tree,visitor);
     }
 
     template<typename Tree>
     void initializeTree(Tree& tree, std::size_t treeIndexOffset = 0)
     {
-      InitializeTreeVisitor<std::size_t> visitor(treeIndexOffset);
+      Impl::InitializeTreeVisitor<std::size_t> visitor(treeIndexOffset);
       TypeTree::applyToTree(tree,visitor);
     }
 
