@@ -6,6 +6,9 @@
 #include <array>
 #include <dune/common/exceptions.hh>
 
+#include <dune/localfunctions/common/virtualinterface.hh>
+#include <dune/localfunctions/common/virtualwrappers.hh>
+
 #include <dune/localfunctions/brezzidouglasmarini/brezzidouglasmarini1cube2d.hh>
 #include <dune/localfunctions/brezzidouglasmarini/brezzidouglasmarini1cube3d.hh>
 #include <dune/localfunctions/brezzidouglasmarini/brezzidouglasmarini1simplex2d.hh>
@@ -23,62 +26,77 @@ namespace Functions {
 
 namespace Impl {
 
-  template<int dim, GeometryType::BasicType basic_type, typename D, typename R, std::size_t k>
-  struct BDMLocalInfo
+  template<int dim, typename D, typename R, std::size_t k>
+  struct BDMSimplexLocalInfo
   {
     static_assert((AlwaysFalse<D>::value),"The requested type of BDM element is not implemented, sorry!");
   };
 
   template<typename D, typename R>
-  struct BDMLocalInfo<2,GeometryType::simplex,D,R,1>
+  struct BDMSimplexLocalInfo<2,D,R,1>
   {
     using FiniteElement = BDM1Simplex2DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 8;
   };
 
   template<typename D, typename R>
-  struct BDMLocalInfo<2,GeometryType::simplex,D,R,2>
+  struct BDMSimplexLocalInfo<2,D,R,2>
   {
     using FiniteElement = BDM2Simplex2DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 8;
   };
 
+  template<int dim, typename D, typename R, std::size_t k>
+  struct BDMCubeLocalInfo
+  {
+    static_assert((AlwaysFalse<D>::value),"The requested type of BDM element is not implemented, sorry!");
+  };
+
   template<typename D, typename R>
-  struct BDMLocalInfo<2,GeometryType::cube,D,R,1>
+  struct BDMCubeLocalInfo<2,D,R,1>
   {
     using FiniteElement = BDM1Cube2DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
-  struct BDMLocalInfo<2,GeometryType::cube,D,R,2>
+  struct BDMCubeLocalInfo<2,D,R,2>
   {
     using FiniteElement = BDM2Cube2DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
-  struct BDMLocalInfo<3,GeometryType::cube,D,R,1>
+  struct BDMCubeLocalInfo<3,D,R,1>
   {
     using FiniteElement = BDM1Cube3DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 64;
   };
 
-  template<typename GV, int dim, GeometryType::BasicType basic_type, typename D, typename R, std::size_t k>
+  template<typename GV, int dim, typename R, std::size_t k>
   class BDMLocalFiniteElementMap
   {
-    static const std::size_t Variants = BDMLocalInfo<dim, basic_type, D, R, k>::Variants;
+    using D = typename GV::ctype;
+    using CubeFiniteElement    = typename BDMCubeLocalInfo<dim, D, R, k>::FiniteElement;
+    using SimplexFiniteElement = typename BDMSimplexLocalInfo<dim, D, R, k>::FiniteElement;
 
   public:
 
-    using FiniteElement = typename BDMLocalInfo<dim, basic_type, D, R, k>::FiniteElement;
+    using T = LocalBasisTraits<D, dim, FieldVector<D,dim>, R, dim, FieldVector<R,dim>, FieldMatrix<D,dim,dim> >;
+    using FiniteElement = LocalFiniteElementVirtualInterface<T>;
 
     BDMLocalFiniteElementMap(const GV& gv)
       : is_(&(gv.indexSet())), orient_(gv.size(0))
     {
+      cubeVariant_.resize(BDMCubeLocalInfo<dim, D, R, k>::Variants);
+      simplexVariant_.resize(BDMSimplexLocalInfo<dim, D, R, k>::Variants);
+
       // create all variants
-      for (size_t i = 0; i < Variants; i++)
-        variant_[i] = FiniteElement(i);
+      for (size_t i = 0; i < cubeVariant_.size(); i++)
+        cubeVariant_[i] = std::make_unique<LocalFiniteElementVirtualImp<CubeFiniteElement> >(CubeFiniteElement(i));
+
+      for (size_t i = 0; i < simplexVariant_.size(); i++)
+        simplexVariant_[i] = std::make_unique<LocalFiniteElementVirtualImp<SimplexFiniteElement> >(SimplexFiniteElement(i));
 
       // compute orientation for all elements
       // loop once over the grid
@@ -99,11 +117,15 @@ namespace Impl {
     template<class EntityType>
     const FiniteElement& find(const EntityType& e) const
     {
-      return variant_[orient_[is_->index(e)]];
+      if (e.type().isCube())
+        return *cubeVariant_[orient_[is_->index(e)]];
+      else
+        return *simplexVariant_[orient_[is_->index(e)]];
     }
 
     private:
-      std::array<FiniteElement,Variants> variant_;
+      std::vector<std::unique_ptr<LocalFiniteElementVirtualImp<CubeFiniteElement> > > cubeVariant_;
+      std::vector<std::unique_ptr<LocalFiniteElementVirtualImp<SimplexFiniteElement> > > simplexVariant_;
       const typename GV::IndexSet* is_;
       std::vector<unsigned char> orient_;
   };
@@ -124,19 +146,19 @@ namespace Impl {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k, typename ST, typename TP, GeometryType::BasicType basic_type>
+template<typename GV, int k, typename ST, typename TP>
 class BrezziDouglasMariniNode;
 
-template<typename GV, int k, class MI, class TP, class ST, GeometryType::BasicType basic_type>
+template<typename GV, int k, class MI, class TP, class ST>
 class BrezziDouglasMariniNodeIndexSet;
 
-template<typename GV, int k, class MI, class ST, GeometryType::BasicType basic_type>
+template<typename GV, int k, class MI, class ST>
 class BrezziDouglasMariniPreBasis
 {
   static const int dim = GV::dimension;
-  using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, basic_type, typename GV::ctype, double, k>;
+  using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, double, k>;
 
-  template<typename, int, class, class, class, GeometryType::BasicType>
+  template<typename, int, class, class, class>
   friend class BrezziDouglasMariniNodeIndexSet;
 
 public:
@@ -145,14 +167,11 @@ public:
   using GridView = GV;
   using size_type = ST;
 
-  // Precompute the number of dofs per entity type depending on the entity's codimension
-  std::vector<int> dofsPerCodim {dim*(k-1)*3, dim+(k-1)}; // hardcoded
+  template<class TP>
+  using Node = BrezziDouglasMariniNode<GV, k, size_type, TP>;
 
   template<class TP>
-  using Node = BrezziDouglasMariniNode<GV, k, size_type, TP, basic_type>;
-
-  template<class TP>
-  using IndexSet = BrezziDouglasMariniNodeIndexSet<GV, k, MI, TP, ST, basic_type>;
+  using IndexSet = BrezziDouglasMariniNodeIndexSet<GV, k, MI, TP, ST>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -163,20 +182,18 @@ public:
   BrezziDouglasMariniPreBasis(const GridView& gv) :
     gridView_(gv),
     finiteElementMap_(gv)
-  { }
+  {
+    // There is no inherent reason why the basis shouldn't work for grids with more than one
+    // element types.  Somebody simply has to sit down and implement the missing bits.
+    if (gv.indexSet().types(0).size() > 1)
+      DUNE_THROW(Dune::NotImplemented, "Brezzi-Douglas-Marini basis is only implemented for grids with a single element type");
+  }
 
   void initializeIndices()
   {
-    codimOffset_.resize(3);
     codimOffset_[0] = 0;
-    codimOffset_[1] = codimOffset_[0] + dofsPerCodim[0] * gridView_.size(0);
+    codimOffset_[1] = codimOffset_[0] + dofsPerCodim_[0] * gridView_.size(0);
     //if (dim==3) codimOffset_[2] = codimOffset_[1] + dofsPerCodim[1] * gridView_.size(1);
-  }
-
-  /* \brief Update the stored grid view, to be called if the grid has changed */
-  void update (const GridView& gv)
-  {
-    gridView_ = gv;
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -184,6 +201,12 @@ public:
   const GridView& gridView() const
   {
     return gridView_;
+  }
+
+  /* \brief Update the stored grid view, to be called if the grid has changed */
+  void update (const GridView& gv)
+  {
+    gridView_ = gv;
   }
 
   template<class TP>
@@ -200,7 +223,7 @@ public:
 
   size_type size() const
   {
-    return dofsPerCodim[0] * gridView_.size(0) + dofsPerCodim[1] * gridView_.size(1); // only 2d
+    return dofsPerCodim_[0] * gridView_.size(0) + dofsPerCodim_[1] * gridView_.size(1); // only 2d
   }
 
   //! Return number possible values for next position in multi index
@@ -222,18 +245,20 @@ public:
     // We can therefore return the actual number of dofs here.
     GeometryType elementType = *(gridView_.indexSet().types(0).begin());
     size_t numFaces = ReferenceElements<double,dim>::general(elementType).size(1);
-    return dofsPerCodim[0] + dofsPerCodim[1] * numFaces;
+    return dofsPerCodim_[0] + dofsPerCodim_[1] * numFaces;
   }
 
 protected:
   const GridView gridView_;
-  std::vector<size_t> codimOffset_;
+  std::array<size_t,dim+1> codimOffset_;
   FiniteElementMap finiteElementMap_;
+  // Number of dofs per entity type depending on the entity's codimension and type
+  std::array<int,2> dofsPerCodim_ {dim*(k-1)*3, dim+(k-1)};
 };
 
 
 
-template<typename GV, int k, typename ST, typename TP, GeometryType::BasicType basic_type>
+template<typename GV, int k, typename ST, typename TP>
 class BrezziDouglasMariniNode :
   public LeafBasisNode<ST, TP>
 {
@@ -246,7 +271,7 @@ public:
   using size_type = ST;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, basic_type, typename GV::ctype, double, k>;
+  using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, double, k>;
   using FiniteElement = typename FiniteElementMap::FiniteElement;
 
   BrezziDouglasMariniNode(const TreePath& treePath, const FiniteElementMap* finiteElementMap) :
@@ -288,7 +313,7 @@ protected:
 
 
 
-template<typename GV, int k, class MI, class TP, class ST, GeometryType::BasicType basic_type>
+template<typename GV, int k, class MI, class TP, class ST>
 class BrezziDouglasMariniNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -300,7 +325,7 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using PreBasis = BrezziDouglasMariniPreBasis<GV, k, MI, ST, basic_type>;
+  using PreBasis = BrezziDouglasMariniPreBasis<GV, k, MI, ST>;
 
   using Node = typename PreBasis::template Node<TP>;
 
@@ -344,8 +369,8 @@ public:
     const auto& element = node_->element();
 
     // throw if element is not of predefined type
-    if (not(basic_type==GeometryType::BasicType::cube and element.type().isCube()) and
-        not(basic_type==GeometryType::BasicType::simplex and element.type().isSimplex())) DUNE_THROW(Dune::NotImplemented, "BrezziDouglasMariniBasis only implemented for cube and simplex elements.");
+    if (not(element.type().isCube()) and not(element.type().isSimplex()))
+      DUNE_THROW(Dune::NotImplemented, "BrezziDouglasMariniBasis only implemented for cube and simplex elements.");
 
     for(std::size_t i=0, end=size(); i<end; ++i, ++it)
     {
@@ -356,7 +381,7 @@ public:
       size_t codim = localKey.codim();
 
       *it = { preBasis_->codimOffset_[codim] +
-             preBasis_->dofsPerCodim[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
+             preBasis_->dofsPerCodim_[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
     }
 
     return it;
@@ -373,7 +398,7 @@ namespace BasisFactory {
 
 namespace Imp {
 
-template<std::size_t k, GeometryType::BasicType basic_type>
+template<std::size_t k>
 class BrezziDouglasMariniPreBasisFactory
 {
 public:
@@ -381,7 +406,7 @@ public:
 
   template<class MultiIndex, class GridView, class size_type=std::size_t>
   auto makePreBasis(const GridView& gridView) const
-    -> BrezziDouglasMariniPreBasis<GridView, k, MultiIndex, size_type, basic_type>
+    -> BrezziDouglasMariniPreBasis<GridView, k, MultiIndex, size_type>
   {
     return {gridView};
   }
@@ -389,10 +414,17 @@ public:
 
 } // end namespace BasisFactory::Imp
 
-template<std::size_t k, GeometryType::BasicType basic_type>
-Imp::BrezziDouglasMariniPreBasisFactory<k, basic_type> brezziDouglasMarini()
+/**
+ * \brief Create a pre-basis factory that can create a Brezzi-Douglas-Marini pre-basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam k Order of the Brezzi-Douglas-Marini element
+ */
+template<std::size_t k>
+auto brezziDouglasMarini()
 {
-  return{};
+  return Imp::BrezziDouglasMariniPreBasisFactory<k>();
 }
 
 } // end namespace BasisFactory
@@ -405,13 +437,13 @@ Imp::BrezziDouglasMariniPreBasisFactory<k, basic_type> brezziDouglasMarini()
 
 /** \brief Basis of a scalar k-th-order BDM finite element space on simplex and cube grids
  *
- * TODO
+ * TODO: Fix this for grids with more than one element type
  *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
-template<typename GV, int k, GeometryType::BasicType basic_type, class ST = std::size_t>
-using BrezziDouglasMariniBasis = DefaultGlobalBasis<BrezziDouglasMariniPreBasis<GV, k, FlatMultiIndex<ST>, ST, basic_type> >;
+template<typename GV, int k, class ST = std::size_t>
+using BrezziDouglasMariniBasis = DefaultGlobalBasis<BrezziDouglasMariniPreBasis<GV, k, FlatMultiIndex<ST>, ST> >;
 
 } // end namespace Functions
 } // end namespace Dune
