@@ -29,6 +29,7 @@
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
+#include <dune/functions/functionspacebases/boundarydofs.hh>
 
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
@@ -369,14 +370,6 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   // { boundary_predicate_begin }
-  using Coordinate = GridView::Codim<0> ::Geometry::GlobalCoordinate;
-
-  auto boundaryIndicator = [&bbox](Coordinate x) {
-    bool isBoundary = false;
-    for (std::size_t j=0; j<x.size(); j++)
-      isBoundary |= x[j] < 1e-8 || x[j] > bbox[j] - 1e-8;
-    return isBoundary;
-  };
   // { boundary_predicate_end }
 
   // { interpolate_boundary_predicate_begin }
@@ -394,10 +387,16 @@ int main (int argc, char *argv[]) try
 
   BitVectorType isBoundary;
 
-  interpolate(Functions::subspaceBasis(taylorHoodBasis, _0), BitVectorBackend(isBoundary), boundaryIndicator);
+  auto isBoundaryBackend = BitVectorBackend(isBoundary);
+  isBoundaryBackend.resize(taylorHoodBasis);
+  isBoundary = false;
+  Dune::Functions::forEachBoundaryDOF(Functions::subspaceBasis(taylorHoodBasis, _0), [&] (auto&& index) {
+    isBoundaryBackend[index] = true;
+  });
   // { interpolate_boundary_predicate_end }
 
   // { interpolate_dirichlet_values_begin }
+  using Coordinate = GridView::Codim<0> ::Geometry::GlobalCoordinate;
   using VelocityRange = FieldVector<double,dim>;
   auto&& velocityDirichletData = [](Coordinate x) {
     return VelocityRange{0.0, double(x[0] < 1e-8)};
@@ -406,7 +405,7 @@ int main (int argc, char *argv[]) try
   interpolate(Functions::subspaceBasis(taylorHoodBasis, _0),
                         VectorBackend(rhs),
                         velocityDirichletData,
-                        BitVectorBackend(isBoundary));
+                        isBoundaryBackend);
   // { interpolate_dirichlet_values_end }
 
   ////////////////////////////////////////////
@@ -425,7 +424,7 @@ int main (int argc, char *argv[]) try
         auto row = localView.index(i);
         // If row corresponds to a boundary entry, modify
         // it to be an identity matrix row
-        if (BitVectorBackend(isBoundary)[row])
+        if (isBoundaryBackend[row])
           for (size_t j=0; j<localView.size(); ++j) {
             auto col = localView.index(j);
             matrixEntry(stiffnessMatrix, row, col) = (i==j) ? 1 : 0;
