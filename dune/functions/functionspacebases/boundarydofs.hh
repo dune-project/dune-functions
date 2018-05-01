@@ -109,18 +109,16 @@ template<class Basis, class F,
 void forEachBoundaryDOF(const Basis& basis, F&& f)
 {
   auto localView = basis.localView();
-  auto localIndexSet = basis.localIndexSet();
   auto seDOFs = subEntityDOFs(basis);
   const auto& gridView = basis.gridView();
   for(auto&& element : elements(gridView))
     if (element.hasBoundaryIntersections())
     {
       localView.bind(element);
-      localIndexSet.bind(localView);
       for(const auto& intersection: intersections(gridView, element))
         if (intersection.boundary())
           for(auto localIndex: seDOFs.bind(localView,intersection))
-            f(localIndexSet.index(localIndex));
+            f(localView.index(localIndex));
     }
 }
 
