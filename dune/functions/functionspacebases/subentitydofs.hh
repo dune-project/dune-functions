@@ -24,7 +24,7 @@ namespace Functions {
  *
  * This provides a range of DOFs associated to a given sub-entity
  * by its LocalKeys. In order to use this, it has to be bound to
- * a bound LocalView and a sub-entity. The latter is either encodes
+ * a bound LocalView and a sub-entity. The latter is either encoded
  * by its local index and codimension wrt the element the LocalView
  * is bound to, or by an intersection having this element as inside.
  *
@@ -73,9 +73,11 @@ class SubEntityDOFs
     for(auto&& row : isInSubEntity_)
       row.reset();
 
-//  forEachSubEntity(re, subEntityIndex, subEntityCodim, [&](auto i, auto codim) {
-//    isInSubEntity_[dim-codim][i] = true;
-//  });
+    // We'd like to loop over all sub-entities, but this is not
+    // supported by the reference elements yet:
+    // forEachSubEntity(re, subEntityIndex, subEntityCodim, [&](auto i, auto codim) {
+    //   isInSubEntity_[dim-codim][i] = true;
+    // });
 
     // For codim<subEntityCodim no sub-entity is contained and
     // for codim=subEntityCodim only the subEntityIndex-th sub-entity
@@ -106,7 +108,7 @@ public:
    * \returns *this for convenience
    */
   template<class LocalView>
-  SubEntityDOFs bind(const LocalView& localView, std::size_t subEntityIndex, std::size_t subEntityCodim)
+  SubEntityDOFs& bind(const LocalView& localView, std::size_t subEntityIndex, std::size_t subEntityCodim)
   {
     const auto& tree = localView.tree();
 
@@ -157,7 +159,7 @@ public:
    * \returns *this for convenience
    */
   template<class LocalView, class Intersection>
-  SubEntityDOFs bind(const LocalView& localView, const Intersection& intersection)
+  SubEntityDOFs& bind(const LocalView& localView, const Intersection& intersection)
   {
     return bind(localView, intersection.indexInInside(), 1);
   }
@@ -230,7 +232,7 @@ auto subEntityDOFs(const T& t)
  * it to the given LocalView and sub-entity.
  *
  * Notice that the SubEntityDOFs object will allocate
- * some internal buffers. Forr efficiency reasons you
+ * some internal buffers. For efficiency reasons you
  * should thus prefer to first create a SubEntityDOFs
  * object and then bind it to each element you want to
  * process instead of creating a new bound SubEntityDOFs
@@ -260,7 +262,7 @@ auto subEntityDOFs(const LocalView& localView, std::size_t subEntityIndex, std::
  * it to the given LocalView and intersection.
  *
  * Notice that the SubEntityDOFs object will allocate
- * some internal buffers. Forr efficiency reasons you
+ * some internal buffers. For efficiency reasons you
  * should thus prefer to first create a SubEntityDOFs
  * object and then bind it to each element you want to
  * process instead of creating a new bound SubEntityDOFs
