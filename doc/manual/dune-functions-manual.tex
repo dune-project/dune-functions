@@ -2082,9 +2082,8 @@ creating a suitable pre-basis-factory object which
 stores all basis-specific information.
 This function is defined in the same header file.
 That means that in particular you can write
-\todosander{Darf nicht mehr \cpp{BasisType} benutzen!}
 \begin{lstlisting}[style=Example]
-auto raviartThomasBasis = makeBasis(gridView, raviartThomas<k, GeometryType::BasicType::cube>());
+auto raviartThomasBasis = makeBasis(gridView, raviartThomas<k>());
 \end{lstlisting}
 to obtain a Raviart--Thomas basis for the given grid view.
 Notice that the \cpp{raviartThomas()} function does not need
@@ -2092,7 +2091,7 @@ the grid view as parameter.
 This is equivalent to constructing
 the basis directly:
 \begin{lstlisting}[style=Example]
-RaviartThomasBasis<GridView,k,GeometryType::BasicType::cube> raviartThomasBasis;
+RaviartThomasBasis<GridView,k> raviartThomasBasis;
 \end{lstlisting}
 This example shows another convention: The template and constructor parameters
 of the \cpp{FooBarBasis} are given in the same order as the template
@@ -2116,7 +2115,7 @@ contained in the namespace  \cpp{BasisFactory::}.
 The method has an unspecified number of arguments, of unspecified type.
 The arguments are expected to be pre-basis-factory objects themselves.
 This can either be plain pre-basis-factories constructed by, e.g.,
-\cpp{lagrange<1>()} or \cpp{raviartThomas<k, GeometryType::BasicType::cube>()},
+\cpp{lagrange<1>()} or \cpp{raviartThomas<k>()},
 or composite- or power-pre-basis-factories constructed by \cpp{composite()}
 or \cpp{power()} (see below), respectively.
 
@@ -2126,7 +2125,7 @@ the mixed formulation of the Poisson equation, say), the appropriate call is
 auto mixedBasis = makeBasis(
   gridView,
   composite(
-    raviartThomas<0, GeometryType::BasicType::cube>(),
+    raviartThomas<0>(),
     lagrange<0>()
   ));
 \end{lstlisting}
