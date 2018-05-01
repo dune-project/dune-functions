@@ -249,6 +249,18 @@ public:
     return resolveMultiIndex(*vector_, index);
   }
 
+  template<typename T>
+  void operator= (const T& other)
+  {
+    vector() = other;
+  }
+
+  template<typename T>
+  void operator= (const ISTLVectorBackend<T>& other)
+  {
+    vector() = other.vector();
+  }
+
   const Vector& vector() const
   {
     return *vector_;
@@ -273,11 +285,17 @@ private:
  *
  * \ingroup FunctionSpaceBasesUtilities
  *
- * The returned vector backend can be used for all dune-functions
+ * The returned object implements the VectorBackend concept and
+ * can be used for all dune-functions
  * utilities requiring a coefficient vector (e.g. interpolate()
  * and DiscreteGlobalBasisFunction). It essentially provides
  * operator[] access using multi-indices and a recursive
- * resize method for adjusting the size to a given GlobalBasis.
+ * resize(GlobalBasis) method for adjusting the size to a
+ * given GlobalBasis.
+ *
+ * Additionally to the VectorBackend interface, provides access
+ * to the wrapped vector using the method vector() and forwards
+ * all assignments to the underlying wrapped vector.
  *
  * The wrapped vector type should be a nested ISTL like random
  * access container providing operator[] and size() methods.
@@ -306,11 +324,15 @@ auto istlVectorBackend(Vector& v)
  *
  * \ingroup FunctionSpaceBasesUtilities
  *
- * The returned vector backend can be used for all dune-functions
+ * The returned object implements the VectorBackend concept and
+ * can be used for all dune-functions
  * utilities requiring a coefficient vector (e.g. interpolate()
  * and DiscreteGlobalBasisFunction. It essentially provides
  * operator[] access using multi-indices and a recursive
- * resize method for adjusting the size to a given GlobalBasis.
+ * resize(GlobalBasis) method for adjusting the size to a given GlobalBasis.
+ *
+ * Additionally to the VectorBackend interface, provides access
+ * to the wrapped vector using the method vector().
  *
  * The wrapped vector type should be a nested ISTL like random
  * access container providing operator[] and size() methods.
