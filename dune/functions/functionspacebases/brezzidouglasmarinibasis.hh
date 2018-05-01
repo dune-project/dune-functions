@@ -253,7 +253,7 @@ protected:
   std::array<size_t,dim+1> codimOffset_;
   FiniteElementMap finiteElementMap_;
   // Number of dofs per entity type depending on the entity's codimension and type
-  std::array<int,2> dofsPerCodim_ {dim*(k-1)*3, dim+(k-1)};
+  std::array<int,2> dofsPerCodim_ {{dim*(k-1)*3, dim+(k-1)};
 };
 
 
