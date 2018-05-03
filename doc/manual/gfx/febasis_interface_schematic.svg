@@ -9,8 +9,8 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="732.27234"
-   height="455.35849"
+   width="780.01306"
+   height="549.64423"
    id="svg2"
    version="1.1"
    inkscape:version="0.92.3 (2405546, 2018-03-11)"
@@ -137,9 +137,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.7"
-     inkscape:cx="189.79983"
-     inkscape:cy="219.66723"
+     inkscape:zoom="1.4"
+     inkscape:cx="237.54058"
+     inkscape:cy="505.38152"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -168,7 +168,7 @@
      inkscape:label="Ebene 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-437.81576,-242.33)">
+     transform="translate(-390.07501,-148.04429)">
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;fill:none;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect2985"
@@ -186,10 +186,10 @@
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;fill:none;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect2993"
-       width="299.00516"
-       height="162.63457"
-       x="457.40356"
-       y="243.23" />
+       width="405.43369"
+       height="256.92029"
+       x="390.97501"
+       y="148.94429" />
     <rect
        style="color:#000000;display:inline;overflow:visible;visibility:visible;fill:none;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;enable-background:accumulate"
        id="rect2995"
@@ -249,7 +249,7 @@
          y="536.05414"
          style="font-size:20px;line-height:1.25;font-family:sans-serif">Element</tspan></text>
     <g
-       transform="matrix(0.33943816,0,0,0.33943816,468.14588,160.81515)"
+       transform="matrix(0.49263187,0,0,0.50783175,390.15396,37.708915)"
        id="layer1-2"
        inkscape:label="Ebene 1">
       <rect
@@ -314,12 +314,12 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;line-height:0%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
-       x="461.63974"
+       x="407.63974"
        y="390.71225"
        id="text4589"><tspan
          sodipodi:role="line"
          id="tspan4591"
-         x="461.63974"
+         x="407.63974"
          y="390.71225"
          style="font-size:20px;line-height:1.25;font-family:sans-serif">Tree</tspan></text>
     <text
