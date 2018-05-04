@@ -1491,8 +1491,8 @@ void update(const GridView & gv);
 \label{sec:localview_interface}
 
 The localization of a function space basis to a single grid element is represented
-by an interface called \cpp{LocalView}.
-\cpp{LocalView} objects are returned by the method \cpp{GlobalBasis::localView()},
+by an interface called \cpp{LocalView}. Objects of type
+\cpp{LocalView} are returned by the method \cpp{GlobalBasis::localView()},
 and there is no way to construct such objects directly.
 All types and methods listed in the following
 interface declaration are public members of
@@ -1524,7 +1524,19 @@ element that is accessible via
 const Element& element() const;
 \end{lstlisting}
 
-First of all, a bound \cpp{LocalView} object provided information
+As an example, suppose that \cpp{basis} is an object of type \cpp{Dune::Functions::TaylorHoodBasis},
+which implements the Taylor--Hood basis that has been used for examples in the previous section.
+To obtain a localization of this basis to an element (i.e., a \dune grid entity of codimension~0),
+write
+\begin{lstlisting}{style=example}
+// create a LocalView
+auto localView = basis.localView();
+
+// bind the LocalView to the element
+localView.bind(element);
+\end{lstlisting}
+
+In addition, a bound \cpp{LocalView} object provided information
 about the size of the local basis at the current element.
 The total number of basis functions associated to the
 local view at the currently bound element is returned by
@@ -1540,6 +1552,18 @@ method returns the maximum of the
 \cpp{size()} method for all elements in the grid view
 associated to the global basis.  Unlike the method \cpp{size()},
 the method \cpp{maxSize()} can be called in unbound state.
+
+The following code loops over all elements of the grid view and prints the numbers
+of degrees of freedom per element
+\begin{lstlisting}[style=example]
+auto localView = basis.localView();
+
+for (auto&& element : elements(basis.gridView()))
+{
+  localView.bind(element);
+  std::cout << "Element with " << localView.size() << " degrees of freedom" << std::endl;
+}
+\end{lstlisting}
 
 
 Access to the actual local basis functions is provided
