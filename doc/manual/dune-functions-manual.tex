@@ -1763,43 +1763,6 @@ const FiniteElement& finiteElement() const = 0;
 \end{lstlisting}
 
 
-
-\subsection{Using the localized interface}
-\label{sec:localized_interface}
-
-We now give a short example on how to use the interface
-to compute global indices for local basis functions
-of a given \cpp{globalBasis} at a given \cpp{element}.
-If we want to compute the global index of the \cpp{i}-th
-local basis function in the finite element attached to
-a leaf node this can be done by the following snippet.
-
-\begin{lstlisting}[style=Example]
-// create a LocalView
-auto localView = basis.localView();
-
-// bind the LocalView to the element
-localView.bind(element);
-
-// obtain the basis tree
-const auto& node = localView.tree();
-
-// compute local index of local basis function within the tree
-auto localIndex = node.localIndex(i);
-
-// compute global index of local basis function
-auto globalIndex = localView.index(localIndex);
-\end{lstlisting}
-
-Here we assumed that we do not have a nested local ansatz tree
-such that the \cpp{tree()} method directly returns a \cpp{LeafBasisNode}.
-In this case \cpp{localIndex} coincides with \cpp{i}.
-In the more general case of a nontrivial product space
-we must first retrieve the leaf node corresponding to
-the desired factor in the product space.
-
-
-
 \subsection{Multi-indices}
 \label{sec:multi_indices}
 Multi-indices are used in several places in \dunemodule{dune-functions}.
