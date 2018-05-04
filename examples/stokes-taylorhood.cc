@@ -197,10 +197,11 @@ void setOccupationPattern(const Basis& basis, MatrixType& matrix)
 }
 
 
+#if BLOCKEDBASIS
+// { matrixentry_begin }
 template<class Matrix, class MultiIndex>
 decltype(auto) matrixEntry(Matrix& matrix, const MultiIndex& row, const MultiIndex& col)
 {
-#if BLOCKEDBASIS
   using namespace Indices;
   if ((row[0]==0) and (col[0]==0))
     return matrix[_0][_0][row[1]][col[1]][row[2]][col[2]];
@@ -209,10 +210,18 @@ decltype(auto) matrixEntry(Matrix& matrix, const MultiIndex& row, const MultiInd
   if ((row[0]==1) and (col[0]==0))
     return matrix[_1][_0][row[1]][col[1]][0][col[2]];
   return matrix[_1][_1][row[1]][col[1]][0][0];
-#else
-  return matrix[row[0]][col[0]][row[1]][col[1]];
-#endif
 }
+// { matrixentry_end }
+#else
+template<class Matrix, class MultiIndex>
+decltype(auto) matrixEntry(Matrix& matrix, const MultiIndex& row, const MultiIndex& col)
+{
+  return matrix[row[0]][col[0]][row[1]][col[1]];
+  using namespace Functions::BasisFactory;
+
+  static const std::size_t K = 1; // pressure order for Taylor-Hood
+}
+#endif
 
 
 /** \brief Assemble the Laplace stiffness matrix on the given grid view */

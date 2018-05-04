@@ -2758,7 +2758,13 @@ and matrix type while the latter works generically.}
 \lstinputlisting[linerange={set_dirichlet_matrix_begin-set_dirichlet_matrix_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
+The access to the matrix entries is done using a helper function \cpp{matrixEntry()}.
+%
+\lstinputlisting[linerange={matrixentry_begin-matrixentry_end},
+                 numbers=left]{../../examples/stokes-taylorhood.cc}
+%
 \todograeser{Describe \cpp{matrixEntry()} function}
+
 Finally, we can solve the linear system.  Efficiently solving the Stokes system is an art, which we do not want to
 get into here.  Instead, we a GMRes solver, without any preconditioner at all.  This is known to converge,
 albeit slowly.
