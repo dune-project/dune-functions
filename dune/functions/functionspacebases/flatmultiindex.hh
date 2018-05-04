@@ -78,6 +78,7 @@ public:
     return std::hash<size_type>()(arg);
   }
 
+  static constexpr std::size_t max_size() { return 1; }
 };
 
 
