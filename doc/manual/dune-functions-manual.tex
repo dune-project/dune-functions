@@ -1403,39 +1403,26 @@ all class names used below are generic. A tree of global bases is implemented by
 in the following, we will call \cpp{GlobalBasis}, and which
 can have an arbitrary number of template parameters.
 All types and methods listed in the following
-interface declaration are public members of
-the generic class \cpp{GlobalBasis}.
+interface declaration shall be public members of
+the generic implementation class \cpp{GlobalBasis}.
 
 As each basis implementation may require its own specific data for construction,
 we do not enforce a precise set of constructors.
 \begin{lstlisting}[style=Interface]
 GlobalBasis(@@<implementation defined>@@);
 \end{lstlisting}
-There may be one or several constructors with implementation-dependent lists of arguments.
+Each \cpp{GlobalBasis} may have
+one or several constructors with implementation-dependent lists of arguments.
 
-The global basis represents a function space defined on a grid view, and access to
-this view is provided by the
-\begin{lstlisting}[style=Interface]
-const GridView& gridView() const;
-\end{lstlisting}
-method. The corresponding type
-is exported as \cpp{GridView}. If the grid view
-was modified (e.g., by local grid refinement), the result of calling any
-method of the basis is undefined until the basis was updated by
-providing a new grid view by the method
-\begin{lstlisting}[style=Interface]
-void update(const GridView & gv);
-\end{lstlisting}
-
-Access to the basis functions and indices is available via the
-local view interface.
+The main feature of a \cpp{GlobalBasis} is to give access to basis functions and their indices.
+Most of this access happens through the localization of the basis to single grid elements (Section~\ref{sec:localization}).
+In the programmer interface, this localization is called \cpp{LocalView}.  Objects of type
+\cpp{LocalView} are obtained from \cpp{GlobalBasis} objects through the method
 \begin{lstlisting}[style=Interface]
 using LocalView = @@<implementation defined>@@;
 LocalView localView() const;
 \end{lstlisting}
-The \cpp{localView()} method returns a new object that implements the
-localization of a basis to a single grid element, as described in Section~\ref{sec:localization}.
-The return type of the \cpp{localView()} method is implementation-dependent. Objects
+The precise return type of the \cpp{localView()} method is implementation-dependent. Objects
 created by the method have undefined state, and need to be attached to individual grid
 elements in a process called \emph{binding}.%
 %
@@ -1452,9 +1439,10 @@ exported via the method
 using size_type = @@<implementation defined>@@;
 size_type dimension() const;
 \end{lstlisting}
-However, this information is generally not
+This method can be used to allocate vector containers if flat multi-indices are used.
+However, the information is generally not
 sufficient to allocate hierarchical containers that can be
-accessed by multi-indices.
+accessed by more general multi-indices.
 Therefore, the basis provides access to the structural
 information of those multi-indices via the method
 \begin{lstlisting}[style=Interface]
@@ -1463,17 +1451,14 @@ size_type size(const SizePrefix& prefix) const;
 \end{lstlisting}
 The given parameter \cpp{prefix} is a multi-index itself.
 If $\mathcal{I}$ is the set of all global multi-indices of the
-basis and $P \in \mathcal{N}$ is a prefix for this set,
-i.e., there is a $(P,\dots) \in \mathcal{I}$, then
-\cpp{size(P)} returns the size $\operatorname{deg}^+_{\mathcal{I}}[P]$ of
-$\mathcal{I}$ relative to $P$ defined in \eqref{eq:prefix_size}.
-%For a prefix $(p_1,\dots,p_k)$ the method returns the maximal value $q$ such that there
-%is a global index of the form $(p_1,\dots,p_k,q-1,\dots)$.
-If $P$ is not a prefix for $\mathcal{I}$ the result is undefined.
-If $P \in \mathcal{I}$, i.e., the prefix is itself one of the multi-indices
+basis and $\text{\cpp{prefix}} \in \mathcal{N}$ is a prefix for this set, then
+\cpp{size(prefix)} returns the size $\operatorname{deg}^+_{\mathcal{I}}[\text{\cpp{prefix}}]$ of
+$\mathcal{I}$ relative to $\text{\cpp{prefix}}$ defined in \eqref{eq:prefix_size},
+i.e., the number of direct children of the node $P$ in the index tree.
+If $\text{\cpp{prefix}}$ is not a prefix for $\mathcal{I}$ the result is undefined.
+If $\text{\cpp{prefix}} \in \mathcal{I}$, i.e., the prefix is itself one of the multi-indices
 then the result is zero.
-In any case the result corresponds to the number of direct children
-of the node $P$ in the index tree.
+
 For convenience there is also a method
 \begin{lstlisting}[style=Interface]
 size_type size() const;
@@ -1481,13 +1466,25 @@ size_type size() const;
 returning the same value as the method with an empty prefix.
 For a scalar basis, this method again returns the overall number of basis functions.
 
-Since prefixes may have variable size, it is guaranteed that the type \cpp{SizePrefix}
-is always a \cpp{Dune::ReservedVector<size\_type,k>} where \cpp{k}
-is as least as large as the maximal length of a multi-index. The result
-type of all size-related methods is exported as \cpp{size\_type}.
+Each \cpp{GlobalBasis} implementation class is expected to export the types it uses
+for multi-indices.  There is typically more than one type in use, and in particular
+\cpp{MultiIndex} (the type used for global multi-indices of degrees of freedom)
+will differ from \cpp{SizePrefix}.  Multi-index implementations are discussed
+in Section~\ref{sec:multi_indices}.
 
-The type used for global multi-indices is exported as \cpp{MultiIndex}.
-The interface of this type is discussed later.
+Finally, each \cpp{GlobalBasis} shall provide access to the grid view it is defined on
+by the method
+\begin{lstlisting}[style=Interface]
+const GridView& gridView() const;
+\end{lstlisting}
+The corresponding type
+is exported as \cpp{GridView}. If the grid view
+was modified (e.g., by local grid refinement), the result of calling any
+method of the basis is undefined until the basis was updated by
+providing a new grid view by the method
+\begin{lstlisting}[style=Interface]
+void update(const GridView & gv);
+\end{lstlisting}
 
 
 \subsection{The user interface for a localized basis}
