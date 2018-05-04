@@ -2724,7 +2724,6 @@ used to access entries of nested vectors by multi-indices directly.
 Finally, we can solve the linear system.  Efficiently solving the Stokes system is an art, which we do not want to
 get into here.  Instead, we a GMRes solver, without any preconditioner at all.  This is known to converge,
 albeit slowly.
-\todo[inline]{Eigentlich peinlich.  Können wir nicht doch einen vernünftigen Löser nehmen?}
 The advantage is that it can be written down in very few lines.
 %
 \lstinputlisting[linerange={stokes_solve_begin-stokes_solve_end},
