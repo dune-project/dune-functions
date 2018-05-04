@@ -92,7 +92,7 @@ public:
   using MultiIndex = MI;
 
   //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, 3>;
+  using SizePrefix = Dune::ReservedVector<size_type, 2>;
 
 private:
 
