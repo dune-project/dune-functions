@@ -2828,13 +2828,13 @@ from the finite element basis:
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 After that, we start the loop over the grid elements.  For each element, we bind the \cpp{localView} object
-to the element and the \cpp{localIndexSet} object to
-the \cpp{localView}.  From now on all enquiries to the local view and index set will implicitly refer to this element.
+to the element.
+From now on all enquiries to the local view will implicitly refer to this element.
 %
 \lstinputlisting[linerange={element_loop_and_bind_begin-element_loop_and_bind_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-We then create the element stiffness matrix, and call the separate method \cpp{getLocalMatrix} to fill.
+We then create the element stiffness matrix, and call the separate method \cpp{getLocalMatrix} to fill it.
 By default, \dunemodule{dune-functions} supposes that the element stiffness matrix is dense and non-hierarchical,
 and Line~\ref{li:stokes_taylorhood_select_element_matrix_type}
 picks a suitable type for such a matrix.
@@ -2852,9 +2852,11 @@ Finally, we loop over the entries of the element stiffness matrix and add them o
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 The type returned in Lines~\ref{li:stokes_taylorhood_get_global_row_index} and~\ref{li:stokes_taylorhood_get_global_column_index}
-for the global row and column indices is a multi-index.  It has length~2 for both velocity degrees of freedom and for
-pressure degrees of freedom.  Observe how Line~\ref{li:stokes_taylorhood_scatter_matrix_indices} uses the length-2
-multi-index to access the nested matrix type.  For vectors, this scattering of multi-indices is implemented
+for the global row and column indices is a multi-index.  It has length~3 for velocity degrees of freedom and
+length~2 for pressure degrees of freedom.
+Observe how Line~\ref{li:stokes_taylorhood_scatter_matrix_indices} uses the helper function
+\cpp{matrixEntry()} to access the nested matrix type using those multi-indices.
+For vectors, this scattering of multi-indices is implemented
 in general form in the \cpp{HierarchicVectorWrapper} class.
 
 The preceding loops write in particular into the lower right matrix block, even though we know that for the Stokes
