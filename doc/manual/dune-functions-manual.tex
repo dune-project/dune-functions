@@ -1739,15 +1739,22 @@ tree in a fixed type for all nodes.
 These methods can also be used if the local view containing
 the tree is in unbound state.
 
-Leaf nodes share the same interface as interior
-nodes. Additionally they provide access to the
+Additionally all nodes provide access to the
 element which the local view and thus the tree is bound
-to via the \cpp{element()} method.
-\todosander{Auch hier fände ich es konsistenter wenn es die Methode \cpp{element}
-für alle Knoten gäbe, nicht nur für Leafs.}
-Probably most important
-is the \cpp{finiteElement()} method that gives access
-to the local finite element. The finite element
+to via the method
+\begin{lstlisting}[style=Interface]
+using Element = @@<implementation defined>@@;
+const Element& element() const;
+\end{lstlisting}
+
+In addition to what has been discussed so far, leaf nodes have an
+additional method
+\begin{lstlisting}[style=Interface]
+using FiniteElement = @@<implementation defined>@@;
+const FiniteElement& finiteElement() const;
+\end{lstlisting}
+It gives access to the local finite element.
+The finite element
 itself provides access to the local basis functions
 by the finite element interface defined in the
 \dunemodule{dune-localfunctions} module.
@@ -1755,12 +1762,6 @@ It is important to note that the lexicographic
 index of a basis function in a leaf node coincides
 with its number in the local finite element.
 
-\begin{lstlisting}[style=Interface]
-using Element = @@<implementation defined>@@;
-using FiniteElement = @@<implementation defined>@@;
-const Element& element() const = 0;
-const FiniteElement& finiteElement() const = 0;
-\end{lstlisting}
 
 
 \subsection{Multi-indices}
