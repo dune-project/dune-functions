@@ -2773,21 +2773,25 @@ to only the boundary degrees of freedom that we marked before.
 
 The stiffness matrix is modified in a more manual fashion.  For each Dirichlet degree of freedom we need to fill the corresponding matrix row
 with zeros, and write a~1 on the diagonal.
-%As only velocity
-%degrees of freedom have Dirichlet values, we need to modify the two upper matrix blocks only.
-\todograeser{Should we manipulate the matrix manually or use the basis to access the entries?
-The former is more efficient but also leads to code that is very specific to the indexing scheme
-and matrix type while the latter works generically.}
+The following algorithm will work for any matrix type and indexing scheme.
+However, using a specialized algorithm looping over matrix rows only once
+may be faster.
 %
 \lstinputlisting[linerange={set_dirichlet_matrix_begin-set_dirichlet_matrix_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-The access to the matrix entries is done using a helper function \cpp{matrixEntry()}.
+The access to the matrix entries is done using a helper function \cpp{matrixEntry}.
+This is necessary because the nested matrix needs to be indexed using a pair
+of outer row and column indices first and does not support access
+using a pair of row and column multi-indices to directly resolve the scalar entries.
+Notice that the outer indices for the \cpp{MultiTypeBlockMatrix} have to be
+encoded statically, because different matrix entries have different types.
+The \cpp{matrixEntry} function can be considered an analouge of the vector backends
+used to access entries of nested vectors by multi-indices directly.
 %
 \lstinputlisting[linerange={matrixentry_begin-matrixentry_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-\todograeser{Describe \cpp{matrixEntry()} function}
 
 Finally, we can solve the linear system.  Efficiently solving the Stokes system is an art, which we do not want to
 get into here.  Instead, we a GMRes solver, without any preconditioner at all.  This is known to converge,
