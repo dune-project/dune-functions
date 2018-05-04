@@ -142,12 +142,15 @@ void getLocalMatrix(const LocalView& localView,
 }
 
 
-// Get the occupation pattern of the stiffness matrix
-template <class Basis>
-void getOccupationPattern(const Basis& basis,
-                          std::array<std::array<MatrixIndexSet,2>,2>& nb)
+// Set the occupation pattern of the stiffness matrix
+template <class Basis, class MatrixType>
+void setOccupationPattern(const Basis& basis, MatrixType& matrix)
 {
   enum {dim = Basis::GridView::dimension};
+
+  // MatrixIndexSets store the occupation pattern of a sparse matrix.
+  // They are not particularly efficient, but simple to use.
+  std::array<std::array<MatrixIndexSet, 2>, 2> nb;
 
   // Set sizes of the 2x2 submatrices
   for (size_t i=0; i<2; i++)
@@ -182,6 +185,15 @@ void getOccupationPattern(const Basis& basis,
 
   }
 
+  // Give the matrix the occupation pattern we want.
+  using namespace Indices;
+#if !BLOCKEDBASIS
+  matrix.setSize(2,2);
+#endif
+  nb[0][0].exportIdx(matrix[_0][_0]);
+  nb[0][1].exportIdx(matrix[_0][_1]);
+  nb[1][0].exportIdx(matrix[_1][_0]);
+  nb[1][1].exportIdx(matrix[_1][_1]);
 }
 
 
@@ -210,22 +222,8 @@ void assembleStokesMatrix(const Basis& basis,
                           MatrixType& matrix)
 // { global_assembler_signature_end }
 {
-  // MatrixIndexSets store the occupation pattern of a sparse matrix.
-  // They are not particularly efficient, but simple to use.
   // { setup_matrix_pattern_begin }
-  std::array<std::array<MatrixIndexSet, 2>, 2> occupationPattern;
-  getOccupationPattern(basis, occupationPattern);
-
-  // ... and give it the occupation pattern we want.
-  using namespace Indices;
-
-#if !BLOCKEDBASIS
-  matrix.setSize(2,2);
-#endif
-  occupationPattern[0][0].exportIdx(matrix[_0][_0]);
-  occupationPattern[0][1].exportIdx(matrix[_0][_1]);
-  occupationPattern[1][0].exportIdx(matrix[_1][_0]);
-  occupationPattern[1][1].exportIdx(matrix[_1][_1]);
+  setOccupationPattern(basis, matrix);
 
   // Set all entries to zero
   matrix = 0;                           /*@\label{li:stokes_taylorhood_set_matrix_to_zero}@*/
@@ -298,12 +296,12 @@ int main (int argc, char *argv[]) try
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
+#if BLOCKEDBASIS
   // { function_space_basis_begin }
   using namespace Functions::BasisFactory;
 
   static const std::size_t K = 1; // pressure order for Taylor-Hood
 
-#if BLOCKEDBASIS
   auto taylorHoodBasis = makeBasis(  /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
     gridView,
     composite(
@@ -312,8 +310,12 @@ int main (int argc, char *argv[]) try
         blockedInterleaved()),
       lagrange<K>()
     ));
+  // { function_space_basis_end }
 #else
-  auto taylorHoodBasis = makeBasis(  /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
+  using namespace Functions::BasisFactory;
+
+  static const std::size_t K = 1; // pressure order for Taylor-Hood
+  auto taylorHoodBasis = makeBasis(
     gridView,
     composite(
       power<dim>(
@@ -324,17 +326,20 @@ int main (int argc, char *argv[]) try
 #endif
 
 
-  // { function_space_basis_end }
 
   /////////////////////////////////////////////////////////
   //   Stiffness matrix and right hand side vector
   /////////////////////////////////////////////////////////
 
-  // { linear_algebra_setup_begin }
 #if BLOCKEDBASIS
+  // { linear_algebra_setup_begin }
   using VelocityVector = BlockVector<FieldVector<double,dim>>;
   using PressureVector = BlockVector<FieldVector<double,1>>;
   using VectorType = MultiTypeBlockVector<VelocityVector, PressureVector>;
+
+  using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
+  using PressureBitVector = BlockVector<FieldVector<char,1>>;
+  using BitVectorType = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
 
   using Matrix00 = BCRSMatrix<FieldMatrix<double,dim,dim>>;
   using Matrix01 = BCRSMatrix<FieldMatrix<double,dim,1>>;
@@ -343,11 +348,12 @@ int main (int argc, char *argv[]) try
   using MatrixRow0 = MultiTypeBlockVector<Matrix00, Matrix01>;
   using MatrixRow1 = MultiTypeBlockVector<Matrix10, Matrix11>;
   using MatrixType = MultiTypeBlockMatrix<MatrixRow0,MatrixRow1>;
+  // { linear_algebra_setup_end }
 #else
   using VectorType = BlockVector<BlockVector<FieldVector<double,1> > >;
+  using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
   using MatrixType = Matrix<BCRSMatrix<FieldMatrix<double,1,1> > >;
 #endif
-  // { linear_algebra_setup_end }
 
   /////////////////////////////////////////////////////////
   //  Assemble the system
@@ -374,14 +380,6 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   // { initialize_boundary_dofs_vector_begin }
-#if BLOCKEDBASIS
-  using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
-  using PressureBitVector = BlockVector<FieldVector<char,1>>;
-  using BitVectorType = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
-#else
-  using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
-#endif
-
   BitVectorType isBoundary;
 
   using BitVectorBackend = Functions::HierarchicVectorWrapper<BitVectorType, char>;

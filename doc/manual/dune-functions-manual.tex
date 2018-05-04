@@ -2808,17 +2808,12 @@ generic, and all knowledge about the current spaces and differential operators s
 assembler.  Real discretization frameworks like \dunemodule{dune-pdelab} do achieve this separation,
 but for our example here we are less strict, to avoid technicalities.
 
-The first few lines of the \cpp{assembleStokesMatrix} method set up the matrix occupation pattern, and initialize the matrix with zeros.
+The first few lines of the \cpp{assembleStokesMatrix} method set up the matrix occupation pattern
+using a separate method \cpp{setOccupationPattern} which we omit here for simplicity and initialize
+all matrix entries with zero.
 %
 \lstinputlisting[linerange={setup_matrix_pattern_begin-setup_matrix_pattern_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
-%
-The actual pattern assembly is implemented in a separate method \cpp{getOccupationPattern}.
-It returns a $2 \times 2$ table of \cpp{MatrixIndexSet} objects.
-\todo[inline]{Erklären?  Überspringen?  Anders implementieren?}
-The four \cpp{BCRSMatrix} objects are initialized with these patterns in Line~\ref{li:stokes_taylorhood_setup_matrix_patterns}.
-Line~\ref{li:stokes_taylorhood_set_matrix_to_zero}
-fills the entire matrix with zeros.
 
 Next comes the actual element loop.  We first request a \cpp{localView} object and a \cpp{localIndexSet} object
 from the finite element basis:
