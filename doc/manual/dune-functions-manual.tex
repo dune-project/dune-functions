@@ -1331,11 +1331,11 @@ mapping local indices to global multi-indices.
 \section{Programmer interface for function space bases}
 \label{sec:function_space_bases_implementation}
 
-The design of the \dunemodule{dune-functions} interface for bases of discrete function spaces
+The design of the \dunemodule{dune-functions} interface for bases of function spaces
 follows the ideas of the previous section. The main interface concept are global basis objects
 that represent trees of function space bases. These trees can be localized to individual elements
-of the grid.  Such a localization gives you access to the (tree of) shape functions there,
-and it provides the three types of shape-function indices.
+of the grid.  Such a localization provides access to the (tree of) shape functions there,
+together with their three types of shape-function indices.
 The structure of the interface is visualized in Figure~\ref{fig:febasis_interface_schematic}.
 
 \begin{figure}
@@ -1362,11 +1362,11 @@ Internally, \dunemodule{dune-functions} depends on the \dunemodule{dune-typetree
 which implements abstract compile-time tree data structures.
 The global basis interface described below is not enforced by deriving
 from specific base classes. Instead, \dunemodule{dune-functions} is based on
-C++-style duck-typing~\cite{koenig_moo:2005}
-i.e., any object providing the required
+C++-style duck-typing~\cite{koenig_moo:2005},
+i.e., any C++ type providing the required
 interface is a valid global basis.
 
-Throughout this text we will introduce these programmer interfaces
+Throughout this text we will introduce the programmer interfaces
 by presenting the interface declaration, explaining
 its meaning, and giving examples of its usage.
 In order to distinguish interface declarations
@@ -1398,7 +1398,7 @@ auto bar = Bar(t, @@<more args>@@);
 
 
 \subsection{The interface for a global function space basis}
-We start by describing the user interface of global bases.  Since we are discussing duck-typing interfaces,
+We start by describing the user interface for global bases.  Since we are discussing duck-typing interfaces,
 all class names used below are generic. A tree of global bases is implemented by one class which,
 in the following, we will call \cpp{GlobalBasis}, and which
 can have an arbitrary number of template parameters.
@@ -1424,11 +1424,7 @@ LocalView localView() const;
 \end{lstlisting}
 The precise return type of the \cpp{localView()} method is implementation-dependent. Objects
 created by the method have undefined state, and need to be attached to individual grid
-elements in a process called \emph{binding}.%
-%
-\footnote{To be precise, some functionality of \cpp{LocalView} objects is
-  even available for unbound objects.}
-%
+elements in a process called \emph{binding}.
 The details are explained in Section~\ref{sec:localview_interface}.
 
 A second group of methods provides information on the sizes of the bases
@@ -1440,37 +1436,36 @@ using size_type = @@<implementation defined>@@;
 size_type dimension() const;
 \end{lstlisting}
 This method can be used to allocate vector containers if flat multi-indices are used.
-However, the information is generally not
-sufficient to allocate hierarchical containers that can be
+However, the information provided by \cpp{dimension()} is generally not
+sufficient to allocate hierarchical containers to be
 accessed by more general multi-indices.
-Therefore, the basis provides access to the structural
+Therefore, the basis provides more structural
 information of those multi-indices via the method
 \begin{lstlisting}[style=Interface]
-using SizePrefix = @@<implementation defined>@@;
+using SizePrefix = ReservedVector@@<implementation defined>@@;
 size_type size(const SizePrefix& prefix) const;
 \end{lstlisting}
-The given parameter \cpp{prefix} is a multi-index itself.
+The parameter \cpp{prefix} is a multi-index itself.
 If $\mathcal{I}$ is the set of all global multi-indices of the
 basis and $\text{\cpp{prefix}} \in \mathcal{N}$ is a prefix for this set, then
 \cpp{size(prefix)} returns the size $\operatorname{deg}^+_{\mathcal{I}}[\text{\cpp{prefix}}]$ of
 $\mathcal{I}$ relative to $\text{\cpp{prefix}}$ defined in \eqref{eq:prefix_size},
-i.e., the number of direct children of the node $P$ in the index tree.
+i.e., the number of direct children of the node \cpp{prefix} in the index tree.
 If $\text{\cpp{prefix}}$ is not a prefix for $\mathcal{I}$ the result is undefined.
 If $\text{\cpp{prefix}} \in \mathcal{I}$, i.e., the prefix is itself one of the multi-indices
 then the result is zero.
+The type \cpp{SizePrefix} is always a container of type \cpp{ReservedVector} (from the
+\dunemodule{dune-common} module).  More details are given in Section~\ref{sec:multi_indices}.
+Like all other types used in the \cpp{GlobalBasis} interface, it is expected to be
+exported by the implementation class.
 
-For convenience there is also a method
+For convenience there is also the method
 \begin{lstlisting}[style=Interface]
 size_type size() const;
 \end{lstlisting}
-returning the same value as the method with an empty prefix.
-For a scalar basis, this method again returns the overall number of basis functions.
-
-Each \cpp{GlobalBasis} implementation class is expected to export the types it uses
-for multi-indices.  There is typically more than one type in use, and in particular
-\cpp{MultiIndex} (the type used for global multi-indices of degrees of freedom)
-will differ from \cpp{SizePrefix}.  Multi-index implementations are discussed
-in Section~\ref{sec:multi_indices}.
+returning the same value as \cpp{size(\{\})}, i.e., the number of children of the root of
+the index tree.
+For a scalar basis, this is again the overall number of basis functions.
 
 Finally, each \cpp{GlobalBasis} shall provide access to the grid view it is defined on
 by the method
@@ -1480,11 +1475,12 @@ const GridView& gridView() const;
 The corresponding type
 is exported as \cpp{GridView}. If the grid view
 was modified (e.g., by local grid refinement), the result of calling any
-method of the basis is undefined until the basis was updated by
-providing a new grid view by the method
+method of the basis is undefined until the basis has been explicitly updated.
+For this, call the method
 \begin{lstlisting}[style=Interface]
 void update(const GridView & gv);
 \end{lstlisting}
+which tells the basis to adapt its local state to the new grid view.
 
 
 \subsection{The user interface for a localized basis}
