@@ -1496,7 +1496,7 @@ the generic class \cpp{LocalView}.
 
 A freshly constructed \cpp{LocalView} object is not completely initialized yet.
 To truly have the object represent the basis localization to a particular element,
-it must be \emph{bound} to that element.  This is achieved by called
+it must be \emph{bound} to that element.  This is achieved by calling
 \begin{lstlisting}[style=Interface]
 using GridView = typename GlobalBasis::GridView;
 using Element = typename GridView::template Codim<0>::Entity;
@@ -1505,52 +1505,44 @@ void bind(const Element& e);
 Once this method has been called, the \cpp{LocalView} object is fully set up
 and can be used.
 The call may incorporate expensive computations needed to
-setup the local basis functions and to pre-compute their global indices.
+precompute the local basis functions and their global indices.
 The local view can be
-bound to another element by calling this method again.
-To set the local view to unbound state again, you
-can call the
+bound to another element at any time by calling \cpp{bind()} again.
+To set the local view back to the unbound state again, call the method
 \begin{lstlisting}[style=Interface]
 void unbind();
 \end{lstlisting}
-method.
-Note that the local view will store a copy of the bound
-element that is accessible via
+The local view will store a copy of the
+element it is bound to, which is accessible via
 \begin{lstlisting}[style=Interface]
 const Element& element() const;
 \end{lstlisting}
 
-As an example, suppose that \cpp{basis} is an object of type \cpp{Dune::Functions::TaylorHoodBasis},
-which implements the Taylor--Hood basis that has been used for examples in the previous section.
-To obtain a localization of this basis to an element (i.e., a \dune grid entity of codimension~0),
-write
-\begin{lstlisting}{style=example}
-// create a LocalView
-auto localView = basis.localView();
-
-// bind the LocalView to the element
-localView.bind(element);
-\end{lstlisting}
-
-In addition, a bound \cpp{LocalView} object provided information
+A bound \cpp{LocalView} object provides information
 about the size of the local basis at the current element.
 The total number of basis functions associated to the
-local view at the currently bound element is returned by
+local view at the current element is returned by
 \begin{lstlisting}[style=Interface]
 using size_type = typename GlobalBasis::size_type;
 size_type size() const;
 \end{lstlisting}
-To allow preallocation of buffers for local functions, the
+In the language of Chapter~\ref{sec:finite_element_trees}, this method computes
+the number $\abs{\Lambda|_e}$.
+
+To allow preallocation of buffers for local functions, the method
 \begin{lstlisting}[style=Interface]
 size_type maxSize() const;
 \end{lstlisting}
-method returns the maximum of the
+returns the maximum of the
 \cpp{size()} method for all elements in the grid view
-associated to the global basis.  Unlike the method \cpp{size()},
-the method \cpp{maxSize()} can be called in unbound state.
+associated to the global basis, i.e., it computes $\max_e \abs{\Lambda|_e}$.
+As this information does not depend on a particular element,
+the method \cpp{maxSize()} can even be called in unbound state.
 
+As an example, suppose that \cpp{basis} is an object of type \cpp{Dune::Functions::TaylorHoodBasis},
+which implements the Taylor--Hood basis that has been used for examples in the previous section.
 The following code loops over all elements of the grid view and prints the numbers
-of degrees of freedom per element
+of degrees of freedom per element:
 \begin{lstlisting}[style=example]
 auto localView = basis.localView();
 
@@ -1563,8 +1555,7 @@ for (auto&& element : elements(basis.gridView()))
 
 
 Access to the actual local basis functions is provided
-by the \cpp{tree()} method returning a reference to a
-\cpp{Tree} object.
+by the method
 \begin{lstlisting}[style=Interface]
 using Tree = @@<implementation defined>@@;
 const Tree& tree() const;
@@ -1577,9 +1568,9 @@ trees methods.
 A detailed discussion of the interface of the tree object is
 given below.
 
-For any of the local basis functions in the local ansatz tree
+For any of the local basis functions in the local tree
 accessible by \cpp{tree()} the global multi-index
-is provided by the \cpp{index(size\_type)} method.
+is provided by the method
 \begin{lstlisting}[style=Interface]
 using MultiIndex = @@<implementation defined>@@;
 MultiIndex index(size_type i) const;
@@ -1588,13 +1579,12 @@ The argument for this method is the local
 index of the basis function within the tree as
 returned by the \cpp{node.localIndex(k)}
 method, where \cpp{node} is a leaf node of the
-tree provided by \cpp{tree()} and \cpp{k}
+tree provided by \cpp{tree()}, and \cpp{k}
 is the number of the shape function within the corresponding
 local finite element (see below).
 Hence the method \cpp{index(size\_type)}
 implements the map $\iota^{\text{local}\to\text{global}}_e$
-with bound-to element $e$
-introduced in Section~\ref{sec:localization}
+introduced in Section~\ref{sec:localization},
 which maps local indices to global multi-indices.
 Accessing the same global index multiple times
 is expected to be cheap, because implementations are supposed to pre-compute
@@ -1602,13 +1592,31 @@ and cache indices during \cpp{bind(Element)}.
 The result of calling \cpp{index(size\_type)} in
 unbound state is undefined.
 
+Extending the previous example a little, the following loop prints the
+global indices for each degree of freedom of each element.
+\begin{lstlisting}[style=example]
+auto localView = basis.localView();
+
+for (auto&& element : elements(basis.gridView()))
+{
+  localView.bind(element);
+  for (std::size_t i=0; i<localView.size(); i++)
+    std::cout << localView.index(i) << std::endl;
+}
+\end{lstlisting}
+When this code is run for a Taylor--Hood basis on a two-dimensional triangle grid,
+it will print 15 multi-indices per element, because a Taylor--Hood element has 12
+velocity degrees of freedom and 3 pressure degrees of freedom per triangle.
+
 Finally, the global basis of type \cpp{GlobalBasis}
 is known by the \cpp{LocalView} object, and exported by the \cpp{globalBasis()} method.
 \begin{lstlisting}[style=Interface]
 using GlobalBasis = @@<implementation defined>@@;
 const GlobalBasis& globalBasis() const;
 \end{lstlisting}
-
+%
+Therefore, code that is given only a \cpp{LocalView} object can retrieve the
+global basis from it, and the grid view from there.
 
 
 \subsection{The user interface of the tree of local bases}
