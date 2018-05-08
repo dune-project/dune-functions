@@ -1779,40 +1779,44 @@ const Element& element() const;
 
 \subsection{Multi-indices}
 \label{sec:multi_indices}
-Multi-indices are used in several places in \dunemodule{dune-functions}.
-On the one hand, the global indices used to identify individual
-basis functions of a function space bases are in general multi-indices.
+Multi-indices appear in several places in \dunemodule{dune-functions}.
+On the one hand, they are used as global indices to identify individual
+basis functions of a function space bases.
 On the other hand, the nodes in a tree of local function space bases
 can be identified by the multi-index encoding the path from the root
-of the tree.
+of the tree.  Local indices of degrees of freedom could in principle also
+be multi-indices, but \dunemodule{dune-functions} forces those to be flat.
+Hence standard integer types are used for local indices.
 
-While, in some cases, the global multi-index used to identify
-basis functions is flat (i.e., contains a single entry)
-and should thus for convenience behave like a simple dynamic number,
-the multi-indices needed to access the nodes in a tree often must be
-static compile type values.
+From an implementation point of view, the two types of multi-indices behave
+differently.  Global indices are run-time constructs.  A single C++ type
+represents all elements of the set of global basis functions, even if they
+are not all of the same length.  On the other hand,
+the multi-indices needed to access the nodes in a tree may have to be
+compile-ttype values, because the tree structure is statically encoded
+and requires compile-time information to be accessed.
+
 To serve these different needs, \dunemodule{dune-functions} uses several
 types to represent multi-indices. However, all implement
-a common interface which is a slimmed down version of a random
-access container consisting of two member functions.
-
+a common interface which is a slimmed-down version of a random
+access container, consisting of two member functions.
+%
 \begin{lstlisting}[style=Interface]
 auto operator[](std::size_t) const;
 std::size_t size() const;
 \end{lstlisting}
+\todosander{Hier müsste doch auch noch \cpp{auto operator[](integral_constant)} stehen.}
 
-The \cpp{size()} returns the size of the multi-index
+The \cpp{size()} method returns the number of digits of the multi-index,
 and \cpp{operator[](std::size_t)} allows to access
 each entry by its number. Since multi-indices are
-in most cases not changed, the general interface
-is \cpp{const} and does not allow modification of the
-entries.
-Additionally to this general interface, some implementations
-provide further methods or guarantees. In the following we will
+typically not changed by user code, both methods are \cpp{const}.
+
+In the following we will
 give an overview of the types used to represent multi-indices
 in \dunemodule{dune-functions}. The type used to represent
-the raw entries of multi-indices is in general selected to
-be \cpp{std::size_t}.
+the individual digits of multi-indices can be selected when instantiating \cpp{GlobalBasis}
+objects.  The default type is \cpp{std::size_t}.
 
 Multi-indices with run-time dynamic size are represented
 by the class
@@ -1822,16 +1826,15 @@ class ReservedVector;
 \end{lstlisting}
 from the \dunemodule{dune-common} module which is parameterized
 by the entry type \cpp{T} and the maximal size \cpp{k}.
-This allows for a dynamic size up to \cpp{k} entries
-in contrast to a statically sized \cpp{std::array<T,k>}.
-This feature is needed, if the multi-indices of the
-function space basis are non-uniform, i.e., multi-indices
-of different basis functions may have a different size.
+It implements an STL-compatible random-access container with a dynamic size
+not exceeding \cpp{k} entries.  A run-time selectable size is needed
+if the multi-indices of the
+function space basis are non-uniform, i.e., if multi-indices
+of different lengths appear in the same index set.
 In contrast to a fully dynamic vector implementation
-like \cpp{std::vector<T>} this class uses a fixed size
-buffer member of size \cpp{k} to store its entries.
-This has the advantage that no dynamic memory management
-is needed making the implementation much more efficient.
+like \cpp{std::vector<T>}, the class \cpp{ReservedVector} uses a fixed size
+buffer on the stack to store its entries.
+Dynamic memory management is avoided, making the implementation much more efficient.
 Furthermore, the global multi-indices typically have
 a small number of digits only with a known upper bound.
 Hence the overhead of always using a buffer of size \cpp{k}
@@ -1840,11 +1843,11 @@ Unless it is known at compile time, that the used multi-indices
 are flat, \cpp{ReservedVector<std::size_t,k>} with appropriate
 \cpp{k} is used to represent the global multi-indices
 provided by a function space basis.
-It has to be noted that while the trees of global and local basis
-functions is encoded statically in C++ type information,
-the index tree, i.e., the set of multi-indices use to label global
-degrees of freedom is a pure run-time construct.
-Thus the entries of the global multi-indices are always dynamic.
+\todosander{Was ist jetzt mit Spezialtypen für uniforme Indizes der Länge $>1$?
+ Implementieren wir das noch?}
+
+
+The entries of the global multi-indices are always dynamic.
 This can be inconvenient when using multi-indices
 to access containers such as \cpp{std::tuple}
 or \cpp{MultiTypeBlockVector} from the \dunemodule{dune-istl}
