@@ -1676,17 +1676,12 @@ accessed by a run-time integer.
 The same result can be achieved by creating a \cpp{HybridTreePath} object first:
 %
 \begin{lstlisting}[style=Example]
-// generate tree path for 2nd component of the velocity tree
+// Generate tree path for second component of the velocity tree
 auto treePath = Dune::TypeTree::treePath(_0, 1);
 
-// obtain the desired leaf node in the basis tree using the child method
+// Obtain the desired leaf node in the basis tree using the child method
 const auto& node = localView.tree().child(treePath);
-
-// obtain the desired leaf node in the basis tree using the global child function
-const auto& node = TypeTree::child(localView.tree(), treePath);
 \end{lstlisting}
-\todosander{Die dritte (globale) Methode taucht bisher nur in diesem Beispiel auf.
-  Wir sollten sie entweder ordentlich beschreiben, oder komplett löschen.}
 
 At each leaf node, the set of all corresponding shape functions is available.
 The method for this is
@@ -1793,7 +1788,7 @@ differently.  Global indices are run-time constructs.  A single C++ type
 represents all elements of the set of global basis functions, even if they
 are not all of the same length.  On the other hand,
 the multi-indices needed to access the nodes in a tree may have to be
-compile-ttype values, because the tree structure is statically encoded
+compile-time values, because the tree structure is statically encoded
 and requires compile-time information to be accessed.
 
 To serve these different needs, \dunemodule{dune-functions} uses several
