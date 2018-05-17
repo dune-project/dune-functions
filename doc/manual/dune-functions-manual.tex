@@ -1629,20 +1629,18 @@ The object returned by the \cpp{LocalView::tree} method is not actually a tree,
 but rather (a const reference to) the root node of the tree.  To navigate within
 this tree, any non-leaf node allows to access
 its children using one of the two methods
-\todosander{Sollten auch Leaf Nodes eine \cpp{child}-Methode bekommen?
-Einfach für die Konsistenz? (Brauchen tue ich sie nicht.)}
+\todosander{Für Leafs muss das noch implementiert werden!}
 \begin{lstlisting}[style=Interface]
-template<class ChildTreePath>
-auto child(ChildTreePath childTreePath);
-
 template<class... ChildIndices>
 auto child(ChildIndices... childIndices);
+
+template<class ChildTreePath>
+auto child(ChildTreePath childTreePath);
 \end{lstlisting}
 The arguments to these methods are the paths from the current node to the desired
-descendants. The path can either be passed
-as a \cpp{Dune::TypeTree::HybridTreePath} object (see Section~\ref{sec:multi_indices} below),
-or as a sequence of indices. Indices referring
-to children of a power node can be passed as integer values.
+descendants.  For the first method, the path is passed
+as a sequence of indices. Indices referring
+to children of a power node can be passed as integer values, typically of type \cpp{std::size_t}.
 Indices referring to children of a composite node
 have to be passed statically as \cpp{Dune::index_constant<i>}.%
 %
@@ -1653,37 +1651,45 @@ have to be passed statically as \cpp{Dune::index_constant<i>}.%
 For convenience global constants \cpp{_0},\cpp{_1}, \dots
 of this type are implemented in the \cpp{Dune::Indices}
 namespace.
-
-Continuing the example of the previous section, suppose that \cpp{localView} is a
-local view of the \cpp{TaylorHoodBasis} localized to a particular grid element.
-The leaf node for the second velocity
-component can be obtained by the following.
-\begin{lstlisting}[style=Example]
-// Import namespace with index constants _0, _1, _2, etc
-using namespace Indices;
-
-// Obtain the leaf node for second component of the velocity tree
-const auto& node = localView.tree().child(_0, 1);
-\end{lstlisting}
-
-The index constant \cpp{\_0} from the namespace \cpp{Dune::Indices} is used
-to address the velocity node, because the
-tree root is a composite node whose child nodes
-for velocity and pressure are of different type.
-Within the velocity subtree, all children are identical, and can be
-accessed by a run-time integer.
-
-The same result can be achieved by creating a \cpp{HybridTreePath} object first:
+Continuing the example of the previous section, if \cpp{localView} is a
+local view of the \cpp{TaylorHoodBasis} localized to a particular grid element,
+then the leaf node for the second velocity
+component can be obtained by
 %
 \begin{lstlisting}[style=Example]
-// Generate tree path for second component of the velocity tree
-auto treePath = Dune::TypeTree::treePath(_0, 1);
+using namespace Indices;  // Import namespace with index constants _0, _1, _2, etc
+const auto& node = localView.tree().child(_0, 1);
+\end{lstlisting}
+%
+Note how the index constant \cpp{Dune::Indices::\_0} is used
+to address the velocity node, because the
+tree root is a composite node whose child nodes are of different type.
+Within the velocity subtree, all three children are identical, and can be
+accessed by a run-time integer.
 
-// Obtain the desired leaf node in the basis tree using the child method
+The second \cpp{child} method allows to pass the tree path in a dedicated container.
+Such a container needs to handle sequences of static and run-time values.
+The \dunemodule{dune-functions} module uses \cpp{Dune::TypeTree::HybridTreePath}
+for this, which we describe in detail in Section~\ref{sec:multi_indices}.
+Using a \cpp{HybridTreePath} object, the example looks as follows:
+%
+\begin{lstlisting}[style=Example]
+auto treePath = Dune::TypeTree::treePath(_0, 1);
 const auto& node = localView.tree().child(treePath);
 \end{lstlisting}
 
-At each leaf node, the set of all corresponding shape functions is available.
+Besides moving to a particular node in the tree, the reverse operation is also
+available: To obtain its position in the tree, each node
+exports its path with respect to the full tree root
+via the  method
+\begin{lstlisting}[style=Interface]
+using TreePath = Dune::TypeTree::HybridTreePath@@<implementation defined>@@;
+const TreePath& treePath() const;
+\end{lstlisting}
+The result is again a \cpp{Dune::TypeTree::HybridTreePath} object.
+
+At each of its leaf nodes, the localized basis function tree provides the set
+of all corresponding shape functions.
 The method for this is
 \begin{lstlisting}[style=Interface]
 using FiniteElement = @@<implementation defined>@@;
@@ -1696,41 +1702,41 @@ in the sense of~\cite{ciarlet:1978}, and to the assignment of local degrees of
 freedom to element faces.
 The numbering used by \dunemodule{dune-localfunctions} for the shape functions
 coincides with the leaf-local indices defined in Section~\ref{sec:localization}.
-
 For example, if \cpp{node} is a leaf node in the localized Taylor--Hood tree,
 the following code prints all shape function values of the leaf shape function set
-at the point $(0,0)$:
+at the point $(0,0,0)$ in local coordinates of the appropriate reference element:
 %
 \begin{lstlisting}[style=Example]
 const auto& localBasis = node.finiteElement().localBasis();
 std::vector<double> values;
-localBasis.evaluate({0,0}, values);
+localBasis.evaluate({0,0,0}, values);
 for (auto v : values)
   std::cout << v << std::endl;
 \end{lstlisting}
+%
 
-To relate the leaf-local index of a shape function to its local index in the set
-of all shape functions on a given element, the local index needs to be computed
-from the leaf-local index.
+To obtain the entries of the element stiffness matrix that corresponds to a
+given shape function from a given leaf node, the local index needs to be computed
+from the leaf-local index of that shape function.
 For each local basis function the method
 \begin{lstlisting}[style=Interface]
 size_type localIndex(size_type i) const;
 \end{lstlisting}
 returns the
 local index within all local basis functions associated to the full
-tree.
+local tree.
 The argument to this method is the
-index of the local basis functions within the leaf
-and the result is the index within the full tree.
-In other word, the method \cpp{localIndex(size\_type)}
+index of the local basis functions within the leaf.
+In other words, the method \cpp{localIndex(size\_type)}
 implements the map $\iota^{\text{leaf}\to\text{local}}_e$
 introduced in Section~\ref{sec:localization}.
+The return value is \emph{not} a multi-index.
 While in principle all basis functions of the local subtree could be indexed using
-general multi-indices, the \dunemodule{dune-functions} module only supports one
-specific type of flat index here to keep the implementation simple.
+general multi-indices, the \dunemodule{dune-functions} module only supports
+flat indices here to keep the implementation simple.
 
 While \cpp{LocalFiniteElement} objects are only available at leaf nodes,
-the following methods work at every node in the tree.
+the following methods work at every node in the tree again.
 The method
 \begin{lstlisting}[style=Interface]
 using size_type = @@<implementation defined>@@;
@@ -1738,27 +1744,29 @@ size_type size() const;
 \end{lstlisting}
 returns the total number of
 local basis functions within the subtree rooted at the
-present node.
+present node.  In particular, calling this method for the tree root
+yields the size of the element stiffness matrix.
 
-To obtain its position in the tree, each node
-exports its path with respect to the full tree root
-via the  method
-\begin{lstlisting}[style=Interface]
-using TreePath = Dune::TypeTree::HybridTreePath@@<implementation defined>@@;
-const TreePath& treePath() const;
-\end{lstlisting}
-The result is a multi-index
-implemented by the \cpp{Dune::TypeTree::HybridTreePath}
-class.
-
-If data needs to be attached to nodes,
-the method
+Typically, numerical simulation codes associate data to individual shape functions.
+However, there may also arise the need to associate data to tree nodes.
+For that, \dunemodule{dune-functions} objects offer the method
 \begin{lstlisting}[style=Interface]
 size_type treeIndex() const;
 \end{lstlisting}
-can be used. It returns
+\todosander{Ehrlich gesagt sehe ich den Sinn dieser Methode nicht.
+Wenn ich wirklich mal Daten an Knoten hängen muss kann ich doch auch
+den TreePath als Key in einem assoziativen Container nehmen.
+Einen echten Index würde ich höchsten brauchen wenn der Zugriff
+zeitkritisch ist.  Dazu fällt mir aber wirklich keine Anwendung ein.}
+
+It returns
 the lexicographic index of the node within the full
 tree in a fixed type for all nodes.
+\todosander{Ich finde den Begriff ``lexicographic'' hier nicht wirklich präzise.
+Für die verschiedenen Arten einen Baum zu traversieren gibt es feststehende
+Begriffe, siehe z.B.\ \url{https://en.wikipedia.org/wiki/Tree_traversal}.
+Welchen davon meinst Du?}
+
 These methods can also be used if the local view containing
 the tree is in unbound state.
 
