@@ -54,6 +54,9 @@
     }
 }
 
+% Seed for the random matrix occupation patterns
+\pgfmathsetseed{\number\pdfrandomseed}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%   hyperref should be loaded late to avoid incompatibilities
@@ -698,57 +701,103 @@ Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a
   \begin{tikzpicture}[scale=.13]
 
   % The occupation pattern
-  \foreach \x in {0,...,32}
-    \fill [lightgray] (0+\x,40-\x) rectangle (1+\x,39-\x);
+  % Diagonal elements---those have to be there
+  \foreach \x in {0,...,10}
+  {
+    \foreach \i in {0,...,2}
+      \foreach \j in {0,...,2}
+        \fill [lightgray] (11*\i + \x,40- \j*11 - \x) rectangle (11*\i + 1+\x,39 -\j*11 -\x);
+  }
+
+  % Off-diagonal
+  \foreach \blocknumber in {0,...,9}
+  {
+    \pgfmathsetmacro{\x}{int(random(0,9))}
+    \pgfmathsetmacro{\y}{int(random(\x,9))}
+    \foreach \i in {0,...,2}
+      \foreach \j in {0,...,2}
+      {
+        \fill [lightgray] (11*\i + \x,40-11*\j - \y) rectangle (11*\i + 1+\x,39-11*\j-\y);  % lower triangular part
+        \fill [lightgray] (11*\i + \y,40-11*\j - \x) rectangle (11*\i + 1+\y,39-11*\j-\x);  % upper triangular part
+      }
+  }
+
+  \foreach \blocknumber in {0,...,9}
+  {
+    \pgfmathsetmacro{\x}{int(random(0,10))}
+    \pgfmathsetmacro{\y}{int(random(0,6))}
+    \foreach \i in {0,...,2}
+    {
+      \fill [lightgray] (11*\i + \x, \y) rectangle (11*\i + 1+\x,1+\y);  % lower left block
+      \fill [lightgray] (40 - \y,40-11*\i - \x) rectangle (39-\y,39-11*\i-\x);  % upper right block
+    }
+  }
 
   % The fine grid
   \foreach \x in {0,...,40}
-    \draw (\x,0)--(\x,40);
+    \draw [line width=0.05mm] (\x,0)--(\x,40);
 
   \foreach \y in {0,...,40}
-    \draw (0,\y)--(40,\y);
+    \draw [line width=0.05mm] (0,\y)--(40,\y);
 
   % The thick-line grid
   \foreach \x in {0,11,22,33,40}
-    \draw [line width=0.4mm] (\x,0)--(\x,40);
+    \draw [line width=0.3mm] (\x,0)--(\x,40);
 
   \foreach \y in {0,7,18,29,40}
-    \draw [line width=0.4mm] (0,\y)--(40,\y);
+    \draw [line width=0.3mm] (0,\y)--(40,\y);
 
   \end{tikzpicture}
   \qquad
   \begin{tikzpicture}[scale=.13]
 
   % The occupation pattern
+  % Diagonal entries---those have to be there
   \foreach \x in {0,...,9}
     \fill [lightgray] (0+3*\x,40-3*\x) rectangle (3+3*\x,37-3*\x);
 
+  % Off-diagonal entries
+  \foreach \blocknumber in {0,...,9}
+  {
+    \pgfmathsetmacro{\x}{int(random(0,9))}
+    \pgfmathsetmacro{\y}{int(random(\x,9))}
+    \fill [lightgray] (0+3*\x,40-3*\y) rectangle (3+3*\x,37-3*\y);  % lower triangular part
+    \fill [lightgray] (0+3*\y,40-3*\x) rectangle (3+3*\y,37-3*\x);  % upper triangular part
+  }
+
+  \foreach \blocknumber in {0,...,9}
+  {
+    \pgfmathsetmacro{\x}{int(random(0,9))}
+    \pgfmathsetmacro{\y}{int(random(0,9))}
+    \fill [lightgray] (0+3*\x,\y) rectangle (3+3*\x,1+\y);  % lower left block
+    \fill [lightgray] (40-\y,40-3*\x) rectangle (39-\y,37-3*\x);  % upper right block
+  }
+
   % The fine grid
   \foreach \x in {0,...,10}
-    \draw (3*\x,0)--(3*\x,40);
+    \draw [line width=0.05mm] (3*\x,0)--(3*\x,40);
 
   \foreach \y in {0,...,10}
-    \draw (0,40-3*\y)--(40,40-3*\y);
+    \draw [line width=0.05mm] (0,40-3*\y)--(40,40-3*\y);
 
   \foreach \x in {0,...,9}
-    \draw (40 - 1*\x,0)--(40 - 1*\x,40);
+    \draw [line width=0.05mm] (40 - 1*\x,0)--(40 - 1*\x,40);
 
   \foreach \y in {0,...,9}
-    \draw (0,\y)--(40,\y);
+    \draw [line width=0.05mm] (0,\y)--(40,\y);
 
   % The thick-line grid
   \foreach \x in {0,30,40}
-    \draw [line width=0.4mm] (\x,0)--(\x,40);
+    \draw [line width=0.3mm] (\x,0)--(\x,40);
 
   \foreach \y in {0,10,40}
-    \draw [line width=0.4mm] (0,\y)--(40,\y);
+    \draw [line width=0.3mm] (0,\y)--(40,\y);
 
   \end{tikzpicture}
  \end{center}
  \caption{Two matrix occupation patterns for different indexings of the Taylor--Hood bases.
    Left: Corresponding to the index tree of Figure~\ref{fig:taylor_hood_index_tree}.
    Right: Corresponding to the index tree of Figure~\ref{fig:taylor_hood_index_blocked_tree}.
-   \todosander{Die Matrizen müssen dichter besetzt sein, und die Linien etwas dünner.}
    }
  \label{fig:matrix_occupation_patterns}
 \end{figure}
