@@ -1747,29 +1747,6 @@ local basis functions within the subtree rooted at the
 present node.  In particular, calling this method for the tree root
 yields the size of the element stiffness matrix.
 
-Typically, numerical simulation codes associate data to individual shape functions.
-However, there may also arise the need to associate data to tree nodes.
-For that, \dunemodule{dune-functions} objects offer the method
-\begin{lstlisting}[style=Interface]
-size_type treeIndex() const;
-\end{lstlisting}
-\todosander{Ehrlich gesagt sehe ich den Sinn dieser Methode nicht.
-Wenn ich wirklich mal Daten an Knoten hängen muss kann ich doch auch
-den TreePath als Key in einem assoziativen Container nehmen.
-Einen echten Index würde ich höchsten brauchen wenn der Zugriff
-zeitkritisch ist.  Dazu fällt mir aber wirklich keine Anwendung ein.}
-
-It returns
-the lexicographic index of the node within the full
-tree in a fixed type for all nodes.
-\todosander{Ich finde den Begriff ``lexicographic'' hier nicht wirklich präzise.
-Für die verschiedenen Arten einen Baum zu traversieren gibt es feststehende
-Begriffe, siehe z.B.\ \url{https://en.wikipedia.org/wiki/Tree_traversal}.
-Welchen davon meinst Du?}
-
-These methods can also be used if the local view containing
-the tree is in unbound state.
-
 Finally, all nodes provide access to the
 element which they are bound
 to via the method
