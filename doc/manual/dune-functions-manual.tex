@@ -56,6 +56,7 @@
 
 % Seed for the random matrix occupation patterns
 \pgfmathsetseed{\number\pdfrandomseed}
+%\pgfmathsetseed{\number666}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1861,6 +1862,7 @@ the distribution of composite and power nodes in the tree.
 \todosander{Das will man eventuell noch konkreter formulieren.  Ich scheue
 aber vor den Details zurück; dass z.B. statische Indizes auch dynamisch
 funktionieren, aber nicht umgekehrt.}
+\todograeser{Vielleicht so: ... if dynamic tree path entries only appear as child index for power nodes in the tree while all other entries are static.}
 
 For example, to access the leaf nodes corresponding
 to the velocity components in the Taylor--Hood ansatz tree depicted
@@ -1916,6 +1918,9 @@ in compile-time expressions.  Note that this construction cannot be simplified
 using the \cpp{constexpr} keyword: As objects of type \cpp{HybridTreePath}
 typically holds some dynamic data, the class cannot be of \cpp{constexpr} type.
 \todosander{Bessere Begründung?}
+\todograeser{Die stimmt auch nicht ganz. Genauer: ... : Here the result type depends on \cpp{i}
+while \cpp{constexpr} functions have a fixed return type because they must also
+be usable at runtime.}
 
 However, as objects of type \cpp{Dune::index_constant} can be implicitly converted
 to \cpp{std::size_t}, there is also
@@ -2355,7 +2360,6 @@ auto taylorHoodBasis = makeBasis(
 
 
 \section{Treating subtrees as separate bases}
-\todograeser{Update, \cpp{DiscreteGlobalBasisFunction}, \cpp{interpolate()}}
 
 Additionally to the concept of a global basis as defined here, there
 is also the concept of a so called \cpp{SubspaceBasis} reflecting
@@ -2419,27 +2423,13 @@ auto taylorHoodBasis = makeBasis(
     flatLexicographic()
   ));
 
-// Setup and fill a coefficient vector x for the full taylorHoodBasis
-auto x = @@<...>@@
-
 // Create SubspaceBasis for the velocity field
 auto velocityBasis = subspaceBasis(taylorHoodBasis, _0);
-
-// Fix a range type for the velocity field
-using VelocityRange = FieldVector<double,dim>;
-
-// Create a function for the velocity field only
-// still using the vector x for the full taylorHoodBasis.
-auto velocityFunction = makeDiscreteGlobalBasisFunction<VelocityRange>(velocityBasis, x);
 \end{lstlisting}
 
-Notice that the function created in the last line can directly
-be passed to the \cpp{VTKWriter} implementations of the
-\dunemodule{dune-grid} module to write the velocity field
-as VTK vector field. The interface for the construction of
-a finite element function from a basis (or \cpp{SubspaceBasis})
-and a coefficient vector is discussed in the next section.
-
+The basis constructed in the last line can be combined with a
+coefficient to vector to represent the corresponding vector field.
+The interface for this construction is discussed in the next section.
 
 
 \section{Combining global basis and coefficient vector}
@@ -2451,14 +2441,15 @@ in applications:
 \begin{itemize}
   \item
     A given pair of function space basis and coefficient vector
-    should be interpreted as a function form this function space.
+    should be interpreted as a function from this function space.
     This is required e.g. for computing quantities depending on
     this function and for subsampling function values
     when writing it into some output format.
   \item
-    For some given function space basis and function compute
+    For some given function space basis and function
     the interpolation of the function into the function
-    space and store the result into a coefficient vector.
+    space should be computed and store as coefficient vector
+    with respect to the basis.
 \end{itemize}
 
 Both operations require to relate vector entries to basis functions.
@@ -2474,6 +2465,7 @@ provided by the function space basis of type \cpp{Basis}:
 \begin{lstlisting}[style=Interface]
   auto operator[](Basis::MultiIndex) const;
 \end{lstlisting}
+\todograeser{Implement \cpp{ConstVectorBackend} concept}
 
 For the interpolation one additionally needs a corresponding mutable
 access. Furthermore one has to resize the vector to match
@@ -2490,7 +2482,7 @@ member function is not a number, but the basis itself. The latter
 is necessary because resizing requires information of the whole
 index tree provided by the basis.
 
-For the vector types implemented in the dune core modules and
+For the vector types implemented in the \dune core modules and
 the standard types \cpp{std::array} and \cpp{std::vector} such
 a backend can be obtained using
 \begin{lstlisting}[style=Interface]
@@ -2510,13 +2502,29 @@ container \cpp{coeff} does not already satisfy the \cpp{VectorBackend}
 interface. Hence you can either directly pass those supported
 vector types or any other type implementing the \cpp{VectorBackend}
 interface.
+\todograeser{Implement auto-wrapping into \cpp{ISTLVectorBackend} for \cpp{DiscreteGlobalBasisFunction}.}
+
+Once coefficients have been associated to basis functions, it remains
+to map the components of the spanned product function space
+to components of a function range type. The default mapping implemented in
+\dunemodule{dune-functions} works as follows: First all leaf nodes
+in the function space tree are linearly enumerated using a depth-first
+traversal. Then the $i$-th leaf node with respect to this enumeration
+is associated to the $i$-th entry of the function range type.
+For the latter, the function range type is assumed to provide
+an \cpp{operator[]}. If the tree contains a single leaf node,
+then range types without \cpp{operator[]} are also supported.
+While this behavior is customizable, we omit the customization
+interface from simplicity here.
+
 
 \subsection{Interpreting coefficient vectors as finite element function}
-When writing a finite element functions given by a coefficient vector
+When writing a finite element function given by a coefficient vector
 with respect to a function space basis into some output format,
-this typically requires to evaluate the finite element function.
+this typically requires to evaluate the finite element function at
+a set of sample points.
 Mathematically this amounts in evaluating the linear combination
-of the basis functions using the vector entries as coefficients
+of the basis functions using the vector entries as coefficients.
 To implement this functionality \cpp{dune-functions} provides
 the function
 
@@ -2534,8 +2542,44 @@ The type of the coefficient vector \cpp{coeff}
 either has to satisfy the requirements of the \cpp{ConstVectorBackend}
 concept or to be compatible with the
 \cpp{istlVectorBackend}.
+The \cpp{basis} can either be a classical global basis or
+a \cpp{SubspaceBasis}.  In the latter case the coefficient
+vector still has to correspond to the full basis, but only
+the coefficients associated with the subspace basis functions
+will be used.
 
-\todograeser{Example, combination with \cpp{subspaceBasis}}
+\begin{lstlisting}[style=Example]
+// Create Taylor-Hood basis as root basis
+auto taylorHoodBasis = makeBasis(
+  gridView,
+  composite(
+    power<dim>(
+      lagrange<p+1>())
+    lagrange<p>()
+  ));
+
+// Setup and fill a coefficient vector x for the full taylorHoodBasis
+auto x = @@<...>@@
+
+// Create SubspaceBasis for the velocity field
+auto velocityBasis = subspaceBasis(taylorHoodBasis, _0);
+
+// Fix a range type for the velocity field
+using VelocityRange = FieldVector<double,dim>;
+
+// Create a function for the velocity field only
+// still using the vector x for the full taylorHoodBasis.
+auto velocityFunction = makeDiscreteGlobalBasisFunction<VelocityRange>(velocityBasis, x);
+\end{lstlisting}
+
+Notice that the \cpp{dim} leaf nodes of the function space
+tree spanned by \cpp{velocityBasis} are automatically mapped to the
+\cpp{dim} components of the \cpp{VelocityRange} type.
+The resulting function created in the last line can directly
+be passed to the \cpp{VTKWriter} implementations of the
+\dunemodule{dune-grid} module to write the velocity field
+as VTK vector field.
+
 
 
 
