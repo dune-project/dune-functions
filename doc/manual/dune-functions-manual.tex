@@ -484,8 +484,8 @@ by leaf nodes for individual basis functions.
 For example, a possible indexing of the basis functions of the Taylor--Hood basis $\Lambda_{TH}$
 uses multi-indices of the form $(0,i,j)$ for velocity components, and $(1,k)$
 for pressure components.
-For the velocity multi-indices $(0,i,j)$ the $i = 0,\dots,n_2-1 \colonequals \abs{\Lambda_{P_2}}-1$ determines the component
-of the velocity vector field and the $j$ determines the number of the scalar $P_2$ basis
+For the velocity multi-indices $(0,i,j)$ the $i = 0,\dots,2$ determines the component
+of the velocity vector field and the $j = 0,\dots,n_2-1 \colonequals \abs{\Lambda_{P_2}}-1$ determines the number of the scalar $P_2$ basis
 function that determines this component.
 For the pressure multi-indices $(0,k)$ the $k= 0,\dots,n_1-1 \colonequals \abs{\Lambda_{P_1}}-1$ determines the number of the $P_1$ basis
 function for the scalar $P_1$ function that determines the pressure.
@@ -516,7 +516,7 @@ function for the scalar $P_1$ function that determines the pressure.
                         child{ node [basisnode] {$\lambda_{n_2-1}^{P_2}$} }
                     }
                 }
-                child{ node [treenode] {$\Lambda_{P_2}$}
+                child{ node [treenode] {$\Lambda_{P_1}$}
                     child [sibling distance=1cm] { node [basisnode] {$\lambda_0^{P_1}$} }
                     child [sibling distance=1cm] { node [] {$\dots$} }
                     child [sibling distance=1cm] { node [basisnode] {$\lambda_{n_1-1}^{P_1}$} }
@@ -1080,7 +1080,7 @@ sense of Definition~\ref{def:power_node}, while the tree root
 \end{align*}
 is a composite node.
 
-The basis functions for the $k$-th component of the pressure
+The basis functions for the $k$-th component of the velocity
 are denoted by
 \begin{align*}
   v_{x_k,i} = \mathbf{e}_0 \otimes (\mathbf{e}_k \otimes \lambda^{P_2}_i)
