@@ -465,12 +465,12 @@ To establish some structure in a set of multi-indices it is convenient to consid
               \item
                 We write $I=(I^0,\dots)$, if $I^0$ is a prefix of $I$,
               \item
-                we write $I=(I^0,\cdot,\dots)$, if $I^0$ is a strict prefix of $I$,
+                we write $I=(I^0,\bullet,\dots)$, if $I^0$ is a strict prefix of $I$,
               \item
                 we write $(I^0,\dots) \in \mathcal{M}$, if $I^0$ is a prefix of some
                 $I \in \mathcal{M}$,
               \item
-                we write $(I^0,\cdot,\dots) \in \mathcal{M}$, if $I^0$ is a strict prefix of some
+                we write $(I^0,\bullet,\dots) \in \mathcal{M}$, if $I^0$ is a strict prefix of some
                 $I \in \mathcal{M}$.
             \end{enumerate}
     \end{enumerate}
@@ -642,7 +642,7 @@ we can write this in compact form as
 Alternatively the individual velocity and pressure fields
 $v_h$ and $p_h$ are given by
 \begin{align*}
-  v_h &= \sum_{j=0}^{n_2-1} X_{(0,i,j)} (\mathbf{e}_i \otimes \lambda^{P_2}_j),
+  v_h &= \sum_{i=0}^2 \sum_{j=0}^{n_2-1} X_{(0,i,j)} (\mathbf{e}_i \otimes \lambda^{P_2}_j),
     &
     p_h &= \sum_{k=0}^{n_1-1} X_{(1,k)}\lambda^{P_1}_k.
 \end{align*}
@@ -972,7 +972,7 @@ multi-index digits.
       L_i = \sum_{j=0}^{i-1} \operatorname{deg}_{\iota_j(\Lambda_j)}^+[()].
     \end{align*}
     This construction shifts the first digits of
-    the multi-indices of all basis functions from $\Lambda_j$ with $j<0$
+    the multi-indices of all basis functions from $\Lambda_j$ with $j>0$
     such that they form a consecutive sequence.
     This guarantees that $\iota$ is always an index-map for $\Lambda$.
     An example is given in the following table:
@@ -999,6 +999,8 @@ multi-index digits.
 
     This merging strategy is called \emph{flat}, because no
     additional multi-index digits are inserted to address the different children.
+    The digit zero deliberately appears twice in the column for $\Lambda_1$, to demonstrate
+    that a consecutive first digit is not required.
 
   \item \textbf{FlatInterleaved}: This strategy again only works for power nodes.
     It also merges
@@ -1946,7 +1948,7 @@ documentation of the \dunemodule{dune-typetree} module.
 
 Index trees are formed by the multi-indices that are used to label basis functions.
 Conceptually, there are two such trees in the \dunemodule{dune-functions} interface:
-the tree of global indices, and the tree of local indices.  For simplicity,
+the tree of global indices, and the tree of local indices.  To keep the implementation simple,
 \dunemodule{dune-functions} only allows flat indices for the local index tree.
 Therefore, only data types for global indices need to be discussed.
 
@@ -2056,7 +2058,7 @@ These can be directly used in finite element simulation codes. At the time of wr
 
  \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
    Therefore, this basis also
-   works well on non-conforming grids.  The polynomial order is again a compile-time constant.
+   works well on non-conforming grids.  The polynomial order is again a compile-time parameter.
 
  \item \cpp{RannacherTurekBasis}: An $H^1$-nonconforming scalar basis, which adapts the idea
    of the Crouzeix--Raviart basis to cube grids~\cite{rannacher_turek:1992}.
@@ -2765,8 +2767,8 @@ boundary conditions for the velocity $\mathbf{u}$ to
  =\mathbf{g}(x)
  =
  \begin{cases}
-  (0,1) & \text{if $x \in \{0\} \times [0,1]$} \\
-  (0,0) & \text{elsewhere on $\partial \Omega$}.
+  (0,1)^T & \text{if $x \in \{0\} \times [0,1]$} \\
+  (0,0)^T & \text{elsewhere on $\partial \Omega$}.
  \end{cases}
 \end{equation*}
 The interpretation of this is a fluid container that is closed on all but one side.  While the fluid remains
@@ -3106,6 +3108,8 @@ would be computed multiple times.
 
 Next, we construct a suitable quadrature rule and loop over the quadrature points.  The formula for the quadrature
 order combines information about the element type, the shape functions, and the differential operator.
+It computes the lowest order that will integrate the weak form of the Stokes equation exactly
+on a cube grid.
 %
 \lstinputlisting[linerange={begin_quad_loop_begin-begin_quad_loop_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
