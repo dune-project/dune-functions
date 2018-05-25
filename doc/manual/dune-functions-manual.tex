@@ -1926,6 +1926,10 @@ typically holds some dynamic data, the class cannot be of \cpp{constexpr} type.
 \todograeser{Die stimmt auch nicht ganz. Genauer: ... : Here the result type depends on \cpp{i}
 while \cpp{constexpr} functions have a fixed return type because they must also
 be usable at runtime.}
+\todosander{Überzeugt mich nicht ganz.  Ja, der Rückgabetyp hängt von \cpp{i} ab,
+aber alle möglichen Rückgabetypen sind immer nur statische Versionen von \cpp{size_t}.
+Wie wäre es mit: As objects of type \cpp{HybridTreePath}
+typically hold some dynamic data, they cannot be \cpp{constexpr}.}
 
 However, as objects of type \cpp{Dune::index_constant} can be implicitly converted
 to \cpp{std::size_t}, there is also
