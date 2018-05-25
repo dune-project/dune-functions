@@ -1349,7 +1349,7 @@ In principle, this indexing can use another non-flat index tree,
 which does not have to coincide with the index tree for the global basis.
 This means that the local index of a shape function can again be a multi-index, but the types,
 lengths and orderings can be completely unrelated to the corresponding global indices.
-This would allows to use nested types for element stiffness matrices and load vectors.
+This would allow to use nested types for element stiffness matrices and load vectors.
 As explained in Chapter~\ref{sec:function_space_bases_implementation},
 the \dunemodule{dune-functions} \emph{implementation} is fairly restrictive here,
 and only allows flat local indices, i.e.,
@@ -1813,7 +1813,7 @@ const Element& element() const;
 \label{sec:multi_indices}
 Multi-indices appear in several places in \dunemodule{dune-functions}.
 They are used as global indices to identify individual
-basis functions of a function space bases.
+basis functions of a function space basis.
 On the other hand, inner nodes of basis and index trees can also be indexed
 using index trees.
 
@@ -2016,7 +2016,7 @@ provided by a function space basis.
 Objects of type \cpp{ReservedVector} store their current size together
 with the data.  This is wasteful if the index set is uniform.
 \cpp{GlobalBasis} objects that implement uniform index sets can therefore
-opt to usea fixed-size container type like \cpp{std::array}.
+opt to use a fixed-size container type like \cpp{std::array}.
 
 If the basis is indexed with a flat index, i.e., a multi-index with only a single digit,
 then using an array can be a bit cumbersome.  Morally, flat multi-indices
@@ -2162,7 +2162,7 @@ That means that in particular you can write
 auto raviartThomasBasis = makeBasis(gridView, raviartThomas<k>());
 \end{lstlisting}
 to obtain a Raviart--Thomas basis for the given grid view.
-Notice that the \cpp{raviartThomas()} function does not need
+Notice that the \cpp{raviartThomas()} function, just like the corresponding functions for other bases, does not need
 the grid view as parameter.
 This is equivalent to constructing
 the basis directly:
@@ -2176,6 +2176,7 @@ despite the fact that the former has the grid view type and object prepended.
 
 The pre-basis combining several bases in a product is called \cpp{CompositePreBasis}
 defined in the header \file{dune/functions/functionspacebases/compositebasis.hh}.
+It implements a \emph{composite} tree node as introduced in Definition~\ref{def:power_node}.
 Analogously to the above description, a corresponding pre-basis-factory
 can be constructed using a global function
 with the signature
@@ -2358,6 +2359,8 @@ auto taylorHoodBasis = makeBasis(
     flatLexicographic()
   ));
 \end{lstlisting}
+If no strategy is given, \cpp{composite} will use the \cpp{BlockedLexicographic} strategy,
+whereas \cpp{power} will use \cpp{BlockedInterleaved}.
 
 
 
@@ -2589,7 +2592,7 @@ as VTK vector field.
 
 In various parts of a finite element or finite volume simulation code, given functions need to be interpolated
 into spaces spanned by a global basis.  For example, initial iterates may be given in closed form, but need to be
-transfered to a finite element representation to be usable.  Similarly, Dirichlet values given in closed form
+transferred to a finite element representation to be usable.  Similarly, Dirichlet values given in closed form
 may need to be interpolated on the set of Dirichlet degrees of freedom.  Depending on the finite element space,
 interpolation may take different forms.  Nodal interpolation is the natural choice for Lagrange elements, but
 for other spaces $L^2$-projections or Hermite-type interpolation may be more appropriate.

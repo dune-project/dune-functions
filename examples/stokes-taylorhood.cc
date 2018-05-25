@@ -232,6 +232,7 @@ void assembleStokesMatrix(const Basis& basis,
 // { global_assembler_signature_end }
 {
   // { setup_matrix_pattern_begin }
+  // Set matrix size and occupation pattern
   setOccupationPattern(basis, matrix);
 
   // Set all entries to zero
