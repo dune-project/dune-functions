@@ -1867,13 +1867,8 @@ If the type is \cpp{Dune::index_constant<i>}, its value is static,
 and can be used for compile-time decisions.
 
 An object of type \cpp{HybridTreePath} can be used to access the nodes of a
-localized basis tree if static and dynamic entries are chosen to match
-the distribution of composite and power nodes in the tree.
-\todosander{Das will man eventuell noch konkreter formulieren.  Ich scheue
-aber vor den Details zurück; dass z.B. statische Indizes auch dynamisch
-funktionieren, aber nicht umgekehrt.}
-\todograeser{Vielleicht so: ... if dynamic tree path entries only appear as child index for power nodes in the tree while all other entries are static.}
-
+localized basis tree if dynamic tree path entries only appear as child indices
+for power nodes in the tree while all other entries are static.
 For example, to access the leaf nodes corresponding
 to the velocity components in the Taylor--Hood ansatz tree depicted
 in Figure~\ref{fig:taylor_hood_basis_tree} one would use multi-indices
