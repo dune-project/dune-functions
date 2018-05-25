@@ -701,13 +701,25 @@ Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a
  \begin{center}
   \begin{tikzpicture}[scale=.13]
 
+  % Horizontal offset between the two matrices
+  \pgfmathsetmacro{\offset}{48}
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+  %% Matrix occupation patterns
+  %% Both matrices together, because the patterns are to be identical
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
   % The occupation pattern
   % Diagonal elements---those have to be there
   \foreach \x in {0,...,10}
   {
+    % Left matrix
     \foreach \i in {0,...,2}
       \foreach \j in {0,...,2}
         \fill [lightgray] (11*\i + \x,40- \j*11 - \x) rectangle (11*\i + 1+\x,39 -\j*11 -\x);
+
+    % Right matrix
+    \fill [lightgray] (\offset + 0+3*\x,40-3*\x) rectangle (\offset + 3+3*\x,37-3*\x);
   }
 
   % Off-diagonal
@@ -715,24 +727,42 @@ Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a
   {
     \pgfmathsetmacro{\x}{int(random(0,9))}
     \pgfmathsetmacro{\y}{int(random(\x,9))}
+
+    % Left matrix
     \foreach \i in {0,...,2}
       \foreach \j in {0,...,2}
       {
         \fill [lightgray] (11*\i + \x,40-11*\j - \y) rectangle (11*\i + 1+\x,39-11*\j-\y);  % lower triangular part
         \fill [lightgray] (11*\i + \y,40-11*\j - \x) rectangle (11*\i + 1+\y,39-11*\j-\x);  % upper triangular part
       }
+
+    % Right matrix
+    \fill [lightgray] (\offset + 0+3*\x,40-3*\y) rectangle (\offset + 3+3*\x,37-3*\y);  % lower triangular part
+    \fill [lightgray] (\offset + 0+3*\y,40-3*\x) rectangle (\offset + 3+3*\y,37-3*\x);  % upper triangular part
   }
+
 
   \foreach \blocknumber in {0,...,9}
   {
     \pgfmathsetmacro{\x}{int(random(0,10))}
     \pgfmathsetmacro{\y}{int(random(0,6))}
+
+    % Left matrix
     \foreach \i in {0,...,2}
     {
       \fill [lightgray] (11*\i + \x, \y) rectangle (11*\i + 1+\x,1+\y);  % lower left block
       \fill [lightgray] (40 - \y,40-11*\i - \x) rectangle (39-\y,39-11*\i-\x);  % upper right block
     }
+
+    % Right matrix
+    \fill [lightgray] (\offset + 0+3*\x,\y)     rectangle (\offset + 3+3*\x,1+\y);  % lower left block
+    \fill [lightgray] (\offset + 40-\y,40-3*\x) rectangle (\offset + 39-\y,37-3*\x);  % upper right block
   }
+
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+  %% Line drawing of the first matrix
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
   % The fine grid
   \foreach \x in {0,...,40}
@@ -748,51 +778,29 @@ Figure~\ref{fig:matrix_occupation_patterns} shows the corresponding layouts of a
   \foreach \y in {0,7,18,29,40}
     \draw [line width=0.3mm] (0,\y)--(40,\y);
 
-  \end{tikzpicture}
-  \qquad
-  \begin{tikzpicture}[scale=.13]
-
-  % The occupation pattern
-  % Diagonal entries---those have to be there
-  \foreach \x in {0,...,9}
-    \fill [lightgray] (0+3*\x,40-3*\x) rectangle (3+3*\x,37-3*\x);
-
-  % Off-diagonal entries
-  \foreach \blocknumber in {0,...,9}
-  {
-    \pgfmathsetmacro{\x}{int(random(0,9))}
-    \pgfmathsetmacro{\y}{int(random(\x,9))}
-    \fill [lightgray] (0+3*\x,40-3*\y) rectangle (3+3*\x,37-3*\y);  % lower triangular part
-    \fill [lightgray] (0+3*\y,40-3*\x) rectangle (3+3*\y,37-3*\x);  % upper triangular part
-  }
-
-  \foreach \blocknumber in {0,...,9}
-  {
-    \pgfmathsetmacro{\x}{int(random(0,9))}
-    \pgfmathsetmacro{\y}{int(random(0,9))}
-    \fill [lightgray] (0+3*\x,\y) rectangle (3+3*\x,1+\y);  % lower left block
-    \fill [lightgray] (40-\y,40-3*\x) rectangle (39-\y,37-3*\x);  % upper right block
-  }
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+  %% Line drawing of the second matrix
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
   % The fine grid
   \foreach \x in {0,...,10}
-    \draw [line width=0.05mm] (3*\x,0)--(3*\x,40);
+    \draw [line width=0.05mm] (\offset + 3*\x,0)--(\offset + 3*\x,40);
 
   \foreach \y in {0,...,10}
-    \draw [line width=0.05mm] (0,40-3*\y)--(40,40-3*\y);
+    \draw [line width=0.05mm] (\offset + 0,40-3*\y)--(\offset + 40,40-3*\y);
 
-  \foreach \x in {0,...,9}
-    \draw [line width=0.05mm] (40 - 1*\x,0)--(40 - 1*\x,40);
+  \foreach \x in {0,...,6}
+    \draw [line width=0.05mm] (\offset + 40 - 1*\x,0)--(\offset + 40 - 1*\x,40);
 
-  \foreach \y in {0,...,9}
-    \draw [line width=0.05mm] (0,\y)--(40,\y);
+  \foreach \y in {0,...,6}
+    \draw [line width=0.05mm] (\offset + 0,\y)--(\offset + 40,\y);
 
   % The thick-line grid
-  \foreach \x in {0,30,40}
-    \draw [line width=0.3mm] (\x,0)--(\x,40);
+  \foreach \x in {0,33,40}
+    \draw [line width=0.3mm] (\offset + \x,0)--(\offset + \x,40);
 
-  \foreach \y in {0,10,40}
-    \draw [line width=0.3mm] (0,\y)--(40,\y);
+  \foreach \y in {0,7,40}
+    \draw [line width=0.3mm] (\offset + 0,\y)--(\offset + 40,\y);
 
   \end{tikzpicture}
  \end{center}
