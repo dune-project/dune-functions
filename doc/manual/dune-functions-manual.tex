@@ -541,6 +541,7 @@ indices and paths to the leafs (i.e., the multi-indices) are built by concatenat
 those indices starting from the root and ending in a leaf.
 
 \begin{definition}
+\label{def:index_tree}
  A set $\mathcal{I} \subset \mathcal{N}$ is called an \emph{index tree}
  if for any $(I,i,\dots) \in \mathcal{I}$ there are also $(I,0,\dots),(I,1,\dots),\dots,(I,i-1,\dots) \in \mathcal{I}$,
  but $I \notin \mathcal{I}$.
@@ -1821,23 +1822,25 @@ const Element& element() const;
 \label{sec:multi_indices}
 Multi-indices appear in several places in \dunemodule{dune-functions}.
 They are used as global indices to identify individual
-basis functions of a function space basis.
-On the other hand, inner nodes of basis and index trees can also be indexed
-using index trees.
-
+basis functions of a function space basis, and for indexing
+inner nodes of basis and index trees as well.
 From an implementation point of view, basis and index trees differ
-considerably. In fact, only the localized basis tree explicitly appears
-in the programmer interface.  The differences require different multi-index
-implementations as well.  We discuss both types of trees in turn.
+considerably. Only the localized basis tree explicitly appears
+in the programmer interface, whereas index trees appear only implicitly
+in the form of sets of indices with the appropriate structure (Definition~\ref{def:index_tree}).
+These differences separate multi-index
+implementations for the different types of trees.  We discuss both types of trees in turn.
 
 \subsubsection{Multi-index implementations for basis trees}
 
 The tree of localized basis functions is the only tree that explicitly appears
 in the \dunemodule{dune-functions} programmer interface. The tree structure
 is encoded as C++ type information using the tools from the \dunemodule{dune-typetree}
-module.
+module. Navigation in this tree requires to manipulate paths from the root to
+particular nodes.  In principle, such a path is a sequence of integers.
 
-Remember that non-leaf tree nodes can be of two types, \emph{power} and
+To understand the implementation,
+remember that non-leaf tree nodes can be of two types, \emph{power} and
 \emph{composite} (Section~\ref{sec:index_strategies}).
 Since composite nodes have children of different
 types, it is not possible to access those children using a dynamic run-time
@@ -1846,24 +1849,27 @@ way.  For such situations, \dunemodule{dune-common} offers the type
 \begin{lstlisting}[style=Interface]
 template <std::size_t i> Dune::index_constant<i>;
 \end{lstlisting}
-which turns the number \cpp{i} into a type, and hence makes it accessible
-in compile-time expressions.
+which turns the number \cpp{i} into a type, and by this makes it accessible
+to compile-time expressions.
 On the other hand, all children of a power node have
-the same type and providing access using a dynamic index of the type \cpp{std::size_t}
-would be convenient. To satisfy both requirements at the same time,
-the multi-indices used to identify tree nodes are implemented using the
-\cpp{TypeTree::HybridTreePath} class.
+the same C++ type, and can be accessed using a dynamic index of type \cpp{std::size_t}.
 
+In a typical tree, composite and power nodes appear together.  It is therefore
+necessary to have a container that can store compile-time and run-time integers
+together.  This is achieved by the class
+%
 \begin{lstlisting}[style=Interface]
 template <class... I>
 class HybridTreePath;
 \end{lstlisting}
+%
+from the \dunemodule{dune-typetree} module.
 
-Conceptually, a \cpp{HybridTreePath} is a fixed-size container.
-The types of the index entries
+Conceptually, a \cpp{HybridTreePath} is a fixed-size container, where each entry
+can be of different type. The types of the individual entries
 are passed as template parameters. If the type used for an entry is
-\cpp{std::size_t}, then the corresponding entry has a dynamic value.
-If the type is \cpp{Dune::index_constant<i>}, its value is static,
+\cpp{std::size_t}, then this entry will have a dynamic value.
+If, on the other hand, the type is \cpp{Dune::index_constant<i>}, then its value is static,
 and can be used for compile-time decisions.
 
 An object of type \cpp{HybridTreePath} can be used to access the nodes of a
@@ -1880,37 +1886,39 @@ while the multi-index for the pressure leaf node would use the type
 \begin{lstlisting}[style=Example]
 HybridTreePath<Dune::index_constant<1>>;
 \end{lstlisting}
-
 To construct objects of these types, call
 \begin{lstlisting}[style=Example]
-HybridTreePath<Dune::index_constant<0>, std::size_t> treePath(_0,0);
+using namespace Dune::Indices;
+HybridTreePath<Dune::index_constant<0>, std::size_t> i00(_0,0);
+HybridTreePath<Dune::index_constant<1>, std::size_t> i01(_0,1);
+HybridTreePath<Dune::index_constant<2>, std::size_t> i02(_0,2);
 \end{lstlisting}
-for individual velocity leaf nodes, and
+for the velocity leaf nodes, and
 \begin{lstlisting}[style=Example]
-HybridTreePath<Dune::index_constant<1>> treePath(_1);
+HybridTreePath<Dune::index_constant<1>> i1(_1);
 \end{lstlisting}
-for the pressure node.
+for the pressure node.  The constants \cpp{_0}, \cpp{_1}, and \cpp{_2}
+are predefined in the namespace \cpp{Dune::Indices}.
 
 This way of construction is overly verbose, because static indices have
-to be provided twice.
+to be provided both as template and as constructor arguments.
 To simplify the construction of such objects, the \dunemodule{dune-typetree}
 module provides the helper function
 \begin{lstlisting}[style=Interface]
 template <class... I>
 auto TypeTree::treePath(I... i);
 \end{lstlisting}
-which creates a \cpp{HybridTreePath} storing the arguments passed to the function
-as entries. Using the index constants defined in the namespace \cpp{Dune::indices}
-the multi-indices to access all leaf nodes in the Taylor--Hood tree of
-Figure~\ref{fig:taylor_hood_basis_tree} can be constructed using
+which creates a \cpp{HybridTreePath} with the given entry types.
+As this is a free method rather than a constructor, the entries have to be
+given only once, and their types are infered.
+The multi-indices of the previous example can be constructed using
 \begin{lstlisting}[style=Example]
-using namespace Dune::Indices;
-auto I00 = TypeTree::treePath(_0, 0);
-auto I01 = TypeTree::treePath(_0, 1);
-auto I02 = TypeTree::treePath(_0, 2);
-auto I1 = TypeTree::treePath(_1);
+auto i00 = TypeTree::treePath(_0, 0);
+auto i01 = TypeTree::treePath(_0, 1);
+auto i02 = TypeTree::treePath(_0, 2);
+auto i1 = TypeTree::treePath(_1);
 \end{lstlisting}
-To access individual entries of a \cpp{HybridTreePath} object, there is
+To access entries of a \cpp{HybridTreePath} object, the object has
 the method
 %
 \begin{lstlisting}[style=Interface]
@@ -1918,7 +1926,8 @@ template<std::size_t i>
 constexpr decltype(auto) operator[](const Dune::index_constant<i>&) const;
 \end{lstlisting}
 %
-The return type depends on the template parameter \cpp{i}, and can be used
+Depending on the template parameter \cpp{i}, the returntype is either \cpp{std::size_t}
+or \cpp{Dune::index_constant<i>}.  In the latter case, it can be used
 in compile-time expressions.  Note that this construction cannot be simplified
 using the \cpp{constexpr} keyword: As objects of type \cpp{HybridTreePath}
 typically holds some dynamic data, the class cannot be of \cpp{constexpr} type.
@@ -1943,10 +1952,11 @@ Hence, to get the first entry it is possible to write
 std::size_t a = myHybridTreePath[0];
 \end{lstlisting}
 For a tree path in the Taylor--Hood tree this will return \cpp{0} or \cpp{1}
-as expected.  However, the return value is not usable in compile-time situations
+as expected.  However, this return value is not usable in compile-time situations
 anymore.
 
-For a complete description of the \cpp{HybridTreePath} interface see the online
+These are just the more important methods of the \cpp{HybridTreePath} class.
+For a complete description see the online
 documentation of the \dunemodule{dune-typetree} module.
 
 
@@ -1956,47 +1966,43 @@ documentation of the \dunemodule{dune-typetree} module.
 Index trees are formed by the multi-indices that are used to label basis functions.
 Conceptually, there are two such trees in the \dunemodule{dune-functions} interface:
 the tree of global indices, and the tree of local indices.  To keep the implementation simple,
-\dunemodule{dune-functions} only allows flat indices for the local index tree.
+\dunemodule{dune-functions} only allows flat (i.e., single-digit) multi-indices for the local index tree.
 Therefore, only data types for global indices need to be discussed.
 
-Global indices are run-time constructs.  A single C++ type represents all such
-indices for a given basis, even if it has a non-trivial tree structure.
-However, the exact type is selected by the basis implementation.  It mainly
-depends on whether the index is uniform, i.e., whether all indices from the
-set have the same length.
+Unlike the tree paths of the previous section,
+global indices are run-time constructs.  A single C++ type represents all such
+indices for a given basis, even if that basis has a non-trivial tree structure.
+The exact type is selected by the basis implementation, and can differ from basis to basis.
+It mainly depends on whether the index is uniform, i.e., whether all indices from the
+set have the same number of digits.
+Having purely dynamic multi-indices can be inconvenient when accessing
+containers such as \cpp{std::tuple}
+or \cpp{MultiTypeBlockVector} (from the \dunemodule{dune-istl}
+module). However, it has the advantage that standard run-time loops can be used
+to iterate over the indices.
 
-The entries of the global multi-indices are always dynamic.
-This can be inconvenient when using multi-indices
-to access containers such as \cpp{std::tuple}
-or \cpp{MultiTypeBlockVector} from the \dunemodule{dune-istl}
-module. However, it has the advantage, that local indices
-used, e.g., to access the local matrices during and assemble
-loop can be flat.
-
-To serve these different needs, \dunemodule{dune-functions} uses several
-types to represent multi-indices. All implement
-a common interface which is a slimmed-down version of a random
-access container, consisting of two member functions.
+Dynamic multi-indices are random-access containers holding entries of a fixed integer type.
+In particular, all implement a common interface, consisting of two member functions
 %
 \begin{lstlisting}[style=Interface]
-auto operator[](std::size_t) const;
 std::size_t size() const;
+auto operator[](std::size_t) const;
 \end{lstlisting}
-
+%
 The \cpp{size()} method returns the number of digits of the multi-index,
 and \cpp{operator[](std::size_t)} allows to access
 each entry by its number. Since multi-indices are
 typically not changed by user code, both methods are \cpp{const}.
-
-In the following we will
-give an overview of the types used to represent multi-indices
-in \dunemodule{dune-functions}. The type used to represent
+The type used to represent
 the individual digits of multi-indices can be selected when instantiating \cpp{GlobalBasis}
 objects.  The default type is \cpp{std::size_t}.
 
+In the following we will
+give an overview of the types used to represent multi-indices
+in \dunemodule{dune-functions}.
 In the most general case, not all multi-indices for a given basis have
 the same number of digits.  As an example, consider columns 1, 2, 5, and 6
-of Table~\ref{tab:th_indexing_variants}.
+of Table~\ref{tab:th_indexing_variants}, which gives such numberings for the Taylor--Hood basis.
 Such multi-indices are typically represented
 by the class
 \begin{lstlisting}[style=Interface]
@@ -2004,30 +2010,28 @@ template <class T, int k>
 class ReservedVector;
 \end{lstlisting}
 from the \dunemodule{dune-common} module which is parameterized
-by the entry type \cpp{T} and the maximal size \cpp{k}.
-It implements an STL-compatible random-access container with a dynamic size
-not exceeding \cpp{k} entries.
+by the entry type \cpp{T} and a capacity \cpp{k}.
+It implements an STL-compatible random-access container with a dynamic size,
+which may not exceed \cpp{k} entries.
 In contrast to a fully dynamic vector implementation
-like \cpp{std::vector<T>}, the class \cpp{ReservedVector} uses a fixed size
-buffer on the stack to store its entries.
-Dynamic memory management is avoided, making the implementation much more efficient.
-Furthermore, the global multi-indices typically have
+like \cpp{std::vector<T>}, the class \cpp{ReservedVector} stores its entries
+on the stack.  This avoids dynamic memory management, and makes the
+implementation much more efficient. The global multi-indices typically have
 a small number of digits only with a known upper bound.
 Hence the overhead of always using a buffer of size \cpp{k}
-although the number of entries might be smaller will often be small.
-Unless it is known at compile time, that the used multi-indices
-are flat, \cpp{ReservedVector<std::size_t,k>} with appropriate
-\cpp{k} is used to represent the global multi-indices
-provided by a function space basis.
+for indices with less than \cpp{k} digits will typically be small.
 
-Objects of type \cpp{ReservedVector} store their current size together
-with the data.  This is wasteful if the index set is uniform.
+However, many bases can be indexed by uniform index trees, i.e., sets of indices where
+all indices have the same number of digits.  In that case, the capacity of a
+\cpp{ReservedVector} can be set to the correct length, and no buffer space is wasted.
+However, in addition to the buffer, each \cpp{ReservedVector} object has to store
+the container length, which is not needed when the index set is known to be uniform.
 \cpp{GlobalBasis} objects that implement uniform index sets can therefore
 opt to use a fixed-size container type like \cpp{std::array}.
 
-If the basis is indexed with a flat index, i.e., a multi-index with only a single digit,
+Finally, if the basis is indexed with a flat index, i.e., a multi-index with only a single digit,
 then using an array can be a bit cumbersome.  Morally, flat multi-indices
-are simply natural numbers.  However, if \cpp{i} is \cpp{ReservedVector} of length~1,
+are simply natural numbers.  However, if \cpp{i} is a \cpp{std::array} of length~1,
 using it to access the corresponding entry of a \cpp{std::vector} called \cpp{vec} has to be
 written as
 \begin{lstlisting}
@@ -2039,8 +2043,8 @@ auto value = vec[i];
 \end{lstlisting}
 \dunemodule{dune-functions} implements the \cpp{FlatMultiIndex} class for the
 case that the index
-of a basis tree is flat.  In that case, indices are stored as objects of type \cpp{FlatMultiIndex}.
-These objects behave like objects of type \cpp{std::array<T,1>}.  Additionally, they allow to cast
+of a basis tree is flat.  Objects of type \cpp{FlatMultiIndex}
+behave like objects of type \cpp{std::array<T,1>}, but additionally, they allow to cast
 their content to \cpp{T&}.  Therefore, objects of type \cpp{FlatMultiIndex} can be directly used
 like number types, and like multi-index types as well.
 
