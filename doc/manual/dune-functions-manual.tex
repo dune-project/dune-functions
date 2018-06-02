@@ -2059,17 +2059,17 @@ Conversely, subtrees can be extracted, and they act like complete bases in their
 \label{subsec:available_bases}
 
 The \dunemodule{dune-functions} module contains a collection of standard finite element bases.
-These can be directly used in finite element simulation codes. At the time of writing there is:
+These can be directly used in finite element simulation codes. At the time of writing there are:
 
 \begin{itemize}
- \item \cpp{LagrangeBasis}: Lagrangian bases of order $k$, where $k$ is a compile-time parameter.
-   For $k\le 2$, this implementation works on all kinds of conforming grids, including grids with more
+ \item \cpp{LagrangeBasis}: Lagrange basis of order $k$, where $k$ is a compile-time parameter.
+   This implementation works on all kinds of conforming grids, including grids with more
    than one element type.  At the time of writing, higher-order spaces are implemented only partially.
    Check the online class documentation for the current status.
 
- \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin basis with Lagrange shape functions.
-   Therefore, this basis also
-   works well on non-conforming grids.  The polynomial order is again a compile-time parameter.
+ \item \cpp{LagrangeDGBasis}: Implements a $k$-th order Discontinuous-Galerkin (DG) basis with Lagrange shape functions.
+   As a DG basis, it also
+   works well on non-conforming grids.  The polynomial order $k$ is again a compile-time parameter.
 
  \item \cpp{RannacherTurekBasis}: An $H^1$-nonconforming scalar basis, which adapts the idea
    of the Crouzeix--Raviart basis to cube grids~\cite{rannacher_turek:1992}.
@@ -2083,46 +2083,45 @@ These can be directly used in finite element simulation codes. At the time of wr
    and consist of (hyper-)cube elements only.  Further, the element indices must be lexicographic and
    increase from the lower left to the upper right domain corner.  The element spacing must match the knot spans.
    Unfortunately, not all these requirements can be checked for by the basis, so users have to be a bit
-   careful.  Using a \cpp{YaspGrid} object works well.
+   careful.  Using \cpp{YaspGrid} objects works well.
 
-   Unlike in standard finite element bases, in a B-spline basis the basis functions cannot be associated
-   to grid entities such as vertices, edges, or elements.  The interface nevertheless mandates that a
-   \cpp{LocalCoefficient} object must be available on each element, that assigns shape functions
+   Unlike in standard finite element bases, in a $B$-spline basis the basis functions cannot be associated
+   to grid entities such as vertices, edges, or elements.  The \dunemodule{dune-localfunctions}
+   programmer interface of a $B$-spline basis nevertheless mandates that a
+   \cpp{LocalCoefficient} object must be available on each element, which assigns shape functions
    to faces of the reference elements. For the \cpp{BSplineBasis}, the behavior of this
    object is undefined.
 
  \item \cpp{TaylorHoodBasis}:
-   An implementation of a Taylor--Hood basis.
-   This is a simple implementation example of a basis with a non-trivial tree.
-   Notice that non-trivial product bases like a Taylor--Hood basis
+   An implementation of a Taylor--Hood basis.  It exists mainly to serve as an example of
+   how to directly implement a basis with a non-trivial tree.
+   Generally, non-trivial product bases like a Taylor--Hood basis
    can be easily constructed in a generic way. This approach is described
-   in Chapter~\ref{sec:composed_bases} and the preferred way to construct
+   in Chapter~\ref{sec:composed_bases} and it is the preferred way to construct
    a Taylor--Hood basis.
 \end{itemize}
 
-The bases listed above all have the property, that the shape functions provided by
-\cpp{tree.finiteElement()} are implemented in terms of local element coordinates
-for the domain. That is, if the bound-to grid element $e$ is obtained by the transformation
-$\Phi_e:R \to e$ from the reference element $R$, then the implemented localized shape function
+For all bases listed above, the shape functions provided by
+\cpp{tree.finiteElement()} are implemented in terms of coordinates of the reference
+element $T_\text{ref}$. That is, if a grid element $e$ is obtained by the transformation
+$\Phi_e: T_\text{ref} \to e$, then the implemented localized shape function
 representing the restriction of the basis function $\lambda$ to the
 element $e$ is given by $\hat{\lambda}|_e = \lambda\circ\Phi_e$.
-
-Non-affine finite elements may require additional transformations such that it is
-not reasonable to export localized shape functions satisfying the above given
-invariance. In this case the interpretation of the shape functions requires some
-implementation defined transformations. This is the case for the following global
-bases implementations, that otherwise behave like any other basis.
+Finite elements that form non-affine families~\cite{ciarlet:1978}
+may require additional transformations. This is the case for the following global
+bases implementations.
 
 \begin{itemize}
  \item \cpp{RaviartThomasBasis}: The standard Raviart--Thomas basis for problems in
   $H(\text{div})$~\cite{boffi_brezzi_fortin:2013}.  Available for different orders and element types.
-  The shape functions exported by \cpp{tree.finiteElement()} do not include the Piola-transformation.
 
  \item \cpp{BrezziDouglasMariniBasis}: The standard Brezzi--Douglas--Marini basis, which is an
   alternative basis for $H(\text{div})$-conforming problems~\cite{boffi_brezzi_fortin:2013}.
-  The shape functions exported by \cpp{tree.finiteElement()} do not include the Piola-transformation.
 \end{itemize}
 
+Both bases require the Piola transformation to properly pull back the basis functions
+onto the reference element.  This transformation is \emph{not} performed by the
+\dunemodule{dune-functions} implementation, and is expected to happen in user code.
 For a detailed discussion of the template parameters and constructor arguments
 of the basis implementations listed above we refer to the class documentation.
 
