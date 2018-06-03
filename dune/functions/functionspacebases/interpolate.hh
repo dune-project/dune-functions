@@ -197,7 +197,7 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
 
   auto&& gridView = basis.gridView();
 
-  // Small helper function to wrap vectors using istlVectorBackend
+  // Small helper functions to wrap vectors using istlVectorBackend
   // if they do not already satisfy the VectorBackend interface.
   auto toVectorBackend = [&](auto& v) -> decltype(auto) {
     return Dune::Hybrid::ifElse(models<Concept::VectorBackend<B>, decltype(v)>(),
@@ -207,8 +207,16 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
       return istlVectorBackend(v);
     });
   };
+  auto toConstVectorBackend = [&](auto& v) -> decltype(auto) {
+    return Dune::Hybrid::ifElse(models<Concept::ConstVectorBackend<B>, decltype(v)>(),
+    [&](auto id) -> decltype(auto) {
+      return v;
+    }, [&](auto id) -> decltype(auto) {
+      return istlVectorBackend(v);
+    });
+  };
 
-  auto&& bitVector = toVectorBackend(bv);
+  auto&& bitVector = toConstVectorBackend(bv);
   auto&& vector = toVectorBackend(coeff);
   vector.resize(sizeInfo(basis));
 
