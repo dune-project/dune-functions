@@ -73,7 +73,7 @@ public:
       }
       if (prefix.size() == 3)
         return 0;
-      assert(false);
+      return 0;
     }
 
     operator size_type () const
