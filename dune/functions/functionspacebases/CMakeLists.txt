@@ -2,6 +2,7 @@ add_subdirectory("test")
 
 install(FILES
         basistags.hh
+        boundarydofs.hh
         brezzidouglasmarinibasis.hh
         bsplinebasis.hh
         compositebasis.hh
@@ -21,6 +22,7 @@ install(FILES
         rannacherturekbasis.hh
         nodes.hh
         sizeinfo.hh
+        subentitydofs.hh
         subspacebasis.hh
         subspacelocalview.hh
         taylorhoodbasis.hh
