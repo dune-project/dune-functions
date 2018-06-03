@@ -1828,8 +1828,9 @@ From an implementation point of view, basis and index trees differ
 considerably. Only the localized basis tree explicitly appears
 in the programmer interface, whereas index trees appear only implicitly
 in the form of sets of indices with the appropriate structure (Definition~\ref{def:index_tree}).
-These differences separate multi-index
-implementations for the different types of trees.  We discuss both types of trees in turn.
+These differences require separate multi-index
+implementations for the different types of trees.  We discuss implementations
+for both types of trees in turn.
 
 \subsubsection{Multi-index implementations for basis trees}
 
@@ -1890,8 +1891,8 @@ To construct objects of these types, call
 \begin{lstlisting}[style=Example]
 using namespace Dune::Indices;
 HybridTreePath<Dune::index_constant<0>, std::size_t> i00(_0,0);
-HybridTreePath<Dune::index_constant<1>, std::size_t> i01(_0,1);
-HybridTreePath<Dune::index_constant<2>, std::size_t> i02(_0,2);
+HybridTreePath<Dune::index_constant<0>, std::size_t> i01(_0,1);
+HybridTreePath<Dune::index_constant<0>, std::size_t> i02(_0,2);
 \end{lstlisting}
 for the velocity leaf nodes, and
 \begin{lstlisting}[style=Example]
@@ -1908,9 +1909,9 @@ module provides the helper function
 template <class... I>
 auto TypeTree::treePath(I... i);
 \end{lstlisting}
-which creates a \cpp{HybridTreePath} with the given entry types.
+which creates a \cpp{HybridTreePath} with the given entries.
 As this is a free method rather than a constructor, the entries have to be
-given only once, and their types are infered.
+given only once, and their types are inferred.
 The multi-indices of the previous example can be constructed using
 \begin{lstlisting}[style=Example]
 auto i00 = TypeTree::treePath(_0, 0);
@@ -1927,7 +1928,9 @@ constexpr decltype(auto) operator[](const Dune::index_constant<i>&) const;
 \end{lstlisting}
 %
 Depending on the template parameter \cpp{i}, the returntype is either \cpp{std::size_t}
-or \cpp{Dune::index_constant<i>}.  In the latter case, it can be used
+or \cpp{Dune::index_constant<i>}.
+\todograeser{Das stimmt jetzt nicht mehr. Es ist immer \cpp{Dune::index_constant<i>}!}
+In the latter case, it can be used
 in compile-time expressions.  Note that this construction cannot be simplified
 using the \cpp{constexpr} keyword: As objects of type \cpp{HybridTreePath}
 typically holds some dynamic data, the class cannot be of \cpp{constexpr} type.
