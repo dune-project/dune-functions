@@ -18,7 +18,7 @@ namespace Functions {
  * We may want to return this or a similar class when
  * calling basis.size() without arguments. Until we
  * decided on this, we can use sizeInfo(basis) and
- * use the result as size provider for the HierarchicVectorWrapper.
+ * use the result as size provider for a VectorBackend.
  */
 template<class B>
 class SizeInfo

@@ -21,7 +21,7 @@
 
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
-#include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+#include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
@@ -301,8 +301,9 @@ int main (int argc, char *argv[]) try
   // { rhs_assembly_begin }
   VectorType rhs;
 
-  typedef Dune::Functions::HierarchicVectorWrapper<VectorType, double> HierarchicVectorView;
-  HierarchicVectorView(rhs).resize(taylorHoodBasis);
+  auto rhsBackend = Dune::Functions::istlVectorBackend(rhs);
+
+  rhsBackend.resize(taylorHoodBasis);
 
   rhs = 0;                                 /*@\label{li:stokes_taylorhood_set_rhs_to_zero}@*/
   // { rhs_assembly_end }
@@ -332,14 +333,15 @@ int main (int argc, char *argv[]) try
   using namespace TypeTree::Indices;
 
   using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
-  using HierarchicBitVectorView = Functions::HierarchicVectorWrapper<BitVectorType, char>;
 
   BitVectorType isBoundary;
+
+  auto isBoundaryBackend = Dune::Functions::istlVectorBackend(isBoundary);
 
   for(int i=0; i<dim; ++i)
   {
     auto velocityComponentSpace = Functions::subspaceBasis(taylorHoodBasis, _0, i);
-    interpolate(velocityComponentSpace, HierarchicBitVectorView(isBoundary), boundaryIndicator);
+    interpolate(velocityComponentSpace, isBoundaryBackend, boundaryIndicator);
   }
   // { interpolate_boundary_predicate_end }
 
@@ -348,9 +350,9 @@ int main (int argc, char *argv[]) try
   auto&& velocityDirichletData = [](Coordinate x)->VelocityRange { return {0.0, double(x[0] < 1e-8)};};
 
   interpolate(Functions::subspaceBasis(taylorHoodBasis, _0),
-                        HierarchicVectorView(rhs),
+                        rhsBackend,
                         velocityDirichletData,
-                        HierarchicBitVectorView(isBoundary));
+                        isBoundaryBackend);
   // { interpolate_dirichlet_values_end }
 
   ////////////////////////////////////////////
@@ -415,9 +417,9 @@ int main (int argc, char *argv[]) try
   using PressureRange = double;
 
   auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(Functions::subspaceBasis(taylorHoodBasis, _0),
-                                                                                    HierarchicVectorView(x));
+                                                                                    Dune::Functions::istlVectorBackend(x));
   auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(Functions::subspaceBasis(taylorHoodBasis, _1),
-                                                                                    HierarchicVectorView(x));
+                                                                                    Dune::Functions::istlVectorBackend(x));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
