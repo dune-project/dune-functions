@@ -1939,6 +1939,9 @@ be usable at runtime.}
 aber alle möglichen Rückgabetypen sind immer nur statische Versionen von \cpp{size_t}.
 Wie wäre es mit: As objects of type \cpp{HybridTreePath}
 typically hold some dynamic data, they cannot be \cpp{constexpr}.}
+\todograeser{Aber das stimmt nicht. Der Grund ist, dass \cpp{constexpr}
+einfach etwas grundlegend anderes tut. Deshalb glaube ich auch nicht, dass wir
+das hier erklären müssen.}
 
 However, as objects of type \cpp{Dune::index_constant} can be implicitly converted
 to \cpp{std::size_t}, there is also
