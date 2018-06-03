@@ -2131,8 +2131,8 @@ of the basis implementations listed above we refer to the class documentation.
 
 The basis implementations of the previous section can be combined by multiplication to form new bases.
 This produces the tree structures described in Section~\ref{sec:finite_element_trees}.
-The code for this resides in the \cpp{BasisFactory} namespace, which is a nested namespace
-within \cpp{Dune::Functions::}. Therefore, the examples of this section need a
+The multiplication code resides in the \cpp{BasisFactory} namespace, which is a nested namespace
+within \cpp{Dune::Functions::}. Therefore, the examples in this section need a
 \begin{lstlisting}[style=Example]
 using namespace Dune::Functions::BasisFactory;
 \end{lstlisting}
@@ -2141,7 +2141,7 @@ to compile.
 The methods to combine bases into trees do not operate on the basis classes of the previous section
 directly.  Rather, they combine so-called \emph{pre-bases}, of which there is one for each basis.
 The reason for this is
-that it is technically very challenging to combine the actual user-visible basis types in a
+that it is technically challenging to combine the actual user-visible basis types in a
 tree hierarchy that itself again implements the interface of a hierarchical function space basis.
 Therefore, the multiplication operators are applied to pre-basis objects, and return pre-basis
 objects of the resulting tree.
@@ -2156,17 +2156,18 @@ template <class GridView, class PreBasisFactory>
 auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
 \end{lstlisting}
 The pre-basis-factory argument encodes the hierarchic product.
-The involved pre-bases are constructed automatically by the
-\cpp{makeBasis()} function in a consistent way.
-This also determines a suitable multi-index type automatically
-which, otherwise, would have to be done by the user.
+The actual pre-bases are constructed automatically by the
+\cpp{makeBasis()} function from the pre-basis factories in a consistent way.
+This also determines a suitable multi-index type automatically,
+which otherwise would have to be done by the user.
 
-In the simple-most case, the tree consists of a single basis.
-As a convention, for each implemented global basis
+In the simple-most case, the basis tree consists of a single leaf.
+This leaf is then, e.g., one of the basis implementations of the previous section.
+As a convention, for each global basis
 \cpp{FooBarBasis} there is a function \cpp{BasisFactory::fooBar()}
+(defined in the same header file as \cpp{FooBarBasis}),
 creating a suitable pre-basis-factory object which
 stores all basis-specific information.
-This function is defined in the same header file.
 That means that in particular you can write
 \begin{lstlisting}[style=Example]
 auto raviartThomasBasis = makeBasis(gridView, raviartThomas<k>());
@@ -2174,40 +2175,36 @@ auto raviartThomasBasis = makeBasis(gridView, raviartThomas<k>());
 to obtain a Raviart--Thomas basis for the given grid view.
 Notice that the \cpp{raviartThomas()} function, just like the corresponding functions for other bases, does not need
 the grid view as parameter.
-This is equivalent to constructing
+The call to \cpp{makeBasis} is equivalent to constructing
 the basis directly:
 \begin{lstlisting}[style=Example]
-RaviartThomasBasis<GridView,k> raviartThomasBasis;
+RaviartThomasBasis<GridView,k> raviartThomasBasis(gridView);
 \end{lstlisting}
-This example shows another convention: The template and constructor parameters
-of the \cpp{FooBarBasis} are given in the same order as the template
-parameters and arguments of the \cpp{BasisFactory::fooBar()} function,
-despite the fact that the former has the grid view type and object prepended.
+If \cpp{FooBarBasis} has template and/or constructor parameters, then by convention they
+are given in the same order as the template and method
+parameters of the \cpp{BasisFactory::fooBar()} function.
+As the only difference, the former has the grid view type and object prepended.
 
-The pre-basis combining several bases in a product is called \cpp{CompositePreBasis}
+The pre-basis combining several bases in a product is called \cpp{CompositePreBasis},
 defined in the header \file{dune/functions/functionspacebases/compositebasis.hh}.
 It implements a \emph{composite} tree node as introduced in Definition~\ref{def:power_node}.
-Analogously to the above description, a corresponding pre-basis-factory
-can be constructed using a global function
-with the signature
+Analogously to the above description, a pre-basis factory for a tree with a composite root
+can be constructed using the global function
 \begin{lstlisting}[style=Interface]
 template <class... ChildPreBasisFactory>
 auto composite(ChildPreBasisFactory&&... childPreBasisFactory);
 \end{lstlisting}
-%\begin{lstlisting}[style=Interface]
-%template <class... ChildPreBasisFactory, class IndexMergingStrategy>
-%auto composite(ChildPreBasisFactory&&... childPreBasisFactory, IndexMergingStrategy indexMergingStrategy);
-%\end{lstlisting}
-contained in the namespace  \cpp{BasisFactory::}.
+contained in the namespace \cpp{BasisFactory}.
 The method has an unspecified number of arguments, of unspecified type.
 The arguments are expected to be pre-basis-factory objects themselves.
-This can either be plain pre-basis-factories constructed by, e.g.,
+They can either be plain pre-basis-factories constructed by, e.g.,
 \cpp{lagrange<1>()} or \cpp{raviartThomas<k>()},
-or composite- or power-pre-basis-factories constructed by \cpp{composite()}
+or composite- or power pre-basis-factories constructed by \cpp{composite()}
 or \cpp{power()} (see below), respectively.
 
-As an example, to combine a Raviart--Thomas basis with a zero-order Lagrange basis (for solving
-the mixed formulation of the Poisson equation, say), the appropriate call is
+As an example, to combine a Raviart--Thomas basis with a zero-order Lagrange basis
+(let's say for solving
+the mixed formulation of the Poisson equation \cite{braess:2013}), the appropriate call is
 \begin{lstlisting}[style=Example]
 auto mixedBasis = makeBasis(
   gridView,
@@ -2217,6 +2214,7 @@ auto mixedBasis = makeBasis(
   ));
 \end{lstlisting}
 Combining three copies of a first order Lagrange basis for a displacement field in elasticity theory is
+done by
 \begin{lstlisting}[style=Example]
 auto displacementBasis = makeBasis(
   gridView,
@@ -2260,11 +2258,11 @@ The examples produce the trees shown in Figure~\ref{fig:example_composite_bases}
 \end{figure}
 
 
-That last example is not as elegant as it could be.  First of all, it is inconvenient and unnecessarily
+The second example is not as elegant as it could be.  First of all, it is inconvenient and unnecessarily
 wordy to list the same scalar Lagrange basis three times.  Secondly, the required number may depend on
 a compile-time parameter.
 Finally, the implementation can benefit from the explicit knowledge that
-all children are equal in terms of efficiency.
+all children are equal.
 For these reasons, \dunemodule{dune-functions}
 offers a second way to combine bases: The \cpp{PowerPreBasis} with a
 corresponding pre-basis-factory to be constructed with \cpp{BasisFactory::power()}. 
@@ -2300,14 +2298,19 @@ and the call to \cpp{composite} combines this with a \cpp{p}-th order Lagrange b
 Note that this is the preferred way to construct a Taylor--Hood basis in contrast to
 \begin{lstlisting}[style=Example]
 auto taylorHoodBasis1 = makeBasis(gridView, taylorHood());
+\end{lstlisting}
+and
+\begin{lstlisting}[style=Example]
 auto taylorHoodBasis2 = TaylorHoodBasis<GridView>(gridView);
 \end{lstlisting}
-since these variants mainly exist as implementation example (see the discussion on \cpp{TaylorHoodBasis} in Section~\ref{subsec:available_bases}).
+These variants mainly exist as an implementation example.
 
 The previous discussion has left out the question of how the degrees of freedom in the combined tree
 are numbered.  In Section~\ref{sec:index_trees} it was explained how the indices
 of the degrees of freedom form a separate tree by their multi-index structure, and how this tree
-is constructed from the basis tree by a set of rules.  First of all, each of the bases of
+is constructed from the basis tree by a set of strategies.
+These ideas are reflected in the design of the \dunemodule{dune-functions} programmer interface.
+First of all, each of the bases of
 Section~\ref{subsec:available_bases} implements a numbering of its degrees of freedom,
 and generally these numberings cannot be changed.
 To select a degree of freedom numbering for a nontrivial basis,
@@ -2326,7 +2329,6 @@ flag indicating an \cpp{IndexMergingStrategy}. The four implemented strategies a
 and have been described in Section~\ref{sec:index_strategies}.
 For each strategy \cpp{FooBar} there is a function \cpp{BasisFactory::fooBar()} creating
 the flag in the header \file{functionspacebases/basistags.hh}.
-
 For example, a Taylor--Hood basis with the indexing listed in the
 second column (labeled BL(BI)) of Table~\ref{tab:th_indexing_variants} can be created using
 \begin{lstlisting}[style=Example]
@@ -2343,7 +2345,7 @@ auto taylorHoodBasis = makeBasis(
 This will lead to multi-indices of length three and two
 for velocity and pressure degrees of freedom, respectively.
 The same ordering of basis functions with a uniform indexing scheme
-with multi-index length two (column four labeled BL(FI) in Table~\ref{tab:th_indexing_variants}) is obtained using
+with multi-index length two (Column~4 labeled BL(FI) in Table~\ref{tab:th_indexing_variants}) is obtained by
 \begin{lstlisting}[style=Example]
 auto taylorHoodBasis = makeBasis(
   gridView,
@@ -2355,9 +2357,9 @@ auto taylorHoodBasis = makeBasis(
     blockedLexicographic()
   ));
 \end{lstlisting}
-Finally, of flat indexing scheme still preserving the same ordering
-(column eight labeled FL(FI) in Table~\ref{tab:th_indexing_variants})
-obtained by
+Finally, a flat indexing scheme still preserving the same ordering
+(Column~8 labeled FL(FI) in Table~\ref{tab:th_indexing_variants})
+is obtained by
 \begin{lstlisting}[style=Example]
 auto taylorHoodBasis = makeBasis(
   gridView,
