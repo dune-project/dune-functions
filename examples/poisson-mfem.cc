@@ -22,7 +22,7 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/functionspacebases/raviartthomasbasis.hh>
-#include <dune/functions/functionspacebases/istlvectorbackend.hh>
+#include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>

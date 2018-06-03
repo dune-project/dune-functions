@@ -14,7 +14,6 @@ install(FILES
         flatvectorview.hh
         hierarchicvectorwrapper.hh
         interpolate.hh
-        istlvectorbackend.hh
         lagrangebasis.hh
         lagrangedgbasis.hh
         powerbasis.hh

@@ -17,8 +17,8 @@
 #include <dune/functions/common/functionfromcallable.hh>
 #include <dune/functions/common/functionconcepts.hh>
 
-#include <dune/functions/functionspacebases/concepts.hh>
-#include <dune/functions/functionspacebases/istlvectorbackend.hh>
+#include <dune/functions/backends/concepts.hh>
+#include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/sizeinfo.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/functionspacebases/defaultnodetorangemap.hh>

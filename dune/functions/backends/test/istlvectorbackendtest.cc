@@ -18,7 +18,8 @@
 #include <dune/typetree/utility.hh>
 
 #include <dune/functions/common/type_traits.hh>
-#include <dune/functions/functionspacebases/istlvectorbackend.hh>
+#include <dune/functions/backends/concepts.hh>
+#include <dune/functions/backends/istlvectorbackend.hh>
 
 
 using namespace Dune;

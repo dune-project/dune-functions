@@ -19,8 +19,6 @@ dune_add_test(SOURCES raviartthomasbasistest.cc)
 
 dune_add_test(SOURCES hierarchicvectorwrappertest.cc)
 
-dune_add_test(SOURCES istlvectorbackendtest.cc)
-
 dune_add_test(SOURCES compositebasistest.cc)
 
 install(

@@ -13,7 +13,7 @@
 #include <dune/grid/utility/structuredgridfactory.hh>
 #include <dune/functions/functionspacebases/pqknodalbasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
-#include <dune/functions/functionspacebases/istlvectorbackend.hh>
+#include <dune/functions/backends/istlvectorbackend.hh>
 
 #include <dune/istl/bvector.hh>
 using namespace Dune;

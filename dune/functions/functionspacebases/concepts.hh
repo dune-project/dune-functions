@@ -255,17 +255,6 @@ struct GlobalBasis
 
 
 
-// Concept for a VectorBackend
-template<class GlobalBasis>
-struct VectorBackend
-{
-  template<class V>
-  auto require(const V& v) -> decltype(
-    const_cast<V&>(v).resize(std::declval<const GlobalBasis&>()),
-    v[std::declval<typename GlobalBasis::MultiIndex>()]
-  );
-};
-
 } // namespace Dune::Functions::Concept
 } // namespace Dune::Functions
 } // namespace Dune
