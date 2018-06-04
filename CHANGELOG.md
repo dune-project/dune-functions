@@ -5,6 +5,11 @@ correponding version of the Dune core modules.
 
 ## Master (will become release 2.7)
 
+- The new method `istlVectorBackend(vector)` creates a `VectorBackend`
+  suitable for being used as coefficient vector for `interpolate()`
+  and `DiscreteGlobalBasisFunction`. The underlying `vector` can
+  be a nested vector composed by stl and dune random access containers.
+  Notice that the only scalar coefficients per basis function are supported.
 - The algorithm `forEachBoundaryDOF()` was added in a new header `boundarydofs.hh`.
   It allows to iterate over all DOFs of a given global basis associated to sub-entities
   located at the boundary of the domain.

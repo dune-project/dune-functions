@@ -253,6 +253,8 @@ struct GlobalBasis
   );
 };
 
+
+
 } // namespace Dune::Functions::Concept
 } // namespace Dune::Functions
 } // namespace Dune

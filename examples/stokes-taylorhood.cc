@@ -24,7 +24,7 @@
 
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
-#include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+#include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
@@ -372,9 +372,8 @@ int main (int argc, char *argv[]) try
   // { rhs_assembly_begin }
   VectorType rhs;
 
-  using VectorBackend = typename Functions::HierarchicVectorWrapper<VectorType, double>;
+  auto rhsBackend = Dune::Functions::istlVectorBackend(rhs);
 
-  auto rhsBackend = VectorBackend(rhs);
   rhsBackend.resize(taylorHoodBasis);
   rhs = 0;                                 /*@\label{li:stokes_taylorhood_set_rhs_to_zero}@*/
   // { rhs_assembly_end }
@@ -392,9 +391,7 @@ int main (int argc, char *argv[]) try
   // { initialize_boundary_dofs_vector_begin }
   BitVectorType isBoundary;
 
-  using BitVectorBackend = Functions::HierarchicVectorWrapper<BitVectorType, char>;
-
-  auto isBoundaryBackend = BitVectorBackend(isBoundary);
+  auto isBoundaryBackend = Dune::Functions::istlVectorBackend(isBoundary);
   isBoundaryBackend.resize(taylorHoodBasis);
   isBoundary = false;
   // { initialize_boundary_dofs_vector_end }
@@ -499,9 +496,9 @@ int main (int argc, char *argv[]) try
   using PressureRange = double;
 
   auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(Functions::subspaceBasis(taylorHoodBasis, _0),
-                                                                                    VectorBackend(x));
+                                                                                    Dune::Functions::istlVectorBackend(x));
   auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(Functions::subspaceBasis(taylorHoodBasis, _1),
-                                                                                    VectorBackend(x));
+                                                                                    Dune::Functions::istlVectorBackend(x));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file

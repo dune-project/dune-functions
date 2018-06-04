@@ -176,10 +176,11 @@ namespace BasisFactory {
 template<class GridView, class PreBasisFactory>
 auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory)
 {
+  using RawPreBasisFactory = std::decay_t<PreBasisFactory>;
   using MultiIndex = std::conditional_t<
-    PreBasisFactory::requiredMultiIndexSize==1,
+    (RawPreBasisFactory::requiredMultiIndexSize == 1),
     FlatMultiIndex<std::size_t>,
-    Dune::ReservedVector<std::size_t, PreBasisFactory::requiredMultiIndexSize>>;
+    Dune::ReservedVector<std::size_t, RawPreBasisFactory::requiredMultiIndexSize>>;
   auto preBasis = preBasisFactory.template makePreBasis<MultiIndex>(gridView);
   using PreBasis = std::decay_t<decltype(preBasis)>;
 

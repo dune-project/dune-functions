@@ -3,6 +3,8 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NODES_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NODES_HH
 
+#include <dune/common/indices.hh>
+
 #include <dune/typetree/leafnode.hh>
 #include <dune/typetree/powernode.hh>
 #include <dune/typetree/compositenode.hh>
@@ -218,6 +220,8 @@ namespace Dune {
 
     public:
 
+      using Element = typename T::Element;
+
       PowerBasisNode(const TP& tp) :
         Mixin(tp)
       {}
@@ -226,6 +230,11 @@ namespace Dune {
         Mixin(tp),
         Node(children)
       {}
+
+      const Element& element() const
+      {
+        return this->child(Dune::Indices::_0).element();
+      }
 
     };
 
@@ -241,6 +250,8 @@ namespace Dune {
 
     public:
 
+      using Element = typename Node::template Child<0>::Type;
+
       CompositeBasisNode(const TP& tp)
         : Mixin(tp)
       {}
@@ -255,6 +266,11 @@ namespace Dune {
         : Mixin(tp)
         , Node(children...)
       {}
+
+      const Element& element() const
+      {
+        return this->child(Dune::Indices::_0).element();
+      }
 
     };
 
