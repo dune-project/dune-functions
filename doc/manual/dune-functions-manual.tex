@@ -622,11 +622,12 @@ and if $X$ is a coefficient vector that has a compatible hierarchical structure,
 then a finite element function $(v_h,p_h)$ with velocity
 $v_h$ and pressure $p_h$ defined by the coefficient vector $X$
 is given by
-\begin{align*}
+\begin{align}
+\label{eq:linear_combination}
   (v_h,p_h)
   &= \sum_{i=0}^2\sum_{j=0}^{n_2-1} X_{(0,i,j)}\lambda_{(0,i,j)}
   + \sum_{k=0}^{n_1-1} X_{(1,k)}\lambda_{(1,k)},
-\end{align*}
+\end{align}
 with basis functions
 \begin{equation*}
   \lambda_{(0,i,j)} = \mathbf{e}_0 \otimes (\mathbf{e}_i \otimes \lambda^{P_2}_j), \qquad i=0,1,2,
@@ -1959,6 +1960,7 @@ documentation of the \dunemodule{dune-typetree} module.
 
 
 \subsubsection{Multi-index implementations for index trees}
+\label{sec:multi_indicies_for_index_trees}
 
 Index trees are formed by the multi-indices that are used to label basis functions.
 Conceptually, there are two such trees in the \dunemodule{dune-functions} interface:
@@ -2506,32 +2508,35 @@ coefficient vectors to represent the corresponding vector and scalar fields.
 The interface for this construction is discussed in the next section.
 
 
-\section{Combining global basis and coefficient vector}
-An essential functionality for a function space basis is to interpret
-a given vector as coefficient vector with respect to this
-basis. There are two operations that are typically required
-in applications:
+\section{Combining global bases and coefficient vectors}
 
-\begin{itemize}
-  \item
-    A given pair of function space basis and coefficient vector
-    should be interpreted as a function from this function space.
-    This is required e.g. for computing quantities depending on
-    this function and for subsampling function values
-    when writing it into some output format.
-  \item
-    For some given function space basis and function
-    the interpolation of the function into the function
-    space should be computed and store as coefficient vector
-    with respect to the basis.
-\end{itemize}
+Function space bases and coefficient vectors are combined to yield discrete functions,
+by the linear combination shown exemplarily in~\eqref{eq:linear_combination}.
+Such discrete functions can then, e.g., be written to a file, or handed to some
+post-processing agent. Conversely, discrete and non-discrete functions can be
+projected onto the span of a basis, which yields a corresponding coefficient
+vector.  In \dunemodule{dune-functions}, this process is called \emph{interpolation},
+although it is not always an interpolation in the strict sense of the word.
 
-Both operations require to relate vector entries to basis functions.
-This identification is done by the global multi-indices provided
-by the basis. Technically, this requires to access the vector
-entry corresponding to a given multi-index from the basis.
+\subsection{Vector backends}
+
+In both cases, individual basis functions need to be associated with corresponding
+entries of a container data type that holds vector coefficients. While trivial
+in theory, in practice there is a gap here because the multi-index types used
+by \dunemodule{dune-functions} to label basis functions (Section~\ref{sec:multi_indicies_for_index_trees})
+cannot be used to access entries of standard random-access containers.
+
+The gap is bridged by a concept called \emph{vector backends}.
+These are shim classes that abstract away implementation details of particular
+container classes, and make them addressable by multi-indices.
+The \dunemodule{dune-functions} module currently offers such a backend
+for containers from \dunemodule{dune-istl} and the C++ standard library,
+but others can be added easily. This makes it possible to combine \dunemodule{dune-functions}
+function space bases with basically any linear algebra implementation.
+
+There are two parts to the vector backend concept:
 When interpreting a vector of given coefficients with respect
-to a basis this access is only required in a non-mutable way.
+to a basis,  access is only required in a non-mutable way.
 In \dunemodule{dune-functions}
 this functionality is encoded in the \cpp{ConstVectorBackend} concept which
 solely requires direct access by \cpp{operator[]} using the multi-indices
