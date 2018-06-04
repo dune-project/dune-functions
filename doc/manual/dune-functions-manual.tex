@@ -1929,7 +1929,6 @@ constexpr decltype(auto) operator[](const Dune::index_constant<i>&) const;
 %
 Depending on the template parameter \cpp{i}, the returntype is either \cpp{std::size_t}
 or \cpp{Dune::index_constant<i>}.
-\todograeser{Das stimmt jetzt nicht mehr. Es ist immer \cpp{Dune::index_constant<i>}!}
 In the latter case, it can be used
 in compile-time expressions.  Note that this construction cannot be simplified
 using the \cpp{constexpr} keyword: As objects of type \cpp{HybridTreePath}
