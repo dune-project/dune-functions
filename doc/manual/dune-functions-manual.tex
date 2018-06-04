@@ -1927,23 +1927,31 @@ template<std::size_t i>
 constexpr decltype(auto) operator[](const Dune::index_constant<i>&) const;
 \end{lstlisting}
 %
-Depending on the template parameter \cpp{i}, the returntype is either \cpp{std::size_t}
+Depending on the template parameter \cpp{i}, the return type is either \cpp{std::size_t}
 or \cpp{Dune::index_constant<i>}.
-In the latter case, it can be used
-in compile-time expressions.  Note that this construction cannot be simplified
-using the \cpp{constexpr} keyword: As objects of type \cpp{HybridTreePath}
-typically holds some dynamic data, the class cannot be of \cpp{constexpr} type.
-\todosander{Bessere Begründung?}
-\todograeser{Die stimmt auch nicht ganz. Genauer: ... : Here the result type depends on \cpp{i}
-while \cpp{constexpr} functions have a fixed return type because they must also
-be usable at runtime.}
-\todosander{Überzeugt mich nicht ganz.  Ja, der Rückgabetyp hängt von \cpp{i} ab,
-aber alle möglichen Rückgabetypen sind immer nur statische Versionen von \cpp{size_t}.
-Wie wäre es mit: As objects of type \cpp{HybridTreePath}
-typically hold some dynamic data, they cannot be \cpp{constexpr}.}
-\todograeser{Aber das stimmt nicht. Der Grund ist, dass \cpp{constexpr}
-einfach etwas grundlegend anderes tut. Deshalb glaube ich auch nicht, dass wir
-das hier erklären müssen.}
+Notice that this construction is necessary although the function is already
+\cpp{constexpr}:
+Since \cpp{HybridTreePath} objects are intended to select
+children of different type in runtime contexts, they have to encode
+compile time index values into the runtime index objects.
+The latter is only possible by making the types of those index object
+dependent on their compile time values.
+\todograeser{Ein neuer Versuch das zu erklären.}
+%In the latter case, it can be used
+%in compile-time expressions.  Note that this construction cannot be simplified
+%using the \cpp{constexpr} keyword: As objects of type \cpp{HybridTreePath}
+%typically holds some dynamic data, the class cannot be of \cpp{constexpr} type.
+%\todosander{Bessere Begründung?}
+%\todograeser{Die stimmt auch nicht ganz. Genauer: ... : Here the result type depends on \cpp{i}
+%while \cpp{constexpr} functions have a fixed return type because they must also
+%be usable at runtime.}
+%\todosander{Überzeugt mich nicht ganz.  Ja, der Rückgabetyp hängt von \cpp{i} ab,
+%aber alle möglichen Rückgabetypen sind immer nur statische Versionen von \cpp{size_t}.
+%Wie wäre es mit: As objects of type \cpp{HybridTreePath}
+%typically hold some dynamic data, they cannot be \cpp{constexpr}.}
+%\todograeser{Aber das stimmt nicht. Der Grund ist, dass \cpp{constexpr}
+%einfach etwas grundlegend anderes tut. Deshalb glaube ich auch nicht, dass wir
+%das hier erklären müssen.}
 
 However, as objects of type \cpp{Dune::index_constant} can be implicitly converted
 to \cpp{std::size_t}, there is also
