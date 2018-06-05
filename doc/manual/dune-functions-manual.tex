@@ -2376,6 +2376,7 @@ whereas \cpp{power} will use \cpp{BlockedInterleaved}.
 
 
 \section{Treating subtrees as separate bases}
+\label{sec:subtrees}
 
 The previous section has shown how trees of bases can be combined to form
 bigger trees.  It is also possible to extract subtrees from other trees
@@ -2950,10 +2951,13 @@ but data types from other linear algebra libraries could be used as well.
 \lstinputlisting[linerange={linear_algebra_setup_begin-linear_algebra_setup_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-Notice that the vector and matrix types \cpp{VectorType} and \cpp{MatrixType}
+Note that \cpp{VectorType} and \cpp{MatrixType}
 are no classical containers, because the entries have non-uniform types.
-Other index types are possible and possibly desirable here.  These would correspond to other vector and
-matrix data types.
+Rather, they are constructed similarly to \cpp{std::tuple} from the C++ standard library.
+However, it must be emphasized that the use of such advanced data structures is by no
+means mandatory. As detailed in Section~\ref{}
+and~\ref{} it is trivial to make the Taylor--Hood basis
+use flat global indices, which work directly with standard container types like \cpp{std::vector}.
 
 Now that we have chosen the C++ types for the matrix and vector data structures we can actually assemble the system.
 Assembling the right-hand-side vector \cpp{rhs} is easy, because, apart from the Dirichlet boundary data (which we
@@ -2963,10 +2967,12 @@ following lines
 \lstinputlisting[linerange={rhs_assembly_begin-rhs_assembly_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-The \cpp{HierarchicVectorView} is a device that offers easier handling of arbitrarily nested vector data types.
-In particular, it offers convenient resizing of an entire hierarchy of nested vectors.
-The \cpp{taylorHoodBasis} object informs about the sizes of the corresponding finite element basis subtrees,
-and Line~\ref{li:stokes_taylorhood_set_rhs_to_zero} fills the entire vector with zeros.
+The object returned by \cpp{istlVectorBackend} connects the \dunemodule{dune-functions}
+basis with \dunemodule{dune-istl} linear algebra containers.
+In particular, it offers convenient resizing of an entire hierarchy of nested vectors
+from given function space basis trees.
+Line~\ref{li:stokes_taylorhood_set_rhs_to_zero} fills the entire vector with zeros
+in one go, but observe that this is actually a \dunemodule{dune-istl} feature.
 
 To obtain the stiffness matrix we first create an empty matrix object of the correct type.  The actual assembly
 is factored out into a separate method.
@@ -2974,50 +2980,40 @@ is factored out into a separate method.
 \lstinputlisting[linerange={matrix_assembly_begin-matrix_assembly_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-As the matrix assembly is the central part of this example we explain it in detail below, after having covered the \cpp{main} method.
+As the matrix assembly is a central part of this example we explain it in detail below, after having covered the \cpp{main} method.
 
 Suppose now that we have the correct stiffness matrix assembled in the object \cpp{stiffnessMatrix}.  We still need
-to modify the linear system to include the Dirichlet information.
-In a first step we need to determine all degrees of freedom with Dirichlet data.
+to modify the linear system to include the Dirichlet boundary information.
+In a first step we need to determine all degrees of freedom with Dirichlet boundary conditions.
 To store this information we use a vector of flags which has the same structure
-as \cpp{VectorType} and is again initialized using the \cpp{HierarchicVectorWrapper}.
+as \cpp{VectorType} and is again initialized using the \cpp{ISTLVectorBackend}.
 %
 \lstinputlisting[linerange={initialize_boundary_dofs_vector_begin-initialize_boundary_dofs_vector_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-We now want to mark all the velocity degrees of freedom on the domain boundary.
-The latter information can be derived from the \cpp{LocalKey} objects of each basis function.
-For convenience \dunemodule{dune-functions} provides the algorithm \cpp{forEachBoundaryDOF()}
+We now want to mark all the velocity degrees of freedom on the Dirichlet boundary.
+In the driven cavity example, the entire boundary is Dirichlet boundary.
+For convenience \dunemodule{dune-functions} provides the method
+\begin{lstlisting}[style=Interface]
+template<class Basis, class F>
+void forEachBoundaryDOF(const Basis& basis, F&& f);
+\end{lstlisting}
+(in the file \file{dune/functions/functionspacebases/boundarydofs.hh}),
 which implements a loop over all degrees of freedom associated to entities located
-on the domain boundary. To identify those degrees of freedom the algorithm
-hands their global indices to the passed callback function.
-Using this algorithm we can simply mark the boundary degrees of freedom
-for the velocity subtree using:
+on the domain boundary. The algorithm will invoke the callback function \cpp{f}
+for each such degree of freedom, passing its global index as the callback argument.
+To mark the boundary degrees of freedom for the velocity subtree write:
 %
 \lstinputlisting[linerange={determine_boundary_dofs_begin-determine_boundary_dofs_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-Notice that \cpp{HierarchicVectorWrapper} is used to directly
-access the \cpp{isBoundary} vector using the multi-indices provided by the basis.
 The \cpp{forEachBoundaryDOF()} algorithm only considers velocity
-degrees of freedom because we passed the corresponding subspace to it.
-The latter is addressed using its path from the root in the ansatz tree
-depicted in Figure~\ref{fig:taylor_hood_basis_tree}.
-Here, the path is a single index $0$ selecting the first child.
-This is encoded using the compile time constant index \cpp{_0} from the
-\cpp{Dune::Indices} namespace. This constant and analogues \cpp{_1}, \cpp{_2}, \dots
-for larger indices are defined in the header \file{dune/common/indices.hh}.
-In a similar way subspace bases for the pressure and the second velocity
-component could be obtained using
-\begin{lstlisting}[style=Example]
-auto pressureBasis = Functions::subspaceBasis(taylorHoodBasis, _1);
-auto secondVelocityBasis = Functions::subspaceBasis(taylorHoodBasis, _0, 1);
-\end{lstlisting}
-Notice that the last index for the velocity component can be a classical run-time index
-because all velocity components have the same type.
+degrees of freedom because we called it with the corresponding subspace basis.
+Nevertheless, the global indices handed out by \cpp{forEachBoundaryDOF} correspond
+to the full tree, and can therefore by used to access the \cpp{isBoundary}
+container via the \cpp{ISTLVectorBackend} (Section~\ref{sec:subtrees}).
 
-
-Finally, we define a function implementing the actual Dirichlet values function $\mathbf{g}$, and interpolate
+Finally, we define a method implementing the actual Dirichlet values function $\mathbf{g}$, and interpolate
 that into the right-hand-side vector \cpp{rhs}.
 %
 \lstinputlisting[linerange={interpolate_dirichlet_values_begin-interpolate_dirichlet_values_end},
@@ -3027,52 +3023,69 @@ Observe how the \dunemodule{dune-functions} interface allows to interpolate C++1
 very short and readable. Again the operation is constrained to the velocity degrees of freedom
 by passing the corresponding subspace basis only.
 The \cpp{isBoundary} vector given as the last argument restricts the interpolation
-to only the boundary degrees of freedom that we marked before.
+to only the boundary degrees of freedom which we marked before.
 
 The stiffness matrix is modified in a more manual fashion.  For each Dirichlet degree of freedom we need to fill the corresponding matrix row
 with zeros, and write a~1 on the diagonal.
-The following algorithm will work for any matrix type and indexing scheme.
-However, using a specialized algorithm looping over matrix rows only once
-may be faster.
+The following algorithm does this by looping over all grid elements, and for each element
+looping over all Dirichlet degrees of freedom.  This is less efficient than simply
+looping over all matrix rows, but it allows to avoid implementing iterators for the
+nested sparse matrix data types.
 %
 \lstinputlisting[linerange={set_dirichlet_matrix_begin-set_dirichlet_matrix_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-The access to the matrix entries is done using a helper function \cpp{matrixEntry}.
-This is necessary because the nested matrix needs to be indexed using a pair
-of outer row and column indices first and does not support access
-using a pair of row and column multi-indices to directly resolve the scalar entries.
-Notice that the outer indices for the \cpp{MultiTypeBlockMatrix} have to be
-encoded statically, because different matrix entries have different types.
-The \cpp{matrixEntry} function can be considered an analouge of the vector backends
-used to access entries of nested vectors by multi-indices directly.
+Access to the matrix entries needs a matrix analogue to the vector backends---a translation
+layer that converts multi-indices to the correct sequence of instructions required to
+access the matrix data structure.  Such a backend is more challenging to write, as it
+requires handling two indices together.  At the time of writing \dunemodule{dune-functions}
+does not provide matrix backends.  Instead, the example code uses a simple helper method
+\cpp{matrixEntry} that is defined in the example file itself.
+It is much simpler than a generic matrix backend, because it is written
+directly for the matrix data type of the Stokes problem.
 %
 \lstinputlisting[linerange={matrixentry_begin-matrixentry_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
+Notice that the outer indices for the \cpp{MultiTypeBlockMatrix} have to be
+encoded statically, because different matrix entries have different types.
 
-Finally, we can solve the linear system.  Efficiently solving the Stokes system is an art, which we do not want to
-get into here.  Instead, we a GMRes solver, without any preconditioner at all.  This is known to converge,
+Finally, we can solve the linear system.
+Dedicated Stokes solvers frequently operate on some sort of Schur complement,
+and hence they need direct access to the submatrices~\cite{john:2016}.
+This can be elegantly done using the nested matrix type used for the stiffness matrix.
+However, efficiently solving the Stokes system is an art,
+which we do not want to get into here.
+Instead, we use a GMRes solver, without any preconditioner at all.  This is known to converge,
 albeit slowly.
 The advantage is that it can be written down in very few lines.
+The following code shows a typical way of using \dunemodule{dune-istl} to solve
+a linear system of equations, and is not particular to \dunemodule{dune-functions}
+at all.
 %
 \lstinputlisting[linerange={stokes_solve_begin-stokes_solve_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 Observe how the \cpp{RestartedGMResSolver} object is completely oblivious to the fact that the matrix
-has a two-to-three-level nesting structure.  On the other hand, dedicated Stokes solvers usually operate
-on some sort of Schur complement, and hence they need direct access
-to the submatrices.  This can be elegantly done using the nested matrix type
-used for the stiffness matrix.
+has a nesting structure.
 
-Once the iterative solver has terminated, we write the result to a VTK file.  For this, we write the resulting velocity as a vector field,
+Once the iterative solver has terminated, we write the result to a VTK file.
+However, as the \cpp{VTKWriter} class from the \dunemodule{dune-grid} module
+expects discrete functions rather than coefficient vectors, we construct
+velocity and pressure discrete functions by combining the appropriate
+coefficient vectors and basis subtrees:
+%
+\lstinputlisting[linerange={make_result_functions_begin-make_result_functions_end},
+                 numbers=left]{../../examples/stokes-taylorhood.cc}
+%
+Then, we write the resulting velocity as a vector field,
 and the resulting pressure as a scalar field.  We subsample the grid twice, because the \cpp{VTKWriter}
 class natively only displays piecewise linear functions.
 %
-\lstinputlisting[linerange={stokes_output_begin-stokes_output_end},
+\lstinputlisting[linerange={vtk_output_begin-vtk_output_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-When run, this program produces a file called \file{function-stokes-result.vtu}.  The file can be opened in
+When run, this program produces a file called \file{stokes-taylorhood-result.vtu}.  The file can be opened in
 \program{ParaView}, and the outcome looks like the image on the right in Figure~\ref{fig:driven_cavity}.
 
 \subsubsection{The global assembler}

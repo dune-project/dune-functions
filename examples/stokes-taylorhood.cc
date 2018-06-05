@@ -349,10 +349,6 @@ int main (int argc, char *argv[]) try
   using PressureVector = BlockVector<FieldVector<double,1>>;
   using VectorType = MultiTypeBlockVector<VelocityVector, PressureVector>;
 
-  using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
-  using PressureBitVector = BlockVector<FieldVector<char,1>>;
-  using BitVectorType = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
-
   using Matrix00 = BCRSMatrix<FieldMatrix<double,dim,dim>>;
   using Matrix01 = BCRSMatrix<FieldMatrix<double,dim,1>>;
   using Matrix10 = BCRSMatrix<FieldMatrix<double,1,dim>>;
@@ -391,6 +387,10 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   // { initialize_boundary_dofs_vector_begin }
+  using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
+  using PressureBitVector = BlockVector<FieldVector<char,1>>;
+  using BitVectorType = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
+
   BitVectorType isBoundary;
 
   auto isBoundaryBackend = Dune::Functions::istlVectorBackend(isBoundary);
@@ -400,9 +400,11 @@ int main (int argc, char *argv[]) try
 
   // { determine_boundary_dofs_begin }
   using namespace Indices;
-  Dune::Functions::forEachBoundaryDOF(Functions::subspaceBasis(taylorHoodBasis, _0), [&] (auto&& index) {
-    isBoundaryBackend[index] = true;
-  });
+  Dune::Functions::forEachBoundaryDOF(Functions::subspaceBasis(taylorHoodBasis, _0),
+                                      [&] (auto&& index)
+                                      {
+                                        isBoundaryBackend[index] = true;
+                                      });
   // { determine_boundary_dofs_end }
 
   // { interpolate_dirichlet_values_begin }
@@ -423,43 +425,25 @@ int main (int argc, char *argv[]) try
   ////////////////////////////////////////////
 
   // loop over the matrix rows
-  {
   // { set_dirichlet_matrix_begin }
-    auto localView = taylorHoodBasis.localView();
-    for(const auto& e : Dune::elements(taylorHoodBasis.gridView())) {
-      localView.bind(e);
-      for (size_t i=0; i<localView.size(); ++i) {
-        auto row = localView.index(i);
-        // If row corresponds to a boundary entry, modify
-        // it to be an identity matrix row
-        if (isBoundaryBackend[row])
-          for (size_t j=0; j<localView.size(); ++j) {
-            auto col = localView.index(j);
-            matrixEntry(stiffnessMatrix, row, col) = (i==j) ? 1 : 0;
-          }
-      }
-    }
-  // { set_dirichlet_matrix_end }
-  }
-
-
-#if 0
-  for (std::size_t i=0; i<stiffnessMatrix[_0][_0].N(); ++i)
+  auto localView = taylorHoodBasis.localView();
+  for(const auto& e : Dune::elements(taylorHoodBasis.gridView()))
   {
-    if (isBoundary[_0][i][0])
+    localView.bind(e);
+    for (size_t i=0; i<localView.size(); ++i)
     {
-      // Upper left matrix block
-      auto cIt    = stiffnessMatrix[_0][_0][i].begin();
-      auto cEndIt = stiffnessMatrix[_0][_0][i].end();
-      // loop over nonzero matrix entries in current row
-      for (; cIt!=cEndIt; ++cIt)
-        *cIt = (i==cIt.index()) ? ScaledIdentityMatrix<double,dim>(1) : 0;
-
-      // Upper right matrix block
-      stiffnessMatrix[_0][_1][i] = 0;   // zeros out the entire matrix row
+      auto row = localView.index(i);
+      // If row corresponds to a boundary entry, modify
+      // it to be an identity matrix row
+      if (isBoundaryBackend[row])
+        for (size_t j=0; j<localView.size(); ++j)
+        {
+          auto col = localView.index(j);
+          matrixEntry(stiffnessMatrix, row, col) = (i==j) ? 1 : 0;
+        }
     }
   }
-#endif
+  // { set_dirichlet_matrix_end }
 
   ////////////////////////////
   //   Compute solution
@@ -493,24 +477,30 @@ int main (int argc, char *argv[]) try
   //  Make a discrete function from the FE basis and the coefficient vector
   ////////////////////////////////////////////////////////////////////////////
 
-  // { stokes_output_begin }
+  // { make_result_functions_begin }
   using VelocityRange = FieldVector<double,dim>;
   using PressureRange = double;
 
-  auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(Functions::subspaceBasis(taylorHoodBasis, _0),
-                                                                                    Dune::Functions::istlVectorBackend(x));
-  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(Functions::subspaceBasis(taylorHoodBasis, _1),
-                                                                                    Dune::Functions::istlVectorBackend(x));
+  auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>
+                             (Functions::subspaceBasis(taylorHoodBasis, _0),
+                              Functions::istlVectorBackend(x));
+  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>
+                             (Functions::subspaceBasis(taylorHoodBasis, _1),
+                              Functions::istlVectorBackend(x));
+  // { make_result_functions_end }
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
   //  We need to subsample, because VTK cannot natively display real second-order functions
   //////////////////////////////////////////////////////////////////////////////////////////////
+  // { vtk_output_begin }
   SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(2));
-  vtkWriter.addVertexData(velocityFunction, VTK::FieldInfo("velocity", VTK::FieldInfo::Type::vector, dim));
-  vtkWriter.addVertexData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
+  vtkWriter.addVertexData(velocityFunction,
+                          VTK::FieldInfo("velocity", VTK::FieldInfo::Type::vector, dim));
+  vtkWriter.addVertexData(pressureFunction,
+                          VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.write("stokes-taylorhood-result");
-  // { stokes_output_end }
+  // { vtk_output_end }
 
  }
 // Error handling
