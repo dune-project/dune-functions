@@ -241,7 +241,7 @@ void assembleStokesMatrix(const Basis& basis,
   setOccupationPattern(basis, matrix);
 
   // Set all entries to zero
-  matrix = 0;                           /*@\label{li:stokes_taylorhood_set_matrix_to_zero}@*/
+  matrix = 0;
   // { setup_matrix_pattern_end }
 
   // A view on the FE basis on a single element
@@ -317,7 +317,7 @@ int main (int argc, char *argv[]) try
 
   constexpr std::size_t p = 1; // pressure order for Taylor-Hood
 
-  auto taylorHoodBasis = makeBasis(  /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
+  auto taylorHoodBasis = makeBasis(
     gridView,
     composite(
       power<dim>(
