@@ -2795,6 +2795,19 @@ To interpolate only into the $x$ and $y$ velocity components of a Taylor--Hood b
 \section{Example: Solving the Stokes equation with \dunemodule{dune-functions}}
 \label{sec:stokes_example}
 
+We close the paper by showing a complete example program that demonstrates a lot
+of the techniques presented so far.  The example program will solve the
+stationary Stokes problem using Taylor--Hood finite elements.
+The example is contained in a single file, which comes as part of the \dunemodule{dune-functions}
+source tree, in \file{dune-functions/examples/stokes-taylorhood.cc}.  If you read this document in electronic form,
+the file can also be accessed by clicking on the icon in the margin.%
+%
+\marginpar{\attachfile[author=The dune-functions team,
+                       color = 1 0 0,
+                       mimetype=text/plain,
+                       description=Complete source code of the Stokes/Taylor-Hood example]
+                       {../../examples/stokes-taylorhood.cc}}
+
 \subsection{The Stokes equation}
 
 \begin{figure}
@@ -2803,12 +2816,14 @@ To interpolate only into the $x$ and $y$ velocity components of a Taylor--Hood b
   \qquad
   \includegraphics[height=0.3\textheight]{driven_cavity_result}
  \end{center}
- \caption{Driven cavity. Left: setting, right: simulation result.  The arrows show the {\em normalized} velocity.}
+ \caption{Driven cavity. Left: domain and boundary conditions;
+     right: simulation result.  The arrows show the {\em normalized} velocity.}
  \label{fig:driven_cavity}
 \end{figure}
 
 The Stokes equation models a viscous incompressible
-fluid in a $d$-dimensional domain $\Omega$.  There are two unknowns in this problem: a stationary
+fluid in a $d$-dimensional domain $\Omega$~\cite{braess:2013}.
+There are two unknowns in this problem: a stationary
 fluid velocity field $\mathbf{u} : \Omega \to \R^d$, and the fluid pressure $p : \Omega \to \R$.
 Together, they have to solve the boundary value problem
 \begin{alignat*}{2}
@@ -2825,10 +2840,10 @@ Introduce the spaces
 \begin{align*}
   \mathbf{H}^1_{\mathbf{g}}(\Omega)
       & \colonequals
-      \big\{ \mathbf{v} \in \mathbf{H}^1(\Omega) \; :\; \operatorname{tr}{\mathbf{v}} = \mathbf{g} \big\}, \\
+      \big\{ \mathbf{v} \in H^1(\Omega,\R^d) \; :\; \operatorname{tr}{\mathbf{v}} = \mathbf{g} \big\}, \\
  L_{2,0}(\Omega) & \colonequals  \Big\{ q \in L_2(\Omega) \; :\; \int_\Omega q\,dx = 0 \Big\},
 \end{align*}
-where $\mathbf{H}^1(\Omega) = (H^1(\Omega))^d$ and the bilinear forms
+and the bilinear forms
 \begin{equation*}
  a(\mathbf{u},\mathbf{v}) \colonequals \int_\Omega \nabla \mathbf{u} \nabla \mathbf{v} \,dx,
  \qquad \text{and} \qquad
@@ -2840,12 +2855,15 @@ Then the weak form of the Stokes equation is: Find $(\mathbf{u},p) \in \mathbf{H
  b(\mathbf{u},q)\qquad\qquad & = 0       &        & \text{for all $q \in L_{2,0}(\Omega)$}.
 \end{alignat*}
 If $\mathbf{g}$ is sufficiently smooth, this variational problem has a unique solution.
-The Taylor--Hood element is the standard way to discretize this saddle point problem~\cite{braess:2013}.
+The Taylor--Hood element is the standard way to discretize this saddle point problem~\cite{braess:2013},
+and will be used in the following implementation.
 
 \subsection{The driven-cavity benchmark}
 
 For our example we choose to simulate a two-dimensional driven cavity.  This is a standard benchmark
-for the Stokes problem in the literature.  Let $\Omega$ be the unit square $[0,1]^2$, and set the Dirichlet
+for the Stokes problem in the literature.
+\todosander{Quellenangabe?}
+Let $\Omega$ be the unit square $[0,1]^2$, and set the Dirichlet
 boundary conditions for the velocity $\mathbf{u}$ to
 \begin{equation*}
  \mathbf{u}(x)
@@ -2862,55 +2880,35 @@ The domain and boundary conditions are depicted in Figure~\ref{fig:driven_cavity
 The corresponding solution is shown on the right side of the same figure.  The velocity forms a vortex,
 while the pressure forms extrema in the two left corners.
 
-In the following discussion we always use the letter $d$ to denote the space dimension, even though it is
-known to be $d=2$ for our specific example.  This is to avoid confusion, because the number~2 also
-appears a few times because we have two types of unknowns.
-
-\subsection{Discretization}
-
-We discretize the domain using a structured axis-aligned grid with $4 \times 4$ uniform quadrilateral elements.
-On this grid, we use the Taylor--Hood element to discretize the weak saddle-point problem.  The nodal basis
-of the Taylor--Hood element has a natural tree structure as shown in Figure~\ref{fig:taylor_hood_basis_tree}.
-On each element, the \dunemodule{dune-functions} implementation provides a local numbering of all shape functions
-on this element.  This numbering uses a simple integer as index type, and is used to address the entries of the
-element stiffness matrix.
-
-Each global basis function additionally gets a global index used to address the entries of the global stiffness
-matrix.  In principle, \dunemodule{dune-functions} provides several types of multi-indices here.
-The possible indexing schemes for the Taylor--Hood basis function have been listed in
-Table~\ref{tab:th_indexing_variants}.
-Here we use the indexing scheme BL(BI) contained in the second column of this table.
-
 
 \subsection{Implementation}
 
-This chapter discusses an example implementation of the Stokes problem, using only \dunemodule{dune-functions}
-and no higher-level modules.  The example is contained in a single file, which comes as part of the \dunemodule{dune-functions}
-source tree, in \file{dune-functions/examples/stokes-taylorhood.cc}.  If you read this document in electronic form,
-the file can also be accessed by clicking on the icon in the margin.%
-%
-\marginpar{\attachfile[author=The dune-functions team,
-                       color = 1 0 0,
-                       mimetype=text/plain,
-                       description=Complete source code of the Stokes/Taylor-Hood example]
-                       {../../examples/stokes-taylorhood.cc}}
+The implementation consists of an assembler for the Stokes problem and a \cpp{main}
+method. Both will be discussed in the following.
 
 \subsubsection{The \texorpdfstring{\cpp{main}}{main} method}
 \label{sec:stokes_example_main}
 
-We begin discussing the example code by describing its \cpp{main} method.  This method begins by setting up MPI and the grid.
-We pick \cpp{YaspGrid} for the structured $4 \times 4$ quadrilateral grid.  Note that there is the line
+The \cpp{main} method sets up the algebraic Stokes problem, calls a linear solver,
+and write the result to a VTK file. It begins by setting up MPI and the grid.
+We choose to discretize the domain using a structured $4 \times 4$ quadrilateral
+grid, which we get by using the \cpp{YaspGrid} grid implementation from the
+\dunemodule{dune-grid} module.  Note that there is the line
 %
 \lstinputlisting[linerange={using_namespace_dune_begin-using_namespace_dune_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 at the top of the file, so this namespace is imported completely.  Additionally, everything in the \dunemodule{dune-functions}
-module is in the namespace \cpp{Functions}.  This namespace is not imported; instead, the prefix \cpp{Functions::} is always
+module is contained in the namespace \cpp{Functions}.  This namespace is not imported; instead, the prefix \cpp{Functions::} is always
 given explicitly.
 
 
 %
-\lstinputlisting[linerange={main_begin-grid_setup_end},
+\lstinputlisting[linerange={main_begin-mpi_setup_end},
+                 numbers=left]{../../examples/stokes-taylorhood.cc}
+%
+%
+\lstinputlisting[linerange={grid_setup_begin-grid_setup_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 The \cpp{gridView} object is the flat finite element grid that we will use for
@@ -2920,26 +2918,28 @@ On this grid view, we then set up the function space basis for the Taylor--Hood 
 \lstinputlisting[linerange={function_space_basis_begin-function_space_basis_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-For each element, the \cpp{taylorHoodBasis} object will give us the tree of shape functions, and the corresponding local and global numberings.
+This way of constructing a Taylor--Hood basis from instances of Lagrange bases
+has been discussed in Section~\ref{sec:composed_bases}.  The indexing strategies
+used here are \cpp{BlockedInterleaved} for the velocity subtree and \cpp{BlockedLexicographic}
+(the default) for the root.  This results in the indexing scheme spelled out in
+Column~2 of Table~\ref{tab:th_indexing_variants}.
 
 Before being able to assemble the stiffness matrix of the Stokes system we need to pick suitable data structures
 for the linear algebra.
-The implementation of the Taylor--Hood basis selected in Line~\ref{li:stokes_taylorhood_select_taylorhoodbasis} orders the
-velocity degrees of freedom before the pressure degrees of freedom.  Further, the velocity
-components are interleaved.  The indexing scheme results from grouping degrees of freedom at the
-tree root and grouping the two velocity components for each node. The resulting multi-indices
-have length~3 for velocity degrees of freedom and length~2 for pressure degrees of freedom,
-and are given in column two of Table~\ref{tab:th_indexing_variants}.
-Consequently, the appropriate vector type is a pair of vectors, where the first one
-has entries in $\mathbb{R}^2$ for the velocity and the second one has entries in $\mathbb{R}$
+These data structures should have a blocking structure that matches the multi-indices
+used by the Taylor--Hood basis we just constructed.  More concretely,
+the appropriate vector container will be a pair of vectors, where the first one
+has entries in $\mathbb{R}^d$ for the velocity and the second one has entries in $\mathbb{R}$
 for the pressure degrees of freedom.  Analogously, the matrix must consist of
 $2 \times 2$ large sparse matrices where
-the $(0,0)$-block has entries in $\mathbb{R}^{2\times 2}$,
-the $(0,1)$-block has entries in $\mathbb{R}^{2\times 1}$,
-the $(1,0)$-block has entries in $\mathbb{R}^{1\times 2}$,
-the $(1,1)$-block has entries in $\mathbb{R}$.
-The following code sets up vector and matrix types for this,
-using the nesting machinery from \dunemodule{dune-istl}.
+the $(0,0)$-block has entries in $\R^{d\times d}$,
+the $(0,1)$-block has entries in $\R^{d\times 1}$,
+the $(1,0)$-block has entries in $\R^{1\times d}$,
+and the $(1,1)$-block has entries in $\R$
+(as on the right side of Figure~\ref{fig:matrix_occupation_patterns}).
+The following code sets up such vector and matrix types for this.
+It uses the nesting machinery from \dunemodule{dune-istl},
+but data types from other linear algebra libraries could be used as well.
 %
 \lstinputlisting[linerange={linear_algebra_setup_begin-linear_algebra_setup_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}

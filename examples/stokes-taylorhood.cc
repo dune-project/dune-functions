@@ -287,15 +287,17 @@ int main (int argc, char *argv[]) try
 {
   // Set up MPI, if available
   MPIHelper::instance(argc, argv);
+  // { mpi_setup_end }
 
   ///////////////////////////////////
   //   Generate the grid
   ///////////////////////////////////
 
+  // { grid_setup_begin }
   const int dim = 2;
   using GridType = YaspGrid<dim>;
   FieldVector<double,dim> bbox = {1, 1};
-  std::array<int,dim> elements = {{4, 4}};
+  std::array<int,dim> elements = {4, 4};
   GridType grid(bbox,elements);
 
   using GridView = typename GridType::LeafGridView;
@@ -310,28 +312,28 @@ int main (int argc, char *argv[]) try
   // { function_space_basis_begin }
   using namespace Functions::BasisFactory;
 
-  static const std::size_t K = 1; // pressure order for Taylor-Hood
+  constexpr std::size_t p = 1; // pressure order for Taylor-Hood
 
   auto taylorHoodBasis = makeBasis(  /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
     gridView,
     composite(
       power<dim>(
-        lagrange<K+1>(),
+        lagrange<p+1>(),
         blockedInterleaved()),
-      lagrange<K>()
+      lagrange<p>()
     ));
   // { function_space_basis_end }
 #else
   using namespace Functions::BasisFactory;
 
-  static const std::size_t K = 1; // pressure order for Taylor-Hood
+  static const std::size_t p = 1; // pressure order for Taylor-Hood
   auto taylorHoodBasis = makeBasis(
     gridView,
     composite(
       power<dim>(
-        lagrange<K+1>(),
+        lagrange<p+1>(),
         flatInterleaved()),
-      lagrange<K>()
+      lagrange<p>()
     ));
 #endif
 
