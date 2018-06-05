@@ -68,7 +68,7 @@ int main (int argc, char* argv[])
   for(const auto& xi : x)
     for(const auto& xij : xi)
       test.require(std::abs(xij - 1.0) < 1e-10)
-        << "Coefficinet of interpolated 1-function does not match";
+        << "Coefficient of interpolated 1-function does not match";
 
   return test.exit();
 }
