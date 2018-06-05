@@ -18,6 +18,7 @@
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
+#include <dune/functions/backends/istlvectorbackend.hh>
 
 
 int main (int argc, char* argv[])
@@ -53,7 +54,6 @@ int main (int argc, char* argv[])
       );
 
   using Vector = std::vector<Dune::FieldVector<double,N>>;
-  using VectorBackend = Dune::Functions::HierarchicVectorWrapper<Vector, double>;
 
   Vector x;
 
@@ -63,7 +63,7 @@ int main (int argc, char* argv[])
     return y;
   };
 
-  Dune::Functions::interpolate(basis, VectorBackend(x), f);
+  Dune::Functions::interpolate(basis, x, f);
 
   for(const auto& xi : x)
     for(const auto& xij : xi)
