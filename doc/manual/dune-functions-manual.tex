@@ -2577,6 +2577,12 @@ like \cpp{std::array} and \cpp{std::vector}.
 \todosander{Den folgenden Textblock finde ich ziemlich kryptisch.  Ich vermute auch
 dass er an einer anderen Stelle besser aufgehoben wäre, aber ich weiß gerade
 nicht recht wo.}
+\todograeser{Meiner Meinung nach ist das genau der richtige Platz.
+Vielleicht hilft ein Beispiel, daß etwas anschaulicher zu machen.
+Andererseits bin ich mir nicht sicher, ob man wirklich die momentane
+\cpp{DefaultNodeToRangeMap} will oder lieber diese:
+\url{https://gitlab.dune-project.org/staging/dune-functions/issues/22}.
+Die wäre u.U. intuitiver und auch einfacher zu beschreiben.}
 
 Once coefficients have been associated to basis functions, it remains
 to map the components of the spanned product function space
@@ -2589,7 +2595,7 @@ For the latter, the function range type is assumed to provide
 an \cpp{operator[]}. If the tree contains a single leaf node,
 then range types without \cpp{operator[]} are also supported.
 While this behavior is customizable, we omit the customization
-interface from simplicity here.
+interface for simplicity here.
 
 
 \subsection{Interpreting coefficient vectors as finite element function}
