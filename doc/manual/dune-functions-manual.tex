@@ -1692,6 +1692,7 @@ but rather (a const reference to) the root node of the tree.  To navigate within
 this tree, any non-leaf node allows to access
 its children using one of the two methods
 \todosander{Für Leafs muss das noch implementiert werden!}
+\todograeser{Ist doch nicht so einfach, weil die Knoten-Basisklassen kein CRTP benutzen.}
 \begin{lstlisting}[style=Interface]
 template<class... ChildIndices>
 auto child(ChildIndices... childIndices);
@@ -1700,7 +1701,11 @@ template<class ChildTreePath>
 auto child(ChildTreePath childTreePath);
 \end{lstlisting}
 The arguments to these methods are the paths from the current node to the desired
-descendants.  For the first method, the path is passed
+descendants.
+Notice that both methods only provide access to strict descendants,
+while accessing the node itself using an empty path is not supported.
+
+For the first method, the path is passed
 as a sequence of indices. Indices referring
 to children of a power node can be passed as integer values, typically of type \cpp{std::size_t}.
 Indices referring to children of a composite node
