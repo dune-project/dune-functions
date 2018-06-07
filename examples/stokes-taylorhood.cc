@@ -418,9 +418,9 @@ int main (int argc, char *argv[]) try
   };
 
   interpolate(Functions::subspaceBasis(taylorHoodBasis, _0),
-                        rhsBackend,
+                        rhs,
                         velocityDirichletData,
-                        isBoundaryBackend);
+                        isBoundary);
   // { interpolate_dirichlet_values_end }
 
   ////////////////////////////////////////////
@@ -485,11 +485,9 @@ int main (int argc, char *argv[]) try
   using PressureRange = double;
 
   auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>
-                             (Functions::subspaceBasis(taylorHoodBasis, _0),
-                              Functions::istlVectorBackend(x));
+                             (Functions::subspaceBasis(taylorHoodBasis, _0), x);
   auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>
-                             (Functions::subspaceBasis(taylorHoodBasis, _1),
-                              Functions::istlVectorBackend(x));
+                             (Functions::subspaceBasis(taylorHoodBasis, _1), x);
   // { make_result_functions_end }
 
   //////////////////////////////////////////////////////////////////////////////////////////////
