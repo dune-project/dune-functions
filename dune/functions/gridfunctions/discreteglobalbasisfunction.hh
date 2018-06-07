@@ -6,12 +6,15 @@
 #include <memory>
 
 #include <dune/common/shared_ptr.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/common/treedata.hh>
+#include <dune/functions/backends/concepts.hh>
+#include <dune/functions/backends/istlvectorbackend.hh>
 
 namespace Dune {
 namespace Functions {
@@ -274,12 +277,13 @@ public:
     bool bound_ = false;
   };
 
-  DiscreteGlobalBasisFunction(const Basis & basis, const TreePath& treePath, const V & coefficients, const NodeToRangeEntry& nodeToRangeEntry) :
+  template<class B_T, class V_T, class NTRE_T>
+  DiscreteGlobalBasisFunction(B_T && basis, const TreePath& treePath, V_T && coefficients, NTRE_T&& nodeToRangeEntry) :
     entitySet_(basis.gridView()),
-    basis_(stackobject_to_shared_ptr(basis)),
+    basis_(wrap_or_move(std::forward<B_T>(basis))),
     treePath_(treePath),
-    coefficients_(stackobject_to_shared_ptr(coefficients)),
-    nodeToRangeEntry_(stackobject_to_shared_ptr(nodeToRangeEntry))
+    coefficients_(wrap_or_move(std::forward<V_T>(coefficients))),
+    nodeToRangeEntry_(wrap_or_move(std::forward<NTRE_T>(nodeToRangeEntry)))
   {}
 
   DiscreteGlobalBasisFunction(std::shared_ptr<const Basis> basis, const TreePath& treePath, std::shared_ptr<const V> coefficients, std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry) :
@@ -379,12 +383,25 @@ template<typename R, typename B, typename TP, typename V>
 auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
 {
   using Basis = std::decay_t<B>;
-  using Vector = std::decay_t<V>;
   using NTREM = DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename Basis::LocalView::Tree, TP>>;
-  auto nodeToRangeEntryPtr = std::make_shared<NTREM>(makeDefaultNodeToRangeMap(basis, treePath));
-  auto basisPtr = Dune::wrap_or_move(std::forward<B>(basis));
-  auto vectorPtr = Dune::wrap_or_move(std::forward<V>(vector));
-  return DiscreteGlobalBasisFunction<Basis, TP, Vector, NTREM, R>(basisPtr, treePath, vectorPtr, nodeToRangeEntryPtr);
+
+  // Small helper functions to wrap vectors using istlVectorBackend
+  // if they do not already satisfy the VectorBackend interface.
+  auto toConstVectorBackend = [&](auto&& v) -> decltype(auto) {
+    return Dune::Hybrid::ifElse(models<Concept::ConstVectorBackend<Basis>, decltype(v)>(),
+    [&](auto id) -> decltype(auto) {
+      return std::forward<decltype(v)>(v);
+    }, [&](auto id) -> decltype(auto) {
+      return istlVectorBackend(v);
+    });
+  };
+
+  using Vector = std::decay_t<decltype(toConstVectorBackend(std::forward<V>(vector)))>;
+  return DiscreteGlobalBasisFunction<Basis, TP, Vector, NTREM, R>(
+      std::forward<B>(basis),
+      treePath,
+      toConstVectorBackend(std::forward<V>(vector)),
+      makeDefaultNodeToRangeMap(basis, treePath));
 }
 
 

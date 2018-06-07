@@ -8,6 +8,7 @@
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/bitsetvector.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/childextraction.hh>
 
