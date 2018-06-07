@@ -2628,7 +2628,6 @@ container and tries to wrap it with an \cpp{ISTLVectorBackend}.
 That way, \cpp{makeDiscreteGlobalBasisFunction} can be called with \dunemodule{dune-istl}
 containers directly, but all others have to be wrapped in an approprate backend
 explicitly.
-\todograeser{Implement auto-wrapping into \cpp{ISTLVectorBackend} for \cpp{DiscreteGlobalBasisFunction}.}
 
 To show how this works in an example, we construct yet another instance of the
 Taylor--Hood basis
@@ -3048,6 +3047,8 @@ directly for the matrix data type of the Stokes problem.
 %
 Notice that the outer indices for the \cpp{MultiTypeBlockMatrix} have to be
 encoded statically, because different matrix entries have different types.
+\todograeser{Wenn wir \cpp{matrixEntry} hier wirklich beschreiben, würde ich mich als Leser
+fragen, was die zusaätzlichen \cpp{[0]} Aufrufe sollen.}
 
 Finally, we can solve the linear system.
 Dedicated Stokes solvers frequently operate on some sort of Schur complement,
