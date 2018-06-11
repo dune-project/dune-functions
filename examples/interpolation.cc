@@ -51,7 +51,7 @@ int main (int argc, char *argv[])
   // { definition_f1_end }
 
   // { definition_p2basis_begin }
-  Functions::PQkNodalBasis<GridView,2> p2basis(gridView);
+  Functions::LagrangeBasis<GridView,2> p2basis(gridView);
   // { definition_p2basis_end }
 
   // { definition_x1_begin }
