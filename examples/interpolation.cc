@@ -6,6 +6,7 @@
 
 #include <dune/common/function.hh>
 #include <dune/common/bitsetvector.hh>
+#include <dune/common/tuplevector.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -13,15 +14,19 @@
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
 #include <dune/istl/bvector.hh>
+#include <dune/istl/multitypeblockvector.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/taylorhoodbasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
+#include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 using namespace Dune;
+
 
 int main (int argc, char *argv[])
 {
@@ -31,7 +36,7 @@ int main (int argc, char *argv[])
   // make grid
   const int dim = 2;
   FieldVector<double,dim> L(1.0);
-  std::array<int,dim> N = {1,1};
+  std::array<int,dim> N = {{1,1}};
   std::bitset<dim> periodic(false);
   YaspGrid<2> grid(L,N);
   using GridView = YaspGrid<2>::LeafGridView;
@@ -45,70 +50,65 @@ int main (int argc, char *argv[])
   };
   // { definition_f1_end }
 
-  // { definition_basis1_begin }
-  Functions::PQkNodalBasis<GridView,2> basis1(gridView);
-  // { definition_basis1_end }
+  // { definition_p2basis_begin }
+  Functions::PQkNodalBasis<GridView,2> p2basis(gridView);
+  // { definition_p2basis_end }
 
   // { definition_x1_begin }
   std::vector<double> x1;
   // { definition_x1_end }
 
   // { interpolation1_begin }
-  interpolate(basis1, x1, f1);
+  interpolate(p2basis, x1, f1);
   // { interpolation1_end }
 
   // Interpolate a vector-valued function using a vector-valued basis
-  // { interpolation2_begin }
-  auto f2 = [](const FieldVector<double,2>& x)
-  {
-    return x;
-  };
-
-  //Functions::PQkNodalBasis<GridView,2> basis2(gridView);
+  // { taylorhood_basis_begin }
   using namespace Functions::BasisBuilder;
 
-  auto basis2 = makeBasis(
+  auto taylorHoodBasis = makeBasis(
     gridView,
+    composite(
       power<dim>(
-        pq<2>()
-      )
-  );
+        lagrange<2>(),
+        flatLexicographic()),
+      lagrange<1>(),
+      flatLexicographic()
+    ));
+  // { taylorhood_basis_end }
 
-  BlockVector<FieldVector<double,2> > x2;
-  using VectorBackend = Functions::HierarchicVectorWrapper<BlockVector<FieldVector<double,2> >, double>;
+  // { taylorhood_vector_begin }
+  BlockVector<FieldVector<double,1>> x2;
+  // { taylorhood_vector_end }
 
-  interpolate(basis2, VectorBackend(x2), f2);
-  // { interpolation2_end }
 
-  // Interpolate a vector-valued function using a scalar basis
-  // { interpolation3_begin }
-  auto f3 = [](const FieldVector<double,dim>& x) { return x; };
+  // { taylorhood_pressure_begin }
+  using namespace Indices;
+  interpolate(subspaceBasis(taylorHoodBasis, _1), x2, f1);
+  // { taylorhood_pressure_end }
 
-  Functions::PQkNodalBasis<GridView,2> basis3(gridView);
-  BlockVector<FieldVector<double,3> > x3;
-  interpolate(basis3, x3, f3);
-  // { interpolation3_end }
+  // { taylorhood_velocity_begin }
+  auto f2 = [](const FieldVector<double,2>& x) {
+    return x;
+  };
+  interpolate(subspaceBasis(taylorHoodBasis, _0), x2, f2);
+  // { taylorhood_velocity_end }
 
-  // { interpolation4_begin }
-  // **********************************************
-  //  FEHLT NOCH!
-  // **********************************************
-  // { interpolation4_end }
+  // { setup_mask_begin }
+  BlockVector<FieldVector<char,1>> isBoundary;
+  auto isBoundaryBackend = Functions::istlVectorBackend(isBoundary);
+  isBoundaryBackend.resize(taylorHoodBasis);
+  isBoundary = false;
+  forEachBoundaryDOF(subspaceBasis(taylorHoodBasis, _0),
+    [&] (auto&& index) {
+      isBoundaryBackend[index] = true;
+    });
+  // { setup_mask_end }
 
-  // { interpolation5_begin }
-  // **********************************************
-  //  FEHLT NOCH!
-  // **********************************************
-#if 0
-  BitSetVector<3> boundary = ...;  // initialize somehow
+  // { masked_interpolation_begin }
+  interpolate(subspaceBasis(taylorHoodBasis, _1), x2, f2, isBoundary);
+  // { masked_interpolation_end }
 
-  for (size_t i=0; i<boundary.size(); i++)
-    if ( /* i is boundary */ )
-      boundary[i] = "011";   // works like std::bitset
-
-  interpolate...
-#endif
-  // { interpolation5_end }
 
   return 0;
 }

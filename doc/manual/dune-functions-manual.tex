@@ -2731,14 +2731,13 @@ For example, suppose you have the example function
  f_1 =  \exp(-\norm{x}^2)
 \end{equation*}
 implemented as
-\todograeser{Update example code}
 %
 \lstinputlisting[linerange=definition_f1_begin-definition_f1_end,
                  numbers=left]{../../examples/interpolation.cc}
 %
 Additionally, say you have a scalar second-order Lagrange space
 %
-\lstinputlisting[linerange=definition_basis1_begin-definition_basis1_end,
+\lstinputlisting[linerange=definition_p2basis_begin-definition_p2basis_end,
                  numbers=left]{../../examples/interpolation.cc}
 %
 and an empty coefficient vector \cpp{x1}, not necessarily of correct size:
@@ -2753,13 +2752,38 @@ Then, the single line
 %
 will fill \cpp{x1} with the nodal values of the function \cpp{f1}.
 
-If the function and the basis are vector-valued, this interpolation works just as well, provided you use
-a matching coefficient vector
+This interpolation works equally well for nontrivial basis trees
+and subtrees obtained by the \cpp{subspaceBasis} function,
+provided that the coefficient vector matches the basis
+and that the function range can be mapped to the product space
+associated to the basis.
+Suppose you want to interpolate
+the velocity and pressure components for a Taylor--Hood basis
 %
-\lstinputlisting[linerange=interpolation2_begin-interpolation2_end,
+\lstinputlisting[linerange=taylorhood_basis_begin-taylorhood_basis_end,
                  numbers=left]{../../examples/interpolation.cc}
 %
-\todo[inline]{Kann ich auch mit einer kompletten Taylor--Hood-Basis interpolieren?}
+into a suitable coefficient vector
+%
+\lstinputlisting[linerange=taylorhood_vector_begin-taylorhood_vector_end,
+                 numbers=left]{../../examples/interpolation.cc}
+%
+Then interpolation of \cpp{f1} into the pressure components can simply
+be achieved using
+%
+\lstinputlisting[linerange=taylorhood_pressure_begin-taylorhood_pressure_end,
+                 numbers=left]{../../examples/interpolation.cc}
+%
+Similarly we can interpolate a vector-field \cpp{f2}
+into the non-trivial subtree representing the velocity using
+%
+\lstinputlisting[linerange=taylorhood_velocity_begin-taylorhood_velocity_end,
+                 numbers=left]{../../examples/interpolation.cc}
+%
+It is also possible to interpolate into the full \cpp{taylorHoodBasis}
+if the range type of the provided function has the same nesting structure
+as the basis.
+
 
 In some situations it is also desirable to interpolate only on a part of the domain.  Algebraically, the interpolation
 is performed as before, but only a subset of all coefficients are written.  The most frequent use-case is the interpolation
@@ -2786,16 +2810,15 @@ The class \cpp{BitSetVector<N>} (from the \dunemodule{dune-common} module) can b
 as a space-optimized alternative to \cpp{std::vector<std::bitset<N>>}.
 
 
-\todograeser{Update example code}
-For example, to interpolate the scalar example function $f_1$ from above only on the boundary degrees of the scalar basis
-\cpp{basis1}, write
+For example, to interpolate the \cpp{f2} only into the boundary velocity degrees of freedom
+you first have to setup a suitable bit-vector
 %
-\lstinputlisting[linerange=interpolation4_begin-interpolation4_end,
+\lstinputlisting[linerange=setup_mask_begin-setup_mask_end,
                  numbers=left]{../../examples/interpolation.cc}
 %
-To interpolate only into the $x$ and $y$ velocity components of a Taylor--Hood basis, write
+which then allows to write
 %
-\lstinputlisting[linerange=interpolation5_begin-interpolation5_end,
+\lstinputlisting[linerange=masked_interpolation_begin-masked_interpolation_end,
                  numbers=left]{../../examples/interpolation.cc}
 %
 
