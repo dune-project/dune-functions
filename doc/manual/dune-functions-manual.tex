@@ -971,7 +971,7 @@ multi-index digits.
     $\iota_i(\hat{\lambda})$ according to
     \begin{align}\label{eq:multiindex-split}
       \iota_i(\hat{\lambda}) = (i_0,I),
-    \end{align} 
+    \end{align}
     where $i_0 \in \mathbb{N}_0$ is the first digit.
     The index map $\iota:\Lambda \to \mathcal{N}$ is then given by
     \begin{align*}
@@ -2269,7 +2269,7 @@ Finally, the implementation can benefit from the explicit knowledge that
 all children are equal.
 For these reasons, \dunemodule{dune-functions}
 offers a second way to combine bases: The \cpp{PowerPreBasis} with a
-corresponding pre-basis-factory to be constructed with \cpp{BasisFactory::power()}. 
+corresponding pre-basis-factory to be constructed with \cpp{BasisFactory::power()}.
 The interface is again a single method
 \begin{lstlisting}[style=Interface]
 template<std::size_t k, class ChildPreBasisFactory>
@@ -2894,8 +2894,7 @@ and will be used in the following implementation.
 \subsection{The driven-cavity benchmark}
 
 For our example we choose to simulate a two-dimensional driven cavity.  This is a standard benchmark
-for the Stokes problem in the literature.
-\todosander{Quellenangabe?}
+for the Stokes problem in the literature \cite{schreiber1983driven}.
 Let $\Omega$ be the unit square $[0,1]^2$, and set the Dirichlet
 boundary conditions for the velocity $\mathbf{u}$ to
 \begin{equation*}
@@ -3340,4 +3339,3 @@ and add the resulting terms to the matrix.
 \bibliography{dune-functions-manual}
 
 \end{document}
-
