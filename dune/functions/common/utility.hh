@@ -7,7 +7,10 @@
 #include <utility>
 #include <type_traits>
 
+#include <dune/common/overloadset.hh>
 #include <dune/typetree/utility.hh>
+
+#include <dune/functions/common/functionconcepts.hh>
 
 namespace Dune {
 namespace Functions {
@@ -268,6 +271,67 @@ decltype(auto) applyPartial(F&& f, ArgTuple&& args, std::integer_sequence<I, i..
 {
   return f(std::get<i>(args)...);
 }
+
+
+
+/**
+ * \brief Create a predicate for checking validity of expressions
+ *
+ * \param f A function involving the expression to check.
+ *
+ * This returns a function object that allows to check if the
+ * expression encoded in f is valid for the given arguments.
+ * To be precise it checks if f can be called using the given arguments.
+ * This can be used inthe following way: To generate a check if the
+ * expression x(a,b) is valid for some a and b use:
+ *
+ \code{.cpp}
+ auto xIsValid = callableCheck([](auto&& a, auto&& b) -> void_t<decltype(x(a,b))> {});
+ if (xIsValid(a,b))
+   ...
+ \endcode
+ *
+ * Notice that the given function f is stored by value.
+ *
+ * \ingroup Utility
+ */
+template<class Expression>
+auto callableCheck(Expression f)
+{
+  return [f](auto&&... args){
+    return Functions::Concept::isCallable(f, std::forward<decltype(args)>(args)...);
+  };
+}
+
+
+
+/**
+ * \brief Negate given predicate
+ *
+ * \param f A predicate function to negate
+ *
+ * This returns a function havin the same parameters as
+ * f, but negating the result. Negation here means that
+ * std::true_type is converted to std::false_type are
+ * vice verse, while other return values are converted to
+ * bool values and then the negated value is returned as bool, too.
+ *
+ * Notice that the given function f is stored by value.
+ *
+ * \ingroup Utility
+ */
+template<class Check>
+auto negatePredicate(Check check)
+{
+  return [check](auto&&... args){
+    auto negate = overload(
+        [](std::true_type) { return std::false_type{};},
+        [](std::false_type) { return std::true_type{};},
+        [](bool v) { return not v;});
+    return negate(check(std::forward<decltype(args)>(args)...));
+  };
+}
+
 
 
 
