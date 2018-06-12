@@ -37,15 +37,27 @@ struct Callable
   );
 };
 
-/// Check if F models the Function concept with given signature \ingroup FunctionConcepts
+/**
+ * \brief Check if f is callable with given argument list
+ *
+ * \ingroup FunctionConcepts
+ * \ingroup Utility
+ */
 template<class F, class... Args>
-static constexpr bool isCallable()
+static constexpr auto isCallable()
 { return models<Concept::Callable<Args...>, F>(); }
 
-/// Check if f models the Function concept with given signature \ingroup FunctionConcepts
+/**
+ * \brief Check if f is callable with given argument list
+ *
+ * \ingroup FunctionConcepts
+ * \ingroup Utility
+ */
 template<class F, class... Args>
-static constexpr bool isCallable(F&& f, TypeList<Args...>)
-{ return models<Concept::Callable<Args...>, F>(); }
+static constexpr auto isCallable(F&& f, Args&&... args)
+{
+  return models<Concept::Callable<Args&&...>, F>();
+}
 
 
 
