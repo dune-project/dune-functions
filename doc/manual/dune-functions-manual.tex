@@ -3077,6 +3077,9 @@ encoded statically, because different matrix entries have different types.
 The additional \cpp{[0][0]} in Line~\ref{li:matrixentry_pressure_pressure} is necessary
 because the entries of the lower-right matrix diagonal block are of type \cpp{FieldMatrix<double,1,1>}
 (see Line~\ref{li:matrix_type_pressure_pressure}), and the \cpp{[0][0]} is needed to get the \cpp{double} from that.
+Similarly the entries of the $(0,1)$- and $(1,0)$-blocks of the matrix are
+interpreted as single-column and single-row matrix, respectively, such that
+corresponding \cpp{[0]} indices have to be inserted.
 
 Finally, we can solve the linear system.
 Dedicated Stokes solvers frequently operate on some sort of Schur complement,
