@@ -3063,8 +3063,8 @@ nested sparse matrix data types.
 Access to the matrix entries needs a matrix analogue to the vector backends---a translation
 layer that converts multi-indices to the correct sequence of instructions required to
 access the matrix data structure.  Such a backend is more challenging to write, as it
-requires handling two indices together.  At the time of writing \dunemodule{dune-functions}
-does not provide matrix backends.  Instead, the example code uses a simple helper method
+requires handling row and column indices at the same time.  At the time of writing \dunemodule{dune-functions}
+does not provide matrix backends.  Instead, the example code uses a small helper method
 \cpp{matrixEntry} that is defined in the example file itself.
 It is much simpler than a generic matrix backend, because it is written
 directly for the matrix data type of the Stokes problem.
@@ -3074,8 +3074,9 @@ directly for the matrix data type of the Stokes problem.
 %
 Notice that the outer indices for the \cpp{MultiTypeBlockMatrix} have to be
 encoded statically, because different matrix entries have different types.
-\todograeser{Wenn wir \cpp{matrixEntry} hier wirklich beschreiben, würde ich mich als Leser
-fragen, was die zusaätzlichen \cpp{[0]} Aufrufe sollen.}
+The additional \cpp{[0][0]} in Line~\ref{li:matrixentry_pressure_pressure} is necessary
+because the entries of the lower-right matrix diagonal block are of type \cpp{FieldMatrix<double,1,1>}
+(see Line~\ref{li:matrix_type_pressure_pressure}), and the \cpp{[0][0]} is needed to get the \cpp{double} from that.
 
 Finally, we can solve the linear system.
 Dedicated Stokes solvers frequently operate on some sort of Schur complement,
