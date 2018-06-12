@@ -7,6 +7,7 @@
 
 #include <dune/common/function.hh>
 #include <dune/common/bitsetvector.hh>
+#include <dune/common/indices.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -18,6 +19,8 @@
 #include <dune/istl/matrixindexset.hh>
 #include <dune/istl/solvers.hh>
 #include <dune/istl/preconditioners.hh>
+#include <dune/istl/multitypeblockmatrix.hh>
+#include <dune/istl/multitypeblockvector.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/taylorhoodbasis.hh>
@@ -26,9 +29,12 @@
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
+#include <dune/functions/functionspacebases/boundarydofs.hh>
 
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
+
+#define BLOCKEDBASIS 1
 
 // { using_namespace_dune_begin }
 using namespace Dune;
@@ -43,8 +49,8 @@ void getLocalMatrix(const LocalView& localView,
 {
   // Get the grid element from the local FE basis view
   // { local_assembler_get_element_information_begin }
-  typedef typename LocalView::Element Element;
-  const Element& element = localView.element();
+  using Element = typename LocalView::Element;
+  const Element element = localView.element();
 
   const int dim = Element::dimension;
   auto geometry = element.geometry();
@@ -53,12 +59,12 @@ void getLocalMatrix(const LocalView& localView,
   // Set all matrix entries to zero
   // { initialize_element_matrix_begin }
   elementMatrix.setSize(localView.size(), localView.size());
-  elementMatrix = 0;      // fills the entire matrix with zeroes
+  elementMatrix = 0;      // fills the entire matrix with zeros
   // { initialize_element_matrix_end }
 
   // Get set of shape functions for this element
   // { get_local_fe_begin }
-  using namespace Dune::TypeTree::Indices;
+  using namespace Indices;
   const auto& velocityLocalFiniteElement = localView.tree().child(_0,0).finiteElement();  /*@\label{li:stokes_taylorhood_get_velocity_lfe}@*/
   const auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();    /*@\label{li:stokes_taylorhood_get_pressure_lfe}@*/
   // { get_local_fe_end }
@@ -74,10 +80,10 @@ void getLocalMatrix(const LocalView& localView,
     // { begin_quad_loop_end }
     // { quad_loop_preamble_begin }
     // The transposed inverse Jacobian of the map from the reference element to the element
-    const auto jacobian = geometry.jacobianInverseTransposed(quadPoint.position());
+    const auto jacobianInverseTransposed = geometry.jacobianInverseTransposed(quadPoint.position());
 
     // The multiplicative factor in the integral transformation formula
-    const double integrationElement = geometry.integrationElement(quadPoint.position());
+    const auto integrationElement = geometry.integrationElement(quadPoint.position());
     // { quad_loop_preamble_end }
 
     ///////////////////////////////////////////////////////////////////////
@@ -87,12 +93,13 @@ void getLocalMatrix(const LocalView& localView,
     // The gradients of the shape functions on the reference element
     // { velocity_gradients_begin }
     std::vector<FieldMatrix<double,1,dim> > referenceGradients;
-    velocityLocalFiniteElement.localBasis().evaluateJacobian(quadPoint.position(), referenceGradients);
+    velocityLocalFiniteElement.localBasis().evaluateJacobian(quadPoint.position(),
+                                                             referenceGradients);
 
     // Compute the shape function gradients on the grid element
     std::vector<FieldVector<double,dim> > gradients(referenceGradients.size());
     for (size_t i=0; i<gradients.size(); i++)
-      jacobian.mv(referenceGradients[i][0], gradients[i]);
+      jacobianInverseTransposed.mv(referenceGradients[i][0], gradients[i]);
     // { velocity_gradients_end }
 
     // Compute the actual matrix entries
@@ -103,7 +110,8 @@ void getLocalMatrix(const LocalView& localView,
         {
           size_t row = localView.tree().child(_0,k).localIndex(i);                    /*@\label{li:stokes_taylorhood_compute_vv_element_matrix_row}@*/
           size_t col = localView.tree().child(_0,k).localIndex(j);                    /*@\label{li:stokes_taylorhood_compute_vv_element_matrix_column}@*/
-          elementMatrix[row][col] += ( gradients[i] * gradients[j] ) * quadPoint.weight() * integrationElement;  /*@\label{li:stokes_taylorhood_update_vv_element_matrix}@*/
+          elementMatrix[row][col] += ( gradients[i] * gradients[j] )
+                                     * quadPoint.weight() * integrationElement;  /*@\label{li:stokes_taylorhood_update_vv_element_matrix}@*/
         }
     // { velocity_velocity_coupling_end }
 
@@ -114,7 +122,8 @@ void getLocalMatrix(const LocalView& localView,
     // The values of the pressure shape functions
     // { pressure_values_begin }
     std::vector<FieldVector<double,1> > pressureValues;
-    pressureLocalFiniteElement.localBasis().evaluateFunction(quadPoint.position(), pressureValues);
+    pressureLocalFiniteElement.localBasis().evaluateFunction(quadPoint.position(),
+                                                             pressureValues);
     // { pressure_values_end }
 
     // Compute the actual matrix entries
@@ -126,8 +135,10 @@ void getLocalMatrix(const LocalView& localView,
           size_t vIndex = localView.tree().child(_0,k).localIndex(i);                      /*@\label{li:stokes_taylorhood_compute_vp_element_matrix_row}@*/
           size_t pIndex = localView.tree().child(_1).localIndex(j);                        /*@\label{li:stokes_taylorhood_compute_vp_element_matrix_column}@*/
 
-          elementMatrix[vIndex][pIndex] += gradients[i][k] * pressureValues[j] * quadPoint.weight() * integrationElement;  /*@\label{li:stokes_taylorhood_update_vp_element_matrix_a}@*/
-          elementMatrix[pIndex][vIndex] += gradients[i][k] * pressureValues[j] * quadPoint.weight() * integrationElement;  /*@\label{li:stokes_taylorhood_update_vp_element_matrix_b}@*/
+          elementMatrix[vIndex][pIndex] += gradients[i][k] * pressureValues[j]
+                                         * quadPoint.weight() * integrationElement;  /*@\label{li:stokes_taylorhood_update_vp_element_matrix_a}@*/
+          elementMatrix[pIndex][vIndex] += gradients[i][k] * pressureValues[j]
+                                         * quadPoint.weight() * integrationElement;  /*@\label{li:stokes_taylorhood_update_vp_element_matrix_b}@*/
         }
     // { velocity_pressure_coupling_end }
 
@@ -136,12 +147,15 @@ void getLocalMatrix(const LocalView& localView,
 }
 
 
-// Get the occupation pattern of the stiffness matrix
-template <class Basis>
-void getOccupationPattern(const Basis& basis,
-                          std::array<std::array<MatrixIndexSet,2>,2>& nb)
+// Set the occupation pattern of the stiffness matrix
+template <class Basis, class MatrixType>
+void setOccupationPattern(const Basis& basis, MatrixType& matrix)
 {
   enum {dim = Basis::GridView::dimension};
+
+  // MatrixIndexSets store the occupation pattern of a sparse matrix.
+  // They are not particularly efficient, but simple to use.
+  std::array<std::array<MatrixIndexSet, 2>, 2> nb;
 
   // Set sizes of the 2x2 submatrices
   for (size_t i=0; i<2; i++)
@@ -176,30 +190,58 @@ void getOccupationPattern(const Basis& basis,
 
   }
 
+  // Give the matrix the occupation pattern we want.
+  using namespace Indices;
+#if !BLOCKEDBASIS
+  matrix.setSize(2,2);
+#endif
+  nb[0][0].exportIdx(matrix[_0][_0]);
+  nb[0][1].exportIdx(matrix[_0][_1]);
+  nb[1][0].exportIdx(matrix[_1][_0]);
+  nb[1][1].exportIdx(matrix[_1][_1]);
 }
+
+
+#if BLOCKEDBASIS
+// { matrixentry_begin }
+template<class Matrix, class MultiIndex>
+decltype(auto) matrixEntry(Matrix& matrix, const MultiIndex& row, const MultiIndex& col)
+{
+  using namespace Indices;
+  if ((row[0]==0) and (col[0]==0))
+    return matrix[_0][_0][row[1]][col[1]][row[2]][col[2]];
+  if ((row[0]==0) and (col[0]==1))
+    return matrix[_0][_1][row[1]][col[1]][row[2]][0];
+  if ((row[0]==1) and (col[0]==0))
+    return matrix[_1][_0][row[1]][col[1]][0][col[2]];
+  return matrix[_1][_1][row[1]][col[1]][0][0];  /*@\label{li:matrixentry_pressure_pressure}@*/
+}
+// { matrixentry_end }
+#else
+template<class Matrix, class MultiIndex>
+decltype(auto) matrixEntry(Matrix& matrix, const MultiIndex& row, const MultiIndex& col)
+{
+  return matrix[row[0]][col[0]][row[1]][col[1]];
+  using namespace Functions::BasisFactory;
+
+  static const std::size_t K = 1; // pressure order for Taylor-Hood
+}
+#endif
 
 
 /** \brief Assemble the Laplace stiffness matrix on the given grid view */
 // { global_assembler_signature_begin }
-template <class Basis>
+template <class Basis, class MatrixType>
 void assembleStokesMatrix(const Basis& basis,
-                          Matrix<BCRSMatrix<FieldMatrix<double,1,1> > >& matrix)
+                          MatrixType& matrix)
 // { global_assembler_signature_end }
 {
-  // MatrixIndexSets store the occupation pattern of a sparse matrix.
-  // They are not particularly efficient, but simple to use.
   // { setup_matrix_pattern_begin }
-  std::array<std::array<MatrixIndexSet, 2>, 2> occupationPattern;
-  getOccupationPattern(basis, occupationPattern);
-
-  // ... and give it the occupation pattern we want.
-  matrix.setSize(2,2);
-  for (int i=0; i<2; i++)
-    for (int j=0; j<2; j++)
-      occupationPattern[i][j].exportIdx(matrix[i][j]);  /*@\label{li:stokes_taylorhood_setup_matrix_patterns}@*/
+  // Set matrix size and occupation pattern
+  setOccupationPattern(basis, matrix);
 
   // Set all entries to zero
-  matrix = 0;                           /*@\label{li:stokes_taylorhood_set_matrix_to_zero}@*/
+  matrix = 0;
   // { setup_matrix_pattern_end }
 
   // A view on the FE basis on a single element
@@ -218,7 +260,7 @@ void assembleStokesMatrix(const Basis& basis,
     // Now let's get the element stiffness matrix
     // A dense matrix is used for the element stiffness matrix
     // { setup_element_stiffness_begin }
-    Matrix<FieldMatrix<double,1,1> > elementMatrix;       /*@\label{li:stokes_taylorhood_select_element_matrix_type}@*/
+    Matrix<FieldMatrix<double,1,1> > elementMatrix;
     getLocalMatrix(localView, elementMatrix);
     // { setup_element_stiffness_end }
 
@@ -233,12 +275,10 @@ void assembleStokesMatrix(const Basis& basis,
       {
         // The global index of the j-th local degree of freedom of the element 'e'
         auto col = localView.index(j);                /*@\label{li:stokes_taylorhood_get_global_column_index}@*/
-        matrix[row[0]][col[0]][row[1]][col[1]] += elementMatrix[i][j];  /*@\label{li:stokes_taylorhood_scatter_matrix_indices}@*/
+        matrixEntry(matrix, row, col) += elementMatrix[i][j];  /*@\label{li:stokes_taylorhood_scatter_matrix_indices}@*/
       }
-
     }
     // { accumulate_global_matrix_end }
-
   }
 
 }
@@ -250,18 +290,20 @@ int main (int argc, char *argv[]) try
 {
   // Set up MPI, if available
   MPIHelper::instance(argc, argv);
+  // { mpi_setup_end }
 
   ///////////////////////////////////
   //   Generate the grid
   ///////////////////////////////////
 
+  // { grid_setup_begin }
   const int dim = 2;
-  typedef YaspGrid<dim> GridType;
+  using GridType = YaspGrid<dim>;
   FieldVector<double,dim> bbox = {1, 1};
-  std::array<int,dim> elements = {{4, 4}};
+  std::array<int,dim> elements = {4, 4};
   GridType grid(bbox,elements);
 
-  typedef GridType::LeafGridView GridView;
+  using GridView = typename GridType::LeafGridView;
   GridView gridView = grid.leafGridView();
   // { grid_setup_end }
 
@@ -269,34 +311,64 @@ int main (int argc, char *argv[]) try
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
+#if BLOCKEDBASIS
   // { function_space_basis_begin }
-//  typedef Functions::TaylorHoodBasis<GridView> TaylorHoodBasis;        /*@\label{li:stokes_taylorhood_select_taylorhoodbasis}@*/
-//  TaylorHoodBasis taylorHoodBasis(gridView);
-
   using namespace Functions::BasisFactory;
 
-  static const std::size_t K = 1; // pressure order for Taylor-Hood
+  constexpr std::size_t p = 1; // pressure order for Taylor-Hood
 
   auto taylorHoodBasis = makeBasis(
     gridView,
     composite(
       power<dim>(
-        lagrange<K+1>(),
-        flatInterleaved()),
-      lagrange<K>()
+        lagrange<p+1>(),
+        blockedInterleaved()),
+      lagrange<p>()
     ));
-
-
   // { function_space_basis_end }
+#else
+  using namespace Functions::BasisFactory;
+
+  static const std::size_t p = 1; // pressure order for Taylor-Hood
+  auto taylorHoodBasis = makeBasis(
+    gridView,
+    composite(
+      power<dim>(
+        lagrange<p+1>(),
+        flatInterleaved()),
+      lagrange<p>()
+    ));
+#endif
+
+
 
   /////////////////////////////////////////////////////////
   //   Stiffness matrix and right hand side vector
   /////////////////////////////////////////////////////////
 
+#if BLOCKEDBASIS
   // { linear_algebra_setup_begin }
-  typedef BlockVector<BlockVector<FieldVector<double,1> > > VectorType;
-  typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
+  using VelocityVector = BlockVector<FieldVector<double,dim>>;
+  using PressureVector = BlockVector<FieldVector<double,1>>;
+  using VectorType = MultiTypeBlockVector<VelocityVector, PressureVector>;
+
+  using Matrix00 = BCRSMatrix<FieldMatrix<double,dim,dim>>;
+  using Matrix01 = BCRSMatrix<FieldMatrix<double,dim,1>>;
+  using Matrix10 = BCRSMatrix<FieldMatrix<double,1,dim>>;
+  using Matrix11 = BCRSMatrix<FieldMatrix<double,1,1>>;   /*@\label{li:matrix_type_pressure_pressure}@*/
+  using MatrixRow0 = MultiTypeBlockVector<Matrix00, Matrix01>;
+  using MatrixRow1 = MultiTypeBlockVector<Matrix10, Matrix11>;
+  using MatrixType = MultiTypeBlockMatrix<MatrixRow0,MatrixRow1>;
   // { linear_algebra_setup_end }
+#else
+  using VectorType = BlockVector<BlockVector<FieldVector<double,1> > >;
+  using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
+  using MatrixType = Matrix<BCRSMatrix<FieldMatrix<double,1,1> > >;
+#endif
+
+  /////////////////////////////////////////////////////////
+  //  Assemble the system
+  /////////////////////////////////////////////////////////
 
   // { rhs_assembly_begin }
   VectorType rhs;
@@ -304,55 +376,51 @@ int main (int argc, char *argv[]) try
   auto rhsBackend = Dune::Functions::istlVectorBackend(rhs);
 
   rhsBackend.resize(taylorHoodBasis);
-
   rhs = 0;                                 /*@\label{li:stokes_taylorhood_set_rhs_to_zero}@*/
   // { rhs_assembly_end }
 
-  /////////////////////////////////////////////////////////
-  //  Assemble the system
-  /////////////////////////////////////////////////////////
   // { matrix_assembly_begin }
   MatrixType stiffnessMatrix;
   assembleStokesMatrix(taylorHoodBasis, stiffnessMatrix);   /*@\label{li:stokes_taylorhood_call_to_assemblestokesmatrix}@*/
   // { matrix_assembly_end }
 
-  // Set Dirichlet values
+  /////////////////////////////////////////////////////////
+  // Set Dirichlet values.
   // Only velocity components have Dirichlet boundary values
-  // { boundary_predicate_begin }
-  using Coordinate = GridView::Codim<0> ::Geometry::GlobalCoordinate;
+  /////////////////////////////////////////////////////////
 
-  auto boundaryIndicator = [&bbox](Coordinate x) {
-    bool isBoundary = false;
-    for (std::size_t j=0; j<x.size(); j++)
-      isBoundary |= x[j] < 1e-8 || x[j] > bbox[j] - 1e-8;
-    return isBoundary;
-  };
-  // { boundary_predicate_end }
-
-  // { interpolate_boundary_predicate_begin }
-  using namespace TypeTree::Indices;
-
-  using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
+  // { initialize_boundary_dofs_vector_begin }
+  using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
+  using PressureBitVector = BlockVector<FieldVector<char,1>>;
+  using BitVectorType = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
 
   BitVectorType isBoundary;
 
   auto isBoundaryBackend = Dune::Functions::istlVectorBackend(isBoundary);
+  isBoundaryBackend.resize(taylorHoodBasis);
+  isBoundary = false;
+  // { initialize_boundary_dofs_vector_end }
 
-  for(int i=0; i<dim; ++i)
-  {
-    auto velocityComponentSpace = Functions::subspaceBasis(taylorHoodBasis, _0, i);
-    interpolate(velocityComponentSpace, isBoundaryBackend, boundaryIndicator);
-  }
-  // { interpolate_boundary_predicate_end }
+  // { determine_boundary_dofs_begin }
+  using namespace Indices;
+  Dune::Functions::forEachBoundaryDOF(Functions::subspaceBasis(taylorHoodBasis, _0),
+                                      [&] (auto&& index)
+                                      {
+                                        isBoundaryBackend[index] = true;
+                                      });
+  // { determine_boundary_dofs_end }
 
   // { interpolate_dirichlet_values_begin }
-  typedef FieldVector<double,dim> VelocityRange;
-  auto&& velocityDirichletData = [](Coordinate x)->VelocityRange { return {0.0, double(x[0] < 1e-8)};};
+  using Coordinate = GridView::Codim<0> ::Geometry::GlobalCoordinate;
+  using VelocityRange = FieldVector<double,dim>;
+  auto&& velocityDirichletData = [](Coordinate x) {
+    return VelocityRange{0.0, double(x[0] < 1e-8)};
+  };
 
   interpolate(Functions::subspaceBasis(taylorHoodBasis, _0),
-                        rhsBackend,
+                        rhs,
                         velocityDirichletData,
-                        isBoundaryBackend);
+                        isBoundary);
   // { interpolate_dirichlet_values_end }
 
   ////////////////////////////////////////////
@@ -361,22 +429,22 @@ int main (int argc, char *argv[]) try
 
   // loop over the matrix rows
   // { set_dirichlet_matrix_begin }
-  for (size_t i=0; i<stiffnessMatrix[0][0].N(); i++)
+  auto localView = taylorHoodBasis.localView();
+  for(const auto& e : Dune::elements(taylorHoodBasis.gridView()))
   {
-    if (isBoundary[0][i])
+    localView.bind(e);
+    for (size_t i=0; i<localView.size(); ++i)
     {
-      // Upper left matrix block
-      auto cIt    = stiffnessMatrix[0][0][i].begin();
-      auto cEndIt = stiffnessMatrix[0][0][i].end();
-      // loop over nonzero matrix entries in current row
-      for (; cIt!=cEndIt; ++cIt)
-        *cIt = (i==cIt.index()) ? 1 : 0;
-
-      // Upper right matrix block
-      for(auto&& entry: stiffnessMatrix[0][1][i])
-        entry = 0.0;
+      auto row = localView.index(i);
+      // If row corresponds to a boundary entry, modify
+      // it to be an identity matrix row
+      if (isBoundaryBackend[row])
+        for (size_t j=0; j<localView.size(); ++j)
+        {
+          auto col = localView.index(j);
+          matrixEntry(stiffnessMatrix, row, col) = (i==j) ? 1 : 0;
+        }
     }
-
   }
   // { set_dirichlet_matrix_end }
 
@@ -412,24 +480,28 @@ int main (int argc, char *argv[]) try
   //  Make a discrete function from the FE basis and the coefficient vector
   ////////////////////////////////////////////////////////////////////////////
 
-  // { stokes_output_begin }
+  // { make_result_functions_begin }
   using VelocityRange = FieldVector<double,dim>;
   using PressureRange = double;
 
-  auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>(Functions::subspaceBasis(taylorHoodBasis, _0),
-                                                                                    Dune::Functions::istlVectorBackend(x));
-  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(Functions::subspaceBasis(taylorHoodBasis, _1),
-                                                                                    Dune::Functions::istlVectorBackend(x));
+  auto velocityFunction = Functions::makeDiscreteGlobalBasisFunction<VelocityRange>
+                             (Functions::subspaceBasis(taylorHoodBasis, _0), x);
+  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>
+                             (Functions::subspaceBasis(taylorHoodBasis, _1), x);
+  // { make_result_functions_end }
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
   //  We need to subsample, because VTK cannot natively display real second-order functions
   //////////////////////////////////////////////////////////////////////////////////////////////
+  // { vtk_output_begin }
   SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(2));
-  vtkWriter.addVertexData(velocityFunction, VTK::FieldInfo("velocity", VTK::FieldInfo::Type::vector, dim));
-  vtkWriter.addVertexData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
+  vtkWriter.addVertexData(velocityFunction,
+                          VTK::FieldInfo("velocity", VTK::FieldInfo::Type::vector, dim));
+  vtkWriter.addVertexData(pressureFunction,
+                          VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.write("stokes-taylorhood-result");
-  // { stokes_output_end }
+  // { vtk_output_end }
 
  }
 // Error handling

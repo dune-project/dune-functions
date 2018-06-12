@@ -5,10 +5,7 @@ set(SOURCES
 set(IMAGES
   gfx/driven_cavity.pdf
   gfx/driven_cavity_result.png
-  gfx/taylor_hood_tree.pdf
   gfx/febasis_interface_schematic.pdf
-  gfx/taylor-hood-matrix-interleaved.pdf
-  gfx/taylor-hood-matrix-lexicographic.pdf
 )
 
 if(LATEX_USABLE)
