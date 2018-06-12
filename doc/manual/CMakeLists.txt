@@ -6,8 +6,6 @@ set(IMAGES
   gfx/driven_cavity.pdf
   gfx/driven_cavity_result.png
   gfx/febasis_interface_schematic.pdf
-  gfx/taylor-hood-matrix-interleaved.pdf
-  gfx/taylor-hood-matrix-lexicographic.pdf
 )
 
 if(LATEX_USABLE)
