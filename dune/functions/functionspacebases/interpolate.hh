@@ -119,7 +119,7 @@ public:
     std::size_t j=0;
     auto localFj = [&](const LocalDomain& x){
       const auto& y = localF_(x);
-      return flatVectorView(nodeToRangeEntry_(node, y))[j];
+      return flatVectorView(nodeToRangeEntry_(node, treePath, y))[j];
     };
 
     using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<FiniteElementRange(LocalDomain), decltype(localFj), FunctionBaseClass>;

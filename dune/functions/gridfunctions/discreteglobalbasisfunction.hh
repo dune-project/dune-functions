@@ -126,7 +126,7 @@ public:
         localBasis.evaluateFunction(x_, shapeFunctionValues);
 
         // Get range entry associated to this node
-        auto re = flatVectorView(nodeToRangeEntry_(node, y_));
+        auto re = flatVectorView(nodeToRangeEntry_(node, treePath, y_));
 
 
         for (size_type i = 0; i < localBasis.size(); ++i)
