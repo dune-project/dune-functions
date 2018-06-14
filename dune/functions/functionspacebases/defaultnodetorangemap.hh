@@ -80,19 +80,16 @@ struct DefaultNodeToRangeMap
     TypeTree::applyToTree(tree, Visitor(indices_));
   }
 
-  template<class Node, class Range,
-    typename std::enable_if<
-      models<Concept::HasIndexAccess, Range, decltype(std::declval<Node>().treeIndex())>() and not Tree::isLeaf, int>::type = 0>
-  auto operator()(const Node& node, Range&& y) const
-    -> decltype(y[0])
+  template<class Node, class TreePath, class Range,
+    std::enable_if_t<models<Concept::HasIndexAccess, Range, decltype(std::declval<Node>().treeIndex())>() and not Tree::isLeaf, int> = 0>
+  decltype(auto) operator()(const Node& node, const TreePath& treePath, Range&& y) const
   {
     return y[indices_[node.treeIndex()]];
   }
 
-  template<class Node, class Range,
-    typename std::enable_if< not models<Concept::HasIndexAccess, Range, decltype(std::declval<Node>().treeIndex())>() or Tree::isLeaf, int>::type = 0>
-  auto operator()(const Node& node, Range&& y) const
-    -> decltype(std::forward<Range>(y))
+  template<class Node, class TreePath, class Range,
+    std::enable_if_t< not models<Concept::HasIndexAccess, Range, decltype(std::declval<Node>().treeIndex())>() or Tree::isLeaf, int> = 0>
+  decltype(auto) operator()(const Node& node, const TreePath& treePath, Range&& y) const
   {
     return std::forward<Range>(y);
   }
