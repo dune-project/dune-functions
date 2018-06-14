@@ -167,9 +167,9 @@ namespace Imp {
       return {index_};
     }
 
-    static std::size_t size()
+    static constexpr std::size_t size()
     {
-      auto fullSize = Hybrid::size(std::declval<Index>());
+      auto fullSize = decltype(Hybrid::size(std::declval<Index>()))::value;
       if (offset < fullSize)
         return fullSize - offset;
       else
@@ -310,10 +310,10 @@ namespace Imp {
     return Hybrid::ifElse(isExhausted, [&](auto id) -> decltype(auto) {
       return std::forward<C>(c);
     }, [&](auto id) -> decltype(auto) {
-      auto head = multiIndex[0];
+      auto head = multiIndex[Dune::Indices::_0];
       auto tail = multiIndex.pop();
 
-      return Imp::resolveStaticMultiIndex(c[head], tail);
+      return Imp::resolveStaticMultiIndex(id(c)[head], tail);
     });
   }
 
@@ -387,7 +387,7 @@ constexpr decltype(auto) resolveDynamicMultiIndex(C&& c, const MultiIndex& multi
  * \param c Container to access
  * \param index Multi-index
  */
-template<class C, class MultiIndex, class IsFinal>
+template<class C, class MultiIndex>
 constexpr decltype(auto) resolveStaticMultiIndex(C&& c, const MultiIndex& multiIndex)
 {
   return Imp::resolveStaticMultiIndex(std::forward<C>(c), Imp::shiftedStaticMultiIndex<0>(multiIndex));
