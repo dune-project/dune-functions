@@ -83,55 +83,6 @@ class ISTLVectorBackend
 
 
 
-  // The method resolveMultiIndex() returns the entry of c
-  // obtained by repeatedly calling [i_k] with all digits i_k
-  // of the given multi-index i=(i_0, ..., i_m) starting from
-  // k0=nextPosition. More precisely, it returns
-  //
-  //   c[i_k0][i_(k0+1)][i_(k0+2)]...[i_m][0]...[0]
-  //
-  // If the entry obtained after resolving all multi-index
-  // digits is not scalar, i.e., if it still provides operator[]
-  // access, then additional [0]'s are appended. This is needed
-  // because Dune has no scalar type and Dune::FieldVector<K,1>
-  // is commonly used for both, single component vectors and scalars.
-
-  // This overload is used for dynamic vectors, i.e., for types
-  // providing dynamic operator[] access.
-  template<class C, class MultiIndex,
-    std::enable_if_t<isDynamicVector<C>::value, int> = 0>
-  static constexpr decltype(auto) resolveMultiIndex(C&& c, const MultiIndex& multiIndex, std::size_t nextPosition = 0)
-  {
-    std::size_t i = (nextPosition < multiIndex.size()) ? multiIndex[nextPosition] : 0;
-    return resolveMultiIndex(c[i], multiIndex, nextPosition+1);
-  }
-
-  // This overload is used for static vectors, i.e., for types
-  // providing (only) static operator[] access.
-  template<class C, class MultiIndex,
-    std::enable_if_t<isStaticVector<C>::value, int> = 0>
-  static constexpr decltype(auto) resolveMultiIndex(C&& c, const MultiIndex& multiIndex, std::size_t nextPosition = 0)
-  {
-    std::size_t i = (nextPosition < multiIndex.size()) ? multiIndex[nextPosition] : 0;
-    return hybridIndexAccess(c, i, [&] (auto&& ci) -> decltype(auto) {
-      // Here we'd simply like to call resolveMultiIndex(...)
-      // but gcc-5 does not find the name unless we explicitly
-      // qualify the call although it should compile because
-      // it's visible in our scope.
-      return ISTLVectorBackend<V>::resolveMultiIndex(std::forward<decltype(ci)>(ci), multiIndex, nextPosition+1);
-    });
-  }
-
-  // This overload is used for scalars, i.e., for types
-  // that do not provide operator[] access.
-  template<class C, class MultiIndex,
-    std::enable_if_t<isScalar<C>::value, int> = 0>
-  static constexpr decltype(auto) resolveMultiIndex(C&& c, const MultiIndex& multiIndex, std::size_t nextPosition = 0)
-  {
-    assert(nextPosition >= multiIndex.size());
-    return std::forward<C>(c);
-  }
-
   template<class... Args>
   static void forwardToResize(Args&&... args)
   {
@@ -240,13 +191,13 @@ public:
   template<class MultiIndex>
   decltype(auto) operator[](const MultiIndex& index) const
   {
-    return resolveMultiIndex(*vector_, index);
+    return resolveDynamicMultiIndex(*vector_, index);
   }
 
   template<class MultiIndex>
   decltype(auto) operator[](const MultiIndex& index)
   {
-    return resolveMultiIndex(*vector_, index);
+    return resolveDynamicMultiIndex(*vector_, index);
   }
 
   template<typename T>
