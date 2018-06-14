@@ -8,7 +8,7 @@
 #include <dune/common/shared_ptr.hh>
 #include <dune/common/hybridutilities.hh>
 
-#include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
+#include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
@@ -67,7 +67,7 @@ namespace Functions {
  * \tparam R Range type of this function
  */
 template<typename B, typename TP, typename V,
-  typename NTRE = DefaultNodeToRangeMap<typename std::decay<decltype(std::declval<B>().localView().tree().child(std::declval<TP>()))>::type>,
+  typename NTRE = HierarchicNodeToRangeMap,
   typename R = typename V::value_type>
 class DiscreteGlobalBasisFunction
 {
@@ -383,7 +383,7 @@ template<typename R, typename B, typename TP, typename V>
 auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
 {
   using Basis = std::decay_t<B>;
-  using NTREM = DefaultNodeToRangeMap<typename TypeTree::ChildForTreePath<typename Basis::LocalView::Tree, TP>>;
+  using NTREM = HierarchicNodeToRangeMap;
 
   // Small helper functions to wrap vectors using istlVectorBackend
   // if they do not already satisfy the VectorBackend interface.
@@ -401,7 +401,7 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
       std::forward<B>(basis),
       treePath,
       toConstVectorBackend(std::forward<V>(vector)),
-      makeDefaultNodeToRangeMap(basis, treePath));
+      HierarchicNodeToRangeMap());
 }
 
 
