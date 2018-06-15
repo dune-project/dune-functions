@@ -22,7 +22,7 @@
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/sizeinfo.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>
-#include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
+#include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
 
 #include <dune/typetree/traversal.hh>
 #include <dune/typetree/visitor.hh>
@@ -247,7 +247,7 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
 template <class B, class... TreeIndices, class C, class F, class BV>
 void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f, const BV& bitVector)
 {
-  interpolateTreeSubset(basis, treePath, coeff, f, makeDefaultNodeToRangeMap(basis, treePath), bitVector);
+  interpolateTreeSubset(basis, treePath, coeff, f, HierarchicNodeToRangeMap(), bitVector);
 }
 
 
@@ -261,7 +261,7 @@ void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices.
 template <class B, class... TreeIndices, class C, class F>
 void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f)
 {
-  interpolateTreeSubset(basis, treePath, coeff, f, makeDefaultNodeToRangeMap(basis, treePath), Imp::AllTrueBitSetVector());
+  interpolateTreeSubset(basis, treePath, coeff, f, HierarchicNodeToRangeMap(), Imp::AllTrueBitSetVector());
 }
 
 
@@ -285,7 +285,7 @@ void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices.
 template <class B, class... TreeIndices, class C, class F, class BV>
 void interpolate(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f, const BV& bitVector)
 {
-  interpolateTreeSubset(basis, treePath, coeff, f, makeDefaultNodeToRangeMap(basis, treePath), bitVector);
+  interpolateTreeSubset(basis, treePath, coeff, f, HierarchicNodeToRangeMap(), bitVector);
 }
 
 namespace Imp {
@@ -325,7 +325,7 @@ template <class B, class C, class F, class BV,
 void interpolate(const B& basis, C&& coeff, const F& f, const BV& bitVector)
 {
   auto root = Dune::TypeTree::hybridTreePath();
-  interpolateTreeSubset(basis, root, coeff, f, makeDefaultNodeToRangeMap(basis, root), bitVector);
+  interpolateTreeSubset(basis, root, coeff, f, HierarchicNodeToRangeMap(), bitVector);
 }
 
 

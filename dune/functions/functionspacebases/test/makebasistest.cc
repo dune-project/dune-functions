@@ -58,8 +58,10 @@ int main (int argc, char* argv[])
   Vector x;
 
   auto f = [](const auto& x){
-    Dune::FieldVector<double,RangeDim> y;
-    y = 1.0;
+    std::array<std::array<Dune::FieldVector<double,2>, M>, N> y;
+    for(auto& yi : y)
+      for(auto& yij : yi)
+        yij = 1.0;
     return y;
   };
 
