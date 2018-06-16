@@ -359,7 +359,7 @@ reuse existing algorithms that expect to operate on those subtrees in more compl
 
 The product of finite-dimensional spaces naturally induces a corresponding operation on bases
 of such spaces.  We additionally introduce a generalized tensor product notation:
-Consider ranges $R_0,\dots,R_{m-1}$ of function spaces $R_0^\Omega,\dots,R_{m-1}^\Omega$
+Consider linear range spaces $R_0,\dots,R_{m-1}$ of function spaces $R_0^\Omega,\dots,R_{m-1}^\Omega$
 and the $i$-th canonical basis vector $\mathbf{e}_i$ in $\R^m$.
 Then
 \begin{align*}
@@ -395,7 +395,8 @@ is given by
     = \bigsqcup_{i=0}^{m-1} \Lambda_i
     \colonequals \bigcup_{i=0}^{m-1} \mathbf{e}_i \otimes \Lambda_i.
 \end{align}
-Note that the symbol $\sqcup$ used here
+Note $\mathbf{e}_i \otimes \Lambda_i$ is understood element-wise
+and that the 'tagged union' symbol $\sqcup$ used here
 is a simple short hand notation for \eqref{eq:basis_product}
 and not to be understood as an associative binary operation.
 Using this notation we have
@@ -527,18 +528,23 @@ function for the scalar $P_1$ function that determines the pressure.
     \label{fig:taylor_hood_basis_function_tree}
 \end{figure}
 
-It is evident that the complete set of these multi-indices can again be interpreted as a rooted tree.
-In this tree, the multi-indices correspond
-to the leaf nodes, and the multi-index digits labeling the edges are the
+It is evident that the complete set of these multi-indices can again be associated to a rooted tree.
+In this tree, the multi-indices correspond to the leaf nodes,
+their strict prefixes correspond to interior nodes,
+and the multi-index digits labeling the edges are the
 (zero-based) indices of the children within the ordered tree.  Prefixes can be
 interpreted as paths from the root to a given node.
 
 This latter fact can be seen as the defining property of index trees.  Indeed,
-sets of multi-indices form trees as long as they are consistent in the sense that they
+a set of multi-indices (together with all its strict prefixes)
+forms a tree as long as it is consistent in the sense that the multi-indices
 can be viewed as the paths to the leafs in an ordered tree.
 That is, the children of each node are enumerated using consecutive zero-based
 indices and paths to the leafs (i.e., the multi-indices) are built by concatenating
 those indices starting from the root and ending in a leaf.
+Since the full structure of this tree is encoded in the multi-indices associated
+to the leafs we will---in slight abuse of notation---denote the set of multi-indices
+itself a tree from now on.
 
 \begin{definition}
 \label{def:index_tree}
@@ -635,7 +641,7 @@ with basis functions
     \lambda_{(1,k)} = \mathbf{e}_1 \otimes \lambda^{P_1}_k.
 \end{equation*}
 Introducing the corresponding index map $\iota : \Lambda_{\text{TH}} \to \mathcal{N}$
-with $\iota(\Lambda_I)=I$ on the set $\Lambda_{\text{TH}}$ of all basis functions
+with $\iota(\lambda_I)=I$ on the set $\Lambda_{\text{TH}}$ of all basis functions
 we can write this in compact form as
 \begin{align*}
   (v_h,p_h) &= \sum_{\lambda \in \Lambda_{\text{TH}}} X_{\iota(\lambda)} \lambda
@@ -1397,7 +1403,10 @@ The design of the \dunemodule{dune-functions} interface for bases of function sp
 follows the ideas of the previous section. The main interface concept are global basis objects
 that represent trees of function space bases. These trees can be localized to individual elements
 of the grid.  Such a localization provides access to the (tree of) shape functions there,
-together with their three types of shape-function indices.
+together with the three shape-function index maps
+$\iota^{\text{leaf-local}}_{\hat{\Lambda}|_e}$,
+$\iota^{\text{leaf}\to\text{local}}_e$,
+$\iota^{\text{local}\to\text{global}}_e$.
 The structure of the interface is visualized in Figure~\ref{fig:febasis_interface_schematic}.
 
 \begin{figure}
@@ -1995,7 +2004,7 @@ auto operator[](std::size_t) const;
 %
 The \cpp{size()} method returns the number of digits of the multi-index,
 and \cpp{operator[](std::size_t)} allows to access
-each entry by its number. Since multi-indices are
+each entry by its position. Since multi-indices are
 typically not changed by user code, both methods are \cpp{const}.
 The type used to represent
 the individual digits of multi-indices can be selected when instantiating \cpp{GlobalBasis}
@@ -2317,7 +2326,7 @@ These ideas are reflected in the design of the \dunemodule{dune-functions} progr
 First of all, each of the bases of
 Section~\ref{subsec:available_bases} implements a numbering of its degrees of freedom,
 and generally these numberings cannot be changed.
-To select a degree of freedom numbering for a nontrivial basis,
+To select a degree of freedom numbering for a non-trivial basis,
 each call to \cpp{composite} or \cpp{power} can be augmented by an additional
 flag indicating an \cpp{IndexMergingStrategy}. The four implemented strategies are
 \begin{itemize}
@@ -2580,28 +2589,26 @@ object implements the \cpp{VectorBackend} or only the
 in their names, they actually also work well for containers from the C++ standard library
 like \cpp{std::array} and \cpp{std::vector}.
 
-\todosander{Den folgenden Textblock finde ich ziemlich kryptisch.  Ich vermute auch
-dass er an einer anderen Stelle besser aufgehoben wäre, aber ich weiß gerade
-nicht recht wo.}
-\todograeser{Meiner Meinung nach ist das genau der richtige Platz.
-Vielleicht hilft ein Beispiel, daß etwas anschaulicher zu machen.
-Andererseits bin ich mir nicht sicher, ob man wirklich die momentane
-\cpp{DefaultNodeToRangeMap} will oder lieber diese:
-\url{https://gitlab.dune-project.org/staging/dune-functions/issues/22}.
-Die wäre u.U. intuitiver und auch einfacher zu beschreiben.}
-
-Once coefficients have been associated to basis functions, it remains
-to map the components of the spanned product function space
-to components of a function range type. The default mapping implemented in
-\dunemodule{dune-functions} works as follows: First all leaf nodes
-in the function space tree are linearly enumerated using a depth-first
-traversal. Then the $i$-th leaf node with respect to this enumeration
-is associated to the $i$-th entry of the function range type.
-For the latter, the function range type is assumed to provide
-an \cpp{operator[]}. If the tree contains a single leaf node,
-then range types without \cpp{operator[]} are also supported.
-While this behavior is customizable, we omit the customization
-interface for simplicity here.
+Since a non-trivial product function space basis corresponds to functions with
+a non-scalar range, we additionally have to map the components
+of the spanned product function space to components of a function range type.
+If, for example, the functions from the power function space generated by the basis
+\begin{lstlisting}[style=Example]
+auto basis = makeBasis(gridView, power<dim>(lagrange<1>()));
+\end{lstlisting}
+should be interpreted as vector-fields, one would map the \cpp{dim}
+leaf nodes of this basis to the \cpp{dim} entries of a \cpp{FieldVector<double,dim>}.
+Whenever combining bases and range types \dunemodule{dune-function}
+uses a default mapping generalizing this idea to more complex nested bases:
+Assume that \cpp{y} is an object of the function range type.
+Then a leaf node with tree path \cpp{i0}, \dots, \cpp{in} is associated
+to the entry \cpp{y[i0]}\dots\cpp{[in]}.
+In the exceptional case that the range type does not provide an \cpp{operator[]}
+it is directly used for all leaf nodes in the ansatz space. The latter allows
+to interpolate a scalar function into all components of a basis at once.
+In fact users can provide a custom mapping to be used instead of this one.
+However, we will not discuss the corresponding interface and rely
+on the implicitly used default implementation in the following.
 
 
 \subsection{Interpreting coefficient vectors as finite element function}
@@ -2752,7 +2759,7 @@ Then, the single line
 %
 will fill \cpp{x1} with the nodal values of the function \cpp{f1}.
 
-This interpolation works equally well for nontrivial basis trees
+This interpolation works equally well for non-trivial basis trees
 and subtrees obtained by the \cpp{subspaceBasis} function,
 provided that the coefficient vector matches the basis
 and that the function range can be mapped to the product space
