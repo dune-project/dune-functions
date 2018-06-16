@@ -2317,7 +2317,7 @@ These ideas are reflected in the design of the \dunemodule{dune-functions} progr
 First of all, each of the bases of
 Section~\ref{subsec:available_bases} implements a numbering of its degrees of freedom,
 and generally these numberings cannot be changed.
-To select a degree of freedom numbering for a nontrivial basis,
+To select a degree of freedom numbering for a non-trivial basis,
 each call to \cpp{composite} or \cpp{power} can be augmented by an additional
 flag indicating an \cpp{IndexMergingStrategy}. The four implemented strategies are
 \begin{itemize}
@@ -2749,7 +2749,7 @@ Then, the single line
 %
 will fill \cpp{x1} with the nodal values of the function \cpp{f1}.
 
-This interpolation works equally well for nontrivial basis trees
+This interpolation works equally well for non-trivial basis trees
 and subtrees obtained by the \cpp{subspaceBasis} function,
 provided that the coefficient vector matches the basis
 and that the function range can be mapped to the product space
