@@ -3,8 +3,6 @@
 Any version of dune-functions is supposed to be compatible with the
 correponding version of the Dune core modules.
 
-## Master (will become release 2.7)
-
 ## Release 2.6
 
 - When using `DiscreteGlobalBasisFunction` and `interpolate` the
