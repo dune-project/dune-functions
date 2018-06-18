@@ -105,7 +105,7 @@ public:
 
     struct LocalEvaluateVisitor
       : public TypeTree::TreeVisitor
-      , public TypeTree::DynamicTraversal
+      , public TypeTree::StaticTraversal
     {
       LocalEvaluateVisitor(const LocalDomain& x, Range& y, const LocalView& localView, const Vector& coefficients, const NodeToRangeEntry& nodeToRangeEntry, ShapeFunctionValueContainer& shapeFunctionValueContainer):
         x_(x),
