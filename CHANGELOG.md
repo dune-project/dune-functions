@@ -5,6 +5,14 @@ correponding version of the Dune core modules.
 
 ## Master (will become release 2.7)
 
+## Release 2.6
+
+- When using `DiscreteGlobalBasisFunction` and `interpolate` the
+  function range is accessed hierarchically. I.e. a leaf node
+  with tree path i0,...,in is mapped to the range entry `r[i0]...[in]`.
+- If the vector passed to `DiscreteGlobalBasisFunction` or `interpolate()`
+  does not provide the `VectorBackend` interface, it is automatically
+  wrapped using `istlVectorBackend(vector)`.
 - The new method `istlVectorBackend(vector)` creates a `VectorBackend`
   suitable for being used as coefficient vector for `interpolate()`
   and `DiscreteGlobalBasisFunction`. The underlying `vector` can
@@ -25,9 +33,6 @@ correponding version of the Dune core modules.
 - The `BasisBuilder` namespace has been renamed to `BasisFactory`.
   The old name still exists and should work as before, but its use
   is discouraged.
-
-## Release 2.6
-
 - Added an implementation of a Rannacher-Turek basis
 - Add a set of unit tests for bases
 - Extend the documentation of these bases
