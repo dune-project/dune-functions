@@ -1,7 +1,7 @@
 # Dune module information file
 
 Module: dune-functions
-Version: 2.7-git
+Version: 2.6-git
 Maintainer: dune-functions@lists.dune-project.org
-Depends:  dune-geometry (>= 2.7) dune-localfunctions (>= 2.7) dune-grid (>= 2.7) dune-istl (>= 2.7) dune-typetree
+Depends:  dune-geometry (>= 2.6) dune-localfunctions (>= 2.6) dune-grid (>= 2.6) dune-istl (>= 2.6) dune-typetree
 Whitespace-Hook: Yes
