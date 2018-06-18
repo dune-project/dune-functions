@@ -1,4 +1,5 @@
 set(SOURCES
+  ../../examples/interpolation.cc
   ../../examples/stokes-taylorhood.cc
 )
 
