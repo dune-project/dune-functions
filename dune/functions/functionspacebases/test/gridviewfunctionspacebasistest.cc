@@ -123,7 +123,7 @@ void testScalarBasisConst(const Basis& feBasis,
   typedef typename Basis::MultiIndex MultiIndex;
 
   // And this type must be indexable
-  static_assert(IsIndexable<MultiIndex>(), "MultiIndex must support operator[]");
+  static_assert(is_indexable<MultiIndex>(), "MultiIndex must support operator[]");
 
   ///////////////////////////////////////////////////////////////////////////////////
   //  Check whether the global indices are in the correct range,
