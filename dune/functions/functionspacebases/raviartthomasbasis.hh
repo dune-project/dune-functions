@@ -94,13 +94,27 @@ namespace Impl {
   class RaviartThomasLocalFiniteElementMap
   {
     using D = typename GV::ctype;
+    constexpr static bool hasFixedElementType = Capabilities::hasSingleGeometryType<typename GV::Grid>::v;
+
     using CubeFiniteElement    = typename RaviartThomasCubeLocalInfo<dim, D, R, k>::FiniteElement;
     using SimplexFiniteElement = typename RaviartThomasSimplexLocalInfo<dim, D, R, k>::FiniteElement;
+    using CubeFiniteElementImp = typename std::conditional<hasFixedElementType,
+                                                           CubeFiniteElement,
+                                                           LocalFiniteElementVirtualImp<CubeFiniteElement> >::type;
+    using SimplexFiniteElementImp = typename std::conditional<hasFixedElementType,
+                                                              SimplexFiniteElement,
+                                                              LocalFiniteElementVirtualImp<SimplexFiniteElement> >::type;
 
   public:
 
     using T = LocalBasisTraits<D, dim, FieldVector<D,dim>, R, dim, FieldVector<R,dim>, FieldMatrix<D,dim,dim> >;
-    using FiniteElement = LocalFiniteElementVirtualInterface<T>;
+
+    constexpr static unsigned int  topologyId = Capabilities::hasSingleGeometryType<typename GV::Grid>::topologyId;  // meaningless if hasFixedElementType is false
+    constexpr static GeometryType type = GeometryType(topologyId, GV::dimension);
+
+    using FiniteElement = typename std::conditional<hasFixedElementType,
+                                           typename std::conditional<type.isCube(),CubeFiniteElement,SimplexFiniteElement>::type,
+                                           LocalFiniteElementVirtualInterface<T> >::type;
 
     RaviartThomasLocalFiniteElementMap(const GV& gv)
       : is_(&(gv.indexSet())), orient_(gv.size(0))
@@ -110,10 +124,10 @@ namespace Impl {
 
       // create all variants
       for (size_t i = 0; i < cubeVariant_.size(); i++)
-        cubeVariant_[i] = std::make_unique<LocalFiniteElementVirtualImp<CubeFiniteElement> >(CubeFiniteElement(i));
+        cubeVariant_[i] = std::make_unique<CubeFiniteElementImp>(CubeFiniteElement(i));
 
       for (size_t i = 0; i < simplexVariant_.size(); i++)
-        simplexVariant_[i] = std::make_unique<LocalFiniteElementVirtualImp<SimplexFiniteElement> >(SimplexFiniteElement(i));
+        simplexVariant_[i] = std::make_unique<SimplexFiniteElementImp>(SimplexFiniteElement(i));
 
       // compute orientation for all elements
       // loop once over the grid
@@ -130,8 +144,13 @@ namespace Impl {
       }
     }
 
-    //! \brief get local basis functions for entity
-    template<class EntityType>
+    /** \brief Get local basis functions for entity if the GeometryType is run-time information
+     *
+     * The AlwaysTrue class is needed because for SFINAE to work the SFINAE argument has to
+     * depend on the template argument.
+     */
+    template<class EntityType,
+             std::enable_if_t<!hasFixedElementType and AlwaysTrue<EntityType>::value,int> = 0>
     const FiniteElement& find(const EntityType& e) const
     {
       if (e.type().isCube())
@@ -140,9 +159,33 @@ namespace Impl {
         return *simplexVariant_[orient_[is_->index(e)]];
     }
 
+    /** \brief Get local basis functions for entity if the GeometryType is known to be a cube
+     *
+     * The AlwaysTrue class is needed because for SFINAE to work the SFINAE argument has to
+     * depend on the template argument.
+     */
+    template<class EntityType,
+             std::enable_if_t<hasFixedElementType and type.isCube() and AlwaysTrue<EntityType>::value,int> = 0>
+    const FiniteElement& find(const EntityType& e) const
+    {
+      return *cubeVariant_[orient_[is_->index(e)]];
+    }
+
+    /** \brief Get local basis functions for entity if the GeometryType is known to be a simplex
+     *
+     * The AlwaysTrue class is needed because for SFINAE to work the SFINAE argument has to
+     * depend on the template argument.
+     */
+    template<class EntityType,
+             std::enable_if_t<hasFixedElementType and type.isSimplex() and AlwaysTrue<EntityType>::value,int> = 0>
+    const FiniteElement& find(const EntityType& e) const
+    {
+      return *simplexVariant_[orient_[is_->index(e)]];
+    }
+
     private:
-      std::vector<std::unique_ptr<LocalFiniteElementVirtualImp<CubeFiniteElement> > > cubeVariant_;
-      std::vector<std::unique_ptr<LocalFiniteElementVirtualImp<SimplexFiniteElement> > > simplexVariant_;
+      std::vector<std::unique_ptr<CubeFiniteElementImp> > cubeVariant_;
+      std::vector<std::unique_ptr<SimplexFiniteElementImp> > simplexVariant_;
       const typename GV::IndexSet* is_;
       std::vector<unsigned char> orient_;
   };
