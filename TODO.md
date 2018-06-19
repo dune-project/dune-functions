@@ -8,24 +8,10 @@ or one more letter if needed.
 * OS: How do I specialize code for a particular basis?  For example, how can I write an
   'interpolate' method only for BSPlineBasis objects?
 
-* OS: Carsten has introduced various new names, for example 'pq<k>' to refer to a
-  PQkNodalBasis<k> when constructing a composite basis.  Can we find a sane naming
-  scheme for them?
-
-
 ## Development
 
 
 ## Function space basis interface
-
-* OS: The TaylorHoodIndexSet class currently contains two members
-
-    enum { multiIndexMaxSize = 2 };
-    size_type dimension() const;
-
-  which were never officially discussed.  Christian added them because
-  something like this was needed, but we may want to discuss these
-  methods at the next meeting.
 
 * Here is another point that needs future discussion:
   I just added the first implementation of a basis of a DG space.
