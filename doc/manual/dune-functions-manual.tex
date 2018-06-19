@@ -175,10 +175,10 @@ and solvers, and the corresponding discrete function spaces. The most prominent 
 \footnote{\url{https://dune-project.org/modules/dune-pdelab}}
 %
 and \dunemodule{dune-fem},%
-\footnote{\url{https://dune-project.org/modules/dune-fem/}}
+\footnote{\url{https://dune-project.org/modules/dune-fem}}
 %
 but smaller ones like \dunemodule{dune-fufem}%
-\footnote{\url{https://dune-project.org/modules/dune-fufem/}}
+\footnote{\url{https://dune-project.org/modules/dune-fufem}}
 %
 exist as well.  The functionality of these modules overlaps to a considerable extent, even though
 each such module has a different focus.
@@ -187,30 +187,30 @@ The \dunemodule{dune-functions}  module was written to partially overcome this f
 and to unify parts of the competing implementations.
 It picks a well-defined aspect of finite element assembly---finite element spaces and functions---and,
 in the \dune spirit, provides abstract interfaces that try to be both extremely flexibly
-and efficient.  It is hoped for, that other implementations of the same functionality
+and efficient.  The hope is that other implementations of the same functionality
 eventually replace their implementations by a dependence on \dunemodule{dune-functions}.
-Indeed, at least \dunemodule{dune-pdelab} and \dunemodule{dune-fufem} are already in the process
+Indeed, at the time of writing at least \dunemodule{dune-pdelab} and \dunemodule{dune-fufem} are in the process
 of migrating, and have stated their clear intention to complete this migration eventually.
 
-Of the two parts of \dunemodule{dune-functions} functionality, the API for discrete and
-closed-form functions has already been described in a separate paper~\cite{engwer_graeser_muething_sander:2015}.
+Of the two parts of \dunemodule{dune-functions} functionality, the APIs for discrete and
+closed-form functions have already been described in a separate paper~\cite{engwer_graeser_muething_sander:2015}.
 The present document focuses on spaces of discrete functions.  However,
 the central concept is not the function space itself, but rather the {\em basis} of the function space.
 This is because even though finite element spaces play a central role in theoretical considerations of
 the finite element method,
-actual computations use coefficient vectors, which are defined with respect to a particular basis.  Also,
+actual computations use coefficient vectors, which are defined with respect to particular bases.  Also,
 for various finite element spaces, more than one basis is used in practice.  For example,
 the space of second-order Lagrangian finite elements is used both with the nodal (Lagrange) basis~\cite{braess:2013},
 and with the
 hierarchical basis~\cite{bank:1996}.  Discontinuous Galerkin spaces can be described in terms of Lagrange bases,
-monomial bases, Legendre bases and more~\cite{hesthaven_warburton:2008}.
+monomial bases, Legendre bases, and more~\cite{hesthaven_warburton:2008}.
 It is therefore important to be able to distinguish these different
 representations of the same space in the application code.
 For these reasons, the main \dunemodule{dune-functions} interface represents a basis of a
 discrete function space, and not the space itself.
 
-Finite element function space bases frequently exhibit a fair amount of structure.  Vector-valued spaces can be
-written as products of scalar spaces, and the same holds for mixed finite elements.  Even more, such spaces
+Finite element function space bases frequently exhibit a fair amount of structure.  In particular, vector-valued
+and mixed finite element spaces can be written as products of simpler spaces. Even more, such spaces
 have a natural structure as a tree, with scalar-valued or otherwise irreducible spaces forming the leaves, and
 products forming the inner nodes. The \dunemodule{dune-functions} module
 allows to systematically construct new bases by multiplication of existing bases.
@@ -224,10 +224,11 @@ of the basis follows a natural indexing by multi-indices, which can be used to a
 vector and matrix data types, like the ones provided by \dunemodule{dune-istl}. Closer inspection
 reveals that these two possibilities are just two extreme cases of a wider scale of indexing rules.
 The \dunemodule{dune-functions} module therefore provides a systematic way to construct such
-rules.  While some of the resulting rules are somewhat contrived, many others really are useful
+rules.  While some of them are somewhat contrived, many others really are useful
 in applications.
 
-The \dunemodule{dune-functions} module is hosted on the \dune project homepage \url{www.dune-project.org}.
+This document describes Version~2.6 of the \dunemodule{dune-functions} module.
+The module is hosted on the \dune project homepage \url{www.dune-project.org}.
 Installation instructions and an up-to-date class documentation can be found there.
 
 \setcounter{tocdepth}{2}  % Show only sections and subsections, but no more
