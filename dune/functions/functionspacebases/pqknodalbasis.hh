@@ -33,10 +33,14 @@ namespace Functions {
  * - If k is 3, then the grid can be 3d *if* it is a simplex grid
  */
 template<typename GV, int k, class MI>
-using PQkPreBasis = LagrangePreBasis<GV, k, MI>;
+using PQkPreBasis
+  DUNE_DEPRECATED_MSG("PQkPreBasis is deprecated. Use LagrangePreBasis instead.")
+  = LagrangePreBasis<GV, k, MI>;
 
 template<typename GV, int k, typename TP>
-using PQkNode = LagrangeNode<GV, k, TP>;
+using PQkNode
+  DUNE_DEPRECATED_MSG("PQkNode is deprecated. Use LagrangeNode instead.")
+  = LagrangeNode<GV, k, TP>;
 
 
 
@@ -52,7 +56,8 @@ namespace BasisFactory {
  * \tparam k   The polynomial order of ansatz functions
  */
 template<std::size_t k>
-auto pq()
+auto DUNE_DEPRECATED_MSG("BasisFactory::pq is deprecated. Use BasisFactory::lagrange instead.")
+  pq()
 {
   return Imp::LagrangePreBasisFactory<k>();
 }
@@ -80,7 +85,9 @@ auto pq()
  * \tparam k The order of the basis
  */
 template<typename GV, int k>
-using PQkNodalBasis = DefaultGlobalBasis<LagrangePreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
+using PQkNodalBasis
+  DUNE_DEPRECATED_MSG("PQkNodalBasis is deprecated. Use LagrangeBasis instead.")
+  = DefaultGlobalBasis<LagrangePreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
 
 
 
