@@ -64,9 +64,9 @@ of the dune-website.
 There are two documents describing the concepts and usage of dune functions.
 The interface of function is described in the article
 
-  [C. Engwer, C. Gräser, S. Müthing, and O. Sander.
-  The interface for functions in the dune-functions module.
-  Archive of Numerical Software, 5(1):95--109, 2017.][functions paper]
+    C. Engwer, C. Gräser, S. Müthing, and O. Sander.
+    The interface for functions in the dune-functions module.
+    Archive of Numerical Software, 5(1):95--109, 2017.
 
 This is [freely available][functions paper] via the website of the journal.
 The interface of the function space bases is described in a manual paper
