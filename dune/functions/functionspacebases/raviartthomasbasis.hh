@@ -209,7 +209,7 @@ public:
     const static int dofsPerElement = (dim == 2) ? (type.isCube() ? k*(k+1)*dim : k*dim) : k*(k+1)*(k+1)*dim;
     constexpr int dofsPerFace    = (dim == 2) ? k+1 : 3*k+1;
 
-    dofsPerCodim_ = {dofsPerElement, dofsPerFace};
+    dofsPerCodim_ = {{dofsPerElement, dofsPerFace}};
   }
 
   void initializeIndices()

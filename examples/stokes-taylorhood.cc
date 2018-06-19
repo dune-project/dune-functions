@@ -300,7 +300,7 @@ int main (int argc, char *argv[]) try
   const int dim = 2;
   using GridType = YaspGrid<dim>;
   FieldVector<double,dim> bbox = {1, 1};
-  std::array<int,dim> elements = {4, 4};
+  std::array<int,dim> elements = {{4, 4}};
   GridType grid(bbox,elements);
 
   using GridView = typename GridType::LeafGridView;
