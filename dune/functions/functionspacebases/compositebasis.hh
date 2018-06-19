@@ -12,6 +12,7 @@
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
 #include <dune/common/hybridutilities.hh>
+#include <dune/common/tupleutility.hh>
 
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/utility.hh>
