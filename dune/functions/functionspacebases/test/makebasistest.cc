@@ -39,8 +39,6 @@ int main (int argc, char* argv[])
   const int N = 10;
   const int M = 10;
 
-  const int RangeDim = N*M*2;
-
   auto gridView = grid.leafGridView();
   auto basis = makeBasis(gridView,
       power<N>(
