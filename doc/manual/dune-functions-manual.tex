@@ -1062,59 +1062,6 @@ provides a way to use self-implemented custom rules.
 
 \bigskip
 
-To further illustrate the four index transformation strategies, we return to
-the Taylor--Hood example.
-While the indexing schemes proposed for this example so far where
-introduced in an ad-hoc way, we will now systematically apply
-the above given strategies.  Recall that the Taylor--Hood basis is denoted by
-\begin{align*}
- \Lambda_\text{TH}
-  = (\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}) \sqcup \Lambda_{P_1}.
-\end{align*}
-For the bases $\Lambda_{P_1}, \Lambda_{P_2}$
-of the elementary spaces $P_1,P_2$ we consider fixed given flat index maps
-\begin{align*}
-  \iota_{P_1}(\Lambda_{P_1}) &\to \mathbb{N}_0, &
-  \iota_{P_2}(\Lambda_{P_2}) &\to \mathbb{N}_0.
-\end{align*}
-These are typically constructed by enumerating the grid entities
-the basis functions are associated to.
-Then the interior product space basis
-\begin{align*}
-  \Lambda_V = \Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}
-\end{align*}
-together with the index map $\iota_{P_2}$ is a power node in the
-sense of Definition~\ref{def:power_node}, while the tree root
-\begin{align*}
- \Lambda_\text{TH}
-  = \Lambda_V \sqcup \Lambda_{P_1}
-\end{align*}
-is a composite node.
-The basis functions for the $k$-th component of the velocity
-are denoted by
-\begin{align*}
-  v_{x_k,i} = \mathbf{e}_0 \otimes (\mathbf{e}_k \otimes \lambda^{P_2}_i)
-\end{align*}
-where $i=0,\dots,n_2-1$ for $n_2=|\Lambda_{P_2}|= \operatorname{dim} P_2$
-whereas the basis functions for the pressure are denoted by
-\begin{align*}
-  p_{j} = \mathbf{e}_1 \otimes \lambda^{P_1}_j
-\end{align*}
-where $j=0,\dots,n_1-1$ for $n_1=|\Lambda_{P_1}|= \operatorname{dim} P_1$.
-
-As two of the above given strategies can be used
-for composite nodes, while all four can be applied to power nodes
-we obtain eight different index maps for the Taylor--Hood basis
-$\Lambda_{\text{TH}}$.
-They are listed in Table~\ref{tab:th_indexing_variants}, where the label $X(Y)$
-means that strategy $X$ is used for the outer product and strategy $Y$
-for the inner product. For $X$ and $Y$ we use the abbreviations BL
-(BlockedLexicographic), BI (BlockedInterleaved), FL (FlatLexicographic), and FI (FlatInterleaved).
-Notice that the index maps depicted in
-Figure~\ref{fig:taylor_hood_index_tree} and Figure~\ref{fig:taylor_hood_index_blocked_tree}
-are reproduced for the strategies
-BL(BL) and BL(BI), respectively.
-
 \begin{table}
 \footnotesize
 \begin{center}
@@ -1307,6 +1254,59 @@ BL(BL) and BL(BI), respectively.
 \caption{Different indexing strategies for the Taylor--Hood basis functions}
 \label{tab:th_indexing_variants}
 \end{table}
+
+To further illustrate the four index transformation strategies, we return to
+the Taylor--Hood example.
+While the indexing schemes proposed for this example so far where
+introduced in an ad-hoc way, we will now systematically apply
+the above given strategies.  Recall that the Taylor--Hood basis is denoted by
+\begin{align*}
+ \Lambda_\text{TH}
+  = (\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}) \sqcup \Lambda_{P_1}.
+\end{align*}
+For the bases $\Lambda_{P_1}, \Lambda_{P_2}$
+of the elementary spaces $P_1,P_2$ we consider fixed given flat index maps
+\begin{align*}
+  \iota_{P_1}(\Lambda_{P_1}) &\to \mathbb{N}_0, &
+  \iota_{P_2}(\Lambda_{P_2}) &\to \mathbb{N}_0.
+\end{align*}
+These are typically constructed by enumerating the grid entities
+the basis functions are associated to.
+Then the interior product space basis
+\begin{align*}
+  \Lambda_V = \Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}
+\end{align*}
+together with the index map $\iota_{P_2}$ is a power node in the
+sense of Definition~\ref{def:power_node}, while the tree root
+\begin{align*}
+ \Lambda_\text{TH}
+  = \Lambda_V \sqcup \Lambda_{P_1}
+\end{align*}
+is a composite node.
+The basis functions for the $k$-th component of the velocity
+are denoted by
+\begin{align*}
+  v_{x_k,i} = \mathbf{e}_0 \otimes (\mathbf{e}_k \otimes \lambda^{P_2}_i)
+\end{align*}
+where $i=0,\dots,n_2-1$ for $n_2=|\Lambda_{P_2}|= \operatorname{dim} P_2$
+whereas the basis functions for the pressure are denoted by
+\begin{align*}
+  p_{j} = \mathbf{e}_1 \otimes \lambda^{P_1}_j
+\end{align*}
+where $j=0,\dots,n_1-1$ for $n_1=|\Lambda_{P_1}|= \operatorname{dim} P_1$.
+
+As two of the above given strategies can be used
+for composite nodes, while all four can be applied to power nodes
+we obtain eight different index maps for the Taylor--Hood basis
+$\Lambda_{\text{TH}}$.
+They are listed in Table~\ref{tab:th_indexing_variants}, where the label $X(Y)$
+means that strategy $X$ is used for the outer product and strategy $Y$
+for the inner product. For $X$ and $Y$ we use the abbreviations BL
+(BlockedLexicographic), BI (BlockedInterleaved), FL (FlatLexicographic), and FI (FlatInterleaved).
+Notice that the index maps depicted in
+Figure~\ref{fig:taylor_hood_index_tree} and Figure~\ref{fig:taylor_hood_index_blocked_tree}
+are reproduced for the strategies
+BL(BL) and BL(BI), respectively.
 
 
 
