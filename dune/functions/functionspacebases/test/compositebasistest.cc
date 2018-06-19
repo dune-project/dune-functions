@@ -8,7 +8,7 @@
 
 #include <dune/grid/yaspgrid.hh>
 
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 
 using namespace Dune;
@@ -40,9 +40,9 @@ int main (int argc, char *argv[]) try
   auto basis DUNE_UNUSED = makeBasis(
     gridView,
     composite(
-      pq<1>(),
-      pq<1>(),
-      pq<1>()
+      lagrange<1>(),
+      lagrange<1>(),
+      lagrange<1>()
     ));
 
 }

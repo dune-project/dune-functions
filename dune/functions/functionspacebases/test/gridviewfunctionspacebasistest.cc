@@ -18,7 +18,7 @@
 #include <dune/localfunctions/test/test-localfe.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/functions/functionspacebases/bsplinebasis.hh>
 
@@ -268,24 +268,24 @@ void testOnStructuredGrid()
   typedef typename GridType::LeafGridView GridView;
   GridView gridView = grid.leafGridView();
 
-  PQkNodalBasis<GridView, 3> pq3Basis(gridView);
-  PQkNodalBasis<GridView, 4> pq4Basis(gridView);
-  PQkNodalBasis<GridView, 0> pq0Basis(gridView);
+  LagrangeBasis<GridView, 3> pq3Basis(gridView);
+  LagrangeBasis<GridView, 4> pq4Basis(gridView);
+  LagrangeBasis<GridView, 0> pq0Basis(gridView);
   LagrangeDGBasis<GridView, 1> lagrangeDG1Basis(gridView);
   LagrangeDGBasis<GridView, 2> lagrangeDG2Basis(gridView);
   LagrangeDGBasis<GridView, 3> lagrangeDG3Basis(gridView);
 
   grid.globalRefine(2);
 
-  // Test PQkNodalBasis for k==3
+  // Test LagrangeBasis for k==3
   if (dim<3) // Currently not implemented for dim >= 3
     testScalarBasis(pq3Basis, gridView, true);
 
-  // Test PQkNodalBasis for k==4
+  // Test LagrangeBasis for k==4
   if (dim<3) // Currently not implemented for dim >= 3
     testScalarBasis(pq4Basis, gridView, true);
 
-  // Test PQkNodalBasis for the corner case k == 0
+  // Test LagrangeBasis for the corner case k == 0
   testScalarBasis(pq0Basis, gridView, true);
 
   // Test LagrangeDGBasis for k==1
@@ -355,17 +355,17 @@ void testOnHybridGrid()
   // reference value is wrong.
   bool disableInterpolate = (dim==3);
 
-  // Test PQkNodalBasis for k==1
-  PQkNodalBasis<GridView, 1> pq1Basis(gridView);
+  // Test LagrangeBasis for k==1
+  LagrangeBasis<GridView, 1> pq1Basis(gridView);
   testScalarBasisConst(pq1Basis, true, disableInterpolate);
 
-  // Test PQkNodalBasis for k==3
-  PQkNodalBasis<GridView, 3> pq3Basis(gridView);
+  // Test LagrangeBasis for k==3
+  LagrangeBasis<GridView, 3> pq3Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
     testScalarBasisConst(pq3Basis, true, disableInterpolate);
 
-  // Test PQkNodalBasis for k==4
-  PQkNodalBasis<GridView, 4> pq4Basis(gridView);
+  // Test LagrangeBasis for k==4
+  LagrangeBasis<GridView, 4> pq4Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
     testScalarBasisConst(pq4Basis, true, disableInterpolate);
 

@@ -20,7 +20,7 @@
 #include <dune/istl/solvers.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/raviartthomasbasis.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
@@ -356,7 +356,7 @@ int main (int argc, char *argv[])
     gridView,
     composite(
       raviartThomas<k>(),
-      pq<k>()
+      lagrange<k>()
     ));
 
 

@@ -491,7 +491,7 @@ public:
 
 
 /**
- * \brief Create a pre-basis factory that can create a PQ_k pre-basis
+ * \brief Create a pre-basis factory that can create a  Lagrange pre-basis
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
