@@ -58,4 +58,4 @@ using LagrangeBasis = DefaultGlobalBasis<PQkPreBasis<GV, k, FlatMultiIndex<std::
 } // end namespace Dune
 
 
-#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_PQKNODALBASIS_HH
+#endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_LAGRANGEBASIS_HH
