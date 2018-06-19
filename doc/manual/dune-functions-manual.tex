@@ -175,10 +175,10 @@ and solvers, and the corresponding discrete function spaces. The most prominent 
 \footnote{\url{https://dune-project.org/modules/dune-pdelab}}
 %
 and \dunemodule{dune-fem},%
-\footnote{\url{https://dune-project.org/modules/dune-fem/}}
+\footnote{\url{https://dune-project.org/modules/dune-fem}}
 %
 but smaller ones like \dunemodule{dune-fufem}%
-\footnote{\url{https://dune-project.org/modules/dune-fufem/}}
+\footnote{\url{https://dune-project.org/modules/dune-fufem}}
 %
 exist as well.  The functionality of these modules overlaps to a considerable extent, even though
 each such module has a different focus.
@@ -187,30 +187,30 @@ The \dunemodule{dune-functions}  module was written to partially overcome this f
 and to unify parts of the competing implementations.
 It picks a well-defined aspect of finite element assembly---finite element spaces and functions---and,
 in the \dune spirit, provides abstract interfaces that try to be both extremely flexibly
-and efficient.  It is hoped for, that other implementations of the same functionality
+and efficient.  The hope is that other implementations of the same functionality
 eventually replace their implementations by a dependence on \dunemodule{dune-functions}.
-Indeed, at least \dunemodule{dune-pdelab} and \dunemodule{dune-fufem} are already in the process
+Indeed, at the time of writing at least \dunemodule{dune-pdelab} and \dunemodule{dune-fufem} are in the process
 of migrating, and have stated their clear intention to complete this migration eventually.
 
-Of the two parts of \dunemodule{dune-functions} functionality, the API for discrete and
-closed-form functions has already been described in a separate paper~\cite{engwer_graeser_muething_sander:2015}.
+Of the two parts of \dunemodule{dune-functions} functionality, the APIs for discrete and
+closed-form functions have already been described in a separate paper~\cite{engwer_graeser_muething_sander:2015}.
 The present document focuses on spaces of discrete functions.  However,
 the central concept is not the function space itself, but rather the {\em basis} of the function space.
 This is because even though finite element spaces play a central role in theoretical considerations of
 the finite element method,
-actual computations use coefficient vectors, which are defined with respect to a particular basis.  Also,
+actual computations use coefficient vectors, which are defined with respect to particular bases.  Also,
 for various finite element spaces, more than one basis is used in practice.  For example,
 the space of second-order Lagrangian finite elements is used both with the nodal (Lagrange) basis~\cite{braess:2013},
 and with the
 hierarchical basis~\cite{bank:1996}.  Discontinuous Galerkin spaces can be described in terms of Lagrange bases,
-monomial bases, Legendre bases and more~\cite{hesthaven_warburton:2008}.
+monomial bases, Legendre bases, and more~\cite{hesthaven_warburton:2008}.
 It is therefore important to be able to distinguish these different
 representations of the same space in the application code.
 For these reasons, the main \dunemodule{dune-functions} interface represents a basis of a
 discrete function space, and not the space itself.
 
-Finite element function space bases frequently exhibit a fair amount of structure.  Vector-valued spaces can be
-written as products of scalar spaces, and the same holds for mixed finite elements.  Even more, such spaces
+Finite element function space bases frequently exhibit a fair amount of structure.  In particular, vector-valued
+and mixed finite element spaces can be written as products of simpler spaces. Even more, such spaces
 have a natural structure as a tree, with scalar-valued or otherwise irreducible spaces forming the leaves, and
 products forming the inner nodes. The \dunemodule{dune-functions} module
 allows to systematically construct new bases by multiplication of existing bases.
@@ -224,11 +224,16 @@ of the basis follows a natural indexing by multi-indices, which can be used to a
 vector and matrix data types, like the ones provided by \dunemodule{dune-istl}. Closer inspection
 reveals that these two possibilities are just two extreme cases of a wider scale of indexing rules.
 The \dunemodule{dune-functions} module therefore provides a systematic way to construct such
-rules.  While some of the resulting rules are somewhat contrived, many others really are useful
+rules.  While some of them are somewhat contrived, many others really are useful
 in applications.
 
-The \dunemodule{dune-functions} module is hosted on the \dune project homepage \url{www.dune-project.org}.
+This document describes Version~2.6 of the \dunemodule{dune-functions} module.
+The module is hosted on the \dune project homepage \url{www.dune-project.org}.
 Installation instructions and an up-to-date class documentation can be found there.
+
+
+% Force a new page here to avoid spurious automatic newpage right after 'Contents'
+\newpage
 
 \setcounter{tocdepth}{2}  % Show only sections and subsections, but no more
 \tableofcontents
@@ -251,26 +256,28 @@ basis functions simply represents a contiguous, zero-starting set of natural num
 \subsection{Trees of function spaces}
 
 Throughout this paper we assume that we have a single fixed domain $\Omega$, and all function spaces
-that we consider are defined on this domain.  We are mainly thinking of spaces of functions that are
-piecewise polynomial with respect to a grid, but we do not actually require that yet.
+that we consider are defined on this domain.  The focus is on spaces of functions that are
+piecewise polynomial with respect to a grid, but that is not actually required yet.
 
-For a set $R$ we denote by $R^\Omega = \{f:\Omega \to R\}$
+For a set $R$ we denote by $R^\Omega \colonequals \{f:\Omega \to R\}$
 the set of all functions mapping from $\Omega$ to $R$. For domains $\Omega\subset \R^d$
-we denote by $P_k(\Omega) \subset \R^\Omega$ the space of all
+we write $P_k(\Omega) \subset \R^\Omega$ for the space of all
 scalar-valued continuous piecewise polynomials of degree at most $k$ on $\Omega$
 with respect to some given triangulation.
-If the domain $\Omega$ is fixed, we will simply write $P_k$.
+We will omit the domain if it can be infered from the context.
 
-Considering the different finite element spaces that are in use, there are some that we will
+Considering the different finite element spaces that appear in the literature, there are some that we will
 call \emph{irreducible}.  By this term we mean all bases of scalar-valued functions,
 but also others like the Raviart--Thomas basis that cannot easily be written as a combination
 of simpler bases.
-
 Many other finite element spaces arise naturally as a combination of simpler ones.
 There are primarily two ways how two vector spaces $V$ and $W$ can be combined
-to form a new one: Sums and products. While these are also called
+to form a new one: sums and products.%
+%
+\footnote{While these are also called
 internal and external sums, respectively, we stick to the terminology
 \emph{sum} and \emph{product} in the following.
+}
 
 For sums, both spaces need to
 have the same range space $R$, and thus both be subspaces of $R^\Omega$.
@@ -296,8 +303,7 @@ Then we define the product of $V$ and $W$ as
     \colonequals \big\{ (v,w) \st v \in V, \; w \in W \big\}.
 \end{align*}
 Functions from this space take values in $\R^{r_1} \times \R^{r_2} = \R^{r_1 + r_2}$.
-
-It should be noted that building the Cartesian product of
+It should be noted that the Cartesian product of
 vector spaces must not be confused with the tensor product of these spaces.
 Rather, the $k$-th power
 of a single space can be viewed as the tensor product of that space with $\R^k$, i.e,
@@ -310,7 +316,7 @@ of a single space can be viewed as the tensor product of that space with $\R^k$,
 The product operation allows to build vector-valued and mixed finite element spaces of arbitrary complexity.
 For example, the space of
 first-order Lagrangian finite elements with values in $\R^3$ can be seen as the product $P_1 \times P_1 \times P_1$.
-The simplest Taylor--Hood element is the product $P_2 \times P_2 \times P_2 \times P_1$
+The lowest-order Taylor--Hood element is the product $P_2 \times P_2 \times P_2 \times P_1$
 of $P_2 \times P_2 \times P_2$ for the velocities with $P_1$ for the pressure.
 More factor bases can be included easily, if necessary.  We call such products of
 spaces \emph{composite spaces}.
@@ -321,7 +327,7 @@ The associativity of the product allows to write the Taylor--Hood space
 as $(P_2 \times P_2 \times P_2) \times P_1$, which makes the semantic relationship clearer.
 Grouped expressions of this type are conveniently visualized as tree structures.  This
 suggests to interpret composite
-finite element spaces as tree structures.  In this structure, leaf nodes represent scalar or otherwise irreducible spaces,
+finite element spaces as tree structures.  In these structures, leaf nodes represent scalar or otherwise irreducible spaces,
 and inner nodes represent products of their children.  Subtrees then represent composite
 finite element spaces.  Figure~\ref{fig:taylor_hood_space_tree} shows the Tayor--Hood finite element
 space in such a tree representation. Note that in this document all trees are \emph{rooted} and \emph{ordered},
@@ -349,17 +355,18 @@ Based on this child ordering we associate to each child the corresponding zero-b
     \label{fig:taylor_hood_space_tree}
 \end{figure}
 
-While these inner tree nodes might initially appear like useless artifacts of the tree representation, they are often extremely useful
-because we can treat the subtrees rooted in those nodes as individual trees in their own right, which often makes it possible to
+While the inner tree nodes may initially appear like useless artifacts of the tree representation, they are often extremely useful
+because we can treat the subtrees rooted in those nodes as individual trees in their own right.
+This often allows to
 reuse existing algorithms that expect to operate on those subtrees in more complex settings.
 
 
 \subsection{Trees of function space bases}
 \label{sec:basistree}
 
-The product of finite-dimensional spaces naturally induces a corresponding operation on bases
-of such spaces.  We additionally introduce a generalized tensor product notation:
-Consider linear range spaces $R_0,\dots,R_{m-1}$ of function spaces $R_0^\Omega,\dots,R_{m-1}^\Omega$
+The multiplication of finite-dimensional spaces naturally induces a corresponding operation on bases
+of such spaces.  We introduce a generalized tensor product notation:
+Consider linear ranges $R_0,\dots,R_{m-1}$ of function spaces $R_0^\Omega,\dots,R_{m-1}^\Omega$,
 and the $i$-th canonical basis vector $\mathbf{e}_i$ in $\R^m$.
 Then
 \begin{align*}
@@ -368,18 +375,6 @@ Then
   \in \prod_{j=0}^{m-1} \Bigl(R_j^\Omega\Bigr) = \Bigl(\prod_{j=0}^{m-1} R_j\Bigr)^\Omega,
 \end{align*}
 where $0$ in the $j$-th position denotes the zero-function in $R_j^\Omega$.
-%denotes the function
-%\begin{align*}
-%  \mathbf{e}_i \otimes f &: \Omega \to \prod_{j=0}^{m-1} R_j, &
-%  ((\mathbf{e}_i \otimes f)(x))_j &=
-%  \begin{cases}
-%    f(x) &\text{ if } i=j,\\
-%    0 \in \R_j^\Omega &\text{ else}.
-%  \end{cases}
-%\end{align*}
-Here and throughout the paper we will use zero based indices, i.e., $i,j\in \{0,\dots,m-1\}$.
-
-
 Let $\Lambda_i$ be a function space basis of the space $V_i = \operatorname{span} \Lambda_i$
 for $i=0,\dots,m-1$. Then a natural basis $\Lambda$ of the product space
 \begin{align*}
@@ -395,11 +390,11 @@ is given by
     = \bigsqcup_{i=0}^{m-1} \Lambda_i
     \colonequals \bigcup_{i=0}^{m-1} \mathbf{e}_i \otimes \Lambda_i.
 \end{align}
-Note $\mathbf{e}_i \otimes \Lambda_i$ is understood element-wise
-and that the 'tagged union' symbol $\sqcup$ used here
-is a simple short hand notation for \eqref{eq:basis_product}
+The product $\mathbf{e}_i \otimes \Lambda_i$ is to be understood element-wise,
+and the ``disjoint union'' symbol $\sqcup$ is used here
+as a simple short-hand notation for \eqref{eq:basis_product}
 and not to be understood as an associative binary operation.
-Using this notation we have
+Using this new notation we have
 \begin{align*}
   \operatorname{span} \Lambda
     = \operatorname{span} \bigl( \Lambda_0 \sqcup \dots \sqcup \Lambda_{m-1} \bigr)
@@ -408,10 +403,10 @@ Using this notation we have
 \end{align*}
 
 Similarly to the case of function spaces, bases can be interpreted as trees.
-If we associate to each space $V$ in the function space tree a basis $\Lambda_V$,
+If we associate a basis $\Lambda_V$ to each space $V$ in the function space tree,
 then the induced natural function space basis tree is obtained by simply replacing
 $V$ by $\Lambda_V$ in each node. For the Taylor--Hood basis this leads to the
-function space basis tree depicted in Figure~\ref{fig:taylor_hood_basis_tree}.
+tree depicted in Figure~\ref{fig:taylor_hood_basis_tree}.
 
 \begin{figure}
     \begin{center}
@@ -447,14 +442,14 @@ of hierarchically structured multi-indices.
 %
 \begin{definition}[Multi-indices]
  A tuple $I \in \N_0^k$ for some $k \in \N_0$ is called a multi-index of length $k$,
- and we write $|I|=k$.
+ and we write $|I| \colonequals k$.
  The set of all multi-indices is denoted by
  $\mathcal{N} = \bigcup_{k \in \N_0} \N_0^k$.
 \end{definition}
 %
 To establish some structure in a set of multi-indices it is convenient to consider prefixes.
 %
-\begin{definition}\mbox{}  % Force a line break, otherwise the enumeration looks funny
+\begin{definition}[Multi-index prefixes]\mbox{}  % Force a line break, otherwise the enumeration looks funny
     \begin{enumerate}
         \item
             If $I \in \mathcal{N}$ takes the form $I = (I^0,I^1)$ for $I^0,I^1 \in \mathcal{N}$,
@@ -478,15 +473,15 @@ To establish some structure in a set of multi-indices it is convenient to consid
 \end{definition}
 
 It is important to note that the multi-indices from a given set do not necessarily
-all have the same length.
+all have the same length. For an example,
 Figure~\ref{fig:taylor_hood_basis_function_tree} illustrates the set of all basis
-functions by extending the ordered basis tree of Figure~\ref{fig:taylor_hood_basis_tree}
+functions by extending the basis tree of Figure~\ref{fig:taylor_hood_basis_tree}
 by leaf nodes for individual basis functions.
-For example, a possible indexing of the basis functions of the Taylor--Hood basis $\Lambda_{TH}$
+A possible indexing of the basis functions of the Taylor--Hood basis $\Lambda_\text{TH}$ then
 uses multi-indices of the form $(0,i,j)$ for velocity components, and $(1,k)$
 for pressure components.
-For the velocity multi-indices $(0,i,j)$ the $i = 0,\dots,2$ determines the component
-of the velocity vector field and the $j = 0,\dots,n_2-1 \colonequals \abs{\Lambda_{P_2}}-1$ determines the number of the scalar $P_2$ basis
+For the velocity multi-indices $(0,i,j)$, the $i = 0,\dots,2$ determines the component
+of the velocity vector field, and the $j = 0,\dots,n_2-1 \colonequals \abs{\Lambda_{P_2}}-1$ determines the number of the scalar $P_2$ basis
 function that determines this component.
 For the pressure multi-indices $(0,k)$ the $k= 0,\dots,n_1-1 \colonequals \abs{\Lambda_{P_1}}-1$ determines the number of the $P_1$ basis
 function for the scalar $P_1$ function that determines the pressure.
@@ -532,7 +527,7 @@ It is evident that the complete set of these multi-indices can again be associat
 In this tree, the multi-indices correspond to the leaf nodes,
 their strict prefixes correspond to interior nodes,
 and the multi-index digits labeling the edges are the
-(zero-based) indices of the children within the ordered tree.  Prefixes can be
+indices of the children within the ordered tree.  Prefixes can be
 interpreted as paths from the root to a given node.
 
 This latter fact can be seen as the defining property of index trees.  Indeed,
@@ -543,7 +538,7 @@ That is, the children of each node are enumerated using consecutive zero-based
 indices and paths to the leafs (i.e., the multi-indices) are built by concatenating
 those indices starting from the root and ending in a leaf.
 Since the full structure of this tree is encoded in the multi-indices associated
-to the leafs we will---in slight abuse of notation---denote the set of multi-indices
+to the leafs we will---by a slight abuse of notation---call the set of multi-indices
 itself a tree from now on.
 
 \begin{definition}
@@ -614,15 +609,16 @@ an indexing of a function space basis is an injective map from the leaf nodes of
 index tree.
 
 \begin{definition}
-  Let $M$ a finite set and $\iota:M \to \mathcal{N}$ an injective map whose range
+\label{def:index_map}
+  Let $M$ be a finite set and $\iota:M \to \mathcal{N}$ an injective map whose range
   $\iota(M)$ forms an index tree.
-  Then $\iota$ is called an \emph{index-map} for $M$.
+  Then $\iota$ is called an \emph{index map} for $M$.
   The index map is called \emph{uniform} if additionally $\iota(M) \subset \mathbb{N}^k_0$ for some $k \in \mathbb{N}$,
   and \emph{flat} if $\iota(M) \subset \mathbb{N}_0$.
 \end{definition}
 
 Continuing the Taylor--Hood example, if
-all basis functions $\Lambda_{TH} = \{\lambda_I \}$ of the whole finite element tree are
+all basis functions $\Lambda_\text{TH} = \{\lambda_I \}$ of the whole finite element tree are
 indexed by multi-indices of the above given form,
 and if $X$ is a coefficient vector that has a compatible hierarchical structure,
 then a finite element function $(v_h,p_h)$ with velocity
@@ -688,7 +684,7 @@ $v_h$ and $p_h$ are given by
                 };
         \end{tikzpicture}
     \end{center}
-    \caption{Index tree for Taylor--Hood with blocking of local velocity components}
+    \caption{Index tree for Taylor--Hood with blocking of velocity components}
     \label{fig:taylor_hood_index_blocked_tree}
 \end{figure}
 
@@ -831,20 +827,20 @@ degrees of freedom are ordered.
 \label{sec:index_strategies}
 
 Let $\Lambda$ be the set of basis functions of a finite element basis tree.
-In principle, \dunemodule{dune-functions} allows any indexing scheme that
-is given by an index map $\iota: \Lambda \to \mathcal{N}$,
-i.e., $\iota$ is injective and its range $\iota(\Lambda)$ is an index tree.  In practice,
+In principle, \dunemodule{dune\-functions} allows any indexing scheme that
+is given by an index map, i.e., any map $\iota: \Lambda \to \mathcal{N}$ that
+is injective and whose range $\iota(\Lambda)$ is an index tree.  In practice,
 out of this large set of maps, \dunemodule{dune-functions} allows to construct the most
 important ones systematically using certain transformation rules.
 
 Consider a tree of function space bases in the sense of Section~\ref{sec:basistree}.
 We want to construct an indexing for this tree, that is
 an index tree $\mathcal{I}$ and a bijection $\iota$ from the set of all basis functions $\Lambda$
-to the multi-indices in $\mathcal{I}$. This construction proceeds recursively.
+to the multi-indices in $\mathcal{I}$. The construction proceeds recursively.
 To describe it,
 we assume in the following that $\Lambda$ is a node in the function space
 basis tree, i.e., it is the set of all basis functions
-corresponding to a node $V=\operatorname{span} \Lambda$
+corresponding to a node $V \colonequals \operatorname{span} \Lambda$
 in the function space tree.
 
 To end the recursion, we assume that an index map $\iota : \Lambda \to \mathcal{N}$
@@ -852,11 +848,13 @@ is given if $V = \operatorname{span} \Lambda$ is a leaf node of the function spa
 The most obvious choice would be a flat zero-based index
 of the basis functions of $\Lambda$. However, other choices are possible.
 For example, in case of a discontinuous finite element space, each
-basis function $\lambda \in \Lambda$ can also be associated to a multi-index $\iota(\lambda)=(i,k)$ where $i$ is the
+basis function $\lambda \in \Lambda$ could also be associated to a two-digit
+multi-index $\iota(\lambda)=(i,k)$, where $i$ is the
 index of the grid element that forms the support of $\lambda$, and $k$ is the index of $\lambda$
 within this element.
 
-If $\Lambda$ is any non-leaf node in the function space basis tree,
+For the actual recursion,
+if $\Lambda$ is any non-leaf node in the function space basis tree,
 then it takes the form
 \begin{align*}
   \Lambda = \Lambda_0 \sqcup \dots \sqcup \Lambda_{m-1}
@@ -871,7 +869,7 @@ spaces $\{\operatorname{span} \Lambda_i\}_{i=0,\dots,m-1}$ of the product space
 %  = \prod_{i=0}^{m-1} \operatorname{span} \Lambda_i
     = (\operatorname{span} \Lambda_0) \times \dots \times (\operatorname{span} \Lambda_{m-1}).
 \end{align*}
-For the recursive construction we assume that an index-map
+For the recursive construction we assume that an index map
 $\iota_i : \Lambda_i \to \mathcal{N}$ on $\Lambda_i$ is given for any $i=0,\dots,m-1$.
 The task is to construct an index map $\iota: \Lambda \to \mathcal{N}$
 from the maps $\iota_i$.
@@ -885,8 +883,8 @@ $\Lambda_i$ are identical.
 %
 \begin{definition}
 \label{def:power_node}
-  An inner node $\Lambda$ will be called \emph{power node}, if all of its children $\Lambda_i$
-  are identical and equipped with identical index-maps $\iota_i$.
+  An inner node $\Lambda$ will be called \emph{power node} if all of its children $\Lambda_i$
+  are identical and equipped with identical index maps $\iota_i$.
   An inner node that is not a power node is called \emph{composite node}.
 \end{definition}
 %
@@ -900,7 +898,7 @@ to power nodes.
     \begin{align*}
       \iota(\mathbf{e}_i \otimes \hat{\lambda}) = (i,\iota_i(\hat{\lambda})).
     \end{align*}
-    It is straightforward to show that $\iota$ is always an index-map
+    It is straightforward to show that $\iota$ is always an index map
     for $\Lambda$.
     To demonstrate the strategy the following table shows the multi-indices at inner nodes,
     when the basis functions of the subtrees $\Lambda_0, \Lambda_1,\dots$ are labeled by
@@ -967,12 +965,11 @@ to power nodes.
     consider $\iota_0(\Lambda_0) = \{0\}$ and $\iota_1(\Lambda_1) = \{(0,0)\}$.
     Then $\iota(\Lambda) = \{(0,0), (0,0,1)\}$ which is not an index tree.
 \end{itemize}
-Unlike the previous two rules, the following two do not introduce new
-multi-index digits.
+Unlike the previous two strategies, the following two do not introduce new
+multi-index digits. Such strategies are called \emph{flat}.
 \begin{itemize}
-  \item \textbf{FlatLexicographic}: This strategy introduces
-    a new root node in the index tree by merging the roots of all
-    index-tree $\iota_i(\Lambda_i)$ into a single one.
+  \item \textbf{FlatLexicographic}: This strategy merges the roots of all
+    index tree $\iota_i(\Lambda_i)$ into a single new one.
     Assume that we split the multi-index
     $\iota_i(\hat{\lambda})$ according to
     \begin{align}\label{eq:multiindex-split}
@@ -987,10 +984,10 @@ multi-index digits.
     \begin{align*}
       L_i = \sum_{j=0}^{i-1} \operatorname{deg}_{\iota_j(\Lambda_j)}^+[()].
     \end{align*}
-    This construction shifts the first digits of
+    This construction offsets the first digits of
     the multi-indices of all basis functions from $\Lambda_j$ with $j>0$
     such that they form a consecutive sequence.
-    This guarantees that $\iota$ is always an index-map for $\Lambda$.
+    This guarantees that $\iota$ is always an index map for $\Lambda$.
     An example is given in the following table:
 
     \begin{tabular}{c|c|c|c}
@@ -1013,14 +1010,12 @@ multi-index digits.
         \dots \\
     \end{tabular}
 
-    This merging strategy is called \emph{flat}, because no
-    additional multi-index digits are inserted to address the different children.
     The digit zero deliberately appears twice in the column for $\Lambda_1$, to demonstrate
     that a consecutive first digit is not required.
 
   \item \textbf{FlatInterleaved}: This strategy again only works for power nodes.
     It also merges
-    the roots of all child index-trees $\iota_i(\Lambda_i)$
+    the roots of all child index trees $\iota_i(\Lambda_i)$
     into a single one, but it interleaves the children.
     Again using the splitting
     $\iota_i(\hat{\lambda}) = (i_0,I)$ introduced in~\eqref{eq:multiindex-split},
@@ -1057,8 +1052,8 @@ multi-index digits.
         \dots \\
     \end{tabular}
 
-    Again, for this interleaved strategy, $\iota$ might not be an
-    index-map for general composite nodes.
+    Again, for this interleaved strategy, $\iota$ may not be an
+    index map for general composite nodes.
 \end{itemize}
 
 These four strategies are offered by \dunemodule{dune-functions}, but there are others
@@ -1066,60 +1061,6 @@ that are sometimes useful.  Experimentally, \dunemodule{dune-functions} therefor
 provides a way to use self-implemented custom rules.
 
 \bigskip
-
-To further illustrate the four index transformation strategies, we return to
-the Taylor--Hood example.
-While the indexing schemes proposed for this example so far where
-introduced in an ad-hoc way, we will now systematically apply
-the above given strategies.  Recall that the Taylor--Hood basis is denoted by
-\begin{align*}
- \Lambda_\text{TH}
-  = (\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}) \sqcup \Lambda_{P_1}.
-\end{align*}
-For the bases $\Lambda_{P_1}, \Lambda_{P_2}$
-of the elementary spaces $P_1,P_2$ we consider fixed given flat index maps
-\begin{align*}
-  \iota_{P_1}(\Lambda_{P_1}) &\to \mathbb{N}_0, &
-  \iota_{P_2}(\Lambda_{P_2}) &\to \mathbb{N}_0.
-\end{align*}
-These are typically constructed by enumerating the grid entities
-the basis functions are associated to.
-Then the interior product space basis
-\begin{align*}
-  \Lambda_V = \Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}
-\end{align*}
-together with the index map $\iota_{P_2}$ is a power node in the
-sense of Definition~\ref{def:power_node}, while the tree root
-\begin{align*}
- \Lambda_\text{TH}
-  = \Lambda_V \sqcup \Lambda_{P_1}
-\end{align*}
-is a composite node.
-
-The basis functions for the $k$-th component of the velocity
-are denoted by
-\begin{align*}
-  v_{x_k,i} = \mathbf{e}_0 \otimes (\mathbf{e}_k \otimes \lambda^{P_2}_i)
-\end{align*}
-where $i=0,\dots,n_2-1$ for $n_2=|\Lambda_{P_2}|= \operatorname{dim} P_2$
-while the basis functions for the pressure are denoted by
-\begin{align*}
-  p_{j} = \mathbf{e}_1 \otimes \lambda^{P_1}_j
-\end{align*}
-where $j=0,\dots,n_1-1$ for $n_1=|\Lambda_{P_1}|= \operatorname{dim} P_1$.
-
-As two of the above given strategies can be used
-for composite nodes, while all four can be applied to power nodes
-we obtain eight different index maps for the Taylor--Hood basis
-$\Lambda_{\text{TH}}$.
-They are listed in Table~\ref{tab:th_indexing_variants}, where the label $X(Y)$
-means that strategy $X$ is used for the outer product and strategy $Y$
-for the inner product. For $X$ and $Y$ we use the abbreviations BL
-(BlockedLexicographic), BI (BlockedInterleaved), FL (FlatLexicographic), an FI (FlatInterleaved).
-Notice that the index-maps depicted in
-Figure~\ref{fig:taylor_hood_index_tree} and Figure~\ref{fig:taylor_hood_index_blocked_tree}
-are reproduced for the strategies
-BL(BL) and BL(BI), respectively.
 
 \begin{table}
 \footnotesize
@@ -1314,6 +1255,59 @@ BL(BL) and BL(BI), respectively.
 \label{tab:th_indexing_variants}
 \end{table}
 
+To further illustrate the four index transformation strategies, we return to
+the Taylor--Hood example.
+While the indexing schemes proposed for this example so far where
+introduced in an ad-hoc way, we will now systematically apply
+the above given strategies.  Recall that the Taylor--Hood basis is denoted by
+\begin{align*}
+ \Lambda_\text{TH}
+  = (\Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}) \sqcup \Lambda_{P_1}.
+\end{align*}
+For the bases $\Lambda_{P_1}, \Lambda_{P_2}$
+of the elementary spaces $P_1,P_2$ we consider fixed given flat index maps
+\begin{align*}
+  \iota_{P_1}(\Lambda_{P_1}) &\to \mathbb{N}_0, &
+  \iota_{P_2}(\Lambda_{P_2}) &\to \mathbb{N}_0.
+\end{align*}
+These are typically constructed by enumerating the grid entities
+the basis functions are associated to.
+Then the interior product space basis
+\begin{align*}
+  \Lambda_V = \Lambda_{P_2} \sqcup \Lambda_{P_2} \sqcup \Lambda_{P_2}
+\end{align*}
+together with the index map $\iota_{P_2}$ is a power node in the
+sense of Definition~\ref{def:power_node}, while the tree root
+\begin{align*}
+ \Lambda_\text{TH}
+  = \Lambda_V \sqcup \Lambda_{P_1}
+\end{align*}
+is a composite node.
+The basis functions for the $k$-th component of the velocity
+are denoted by
+\begin{align*}
+  v_{x_k,i} = \mathbf{e}_0 \otimes (\mathbf{e}_k \otimes \lambda^{P_2}_i)
+\end{align*}
+where $i=0,\dots,n_2-1$ for $n_2=|\Lambda_{P_2}|= \operatorname{dim} P_2$
+whereas the basis functions for the pressure are denoted by
+\begin{align*}
+  p_{j} = \mathbf{e}_1 \otimes \lambda^{P_1}_j
+\end{align*}
+where $j=0,\dots,n_1-1$ for $n_1=|\Lambda_{P_1}|= \operatorname{dim} P_1$.
+
+As two of the above given strategies can be used
+for composite nodes, while all four can be applied to power nodes
+we obtain eight different index maps for the Taylor--Hood basis
+$\Lambda_{\text{TH}}$.
+They are listed in Table~\ref{tab:th_indexing_variants}, where the label $X(Y)$
+means that strategy $X$ is used for the outer product and strategy $Y$
+for the inner product. For $X$ and $Y$ we use the abbreviations BL
+(BlockedLexicographic), BI (BlockedInterleaved), FL (FlatLexicographic), and FI (FlatInterleaved).
+Notice that the index maps depicted in
+Figure~\ref{fig:taylor_hood_index_tree} and Figure~\ref{fig:taylor_hood_index_blocked_tree}
+are reproduced for the strategies
+BL(BL) and BL(BI), respectively.
+
 
 
 \subsection{Localization to single grid elements}
@@ -1332,7 +1326,8 @@ All others form the \emph{local basis} on $e$
 \begin{equation*}
  \Lambda|_e
  \colonequals
- \{ \lambda|_e \; : \; \lambda \in \Lambda \}.
+ \{ \lambda|_e \; : \; \lambda \in \Lambda,
+         \quad \operatorname{int}(\operatorname{supp} \lambda) \cap e \neq \emptyset \}.
 \end{equation*}
 The local basis forms a tree that is isomorphic to the original function space basis tree,
 with each global function space basis $\Lambda$ replaced by its local counterpart $\Lambda|_e$.
@@ -1346,7 +1341,7 @@ naturally induces a localized version of $\iota$ given by
 \end{align*}
 This is the map that associates shape functions on a given grid element $e$ to
 the multi-indices of the corresponding global basis functions.
-Notice that the map $\iota|_e$ itself is not an index-map in the above given sense
+Note that the map $\iota|_e$ itself is not an index map in the sense of Definition~\ref{def:index_map}
 since $\iota|_e(\Lambda|_e)$ is only a subset of the index tree $\iota(\Lambda)$,
 and not always an index tree itself.
 
@@ -1385,7 +1380,7 @@ In an actual programming interface one typically accesses
 basis functions by indices directly. We will later see that
 in \dunemodule{dune-functions} the leaf-local index is the
 shape function index of the \dunemodule{dune-localfunctions} module.
-Hence the interface needs to implement the map
+Hence the \dunemodule{dune-functions} API needs to implement the map
 \begin{align*}
   \iota^{\text{leaf}\to\text{local}}_e \colonequals \iota^{\text{local}}_{\Lambda|_e} \circ (\iota^{\text{leaf-local}}_{\hat{\Lambda}|_e})^{-1}
 \end{align*}
