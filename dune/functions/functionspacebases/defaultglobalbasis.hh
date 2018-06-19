@@ -108,6 +108,12 @@ public:
     return preBasis_;
   }
 
+  //! Obtain the pre-basis providing the implementation details
+  PreBasis& preBasis()
+  {
+    return preBasis_;
+  }
+
   /**
    * \brief Update the stored grid view
    *
