@@ -52,7 +52,7 @@ int main (int argc, char* argv[])
   // check BrezziDouglasMariniBasis on a grid without a compile-time-fixed element type
   {
     using Grid = UGGrid<dim>;
-    std::shared_ptr<Grid> grid = StructuredGridFactory<Grid>::createCubeGrid({0.0,0.0}, l, {10,10});
+    std::shared_ptr<Grid> grid = StructuredGridFactory<Grid>::createCubeGrid({0.0,0.0}, l, {{10,10}});
     Functions::BrezziDouglasMariniBasis<Grid::LeafGridView,1> basis(grid->leafGridView());
     test.subTest(checkBasis(basis));
   }
