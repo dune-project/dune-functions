@@ -9,7 +9,7 @@
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 
 
 
@@ -32,7 +32,7 @@ namespace Functions {
 // *****************************************************************************
 
 template<typename GV, int k, typename TP>
-using LagrangeDGNode = PQkNode<GV, k, TP>;
+using LagrangeDGNode = LagrangeNode<GV, k, TP>;
 
 template<typename GV, int k, class MI, class TP>
 class LagrangeDGNodeIndexSet;
