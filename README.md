@@ -53,7 +53,7 @@ mechanism allows to construct new spaces.
 ## Documentation
 
 ### Class documentation
-The module contains a class documention which can be build using [doxygen].
+The module contains a class documentation which can be build using [doxygen].
 After the module has been build, you can build the documentation using
 `make doc`
 Additionally the pre-build doxygen documentation for the _master_ and
@@ -74,23 +74,23 @@ contained in the module. Like the class documentation this is build
 on `make doc`.
 
 ### Examples
-Several example applictaion demonstrate how to use the module. These
+Several example applications demonstrate how to use the module. These
 example applications are contained in the `examples/` directory and
 build when building the module. The `stokes-taylorhood` example is
 described in detail in the manual (see above).
 
 
 ## Using dune-functions and licensing
-The module is licenced and different variants of th GPL licence.
+The module is licensed by different variants of the GPL licence.
 Please have a look at the `COPYING` file for more information
-and a list of all contributers. When using dune-functions
+and a list of all contributors. When using dune-functions
 **please make sure to cite the [publication][functions paper]** listed above.
 
 
 
 ## Building dune-functions
 
-### Depdencies
+### Dependencies
 Dune-functions depends on the dune [core modules][core]
 and the [dune-typetree module][typetree]. All of them are available using git:
 
@@ -98,15 +98,15 @@ and the [dune-typetree module][typetree]. All of them are available using git:
 * https://gitlab.dune-project.org/core/dune-geometry
 * https://gitlab.dune-project.org/core/dune-grid
 * https://gitlab.dune-project.org/core/dune-istl
-* https://gitlab.dune-project.org/core/dune-localfunction
+* https://gitlab.dune-project.org/core/dune-localfunctions
 * https://gitlab.dune-project.org/staging/dune-typetree
 
 The versioning of dune-functions follows the scheme used in the core modules.
 I.e. version x.y of dune-functions will depend on version x.y of the core modules
-and dune-typetree. Analoguesly, the _master_ branch will depend on the
+and dune-typetree. Analogously, the _master_ branch will depend on the
 _master_ branch of these modules.
 
-Unless explicitly states otherwise for a specific version,
+Unless explicitly stated otherwise for a specific version,
 dune-functions supports/requires the same build tools (compilers, cmake)
 as the corresponding version of the core modules.
 
