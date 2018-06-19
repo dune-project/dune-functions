@@ -20,7 +20,7 @@
 #include <dune/istl/solvers.hh>
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
@@ -287,7 +287,7 @@ int main (int argc, char *argv[]) try
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
-  typedef Functions::PQkNodalBasis<GridView,2> FEBasis;
+  typedef Functions::LagrangeBasis<GridView,2> FEBasis;
   FEBasis feBasis(gridView);
 
   /////////////////////////////////////////////////////////

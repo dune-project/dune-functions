@@ -11,7 +11,7 @@
 
 #include <dune/grid/yaspgrid.hh>
 #include <dune/grid/utility/structuredgridfactory.hh>
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 
@@ -55,7 +55,7 @@ int main(int argc, char** argv)
     ::createCubeGrid({{0,0}}, {{1,1}}, {{2,2}});
 
   // Basis
-  using Basis = Dune::Functions::PQkNodalBasis<GridType::LeafGridView,1>;
+  using Basis = Dune::Functions::LagrangeBasis<GridType::LeafGridView,1>;
   Basis basis(grid->leafGridView());
 
   // some artificial coefficients

@@ -11,7 +11,7 @@
 
 #include <dune/functions/functionspacebases/nodes.hh>
 
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 namespace Dune {
@@ -55,8 +55,8 @@ class TaylorHoodNodeIndexSet;
  * the same functionality manually using
  * \code
  * static const int k = 1;
- * using VelocityPreBasis = PowerPreBasis<MI,IMS,PQkPreBasis<GV,k+1,MI>,dim>;
- * using PressurePreBasis = PQkPreBasis<GV,k,MI>;
+ * using VelocityPreBasis = PowerPreBasis<MI,IMS,LagrangePreBasis<GV,k+1,MI>,dim>;
+ * using PressurePreBasis = LagrangePreBasis<GV,k,MI>;
  * using TaylorHoodKPreBasis = CompositePreBasis<MI, BlockedLexicographic, VelocityPreBasis, PressurePreBasis>;
  * \endcode
  * Where IMS is BlockedInterleaved if HI is set and
@@ -97,8 +97,8 @@ public:
 private:
 
   using PQMultiIndex = std::array<size_type, 1>;
-  using PQ1PreBasis = PQkPreBasis<GV,1,PQMultiIndex>;
-  using PQ2PreBasis = PQkPreBasis<GV,2,PQMultiIndex>;
+  using PQ1PreBasis = LagrangePreBasis<GV,1,PQMultiIndex>;
+  using PQ2PreBasis = LagrangePreBasis<GV,2,PQMultiIndex>;
 
 public:
 
@@ -242,11 +242,11 @@ protected:
 
 template<typename GV, typename TP>
 class TaylorHoodVelocityTree :
-    public PowerBasisNode<std::size_t, TP ,PQkNode<GV,2, decltype(TypeTree::push_back(TP(), 0)) >, GV::dimension>
+    public PowerBasisNode<std::size_t, TP ,LagrangeNode<GV,2, decltype(TypeTree::push_back(TP(), 0)) >, GV::dimension>
 {
   using ComponentTreePath = decltype(TypeTree::push_back(TP(), 0));
 
-  using PQ2Node = PQkNode<GV,2, ComponentTreePath >;
+  using PQ2Node = LagrangeNode<GV,2, ComponentTreePath >;
   using Base = PowerBasisNode<std::size_t, TP ,PQ2Node, GV::dimension>;
 
 public:
@@ -262,14 +262,14 @@ template<typename GV, typename TP>
 class TaylorHoodBasisTree :
     public CompositeBasisNode<std::size_t, TP,
       TaylorHoodVelocityTree<GV, decltype(TypeTree::push_back<0>(TP()))>,
-      PQkNode<GV,1, decltype(TypeTree::push_back<1ul>(TP()))>
+      LagrangeNode<GV,1, decltype(TypeTree::push_back<1ul>(TP()))>
     >
 {
   using VelocityTreePath = decltype(TypeTree::push_back<0ul>(TP()));
   using PressureTreePath = decltype(TypeTree::push_back<1ul>(TP()));
 
   using VelocityNode=TaylorHoodVelocityTree<GV, VelocityTreePath>;
-  using PressureNode=PQkNode<GV,1, PressureTreePath>;
+  using PressureNode=LagrangeNode<GV,1, PressureTreePath>;
 
   using Base=CompositeBasisNode<std::size_t, TP, VelocityNode, PressureNode>;
 
