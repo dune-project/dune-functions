@@ -238,17 +238,14 @@ struct GlobalBasis
     requireType<typename B::size_type>(),
     requireType<typename B::MultiIndex>(),
     requireType<typename B::SizePrefix>(),
-    requireType<typename B::LocalIndexSet>(),
     requireType<typename B::LocalView>(),
     requireSameType<typename B::GridView, GridView>(),
     requireConvertible<typename B::GridView>(basis.gridView()),
-    requireConvertible<typename B::LocalIndexSet>(basis.localIndexSet()),
     requireConvertible<typename B::LocalView>(basis.localView()),
     requireConvertible<typename B::size_type>(basis.size()),
     requireConvertible<typename B::size_type>(basis.size(std::declval<typename B::SizePrefix>())),
     requireConvertible<typename B::size_type>(basis.dimension()),
     requireSameType<decltype(const_cast<B&>(basis).update(basis.gridView())),void>(),
-    requireConcept<LocalIndexSet<typename B::LocalView>>(basis.localIndexSet()),
     requireConcept<LocalView<B>>(basis.localView())
   );
 };
