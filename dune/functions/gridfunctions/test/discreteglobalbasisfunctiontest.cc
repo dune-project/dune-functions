@@ -9,7 +9,7 @@
 
 #include <dune/grid/yaspgrid.hh>
 
-#include <dune/functions/functionspacebases/pqknodalbasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
@@ -58,9 +58,9 @@ int main (int argc, char* argv[]) try
   std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
-  // Test whether PQkNodalBasis.hh can be instantiated on the leaf view
+  // Test whether LagrangeBasis can be instantiated on the leaf view
   typedef GridType::LeafGridView GridView;
-  typedef PQkNodalBasis<GridView,2> Basis;
+  typedef LagrangeBasis<GridView,2> Basis;
 
   const GridView& gridView = grid.leafGridView();
   Basis feBasis(gridView);
