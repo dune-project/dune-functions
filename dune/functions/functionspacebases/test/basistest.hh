@@ -10,6 +10,7 @@
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/concept.hh>
+#include <dune/common/typetraits.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -169,7 +170,7 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
 
   using MultiIndex = typename Basis::MultiIndex;
 
-  static_assert(IsIndexable<MultiIndex>(), "MultiIndex must support operator[]");
+  static_assert(Dune::IsIndexable<MultiIndex>(), "MultiIndex must support operator[]");
 
   auto compare = [](const auto& a, const auto& b) {
     return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
