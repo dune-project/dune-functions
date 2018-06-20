@@ -5,9 +5,12 @@
 
 #include <set>
 #include <algorithm>
+#include <string>
+#include <sstream>
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/concept.hh>
+#include <dune/common/typetraits.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -15,7 +18,21 @@
 
 
 
-// check if two multi-indices are consecutive
+/*
+ * Get string identifier of element
+ */
+template<class Element, class GridView>
+std::string elementStr(const Element& element, const GridView& gridView)
+{
+  std::stringstream s;
+  s << element.type() << "#" << gridView.indexSet().index(element);
+  return s.str();
+}
+
+/*
+ * Check if two multi-indices are consecutive.
+ * This is a used by checkBasisIndexTreeConsistency()
+ */
 template<class MultiIndex>
 bool multiIndicesConsecutive(const MultiIndex& a, const MultiIndex& b)
 {
@@ -51,6 +68,11 @@ bool multiIndicesConsecutive(const MultiIndex& a, const MultiIndex& b)
 
 
 
+/*
+ * Check if given set of multi-indices is consistent, i.e.,
+ * if it induces a consistent ordered tree. This is used
+ * by checkBasisIndices()
+ */
 template<class MultiIndexSet>
 Dune::TestSuite checkBasisIndexTreeConsistency(const MultiIndexSet& multiIndexSet)
 {
@@ -96,6 +118,9 @@ Dune::TestSuite checkBasisIndexTreeConsistency(const MultiIndexSet& multiIndexSe
 
 
 
+/*
+ * Check consistency of basis.size(prefix)
+ */
 template<class Basis, class MultiIndexSet>
 Dune::TestSuite checkBasisSizeConsistency(const Basis& basis, const MultiIndexSet& multiIndexSet)
 {
@@ -132,12 +157,21 @@ Dune::TestSuite checkBasisSizeConsistency(const Basis& basis, const MultiIndexSe
 
 
 
+/*
+ * Check indices of basis:
+ * - First store the whole index tree in a set
+ * - Check if this corresponds to a consistent index tree
+ * - Check if index tree is consistent with basis.size(prefix) and basis.dimension()
+ */
 template<class Basis>
 Dune::TestSuite checkBasisIndices(const Basis& basis)
 {
   Dune::TestSuite test("basis index check");
 
   using MultiIndex = typename Basis::MultiIndex;
+
+  static_assert(Dune::IsIndexable<MultiIndex>(), "MultiIndex must support operator[]");
+
   auto compare = [](const auto& a, const auto& b) {
     return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
   };
@@ -155,12 +189,94 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
     for (decltype(localView.size()) i=0; i< localView.size(); ++i)
     {
       auto multiIndex = localView.index(i);
+      for(auto mi: multiIndex)
+        test.check(mi>=0)
+          << "Global multi-index containes negative entry for shape function " << i
+          << " in element " << elementStr(localView.element(), basis.gridView());
       multiIndexSet.insert(multiIndex);
     }
   }
 
   test.subTest(checkBasisIndexTreeConsistency(multiIndexSet));
   test.subTest(checkBasisSizeConsistency(basis, multiIndexSet));
+  test.check(basis.dimension() == multiIndexSet.size())
+    << "basis.dimension() does not equal the total number of basis functions.";
+
+  return test;
+}
+
+
+
+/*
+ * Check if shape functions are non-constant.
+ * This is called by checkLocalView().
+ */
+template<class LocalFiniteElement>
+Dune::TestSuite checkNonConstantShapeFunctions(const LocalFiniteElement& fe, std::size_t order = 5, double tol = 1e-10)
+{
+  Dune::TestSuite test;
+  static const int dimension = LocalFiniteElement::Traits::LocalBasisType::Traits::dimDomain;
+
+  auto quadRule = Dune::QuadratureRules<double, dimension>::rule(fe.type(), order);
+
+  std::vector<typename LocalFiniteElement::Traits::LocalBasisType::Traits::RangeType> values;
+  std::vector<bool> isNonZero;
+  isNonZero.resize(fe.size(), false);
+  for (const auto& qp : quadRule)
+  {
+    fe.localBasis().evaluateFunction(qp.position(), values);
+    for(std::size_t i=0; i<fe.size(); ++i)
+      isNonZero[i] = (isNonZero[i] or (values[i].infinity_norm() > tol));
+  }
+  for(std::size_t i=0; i<fe.size(); ++i)
+    test.check(isNonZero[i])
+      << "Found a constant zero basis function";
+  return test;
+}
+
+
+
+/*
+ * Check localView. This especially checks for
+ * consistency of local indices and local size.
+ */
+template<class Basis, class LocalView>
+Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView)
+{
+  Dune::TestSuite test(std::string("LocalView on ") + elementStr(localView.element(), basis.gridView()));
+
+  test.check(localView.size() <= localView.maxSize(), "localView.size() check")
+    << "localView.size() is " << localView.size() << " but localView.maxSize() is " << localView.maxSize();
+
+  // Count all local indices appearing in the tree.
+  std::vector<std::size_t> localIndices;
+  localIndices.resize(localView.size(), 0);
+  Dune::TypeTree::forEachLeafNode(localView.tree(), [&](const auto& node, auto&& treePath) {
+    test.check(node.size() == node.finiteElement().size())
+      << "Size of leaf node and finite element are different.";
+    for(std::size_t i=0; i<node.size(); ++i)
+    {
+      test.check(node.localIndex(i) < localView.size())
+        << "Local index exceeds localView.size().";
+      if (node.localIndex(i) < localView.size())
+        ++(localIndices[node.localIndex(i)]);
+    }
+  });
+
+  // Check if each local index appears exactly once.
+  for(std::size_t i=0; i<localView.size(); ++i)
+  {
+    if (localIndices[i])
+    test.check(localIndices[i]>=1)
+      << "Local index " << i << " did not appear";
+    test.check(localIndices[i]<=1)
+      << "Local index " << i << " appears multiple times";
+  }
+
+  // Check if all basis functions are non-constant.
+  Dune::TypeTree::forEachLeafNode(localView.tree(), [&](const auto& node, auto&& treePath) {
+    test.subTest(checkNonConstantShapeFunctions(node.finiteElement()));
+  });
 
   return test;
 }
@@ -175,7 +291,7 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
  * global index, their values at the quadrature points (located on
  * their intersection) should coincide up to the given tolerance.
  *
- * If e basis function only appears on one side of the intersection,
+ * If a basis function only appears on one side of the intersection,
  * it should be zero on the intersection.
  */
 template<class Basis>
@@ -237,9 +353,8 @@ Dune::TestSuite checkBasisContinuity(const Basis& basis, std::size_t order = 5, 
                 // Basis function should only appear once in the neighbor element.
                 test.check(foundInNeighbor==false)
                   << "Basis function " << localView.index(node.localIndex(i))
-                  << " appears twice in element "
-                  << neighborLocalView.element().type() << "#" << basis.gridView().indexSet().index(neighborLocalView.element()) ;
-
+                  << " appears twice in element " << elementStr(neighborLocalView.element(), basis.gridView());
+                foundInNeighbor = true;
                 // If basis function appears in neighbor element, then the
                 // jump should be (numerically) zero across the intersection.
                 for(std::size_t k=0; k<quadRule.size(); ++k)
@@ -254,9 +369,8 @@ Dune::TestSuite checkBasisContinuity(const Basis& basis, std::size_t order = 5, 
             test.check(maxJump < tol)
               << "Basis function " << localView.index(node.localIndex(i))
               << " is discontinuous across intersection of elements "
-              << localView.element().type() << "#" << basis.gridView().indexSet().index(localView.element()) << " and "
-              << neighborLocalView.element().type() << "#" << basis.gridView().indexSet().index(neighborLocalView.element());
-              // << " since maximal jump " << maxJump << " exceeds tolerance";
+              << elementStr(localView.element(), basis.gridView())
+              << " and " << elementStr(neighborLocalView.element(), basis.gridView());
           }
         });
       }
@@ -272,17 +386,24 @@ Dune::TestSuite checkBasis(const Basis& basis)
 {
   Dune::TestSuite test("basis check");
 
-
   using GridView = typename Basis::GridView;
 
+  // Check if basis models the GlobalBasis concept.
   test.check(Dune::models<Dune::Functions::Concept::GlobalBasis<GridView>, Basis>(), "global basis concept check")
     << "type passed to checkBasis() does not model the GlobalBasis concept";
 
+  // Perform all local tests.
+  auto localView = basis.localView();
+  for (const auto& e : elements(basis.gridView()))
+  {
+    localView.bind(e);
+    test.subTest(checkLocalView(basis, localView));
+  }
+
+  // Perform global index tests.
   test.subTest(checkBasisIndices(basis));
 
   return test;
 }
-
-
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_TEST_BASISTEST_HH
