@@ -264,7 +264,7 @@ the set of all functions mapping from $\Omega$ to $R$. For domains $\Omega\subse
 we write $P_k(\Omega) \subset \R^\Omega$ for the space of all
 scalar-valued continuous piecewise polynomials of degree at most $k$ on $\Omega$
 with respect to some given triangulation.
-We will omit the domain if it can be infered from the context.
+We will omit the domain if it can be inferred from the context.
 
 Considering the different finite element spaces that appear in the literature, there are some that we will
 call \emph{irreducible}.  By this term we mean all bases of scalar-valued functions,
@@ -1398,9 +1398,8 @@ The design of the \dunemodule{dune-functions} interface for bases of function sp
 follows the ideas of the previous section. The main interface concept are global basis objects
 that represent trees of function space bases. These trees can be localized to individual elements
 of the grid.  Such a localization provides access to the (tree of) shape functions there,
-together with the three shape-function index maps
-$\iota^{\text{leaf-local}}_{\hat{\Lambda}|_e}$,
-$\iota^{\text{leaf}\to\text{local}}_e$,
+together with the two shape-function index maps
+$\iota^{\text{leaf}\to\text{local}}_e$ and
 $\iota^{\text{local}\to\text{global}}_e$.
 The structure of the interface is visualized in Figure~\ref{fig:febasis_interface_schematic}.
 
@@ -1430,7 +1429,7 @@ The global basis interface described below is not enforced by deriving
 from specific base classes. Instead, \dunemodule{dune-functions} is based on
 C++-style duck-typing~\cite{koenig_moo:2005},
 i.e., any C++ type providing the required
-interface is a valid global basis.
+interface is a valid implementation of that interface.
 
 Throughout this text we will introduce the programmer interfaces
 by presenting the interface declaration, explaining
@@ -1440,10 +1439,10 @@ from code examples they are formatted differently.
 Furthermore, implementation defined types and arguments are highlighted.
 The following shows an example of an interface declaration:
 \begin{lstlisting}[style=Interface]
-// Declaration of the type T referring to an implementation-defined type
+// Declaration of type T referring to an implementation-defined type
 using T = @@<implementation defined>@@;
 
-// Declaration of the function foo
+// Declaration of method foo
 T foo(int);
 
 // Declaration of class Bar with implementation-defined constructor arguments
@@ -1493,7 +1492,7 @@ created by the method have undefined state, and need to be attached to individua
 elements in a process called \emph{binding}.
 The details are explained in Section~\ref{sec:localview_interface}.
 
-A second group of methods provides information on the sizes of the bases
+Several methods of a \cpp{GlobalBasis} provide information on the sizes of the bases
 contained in the tree.
 The total number of basis functions of the global basis is
 exported via the method
@@ -1513,7 +1512,7 @@ size_type size(const SizePrefix& prefix) const;
 \end{lstlisting}
 The parameter \cpp{prefix} is a multi-index itself.
 If $\mathcal{I}$ is the set of all global multi-indices of the
-basis and $\text{\cpp{prefix}} \in \mathcal{N}$ is a prefix for this set, then
+basis and \cpp{prefix} is a prefix for this set, then
 \cpp{size(prefix)} returns the size $\operatorname{deg}^+_{\mathcal{I}}[\text{\cpp{prefix}}]$ of
 $\mathcal{I}$ relative to $\text{\cpp{prefix}}$ defined in \eqref{eq:prefix_size},
 i.e., the number of direct children of the node \cpp{prefix} in the index tree.
@@ -1524,7 +1523,6 @@ The type \cpp{SizePrefix} is always a container of type \cpp{ReservedVector} (fr
 \dunemodule{dune-common} module).  More details are given in Section~\ref{sec:multi_indices}.
 Like all other types used in the \cpp{GlobalBasis} interface, it is expected to be
 exported by the implementation class.
-
 For convenience there is also the method
 \begin{lstlisting}[style=Interface]
 size_type size() const;
@@ -1533,7 +1531,7 @@ returning the same value as \cpp{size(\{\})}, i.e., the number of children of th
 the index tree.
 For a scalar basis, this is again the overall number of basis functions.
 
-Finally, each \cpp{GlobalBasis} shall provide access to the grid view it is defined on
+Finally, each \cpp{GlobalBasis} provides access to the grid view it is defined on
 by the method
 \begin{lstlisting}[style=Interface]
 const GridView& gridView() const;
@@ -1561,7 +1559,7 @@ interface declaration are public members of
 the generic class \cpp{LocalView}.
 
 A freshly constructed \cpp{LocalView} object is not completely initialized yet.
-To truly have the object represent the basis localization to a particular element,
+To truly have the object represent the basis localization on a particular element,
 it must be \emph{bound} to that element.  This is achieved by calling
 \begin{lstlisting}[style=Interface]
 using GridView = typename GlobalBasis::GridView;
@@ -1599,7 +1597,7 @@ To allow preallocation of buffers for local functions, the method
 \begin{lstlisting}[style=Interface]
 size_type maxSize() const;
 \end{lstlisting}
-returns the maximum of the
+returns the maximum return value of the
 \cpp{size()} method for all elements in the grid view
 associated to the global basis, i.e., it computes $\max_e \abs{\Lambda|_e}$.
 As this information does not depend on a particular element,
@@ -1644,7 +1642,7 @@ MultiIndex index(size_type i) const;
 The argument for this method is the local
 index of the basis function within the tree as
 returned by the \cpp{node.localIndex(k)}
-method, where \cpp{node} is a leaf node of the
+method; here \cpp{node} is a leaf node of the
 tree provided by \cpp{tree()}, and \cpp{k}
 is the number of the shape function within the corresponding
 local finite element (see below).
@@ -1694,9 +1692,7 @@ using the infrastructure of the \dunemodule{dune-typetree} module.
 The object returned by the \cpp{LocalView::tree} method is not actually a tree,
 but rather (a const reference to) the root node of the tree.  To navigate within
 this tree, any non-leaf node allows to access
-its children using one of the two methods
-\todosander{Für Leafs muss das noch implementiert werden!}
-\todograeser{Ist doch nicht so einfach, weil die Knoten-Basisklassen kein CRTP benutzen.}
+its children using the two methods
 \begin{lstlisting}[style=Interface]
 template<class... ChildIndices>
 auto child(ChildIndices... childIndices);
@@ -1713,7 +1709,7 @@ For the first method, the path is passed
 as a sequence of indices. Indices referring
 to children of a power node can be passed as integer values, typically of type \cpp{std::size_t}.
 Indices referring to children of a composite node
-have to be passed statically as \cpp{Dune::index_constant<i>}.%
+have to be passed statically as objects of type \cpp{Dune::index_constant<i>}.%
 %
 \footnote{
 \dots which is a shortcut for \cpp{std::integral_constant<std::size_t, i>}.
@@ -1735,12 +1731,12 @@ const auto& node = localView.tree().child(_0, 1);
 Note how the index constant \cpp{Dune::Indices::\_0} is used
 to address the velocity node, because the
 tree root is a composite node whose child nodes are of different type.
-Within the velocity subtree, all three children are identical, and can be
-accessed by a run-time integer.
+Within the velocity subtree, all three children are identical, and the second one can be
+accessed by the run-time integer \cpp{1}.
 
 The second \cpp{child} method allows to pass the tree path in a dedicated container.
 Such a container needs to handle sequences of static and run-time values.
-The \dunemodule{dune-functions} module uses \cpp{Dune::TypeTree::HybridTreePath}
+The \dunemodule{dune\-functions} module uses \cpp{Dune::TypeTree::HybridTreePath}
 for this, which we describe in detail in Section~\ref{sec:multi_indices}.
 Using a \cpp{HybridTreePath} object, the example looks as follows:
 %
@@ -1750,7 +1746,7 @@ const auto& node = localView.tree().child(treePath);
 \end{lstlisting}
 
 Besides moving to a particular node in the tree, the reverse operation is also
-available: To obtain its position in the tree, each node
+available: Each node
 exports its path with respect to the full tree root
 via the  method
 \begin{lstlisting}[style=Interface]
@@ -1794,7 +1790,7 @@ For each local basis function the method
 size_type localIndex(size_type i) const;
 \end{lstlisting}
 returns the
-local index within all local basis functions associated to the full
+local index within all local basis functions of the current element associated to the full
 local tree.
 The argument to this method is the
 index of the local basis functions within the leaf.
@@ -1808,7 +1804,7 @@ flat indices here to keep the implementation simple.
 
 While \cpp{LocalFiniteElement} objects are only available at leaf nodes,
 the following methods work at every node in the tree again.
-The method
+Calling
 \begin{lstlisting}[style=Interface]
 using size_type = @@<implementation defined>@@;
 size_type size() const;
@@ -1855,7 +1851,7 @@ remember that non-leaf tree nodes can be of two types, \emph{power} and
 \emph{composite} (Section~\ref{sec:index_strategies}).
 Since composite nodes have children of different
 types, it is not possible to access those children using a dynamic run-time
-index. Instead the child index in a composite node has to encoded in a static
+index. Instead the child index in a composite node has to be encoded in a static
 way.  For such situations, \dunemodule{dune-common} offers the type
 \begin{lstlisting}[style=Interface]
 template <std::size_t i> Dune::index_constant<i>;
@@ -1866,8 +1862,8 @@ On the other hand, all children of a power node have
 the same C++ type, and can be accessed using a dynamic index of type \cpp{std::size_t}.
 
 In a typical tree, composite and power nodes appear together.  It is therefore
-necessary to have a container that can store compile-time and run-time integers
-together.  This is achieved by the class
+necessary to have a container that can store both compile-time and run-time integers.
+This is achieved by the class
 %
 \begin{lstlisting}[style=Interface]
 template <class... I>
@@ -1893,7 +1889,7 @@ of the type
 \begin{lstlisting}[style=Example]
 HybridTreePath<Dune::index_constant<0>, std::size_t>;
 \end{lstlisting}
-while the multi-index for the pressure leaf node would use the type
+whereas the multi-index for the pressure leaf node would use the type
 \begin{lstlisting}[style=Example]
 HybridTreePath<Dune::index_constant<1>>;
 \end{lstlisting}
@@ -1927,8 +1923,9 @@ The multi-indices of the previous example can be constructed using
 auto i00 = TypeTree::treePath(_0, 0);
 auto i01 = TypeTree::treePath(_0, 1);
 auto i02 = TypeTree::treePath(_0, 2);
-auto i1 = TypeTree::treePath(_1);
+auto i1  = TypeTree::treePath(_1);
 \end{lstlisting}
+which is much shorter.
 To access entries of a \cpp{HybridTreePath} object, the object has
 the method
 %
@@ -1939,12 +1936,12 @@ constexpr decltype(auto) operator[](const Dune::index_constant<i>&) const;
 %
 Depending on the template parameter \cpp{i}, the return type is either \cpp{std::size_t}
 or \cpp{Dune::index_constant<i>}.
-Notice that this construction is necessary although the function is already
+Note that this construction is necessary although the function is already
 \cpp{constexpr}:
 Since \cpp{HybridTreePath} objects are intended to select
 children of different type in run-time contexts, they have to encode
 compile time index values into the run-time index objects.
-The latter is only possible by making the types of those index object
+The latter is only possible by making the types of those index objects
 dependent on their compile time values.
 
 However, as objects of type \cpp{Dune::index_constant} can be implicitly converted
@@ -1954,7 +1951,7 @@ to \cpp{std::size_t}, there is also
 auto operator[](std::size_t) const;
 \end{lstlisting}
 %
-Hence, to get the first entry it is possible to write
+Hence, to get the first digit of a tree path it is possible to write
 \begin{lstlisting}[style=Example]
 std::size_t a = myHybridTreePath[0];
 \end{lstlisting}
@@ -1990,7 +1987,7 @@ module). However, it has the advantage that standard run-time loops can be used
 to iterate over the indices.
 
 Dynamic multi-indices are random-access containers holding entries of a fixed integer type.
-In particular, all implement a common interface, consisting of two member functions
+All implement a common interface, consisting of two member functions
 %
 \begin{lstlisting}[style=Interface]
 std::size_t size() const;
@@ -2009,15 +2006,15 @@ In the following we will
 give an overview of the types used to represent multi-indices
 in \dunemodule{dune-functions}.
 In the most general case, not all multi-indices for a given basis have
-the same number of digits.  As an example, consider columns 1, 2, 5, and 6
-of Table~\ref{tab:th_indexing_variants}, which gives such numberings for the Taylor--Hood basis.
-Such multi-indices are typically represented
+the same number of digits.  As examples, consider columns 1, 2, 5, and 6
+of Table~\ref{tab:th_indexing_variants}, which give such numberings for the Taylor--Hood basis.
+In these cases, multi-indices are typically represented
 by the class
 \begin{lstlisting}[style=Interface]
 template <class T, int k>
 class ReservedVector;
 \end{lstlisting}
-from the \dunemodule{dune-common} module which is parameterized
+from the \dunemodule{dune-common} module, which is parameterized
 by the entry type \cpp{T} and a capacity \cpp{k}.
 It implements an STL-compatible random-access container with a dynamic size,
 which may not exceed \cpp{k} entries.
@@ -2026,7 +2023,7 @@ like \cpp{std::vector<T>}, the class \cpp{ReservedVector} stores its entries
 on the stack.  This avoids dynamic memory management, and makes the
 implementation much more efficient. The global multi-indices typically have
 a small number of digits only with a known upper bound.
-Hence the overhead of always using a buffer of size \cpp{k}
+Hence the overhead of always using a buffer of size \cpp{k} even
 for indices with less than \cpp{k} digits will typically be small.
 
 However, many bases can be indexed by uniform index trees, i.e., sets of indices where
@@ -2035,7 +2032,8 @@ all indices have the same number of digits.  In that case, the capacity of a
 However, in addition to the buffer, each \cpp{ReservedVector} object has to store
 the container length, which is not needed when the index set is known to be uniform.
 \cpp{GlobalBasis} objects that implement uniform index sets can therefore
-opt to use a fixed-size container type like \cpp{std::array}.
+opt to use a fixed-size container type like \cpp{std::array} instead of
+\cpp{ReservedVector}.
 
 Finally, if the basis is indexed with a flat index, i.e., a multi-index with only a single digit,
 then using an array can be a bit cumbersome.  Morally, flat multi-indices
@@ -2097,13 +2095,13 @@ These can be directly used in finite element simulation codes. At the time of wr
    to grid entities such as vertices, edges, or elements.  The \dunemodule{dune-localfunctions}
    programmer interface of a $B$-spline basis nevertheless mandates that a
    \cpp{LocalCoefficient} object must be available on each element, which assigns shape functions
-   to faces of the reference elements. For the \cpp{BSplineBasis}, the behavior of this
+   to faces of the reference element. For the \cpp{BSplineBasis}, the behavior of this
    object is undefined.
 
  \item \cpp{TaylorHoodBasis}:
-   An implementation of a Taylor--Hood basis.  It exists mainly to serve as an example of
+   An implementation of a first-order Taylor--Hood basis.  It exists mainly to serve as an example of
    how to directly implement a basis with a non-trivial tree.
-   Generally, non-trivial product bases like a Taylor--Hood basis
+   Generally, non-trivial product bases
    can be easily constructed in a generic way. This approach is described
    in Chapter~\ref{sec:composed_bases} and it is the preferred way to construct
    a Taylor--Hood basis.
@@ -2120,8 +2118,8 @@ may require additional transformations. This is the case for the following globa
 bases implementations.
 
 \begin{itemize}
- \item \cpp{RaviartThomasBasis}: The standard Raviart--Thomas basis for problems in
-  $H(\text{div})$~\cite{boffi_brezzi_fortin:2013}.  Available for different orders and element types.
+ \item \cpp{RaviartThomasBasis}: The standard Raviart--Thomas basis~\cite{boffi_brezzi_fortin:2013}
+  for problems in $H(\text{div})$.  Available for different orders and element types.
 
  \item \cpp{BrezziDouglasMariniBasis}: The standard Brezzi--Douglas--Marini basis, which is an
   alternative basis for $H(\text{div})$-conforming problems~\cite{boffi_brezzi_fortin:2013}.
@@ -2129,9 +2127,9 @@ bases implementations.
 
 Both bases require the Piola transformation to properly pull back the basis functions
 onto the reference element.  This transformation is \emph{not} performed by the
-\dunemodule{dune-functions} implementation, and is expected to happen in user code.
+\dunemodule{dune\-functions} implementation, and is expected to happen in user code.
 For a detailed discussion of the template parameters and constructor arguments
-of the basis implementations listed above we refer to the class documentation.
+of the basis implementations listed above we refer to the online class documentation.
 
 
 \subsection{Combining bases into trees}
@@ -2160,12 +2158,12 @@ like, e.g., the grid view, doing this hierarchic construction
 manually is verbose and error prone. As a more user friendly and safer solution
 a global basis can be constructed by a call to
 \begin{lstlisting}[style=Interface]
-template <class GridView, class PreBasisFactory>
-auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
+template <class GridView, class PreBasis>
+auto makeBasis(const GridView& gridView, PreBasis&& preBasis);
 \end{lstlisting}
-The pre-basis-factory argument encodes the hierarchic product.
-The actual pre-bases are constructed automatically by the
-\cpp{makeBasis()} function from the pre-basis factories in a consistent way.
+The pre-basis argument encodes the hierarchic product.
+The actual basis is constructed automatically by the
+\cpp{makeBasis()} function from the pre-bases in a consistent way.
 This also determines a suitable multi-index type automatically,
 which otherwise would have to be done by the user.
 
@@ -2174,20 +2172,21 @@ This leaf is then, e.g., one of the basis implementations of the previous sectio
 As a convention, for each global basis
 \cpp{FooBarBasis} there is a function \cpp{BasisFactory::fooBar()}
 (defined in the same header file as \cpp{FooBarBasis}),
-creating a suitable pre-basis-factory object which
+creating a suitable pre-basis object which
 stores all basis-specific information.
 That means that in particular you can write
 \begin{lstlisting}[style=Example]
 auto raviartThomasBasis = makeBasis(gridView, raviartThomas<k>());
 \end{lstlisting}
 to obtain a Raviart--Thomas basis for the given grid view.
-Notice that the \cpp{raviartThomas()} function, just like the corresponding functions for other bases, does not need
-the grid view as parameter.
-The call to \cpp{makeBasis} is equivalent to constructing
+This call to \cpp{makeBasis} is equivalent to constructing
 the basis directly:
 \begin{lstlisting}[style=Example]
 RaviartThomasBasis<GridView,k> raviartThomasBasis(gridView);
 \end{lstlisting}
+Note that the \cpp{raviartThomas()} function, just like the corresponding functions for other bases, does not need
+the grid view as parameter.
+
 If \cpp{FooBarBasis} has template and/or constructor parameters, then by convention they
 are given in the same order as the template and method
 parameters of the \cpp{BasisFactory::fooBar()} function.
@@ -2196,18 +2195,18 @@ As the only difference, the former has the grid view type and object prepended.
 The pre-basis combining several bases in a product is called \cpp{CompositePreBasis},
 defined in the header \file{dune/functions/functionspacebases/compositebasis.hh}.
 It implements a \emph{composite} tree node as introduced in Definition~\ref{def:power_node}.
-Analogously to the above description, a pre-basis factory for a tree with a composite root
+Analogously to the above description, a pre-basis for a tree with a composite root
 can be constructed using the global function
 \begin{lstlisting}[style=Interface]
-template <class... ChildPreBasisFactory>
-auto composite(ChildPreBasisFactory&&... childPreBasisFactory);
+template <class... ChildPreBasis>
+auto composite(ChildPreBasis&&... childPreBasis);
 \end{lstlisting}
 contained in the namespace \cpp{BasisFactory}.
 The method has an unspecified number of arguments, of unspecified type.
-The arguments are expected to be pre-basis-factory objects themselves.
-They can either be plain pre-basis-factories constructed by, e.g.,
+The arguments are expected to be pre-basis objects themselves.
+They can either be plain pre-bases constructed by, e.g.,
 \cpp{lagrange<1>()} or \cpp{raviartThomas<k>()},
-or composite- or power pre-basis-factories constructed by \cpp{composite()}
+or composite- or power pre-bases constructed by \cpp{composite()}
 or \cpp{power()} (see below), respectively.
 
 As an example, to combine a Raviart--Thomas basis with a zero-order Lagrange basis
@@ -2221,7 +2220,7 @@ auto mixedBasis = makeBasis(
     lagrange<0>()
   ));
 \end{lstlisting}
-Combining three copies of a first order Lagrange basis for a displacement field in elasticity theory is
+Combining three copies of a first-order Lagrange basis for a displacement field in elasticity theory is
 done by
 \begin{lstlisting}[style=Example]
 auto displacementBasis = makeBasis(
@@ -2268,19 +2267,19 @@ The examples produce the trees shown in Figure~\ref{fig:example_composite_bases}
 
 The second example is not as elegant as it could be.  First of all, it is inconvenient and unnecessarily
 wordy to list the same scalar Lagrange basis three times.  Secondly, the required number may depend on
-a compile-time parameter.
+a parameter.
 Finally, the implementation can benefit from the explicit knowledge that
 all children are equal.
 For these reasons, \dunemodule{dune-functions}
-offers a second way to combine bases: The \cpp{PowerPreBasis} with a
-corresponding pre-basis-factory to be constructed with \cpp{BasisFactory::power()}.
+offers a second way to combine bases: The \cpp{PowerPreBasis}
+to be constructed by the factory method \cpp{BasisFactory::power()}.
 The interface is again a single method
 \begin{lstlisting}[style=Interface]
-template<std::size_t k, class ChildPreBasisFactory>
-auto power(ChildPreBasisFactory&& childPreBasisFactory)
+template<std::size_t k, class ChildPreBasis>
+auto power(ChildPreBasis&& childPreBasis)
 \end{lstlisting}
 provided in the file \file{dune/functions/functionspacebases/powerbasis.hh}.
-It combines \cpp{k} copies of a subtree of type \cpp{ChildPreBasisFactory} in a new tree.  Therefore, the
+It combines \cpp{k} copies of a subtree of type \cpp{ChildPreBasis} in a new tree.  Therefore, the
 displacement vector field basis from above is more easily written as
 \begin{lstlisting}[style=Example]
 auto displacementBasis = makeBasis(
@@ -2289,7 +2288,7 @@ auto displacementBasis = makeBasis(
     lagrange<1>()
   ));
 \end{lstlisting}
-Since \cpp{composite()} and \cpp{power()} create pre-basis-factories themselves,
+Since \cpp{composite()} and \cpp{power()} create pre-bases themselves,
 all these techniques can be combined. To obtain the \cpp{p}-th order Taylor--Hood basis,
 write
 \begin{lstlisting}[style=Example]
@@ -2301,7 +2300,7 @@ auto taylorHoodBasis = makeBasis(
     lagrange<p>()
   ));
 \end{lstlisting}
-The call to \cpp{power} produces the \cpp{dim}-component velocity basis of order \cpp{p+1},
+The call to \cpp{power} produces the \cpp{dim}-component Lagrange basis of order \cpp{p+1} for the velocity,
 and the call to \cpp{composite} combines this with a \cpp{p}-th order Lagrange basis for the pressure.
 Note that this is the preferred way to construct a Taylor--Hood basis in contrast to
 \begin{lstlisting}[style=Example]
@@ -2336,7 +2335,7 @@ flag indicating an \cpp{IndexMergingStrategy}. The four implemented strategies a
 \end{itemize}
 and have been described in Section~\ref{sec:index_strategies}.
 For each strategy \cpp{FooBar} there is a function \cpp{BasisFactory::fooBar()} creating
-the flag in the header \file{functionspacebases/basistags.hh}.
+the flag in the header \file{functionspacebases/\allowbreak basistags.hh}.
 For example, a Taylor--Hood basis with the indexing listed in the
 second column (labeled BL(BI)) of Table~\ref{tab:th_indexing_variants} can be created using
 \begin{lstlisting}[style=Example]
