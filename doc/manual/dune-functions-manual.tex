@@ -92,6 +92,7 @@
 \lstdefinestyle{Interface}{backgroundcolor=\color{interfacecolor},frame=single}
 
 \newcommand{\cpp}[1]{\lstinline[basicstyle=\ttfamily]!#1!}
+\newcommand{\cppbreak}[1]{\lstinline[basicstyle=\ttfamily,breaklines]!#1!}
 
 
 
@@ -905,10 +906,11 @@ to power nodes.
     multi-indices $(I^0), (I^1), \dots$ for $\Lambda_0$, $(K^0), (K^1), \dots$ for $\Lambda_1$,
     and so on.
 
+    \begin{center}
     \begin{tabular}{c|c|c|c}
       indices for $\Lambda_0$ &
       indices for $\Lambda_1$ &
-      indices for $\dots$ &
+      \hspace{2em}$\dots$\hspace{2em} &
       indices for $\Lambda$ \\
       \hline
       $\iota_0(\hat{\lambda}_{0,0}) = (I^0)$ & & &
@@ -924,6 +926,7 @@ to power nodes.
       & & \dots &
         \dots \\
     \end{tabular}
+    \end{center}
 
   \item
     \textbf{BlockedInterleaved}: This strategy is only well-defined for power nodes. It appends the child index
@@ -935,10 +938,11 @@ to power nodes.
     \end{align*}
     An example is given in the following table:
 
+    \begin{center}
     \begin{tabular}{c|c|c|c}
       indices for $\Lambda_0$ &
       indices for $\Lambda_1$ &
-      indices for $\dots$ &
+      \hspace{2em}$\dots$\hspace{2em} &
       indices for $\Lambda$ \\
       \hline
       $\iota_0(\hat{\lambda}_{0,0}) = (I^0)$ & & &
@@ -960,6 +964,7 @@ to power nodes.
       & & \dots &
         \dots \\
     \end{tabular}
+    \end{center}
 
     To see that this strategy does not work for general composite nodes,
     consider $\iota_0(\Lambda_0) = \{0\}$ and $\iota_1(\Lambda_1) = \{(0,0)\}$.
@@ -990,10 +995,11 @@ multi-index digits. Such strategies are called \emph{flat}.
     This guarantees that $\iota$ is always an index map for $\Lambda$.
     An example is given in the following table:
 
+    \begin{center}
     \begin{tabular}{c|c|c|c}
       indices for $\Lambda_0$ &
       indices for $\Lambda_1$ &
-      indices for $\dots$ &
+      \hspace{2em}$\dots$\hspace{2em} &
       indices for $\Lambda$ \\
       \hline
       $\iota_0(\hat{\lambda}_{0,0}) = (0,I^0)$ & & &
@@ -1009,6 +1015,7 @@ multi-index digits. Such strategies are called \emph{flat}.
       & & \dots &
         \dots \\
     \end{tabular}
+    \end{center}
 
     The digit zero deliberately appears twice in the column for $\Lambda_1$, to demonstrate
     that a consecutive first digit is not required.
@@ -1026,10 +1033,11 @@ multi-index digits. Such strategies are called \emph{flat}.
     where the fixed stride $m$ is given by the number of children of $\Lambda$.
     The following table shows an example:
 
+    \begin{center}
     \begin{tabular}{c|c|c|c}
       indices for $\Lambda_0$ &
       indices for $\Lambda_1$ &
-      indices for $\dots$ &
+      \hspace{1em}$\dots$\hspace{1em} &
       indices for $\Lambda$ \\
       \hline
       $\iota_0(\hat{\lambda}_{0,0}) = (0,I^0)$ & & &
@@ -1051,6 +1059,7 @@ multi-index digits. Such strategies are called \emph{flat}.
       & & \dots &
         \dots \\
     \end{tabular}
+    \end{center}
 
     Again, for this interleaved strategy, $\iota$ may not be an
     index map for general composite nodes.
@@ -1477,7 +1486,7 @@ we do not enforce a precise set of constructors.
 GlobalBasis(@@<implementation defined>@@);
 \end{lstlisting}
 Each \cpp{GlobalBasis} may have
-one or several constructors with implementation-dependent lists of arguments.
+one or several constructors with implementation-depen\-dent lists of arguments.
 
 The main feature of a \cpp{GlobalBasis} is to give access to basis functions and their indices.
 Most of this access happens through the localization of the basis to single grid elements (Section~\ref{sec:localization}).
@@ -1603,7 +1612,7 @@ associated to the global basis, i.e., it computes $\max_e \abs{\Lambda|_e}$.
 As this information does not depend on a particular element,
 the method \cpp{maxSize()} can even be called in unbound state.
 
-As an example, suppose that \cpp{basis} is an object of type \cpp{Dune::Functions::TaylorHoodBasis},
+As an example, suppose that \cpp{basis} is an object of type \cppbreak{Dune::Functions::TaylorHoodBasis},
 which implements the Taylor--Hood basis that has been used for examples in the previous section.
 The following code loops over all elements of the grid view and prints the numbers
 of degrees of freedom per element:
@@ -1613,7 +1622,8 @@ auto localView = basis.localView();
 for (auto&& element : elements(basis.gridView()))
 {
   localView.bind(element);
-  std::cout << "Element with " << localView.size() << " degrees of freedom" << std::endl;
+  std::cout << "Element with " << localView.size()
+    << " degrees of freedom" << std::endl;
 }
 \end{lstlisting}
 
@@ -1995,7 +2005,7 @@ auto operator[](std::size_t) const;
 \end{lstlisting}
 %
 The \cpp{size()} method returns the number of digits of the multi-index,
-and \cpp{operator[](std::size_t)} allows to access
+and \cppbreak{operator[](std::size_t)} allows to access
 each entry by its position. Since multi-indices are
 typically not changed by user code, both methods are \cpp{const}.
 The type used to represent
@@ -2387,7 +2397,7 @@ auto taylorHoodBasis = makeBasis(
   ));
 \end{lstlisting}
 If no strategy is given, \cpp{composite} will use the \cpp{BlockedLexicographic} strategy,
-whereas \cpp{power} will use \cpp{BlockedInterleaved}.
+where\-as \cpp{power} will use \cpp{BlockedInterleaved}.
 
 
 
@@ -2620,8 +2630,8 @@ can be evaluated point-wise in $\Omega$, \cpp{dune-functions} provides
 the function
 %
 \begin{lstlisting}[style=Interface]
-template<class Range, class Basis, class C>
-auto makeDiscreteGlobalBasisFunction(const Basis& basis, const C& coefficients);
+template<class Range, class B, class C>
+auto makeDiscreteGlobalBasisFunction(const B& basis, const C& coefficients);
 \end{lstlisting}
 %
 For given basis \cpp{basis} and coefficient vector \cpp{coefficients}
@@ -2675,7 +2685,8 @@ using VelocityRange = FieldVector<double,dim>;
 
 // Create a function for the velocity field only
 // still using the vector x for the full taylorHoodBasis.
-auto velocityFunction = makeDiscreteGlobalBasisFunction<VelocityRange>(velocityBasis, x);
+auto velocityFunction =
+          makeDiscreteGlobalBasisFunction<VelocityRange>(velocityBasis, x);
 \end{lstlisting}
 
 Notice that the \cpp{dim} leaf nodes of the function space
@@ -2804,8 +2815,8 @@ To support this kind of interpolation another variant of
 \cpp{interpolate()} allows to explicitly mark a subset of
 coefficient vector entries to be written.
 \begin{lstlisting}[style=Interface]
-template <class Basis, class C, class F, class BV>
-void interpolate(const Basis& basis, C&& coeff, const F& f, const BV& bitVector)
+template <class B, class C, class F, class BV>
+void interpolate(const B& basis, C&& coeff, const F& f, const BV& bitVector)
 \end{lstlisting}
 Conceptually, the additional \cpp{bitVector}
 argument must be a container of booleans having
