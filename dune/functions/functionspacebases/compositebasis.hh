@@ -520,7 +520,7 @@ auto composite(Args&&... args)
   auto childIndices = std::make_index_sequence<children>{};
 
   // Unpack tuple only for those entries related to children
-  return applyPartial([&](auto&&... childPreBasisFactory){
+  return applyPartial([](auto&&... childPreBasisFactory){
     return Imp::CompositePreBasisFactory<IndexMergingStrategy, std::decay_t<decltype(childPreBasisFactory)>...>(std::forward<decltype(childPreBasisFactory)>(childPreBasisFactory)...);
   },
   std::forward_as_tuple(std::forward<Args>(args)...),
