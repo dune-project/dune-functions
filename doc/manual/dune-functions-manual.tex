@@ -1398,9 +1398,8 @@ The design of the \dunemodule{dune-functions} interface for bases of function sp
 follows the ideas of the previous section. The main interface concept are global basis objects
 that represent trees of function space bases. These trees can be localized to individual elements
 of the grid.  Such a localization provides access to the (tree of) shape functions there,
-together with the three shape-function index maps
-$\iota^{\text{leaf-local}}_{\hat{\Lambda}|_e}$,
-$\iota^{\text{leaf}\to\text{local}}_e$,
+together with the two shape-function index maps
+$\iota^{\text{leaf}\to\text{local}}_e$ and
 $\iota^{\text{local}\to\text{global}}_e$.
 The structure of the interface is visualized in Figure~\ref{fig:febasis_interface_schematic}.
 
