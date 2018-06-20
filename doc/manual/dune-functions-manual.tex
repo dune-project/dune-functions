@@ -2166,6 +2166,14 @@ The actual basis is constructed automatically by the
 \cpp{makeBasis()} function from the pre-bases in a consistent way.
 This also determines a suitable multi-index type automatically,
 which otherwise would have to be done by the user.
+\footnote{The interface description is in fact slightly simplified:
+The user-provided arguments of \cpp{makeBasis} are not pre-bases themselves
+but pre-basis-factory objects that can construct the corresponding pre-bases.
+This mechanism allows to delay passing the shared information
+(e.g. the grid view) to the construction of the real pre-bases which is triggered
+by \cpp{makeBasis}. However, to simplify the presentation
+we will ignore the technical difference of a pre-basis
+and its pre-basis-facory in the following.}
 
 In the simple-most case, the basis tree consists of a single leaf.
 This leaf is then, e.g., one of the basis implementations of the previous section.
