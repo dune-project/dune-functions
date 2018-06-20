@@ -9,6 +9,8 @@
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/concept.hh>
 
+#include <dune/geometry/quadraturerules.hh>
+
 #include <dune/functions/functionspacebases/concepts.hh>
 
 
@@ -165,6 +167,106 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
 
 
 
+/*
+ * Check if basis functions are continuous across faces.
+ * Continuity is checked by evaluation at a set of quadrature points
+ * from a quadrature rule of given order.
+ * If two basis functions (on neighboring elements) share the same
+ * global index, their values at the quadrature points (located on
+ * their intersection) should coincide up to the given tolerance.
+ *
+ * If e basis function only appears on one side of the intersection,
+ * it should be zero on the intersection.
+ */
+template<class Basis>
+Dune::TestSuite checkBasisContinuity(const Basis& basis, std::size_t order = 5, double tol = 1e-10)
+{
+  Dune::TestSuite test("Global continuity check of basis functions");
+
+
+  auto localView = basis.localView();
+  auto neighborLocalView = basis.localView();
+
+  auto norm = [](const auto& x) {
+    return x.infinity_norm();
+  };
+
+  auto dist = [norm](const auto& x, const auto& y) {
+    auto diff = x;
+    diff -= y;
+    return norm(diff);
+  };
+
+
+  for (const auto& e : elements(basis.gridView()))
+  {
+    localView.bind(e);
+    for(const auto& intersection : intersections(basis.gridView(), e))
+    {
+      if (intersection.neighbor())
+      {
+        auto quadRule = Dune::QuadratureRules<double, Basis::GridView::dimension-1>::rule(intersection.type(), order);
+
+        neighborLocalView.bind(intersection.outside());
+
+        Dune::TypeTree::forEachLeafNode(localView.tree(), [&](const auto& node, auto&& treePath) {
+          const auto& neighborNode = Dune::TypeTree::child(neighborLocalView.tree(), treePath);
+
+          using Range = typename std::decay_t<decltype(node)>::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+          std::vector<std::vector<Range>> values;
+          std::vector<std::vector<Range>> neighborValues;
+
+          values.resize(quadRule.size());
+          neighborValues.resize(quadRule.size());
+          for(std::size_t k=0; k<quadRule.size(); ++k)
+          {
+            auto pointInElement = intersection.geometryInInside().global(quadRule[k].position());
+            auto pointInNeighbor = intersection.geometryInOutside().global(quadRule[k].position());
+            node.finiteElement().localBasis().evaluateFunction(pointInElement, values[k]);
+            neighborNode.finiteElement().localBasis().evaluateFunction(pointInNeighbor, neighborValues[k]);
+          }
+
+          for(std::size_t i=0; i<node.size(); ++i)
+          {
+            bool foundInNeighbor = false;
+            double maxJump = 0.0;
+            for(std::size_t j=0; j<neighborNode.size(); ++j)
+            {
+              if (localView.index(node.localIndex(i)) == neighborLocalView.index(neighborNode.localIndex(j)))
+              {
+                // Basis function should only appear once in the neighbor element.
+                test.check(foundInNeighbor==false)
+                  << "Basis function " << localView.index(node.localIndex(i))
+                  << " appears twice in element "
+                  << neighborLocalView.element().type() << "#" << basis.gridView().indexSet().index(neighborLocalView.element()) ;
+
+                // If basis function appears in neighbor element, then the
+                // jump should be (numerically) zero across the intersection.
+                for(std::size_t k=0; k<quadRule.size(); ++k)
+                  maxJump = std::max(maxJump, dist(values[k][i], neighborValues[k][j]));
+              }
+            }
+            // If basis function does not appear in neighbor element, then it
+            // should be (numerically) zero on the intersection.
+            if (not(foundInNeighbor))
+              for(std::size_t k=0; k<quadRule.size(); ++k)
+                maxJump = std::max(maxJump, norm(values[k][i]));
+            test.check(maxJump < tol)
+              << "Basis function " << localView.index(node.localIndex(i))
+              << " is discontinuous across intersection of elements "
+              << localView.element().type() << "#" << basis.gridView().indexSet().index(localView.element()) << " and "
+              << neighborLocalView.element().type() << "#" << basis.gridView().indexSet().index(neighborLocalView.element());
+              // << " since maximal jump " << maxJump << " exceeds tolerance";
+          }
+        });
+      }
+    }
+  }
+  return test;
+}
+
+
+
 template<class Basis>
 Dune::TestSuite checkBasis(const Basis& basis)
 {
@@ -180,5 +282,7 @@ Dune::TestSuite checkBasis(const Basis& basis)
 
   return test;
 }
+
+
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_TEST_BASISTEST_HH
