@@ -2032,7 +2032,8 @@ all indices have the same number of digits.  In that case, the capacity of a
 However, in addition to the buffer, each \cpp{ReservedVector} object has to store
 the container length, which is not needed when the index set is known to be uniform.
 \cpp{GlobalBasis} objects that implement uniform index sets can therefore
-opt to use a fixed-size container type like \cpp{std::array}.
+opt to use a fixed-size container type like \cpp{std::array} instead of
+\cpp{ReservedVector}.
 
 Finally, if the basis is indexed with a flat index, i.e., a multi-index with only a single digit,
 then using an array can be a bit cumbersome.  Morally, flat multi-indices
@@ -2094,13 +2095,13 @@ These can be directly used in finite element simulation codes. At the time of wr
    to grid entities such as vertices, edges, or elements.  The \dunemodule{dune-localfunctions}
    programmer interface of a $B$-spline basis nevertheless mandates that a
    \cpp{LocalCoefficient} object must be available on each element, which assigns shape functions
-   to faces of the reference elements. For the \cpp{BSplineBasis}, the behavior of this
+   to faces of the reference element. For the \cpp{BSplineBasis}, the behavior of this
    object is undefined.
 
  \item \cpp{TaylorHoodBasis}:
-   An implementation of a Taylor--Hood basis.  It exists mainly to serve as an example of
+   An implementation of a first-order Taylor--Hood basis.  It exists mainly to serve as an example of
    how to directly implement a basis with a non-trivial tree.
-   Generally, non-trivial product bases like a Taylor--Hood basis
+   Generally, non-trivial product bases
    can be easily constructed in a generic way. This approach is described
    in Chapter~\ref{sec:composed_bases} and it is the preferred way to construct
    a Taylor--Hood basis.
@@ -2117,8 +2118,8 @@ may require additional transformations. This is the case for the following globa
 bases implementations.
 
 \begin{itemize}
- \item \cpp{RaviartThomasBasis}: The standard Raviart--Thomas basis for problems in
-  $H(\text{div})$~\cite{boffi_brezzi_fortin:2013}.  Available for different orders and element types.
+ \item \cpp{RaviartThomasBasis}: The standard Raviart--Thomas basis~\cite{boffi_brezzi_fortin:2013}
+  for problems in $H(\text{div})$.  Available for different orders and element types.
 
  \item \cpp{BrezziDouglasMariniBasis}: The standard Brezzi--Douglas--Marini basis, which is an
   alternative basis for $H(\text{div})$-conforming problems~\cite{boffi_brezzi_fortin:2013}.
@@ -2126,9 +2127,9 @@ bases implementations.
 
 Both bases require the Piola transformation to properly pull back the basis functions
 onto the reference element.  This transformation is \emph{not} performed by the
-\dunemodule{dune-functions} implementation, and is expected to happen in user code.
+\dunemodule{dune\-functions} implementation, and is expected to happen in user code.
 For a detailed discussion of the template parameters and constructor arguments
-of the basis implementations listed above we refer to the class documentation.
+of the basis implementations listed above we refer to the online class documentation.
 
 
 \subsection{Combining bases into trees}
@@ -2157,12 +2158,12 @@ like, e.g., the grid view, doing this hierarchic construction
 manually is verbose and error prone. As a more user friendly and safer solution
 a global basis can be constructed by a call to
 \begin{lstlisting}[style=Interface]
-template <class GridView, class PreBasisFactory>
-auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory);
+template <class GridView, class PreBasis>
+auto makeBasis(const GridView& gridView, PreBasis&& preBasis);
 \end{lstlisting}
-The pre-basis-factory argument encodes the hierarchic product.
-The actual pre-bases are constructed automatically by the
-\cpp{makeBasis()} function from the pre-basis factories in a consistent way.
+The pre-basis argument encodes the hierarchic product.
+The actual basis is constructed automatically by the
+\cpp{makeBasis()} function from the pre-bases in a consistent way.
 This also determines a suitable multi-index type automatically,
 which otherwise would have to be done by the user.
 
@@ -2171,20 +2172,21 @@ This leaf is then, e.g., one of the basis implementations of the previous sectio
 As a convention, for each global basis
 \cpp{FooBarBasis} there is a function \cpp{BasisFactory::fooBar()}
 (defined in the same header file as \cpp{FooBarBasis}),
-creating a suitable pre-basis-factory object which
+creating a suitable pre-basis object which
 stores all basis-specific information.
 That means that in particular you can write
 \begin{lstlisting}[style=Example]
 auto raviartThomasBasis = makeBasis(gridView, raviartThomas<k>());
 \end{lstlisting}
 to obtain a Raviart--Thomas basis for the given grid view.
-Notice that the \cpp{raviartThomas()} function, just like the corresponding functions for other bases, does not need
-the grid view as parameter.
-The call to \cpp{makeBasis} is equivalent to constructing
+This call to \cpp{makeBasis} is equivalent to constructing
 the basis directly:
 \begin{lstlisting}[style=Example]
 RaviartThomasBasis<GridView,k> raviartThomasBasis(gridView);
 \end{lstlisting}
+Note that the \cpp{raviartThomas()} function, just like the corresponding functions for other bases, does not need
+the grid view as parameter.
+
 If \cpp{FooBarBasis} has template and/or constructor parameters, then by convention they
 are given in the same order as the template and method
 parameters of the \cpp{BasisFactory::fooBar()} function.
@@ -2193,18 +2195,18 @@ As the only difference, the former has the grid view type and object prepended.
 The pre-basis combining several bases in a product is called \cpp{CompositePreBasis},
 defined in the header \file{dune/functions/functionspacebases/compositebasis.hh}.
 It implements a \emph{composite} tree node as introduced in Definition~\ref{def:power_node}.
-Analogously to the above description, a pre-basis factory for a tree with a composite root
+Analogously to the above description, a pre-basis for a tree with a composite root
 can be constructed using the global function
 \begin{lstlisting}[style=Interface]
-template <class... ChildPreBasisFactory>
-auto composite(ChildPreBasisFactory&&... childPreBasisFactory);
+template <class... ChildPreBasis>
+auto composite(ChildPreBasis&&... childPreBasis);
 \end{lstlisting}
 contained in the namespace \cpp{BasisFactory}.
 The method has an unspecified number of arguments, of unspecified type.
-The arguments are expected to be pre-basis-factory objects themselves.
-They can either be plain pre-basis-factories constructed by, e.g.,
+The arguments are expected to be pre-basis objects themselves.
+They can either be plain pre-bases constructed by, e.g.,
 \cpp{lagrange<1>()} or \cpp{raviartThomas<k>()},
-or composite- or power pre-basis-factories constructed by \cpp{composite()}
+or composite- or power pre-bases constructed by \cpp{composite()}
 or \cpp{power()} (see below), respectively.
 
 As an example, to combine a Raviart--Thomas basis with a zero-order Lagrange basis
@@ -2218,7 +2220,7 @@ auto mixedBasis = makeBasis(
     lagrange<0>()
   ));
 \end{lstlisting}
-Combining three copies of a first order Lagrange basis for a displacement field in elasticity theory is
+Combining three copies of a first-order Lagrange basis for a displacement field in elasticity theory is
 done by
 \begin{lstlisting}[style=Example]
 auto displacementBasis = makeBasis(
@@ -2265,19 +2267,19 @@ The examples produce the trees shown in Figure~\ref{fig:example_composite_bases}
 
 The second example is not as elegant as it could be.  First of all, it is inconvenient and unnecessarily
 wordy to list the same scalar Lagrange basis three times.  Secondly, the required number may depend on
-a compile-time parameter.
+a parameter.
 Finally, the implementation can benefit from the explicit knowledge that
 all children are equal.
 For these reasons, \dunemodule{dune-functions}
-offers a second way to combine bases: The \cpp{PowerPreBasis} with a
-corresponding pre-basis-factory to be constructed with \cpp{BasisFactory::power()}.
+offers a second way to combine bases: The \cpp{PowerPreBasis}
+to be constructed by the factory method \cpp{BasisFactory::power()}.
 The interface is again a single method
 \begin{lstlisting}[style=Interface]
-template<std::size_t k, class ChildPreBasisFactory>
-auto power(ChildPreBasisFactory&& childPreBasisFactory)
+template<std::size_t k, class ChildPreBasis>
+auto power(ChildPreBasis&& childPreBasis)
 \end{lstlisting}
 provided in the file \file{dune/functions/functionspacebases/powerbasis.hh}.
-It combines \cpp{k} copies of a subtree of type \cpp{ChildPreBasisFactory} in a new tree.  Therefore, the
+It combines \cpp{k} copies of a subtree of type \cpp{ChildPreBasis} in a new tree.  Therefore, the
 displacement vector field basis from above is more easily written as
 \begin{lstlisting}[style=Example]
 auto displacementBasis = makeBasis(
@@ -2286,7 +2288,7 @@ auto displacementBasis = makeBasis(
     lagrange<1>()
   ));
 \end{lstlisting}
-Since \cpp{composite()} and \cpp{power()} create pre-basis-factories themselves,
+Since \cpp{composite()} and \cpp{power()} create pre-bases themselves,
 all these techniques can be combined. To obtain the \cpp{p}-th order Taylor--Hood basis,
 write
 \begin{lstlisting}[style=Example]
@@ -2298,7 +2300,7 @@ auto taylorHoodBasis = makeBasis(
     lagrange<p>()
   ));
 \end{lstlisting}
-The call to \cpp{power} produces the \cpp{dim}-component velocity basis of order \cpp{p+1},
+The call to \cpp{power} produces the \cpp{dim}-component Lagrange basis of order \cpp{p+1} for the velocity,
 and the call to \cpp{composite} combines this with a \cpp{p}-th order Lagrange basis for the pressure.
 Note that this is the preferred way to construct a Taylor--Hood basis in contrast to
 \begin{lstlisting}[style=Example]
@@ -2333,7 +2335,7 @@ flag indicating an \cpp{IndexMergingStrategy}. The four implemented strategies a
 \end{itemize}
 and have been described in Section~\ref{sec:index_strategies}.
 For each strategy \cpp{FooBar} there is a function \cpp{BasisFactory::fooBar()} creating
-the flag in the header \file{functionspacebases/basistags.hh}.
+the flag in the header \file{functionspacebases/\allowbreak basistags.hh}.
 For example, a Taylor--Hood basis with the indexing listed in the
 second column (labeled BL(BI)) of Table~\ref{tab:th_indexing_variants} can be created using
 \begin{lstlisting}[style=Example]
