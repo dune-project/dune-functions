@@ -4,8 +4,10 @@
 
 \usepackage{scrhack}  % Fix a LaTeX warning
 
+\usepackage{authblk}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\usepackage[utf8x]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
@@ -22,6 +24,7 @@
 \usepackage{enumitem}
 \usepackage{listings}
 \usepackage{float}
+\usepackage{minibox}
 
 
 \usepackage{tikz}
@@ -145,12 +148,30 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \title{Function space bases in the dune-functions module}
-\author{Christian Engwer, Carsten Gräser,\\ Steffen Müthing, and Oliver Sander}
+\author[1]{Christian Engwer}
+\author[2]{Carsten Gräser}
+\author[3]{Steffen Müthing}
+\author[4]{Oliver Sander}
+\renewcommand\Affilfont{\normalsize}
+\affil[1]{Universität Münster, Institute for Computational und Applied Mathematics, christian.engwer@uni-muenster.de}
+\affil[2]{Freie Universität Berlin, Institut für Mathematik, graeser@mi.fu-berlin.de}
+\affil[3]{Universität Heidelberg, Institut für Wissenschaftliches Rechnen, steffen.muething@iwr.uni-heidelberg.de}
+\affil[4]{TU Dresden, Institute for Numerical Mathematics, oliver.sander@tu-dresden.de}
 %\date{}
 
 \begin{document}
 
 \maketitle
+
+\begin{center}
+\minibox[frame,c]{
+  This work is licensed under a\\
+  \emph{Creative Commons Attribution-NoDerivatives 4.0 International License}.\\
+  \includegraphics[width=3cm]{cc-by-nd.pdf}\\
+  The full license text is available here:\\
+  \url{https://creativecommons.org/licenses/by-nd/4.0/legalcode}
+  }
+\end{center}
 
 \begin{abstract}
  The \dunemodule{dune-functions} \dune module provides interfaces for functions and function space bases.
