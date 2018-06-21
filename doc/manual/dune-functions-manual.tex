@@ -552,7 +552,7 @@ The index tree for the example indexing of the Taylor--Hood basis given above is
 in Figure~\ref{fig:taylor_hood_index_tree}.
 
 \begin{figure}
-    \begin{center}
+  \makebox[\textwidth][c]{
         \begin{tikzpicture}[
                 level/.style={
                     sibling distance = (3-#1)*2.5cm + 1cm,
@@ -588,7 +588,7 @@ in Figure~\ref{fig:taylor_hood_index_tree}.
                     edge from parent node[above right] {$1$}
                 };
         \end{tikzpicture}
-    \end{center}
+      }
     \caption{Index tree for the Taylor--Hood basis inherited from the basis tree}
     \label{fig:taylor_hood_index_tree}
 \end{figure}
@@ -1073,7 +1073,7 @@ provides a way to use self-implemented custom rules.
 
 \begin{table}
 \footnotesize
-\begin{center}
+\makebox[\textwidth][c]{
 \begin{tabular}{c|c|c|c|c|c|c|c|c}
     & BL(BL)
     & BL(BI)
@@ -1259,7 +1259,7 @@ provides a way to use self-implemented custom rules.
   \\
   \hline
 \end{tabular}
-\end{center}
+}
 \caption{Different indexing strategies for the Taylor--Hood basis functions}
 \label{tab:th_indexing_variants}
 \end{table}
@@ -2459,7 +2459,9 @@ For this example the following table shows the multi-indices
 of the \cpp{SubspaceBasis} extracted from the full basis
 (cf.\ Table~\ref{tab:th_indexing_variants})
 with different columns representing different index merging strategies:
-\begin{center}
+
+\noindent
+\makebox[\textwidth][c]{
 \footnotesize
 \begin{tabular}{c|c|c|c|c|c|c|c|c}
     & BL(BL)
@@ -2517,7 +2519,7 @@ with different columns representing different index merging strategies:
   \\
   \hline
 \end{tabular}
-\end{center}
+}
 
 
 \cpp{SubspaceBasis} objects can be combined with
