@@ -120,6 +120,8 @@
 \newcommand{\dune}{\textsc{Dune}\xspace}
 \newcommand{\program}[1]{\textsc{#1}\xspace}
 
+\IfFileExists{stokes-taylorhood.cc}{\newcommand{\PATH}{.}}{\newcommand{\PATH}{../../examples}}
+
 
 
 % For typesetting Dune module names
@@ -1612,7 +1614,7 @@ associated to the global basis, i.e., it computes $\max_e \abs{\Lambda|_e}$.
 As this information does not depend on a particular element,
 the method \cpp{maxSize()} can even be called in unbound state.
 
-As an example, suppose that \cpp{basis} is an object of type \cppbreak{Dune::Functions::TaylorHoodBasis},
+As an example, suppose that \cpp{basis} is an object of type \cpp{Dune::Functions::TaylorHoodBasis},
 which implements the Taylor--Hood basis that has been used for examples in the previous section.
 The following code loops over all elements of the grid view and prints the numbers
 of degrees of freedom per element:
@@ -2745,22 +2747,22 @@ For example, suppose you have the example function
 implemented as
 %
 \lstinputlisting[linerange=definition_f1_begin-definition_f1_end,
-                 numbers=left]{../../examples/interpolation.cc}
+                 numbers=left]{\PATH/interpolation.cc}
 %
 Additionally, say you have a scalar second-order Lagrange space
 %
 \lstinputlisting[linerange=definition_p2basis_begin-definition_p2basis_end,
-                 numbers=left]{../../examples/interpolation.cc}
+                 numbers=left]{\PATH/interpolation.cc}
 %
 and an empty coefficient vector \cpp{x1}, not necessarily of correct size:
 %
 \lstinputlisting[linerange=definition_x1_begin-definition_x1_end,
-                 numbers=left]{../../examples/interpolation.cc}
+                 numbers=left]{\PATH/interpolation.cc}
 %
 Then, the single line
 %
 \lstinputlisting[linerange=interpolation1_begin-interpolation1_end,
-                 numbers=left]{../../examples/interpolation.cc}
+                 numbers=left]{\PATH/interpolation.cc}
 %
 will fill \cpp{x1} with the nodal values of the function \cpp{f1}.
 
@@ -2773,24 +2775,24 @@ Suppose you want to interpolate
 the velocity and pressure components for a Taylor--Hood basis
 %
 \lstinputlisting[linerange=taylorhood_basis_begin-taylorhood_basis_end,
-                 numbers=left]{../../examples/interpolation.cc}
+                 numbers=left]{\PATH/interpolation.cc}
 %
 into a suitable coefficient vector
 %
 \lstinputlisting[linerange=taylorhood_vector_begin-taylorhood_vector_end,
-                 numbers=left]{../../examples/interpolation.cc}
+                 numbers=left]{\PATH/interpolation.cc}
 %
 Then interpolation of \cpp{f1} into the pressure components can simply
 be achieved using
 %
 \lstinputlisting[linerange=taylorhood_pressure_begin-taylorhood_pressure_end,
-                 numbers=left]{../../examples/interpolation.cc}
+                 numbers=left]{\PATH/interpolation.cc}
 %
 Similarly we can interpolate a vector-field \cpp{f2}
 into the non-trivial subtree representing the velocity using
 %
 \lstinputlisting[linerange=taylorhood_velocity_begin-taylorhood_velocity_end,
-                 numbers=left]{../../examples/interpolation.cc}
+                 numbers=left]{\PATH/interpolation.cc}
 %
 It is also possible to interpolate into the full \cpp{taylorHoodBasis}
 if the range type of the provided function has the same nesting structure
@@ -2826,12 +2828,12 @@ For example, to interpolate the \cpp{f2} only into the boundary velocity degrees
 you first have to setup a suitable bit-vector
 %
 \lstinputlisting[linerange=setup_mask_begin-setup_mask_end,
-                 numbers=left]{../../examples/interpolation.cc}
+                 numbers=left]{\PATH/interpolation.cc}
 %
 which then allows to write
 %
 \lstinputlisting[linerange=masked_interpolation_begin-masked_interpolation_end,
-                 numbers=left]{../../examples/interpolation.cc}
+                 numbers=left]{\PATH/interpolation.cc}
 %
 
 
@@ -2851,7 +2853,7 @@ the file can also be accessed by clicking on the icon in the margin.%
                        color = 1 0 0,
                        mimetype=text/plain,
                        description=Complete source code of the Stokes/Taylor-Hood example]
-                       {../../examples/stokes-taylorhood.cc}}
+                       {\PATH/stokes-taylorhood.cc}}
 
 \subsection{The Stokes equation}
 
@@ -2940,7 +2942,7 @@ grid, which we get by using the \cpp{YaspGrid} grid implementation from the
 \dunemodule{dune-grid} module.  Note that there is the line
 %
 \lstinputlisting[linerange={using_namespace_dune_begin-using_namespace_dune_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 at the top of the file, so this namespace is imported completely.  Additionally, everything in the \dunemodule{dune-functions}
 module is contained in the namespace \cpp{Functions}.  This namespace is not imported; instead, the prefix \cpp{Functions::} is always
@@ -2949,18 +2951,18 @@ given explicitly.
 
 %
 \lstinputlisting[linerange={main_begin-mpi_setup_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 %
 \lstinputlisting[linerange={grid_setup_begin-grid_setup_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 The \cpp{gridView} object is the flat finite element grid that we will use for
 the computation.
 On this grid view, we then set up the function space basis for the Taylor--Hood element.  This is as simple as
 %
 \lstinputlisting[linerange={function_space_basis_begin-function_space_basis_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 This way of constructing a Taylor--Hood basis from instances of Lagrange bases
 has been discussed in Section~\ref{sec:composed_bases}.  The indexing strategies
@@ -2986,7 +2988,7 @@ It uses the nesting machinery from \dunemodule{dune-istl},
 but data types from other linear algebra libraries could be used as well.
 %
 \lstinputlisting[linerange={linear_algebra_setup_begin-linear_algebra_setup_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Note that \cpp{VectorType} and \cpp{MatrixType}
 are no classical containers, because the entries have non-uniform types.
@@ -3002,7 +3004,7 @@ will insert later), all its entries are zero.  An all-zero vector of the correct
 following lines
 %
 \lstinputlisting[linerange={rhs_assembly_begin-rhs_assembly_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 The object returned by \cpp{istlVectorBackend} connects the \dunemodule{dune-functions}
 basis with \dunemodule{dune-istl} linear algebra containers.
@@ -3015,7 +3017,7 @@ To obtain the stiffness matrix we first create an empty matrix object of the cor
 is factored out into a separate method.
 %
 \lstinputlisting[linerange={matrix_assembly_begin-matrix_assembly_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 As the matrix assembly is a central part of this example we explain it in detail below, after having covered the \cpp{main} method.
 
@@ -3026,7 +3028,7 @@ To store this information we use a vector of flags which has the same structure
 as \cpp{VectorType} and is again initialized using the \cpp{ISTLVectorBackend}.
 %
 \lstinputlisting[linerange={initialize_boundary_dofs_vector_begin-initialize_boundary_dofs_vector_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 We now want to mark all the velocity degrees of freedom on the Dirichlet boundary.
 In the driven cavity example, the entire boundary is Dirichlet boundary.
@@ -3042,7 +3044,7 @@ for each such degree of freedom, passing its global index as the callback argume
 To mark the boundary degrees of freedom for the velocity subtree write:
 %
 \lstinputlisting[linerange={determine_boundary_dofs_begin-determine_boundary_dofs_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 The \cpp{forEachBoundaryDOF()} algorithm only considers velocity
 degrees of freedom because we called it with the corresponding subspace basis.
@@ -3054,7 +3056,7 @@ Finally, we define a method implementing the actual Dirichlet values function $\
 that into the right-hand-side vector \cpp{rhs}.
 %
 \lstinputlisting[linerange={interpolate_dirichlet_values_begin-interpolate_dirichlet_values_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Observe how the \dunemodule{dune-functions} interface allows to interpolate C++11 lambdas, which makes the code
 very short and readable. Again the operation is constrained to the velocity degrees of freedom
@@ -3070,7 +3072,7 @@ looping over all matrix rows, but it allows to avoid implementing iterators for 
 nested sparse matrix data types.
 %
 \lstinputlisting[linerange={set_dirichlet_matrix_begin-set_dirichlet_matrix_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Access to the matrix entries needs a matrix analogue to the vector backends---a translation
 layer that converts multi-indices to the correct sequence of instructions required to
@@ -3082,7 +3084,7 @@ It is much simpler than a generic matrix backend, because it is written
 directly for the matrix data type of the Stokes problem.
 %
 \lstinputlisting[linerange={matrixentry_begin-matrixentry_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Notice that the outer indices for the \cpp{MultiTypeBlockMatrix} have to be
 encoded statically, because different matrix entries have different types.
@@ -3107,7 +3109,7 @@ a linear system of equations, and is not particular to \dunemodule{dune-function
 at all.
 %
 \lstinputlisting[linerange={stokes_solve_begin-stokes_solve_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Observe how the \cpp{RestartedGMResSolver} object is completely oblivious to the fact that the matrix
 has a nesting structure.
@@ -3119,14 +3121,14 @@ velocity and pressure discrete functions by combining the appropriate
 coefficient vectors and basis subtrees:
 %
 \lstinputlisting[linerange={make_result_functions_begin-make_result_functions_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Then, we write the resulting velocity as a vector field,
 and the resulting pressure as a scalar field.  We subsample the grid twice, because the \cpp{VTKWriter}
 class natively only displays piecewise linear functions.
 %
 \lstinputlisting[linerange={vtk_output_begin-vtk_output_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 When run, this program produces a file called \file{stokes-taylorhood-result.vtu}.  The file can be opened in
 \program{ParaView}, and the outcome looks like the image on the right in Figure~\ref{fig:driven_cavity}.
@@ -3141,7 +3143,7 @@ The global assembler sets up the matrix pattern, loops over all elements, and ac
 matrices in the global matrix. The signature of the method is
 %
 \lstinputlisting[linerange={global_assembler_signature_begin-global_assembler_signature_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 The only arguments it gets are the finite element basis and the matrix to fill.  Observe that the Taylor--Hood basis is not
 hard-wired here, so we could call the method with a different basis.
@@ -3155,7 +3157,7 @@ The first few lines of the \cpp{assembleStokesMatrix} method set up the matrix o
 and initialize all matrix entries with zero.
 %
 \lstinputlisting[linerange={setup_matrix_pattern_begin-setup_matrix_pattern_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 The method \cpp{setOccupationPattern} that constructs the matrix pattern is included
 in the example file itself.  It is easy to understand for everyone who understands
@@ -3165,14 +3167,14 @@ Next comes the actual element loop.  We first request a \cpp{localView} object
 from the finite element basis:
 %
 \lstinputlisting[linerange={get_localview_begin-get_localview_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 After that starts the loop over the grid elements.  For each element, we bind the \cpp{localView} object
 to the element.
 From now on all enquiries to the local view will implicitly refer to this element.
 %
 \lstinputlisting[linerange={element_loop_and_bind_begin-element_loop_and_bind_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 We then create the element stiffness matrix, and call the separate method \cpp{getLocalMatrix} to fill it.
 For simplicity the code uses a dense matrix type even though it is known a priori
@@ -3181,7 +3183,7 @@ As local shape function indices are flat, a matrix data type without nesting is 
 for the element stiffness matrix:
 %
 \lstinputlisting[linerange={setup_element_stiffness_begin-setup_element_stiffness_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 The \cpp{getLocalMatrix} method is discussed in detail below.
 In addition to the \cpp{elementMatrix} object, it gets only the \cpp{localView} object.  This object contains
@@ -3192,7 +3194,7 @@ element stiffness matrix for the current element.
 The code loops over the entries of the element stiffness matrix and adds them onto the global matrix.
 %
 \lstinputlisting[linerange={accumulate_global_matrix_begin-accumulate_global_matrix_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 The type returned in Lines~\ref{li:stokes_taylorhood_get_global_row_index} and~\ref{li:stokes_taylorhood_get_global_column_index}
 for the global row and column indices is a multi-index.  It has length~3 for velocity degrees of freedom and
@@ -3210,7 +3212,7 @@ submatrix altogether.
 It remains to investigate the method that assembles the element stiffness matrices.  Its signature is
 %
 \lstinputlisting[linerange={local_assembler_signature_begin-local_assembler_signature_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 It only receives the local view of the Taylor--Hood basis, expected to be bound to an element,
 and the empty matrix.  There is no explicit requirement that the \cpp{LocalView} object
@@ -3221,19 +3223,19 @@ In particular, from the \cpp{localView} object it extracts the element itself, a
 geometry
 %
 \lstinputlisting[linerange={local_assembler_get_element_information_begin-local_assembler_get_element_information_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Next, the element stiffness matrix is initialized.  The \cpp{localView} object knows the total number of
 degrees of freedom of the element it is bound to, and since the matrix has only scalar entries this is the correct
 number of matrix rows and columns:
 %
 \lstinputlisting[linerange={initialize_element_matrix_begin-initialize_element_matrix_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Finally, we first ask for the set of velocity and pressure shape functions.
 %
 \lstinputlisting[linerange={get_local_fe_begin-get_local_fe_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 The two objects are \cpp{LocalFiniteElement}s in the \dunemodule{dune-localfunctions} sense of the word.
 
@@ -3264,7 +3266,7 @@ It computes the lowest order that will integrate the weak form of the Stokes equ
 on a cube grid.
 %
 \lstinputlisting[linerange={begin_quad_loop_begin-begin_quad_loop_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 The quadrature loop starts like similar local assembler codes seen elsewhere.
 First, we get the inverse transposed Jacobian
@@ -3272,7 +3274,7 @@ of the map from the reference element to the grid element, and the Jacobian dete
 transformation formula
 %
 \lstinputlisting[linerange={quad_loop_preamble_begin-quad_loop_preamble_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 With these preparations done, we can assemble the first part of the stiffness matrix,  corresponding to the
 velocity--velocity coupling.  For two $d$-valued velocity basis functions $\bm{\varphi}_i^k = \mathbf{e}_k \varphi_i$
@@ -3291,13 +3293,13 @@ and then uses the matrix in \cpp{jacobianInverseTransposed} to transform the sha
 gradients of the actual basis functions defined on the grid element.
 %
 \lstinputlisting[linerange={velocity_gradients_begin-velocity_gradients_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 With the velocity basis function gradients at hand we can assemble the velocity contribution
 to the stiffness matrix:
 %
 \lstinputlisting[linerange={velocity_velocity_coupling_begin-velocity_velocity_coupling_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Noteworthy here are the Lines~\ref{li:stokes_taylorhood_compute_vv_element_matrix_row}--\ref{li:stokes_taylorhood_compute_vv_element_matrix_column} which,
 for two given shape functions from the finite element basis tree, obtain the flat numbering
@@ -3333,12 +3335,12 @@ has been computed already, but value of $\theta_i$ is still unknown.
 The values for all $i$ are evaluated by the following two lines:
 %
 \lstinputlisting[linerange={pressure_values_begin-pressure_values_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Then, the actual matrix assembly of the bilinear form $b(\cdot,\cdot)$ is
 %
 \lstinputlisting[linerange={velocity_pressure_coupling_begin-velocity_pressure_coupling_end},
-                 numbers=left]{../../examples/stokes-taylorhood.cc}
+                 numbers=left]{\PATH/stokes-taylorhood.cc}
 %
 Line~\ref{li:stokes_taylorhood_compute_vp_element_matrix_row} computes the
 flat local index of $\bm{\varphi}_i^k$ again,
