@@ -1755,16 +1755,6 @@ auto treePath = Dune::TypeTree::treePath(_0, 1);
 const auto& node = localView.tree().child(treePath);
 \end{lstlisting}
 
-Besides moving to a particular node in the tree, the reverse operation is also
-available: Each node
-exports its path with respect to the full tree root
-via the  method
-\begin{lstlisting}[style=Interface]
-using TreePath = Dune::TypeTree::HybridTreePath@@<implementation defined>@@;
-const TreePath& treePath() const;
-\end{lstlisting}
-The result is again a \cpp{Dune::TypeTree::HybridTreePath} object.
-
 At each of its leaf nodes, the localized basis function tree provides the set
 of all corresponding shape functions.
 The method for this is
