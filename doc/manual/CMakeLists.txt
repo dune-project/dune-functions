@@ -10,8 +10,8 @@ set(IMAGES
 )
 
 if(LATEX_USABLE)
-    dune_add_latex_document(dune-functions-manual.tex
-      BIBFILES dune-functions-manual.bib
+    dune_add_latex_document(dune-functions-bases.tex
+      BIBFILES dune-functions-bases.bib
       INPUTS ${SOURCES}
       IMAGES ${IMAGES})
 endif(LATEX_USABLE)
