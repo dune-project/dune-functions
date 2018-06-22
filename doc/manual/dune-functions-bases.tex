@@ -1490,7 +1490,7 @@ In the programmer interface, this localization is called \cpp{LocalView}.  Objec
 using LocalView = @@<implementation defined>@@;
 LocalView localView() const;
 \end{lstlisting}
-The precise return type of the \cpp{localView()} method is implementation-dependent. Objects
+The precise return type of the \cpp{localView} method is implementation-dependent. Objects
 created by the method have undefined state, and need to be attached to individual grid
 elements in a process called \emph{binding}.
 The details are explained in Section~\ref{sec:localview_interface}.
@@ -1504,7 +1504,7 @@ using size_type = @@<implementation defined>@@;
 size_type dimension() const;
 \end{lstlisting}
 This method can be used to allocate vector containers if flat multi-indices are used.
-However, the information provided by \cpp{dimension()} is generally not
+However, the information provided by the \cpp{dimension} method is generally not
 sufficient to allocate hierarchical containers to be
 accessed by more general multi-indices.
 Therefore, the basis provides more structural
@@ -1574,7 +1574,7 @@ and can be used.
 The call may incorporate expensive computations needed to
 precompute the local basis functions and their global indices.
 The local view can be
-bound to another element at any time by calling \cpp{bind()} again.
+bound to another element at any time by calling the \cpp{bind} method again.
 To set the local view back to the unbound state again, call the method
 \begin{lstlisting}[style=Interface]
 void unbind();
@@ -1601,10 +1601,10 @@ To allow preallocation of buffers for local functions, the method
 size_type maxSize() const;
 \end{lstlisting}
 returns the maximum return value of the
-\cpp{size()} method for all elements in the grid view
+\cpp{size} method for all elements in the grid view
 associated to the global basis, i.e., it computes $\max_e \abs{\Lambda|_e}$.
 As this information does not depend on a particular element,
-the method \cpp{maxSize()} can even be called in unbound state.
+the method \cpp{maxSize} can even be called in unbound state.
 
 As an example, suppose that \cpp{basis} is an object of type \cpp{Dune::Functions::TaylorHoodBasis},
 which implements the Taylor--Hood basis that has been used for examples in the previous section.
@@ -1645,12 +1645,12 @@ MultiIndex index(size_type i) const;
 \end{lstlisting}
 The argument for this method is the local
 index of the basis function within the tree as
-returned by the \cpp{node.localIndex(k)}
-method; here \cpp{node} is a leaf node of the
+returned by \cpp{node.localIndex(k)};
+here \cpp{node} is a leaf node of the
 tree provided by \cpp{tree()}, and \cpp{k}
 is the number of the shape function within the corresponding
 local finite element (see below).
-Hence the method \cpp{index(size\_type)}
+Hence the \cpp{index} method
 implements the map $\iota^{\text{local}\to\text{global}}_e$
 introduced in Section~\ref{sec:localization},
 which maps local indices to global multi-indices.
@@ -1677,7 +1677,7 @@ it will print 15 multi-indices per element, because a Taylor--Hood element has 1
 velocity degrees of freedom and 3 pressure degrees of freedom per triangle.
 
 Finally, the global basis of type \cpp{GlobalBasis}
-is known by the \cpp{LocalView} object, and exported by the \cpp{globalBasis()} method.
+is known by the \cpp{LocalView} object, and exported by the \cpp{globalBasis} method.
 \begin{lstlisting}[style=Interface]
 using GlobalBasis = @@<implementation defined>@@;
 const GlobalBasis& globalBasis() const;
@@ -1788,7 +1788,7 @@ local index within all local basis functions of the current element associated t
 local tree.
 The argument to this method is the
 index of the local basis functions within the leaf.
-In other words, the method \cpp{localIndex(size\_type)}
+In other words, the \cpp{localIndex} method
 implements the map $\iota^{\text{leaf}\to\text{local}}_e$
 introduced in Section~\ref{sec:localization}.
 The return value is \emph{not} a multi-index.
@@ -1988,8 +1988,8 @@ std::size_t size() const;
 auto operator[](std::size_t) const;
 \end{lstlisting}
 %
-The \cpp{size()} method returns the number of digits of the multi-index,
-and \cppbreak{operator[](std::size_t)} allows to access
+The \cpp{size} method returns the number of digits of the multi-index,
+and \cppbreak{operator[]} allows to access
 each entry by its position. Since multi-indices are
 typically not changed by user code, both methods are \cpp{const}.
 The type used to represent
@@ -2157,7 +2157,7 @@ auto makeBasis(const GridView& gridView, PreBasis&& preBasis);
 \end{lstlisting}
 The pre-basis argument encodes the hierarchic product.
 The actual basis is constructed automatically by the
-\cpp{makeBasis()} function from the pre-bases in a consistent way.
+\cpp{makeBasis} function from the pre-bases in a consistent way.
 This also determines a suitable multi-index type automatically,
 which otherwise would have to be done by the user.
 \footnote{The interface description is in fact slightly simplified:
@@ -2186,7 +2186,7 @@ the basis directly:
 \begin{lstlisting}[style=Example]
 RaviartThomasBasis<GridView,k> raviartThomasBasis(gridView);
 \end{lstlisting}
-Note that the \cpp{raviartThomas()} function, just like the corresponding functions for other bases, does not need
+Note that the \cpp{raviartThomas} function, just like the corresponding functions for other bases, does not need
 the grid view as parameter.
 
 If \cpp{FooBarBasis} has template and/or constructor parameters, then by convention they
@@ -2208,8 +2208,8 @@ The method has an unspecified number of arguments, of unspecified type.
 The arguments are expected to be pre-basis objects themselves.
 They can either be plain pre-bases constructed by, e.g.,
 \cpp{lagrange<1>()} or \cpp{raviartThomas<k>()},
-or composite- or power pre-bases constructed by \cpp{composite()}
-or \cpp{power()} (see below), respectively.
+or composite- or power pre-bases constructed by the \cpp{composite}
+or \cpp{power} function (see below), respectively.
 
 As an example, to combine a Raviart--Thomas basis with a zero-order Lagrange basis
 (let's say for solving
@@ -2290,7 +2290,7 @@ auto displacementBasis = makeBasis(
     lagrange<1>()
   ));
 \end{lstlisting}
-Since \cpp{composite()} and \cpp{power()} create pre-bases themselves,
+Since \cpp{composite} and \cpp{power} create pre-bases themselves,
 all these techniques can be combined. To obtain the \cpp{p}-th order Taylor--Hood basis,
 write
 \begin{lstlisting}[style=Example]
@@ -2408,8 +2408,8 @@ returns the
 path of the subtree associated to the \cpp{SubspaceBasis}
 within the full tree.
 For convenience a global basis behaves like a trivial \cpp{SubspaceBasis},
-i.e., it has the method \cpp{rootBasis()} returning the basis itself,
-and \cpp{prefixPath()} returning an empty tree-path.
+i.e., it has the method \cpp{rootBasis} returning the basis itself,
+and \cpp{prefixPath} returning an empty tree-path.
 Note that a \cpp{SubspaceBasis} differs from a full
 global basis because the global multi-indices are the
 same as the ones of the root basis, and thus they are in general
@@ -2534,6 +2534,7 @@ vector.  In \dunemodule{dune-functions}, this process is called \emph{interpolat
 although it is not always an interpolation in the strict sense of the word.
 
 \subsection{Vector backends}
+\label{subsec:backends}
 
 In both cases, individual basis functions need to be associated with corresponding
 entries of a container data type that holds vector coefficients. While trivial
@@ -2596,7 +2597,7 @@ If, for example, the functions from the power function space generated by the ba
 \begin{lstlisting}[style=Example]
 auto basis = makeBasis(gridView, power<dim>(lagrange<1>()));
 \end{lstlisting}
-should be interpreted as vector-fields, one would map the \cpp{dim}
+should be interpreted as vector fields, one would map the \cpp{dim}
 leaf nodes of this basis to the \cpp{dim} entries of a \cpp{FieldVector<double,dim>}.
 Whenever combining bases and range types \dunemodule{dune-function}
 uses a default mapping generalizing this idea to more complex nested bases:
@@ -2625,7 +2626,8 @@ auto makeDiscreteGlobalBasisFunction(const B& basis, const C& coefficients);
 For given basis \cpp{basis} and coefficient vector \cpp{coefficients}
 this returns an object representing the corresponding
 finite element function. This object implements the \cpp{GridViewFunction}
-concept for the grid view the basis is defined on, described in~\cite{engwer_graeser_muething_sander:2015}.
+concept for the grid view the basis is defined on, described in~\cite{engwer_graeser_muething_sander:2015}
+with the range type \cpp{Range}.
 The \cpp{basis} can either be a global basis or
 a \cpp{SubspaceBasis}.  In the latter case the coefficient
 vector has to correspond to the full basis nevertheless, but only
@@ -2638,11 +2640,21 @@ returned by the \cpp{istlVectorBackend} method do.  If \cpp{C} does not implemen
 this concept, then the code assumes that it is a \dunemodule{dune-istl}-style
 container and tries to wrap it with an \cpp{ISTLVectorBackend}.
 That way, \cpp{makeDiscreteGlobalBasisFunction} can be called with \dunemodule{dune-istl}
-or STL containers directly, but all others have to be wrapped in an approprate backend
+or STL containers directly, but all others have to be wrapped in an appropriate backend
 explicitly.
 
-To show how this works in an example, we construct yet another instance of the
-Taylor--Hood basis
+Notice that the range type can in general not be
+determined automatically from the basis and coefficient type
+because there are multiple possible types to implement this.
+For example a scalar function could return \cpp{double}
+or \cpp{FieldVector<double,1>}.
+Hence the range type \cpp{Range} has to be given explicitly
+by the user. The mapping from the different leaf nodes of the basis
+to the entries of \cpp{Range} follows the procedure described
+in Section~\ref{subsec:backends}.
+
+To give an example how \cpp{makeDiscreteGlobalBasisFunction} is used,
+we construct yet another instance of the Taylor--Hood basis
 %
 \begin{lstlisting}[style=Example]
 auto taylorHoodBasis = makeBasis(
@@ -2658,8 +2670,9 @@ and \cpp{BlockedInterleaved} for the power node.  The resulting indices are the 
 from Column~2 of Table~\ref{tab:th_indexing_variants}.  An appropriate vector container
 type for this is
 \begin{lstlisting}[style=Example]
-using Vectortype = TupleVector<BlockVector<FieldVector<double,dim> >,
-                               BlockVector<FieldVector<double,1> > >;
+using Vectortype = TupleVector<
+        BlockVector<FieldVector<double,dim> >,
+        BlockVector<FieldVector<double,1> > >;
 \end{lstlisting}
 Let \cpp{x} be an object of this type.  To obtain the corresponding velocity field
 as a discrete function, write
@@ -2673,14 +2686,9 @@ using VelocityRange = FieldVector<double,dim>;
 
 // Create a function for the velocity field only
 // but using the vector x for the full taylorHoodBasis.
-auto velocityFunction =
-          makeDiscreteGlobalBasisFunction<VelocityRange>(velocityBasis, x);
+auto velocityFunction
+        = makeDiscreteGlobalBasisFunction<VelocityRange>(velocityBasis, x);
 \end{lstlisting}
-\todosander{Nachdem wir auf der vorigen Seite erklärt haben dass es für Ranges
-einen Default-Mechanismus gibt (den der normale Leser beim ersten Lesen nicht
-verstehen wird), finde ich es hier (in meiner Rolle als Erstleser) etwas
-überraschend dass man die Range hier dennoch explizit angeben muss.
-Können wir einen erläuternden Satz dazuschreiben?}
 
 Notice that the \cpp{dim} leaf nodes of the function space
 tree spanned by \cpp{velocityBasis} are automatically mapped to the
@@ -2709,14 +2717,14 @@ The \dunemodule{dune-functions} module provides a set of methods for interpolati
 \file{dune/functions/functionspacebases/interpolation.hh}.  These methods are canonical in the sense that
 they use the \cpp{LocalInterpolation} functionality on each element for the interpolation.  This is appropriate
 for a lot, but not all finite element spaces.  For example, no reasonable local interpolation can be defined
-for B-splinef  bases, and therefore the standard interpolation functionality cannot be used with the
+for B-spline  bases, and therefore the standard interpolation functionality cannot be used with the
 \cpp{BSplineBasis} class.
 This approach also fails for non-affine finite elements, because \cpp{LocalInterpolation} is
 not applying non-standard transformations to the reference element.
 
 The interpolation functionality is implemented in two global functions.
 The first deals with the simple case of a given function and basis,
-where the function is to be projected on the span of the basis, yielding
+where the function is to be projected onto the span of the basis, yielding
 a coefficient vector describing the result.
 
 \begin{lstlisting}[style=Interface]
@@ -2806,7 +2814,7 @@ degrees of freedom must not be touched, as they contain, e.g., a suitable initia
 means.
 
 To support this kind of interpolation, a variant of the
-\cpp{interpolate()} method allows to explicitly mark a subset of
+\cpp{interpolate} method allows to explicitly mark a subset of
 coefficient vector entries to be written.
 \begin{lstlisting}[style=Interface]
 template <class B, class C, class F, class BV>
@@ -2838,7 +2846,7 @@ The actual interpolation is then a single line:
                  numbers=left]{\PATH/interpolation.cc}
 %
 See Chapter~\ref{sec:stokes_example_main} for a more involved example.
-The \cpp{forEachBoundaryDOF()} method that loops over all boundary degrees of freedom
+The \cpp{forEachBoundaryDOF} method that loops over all boundary degrees of freedom
 is defined in the file~\file{dune/functions/\allowbreak functionspacebases/boundarydofs.hh}.
 
 
@@ -2913,7 +2921,7 @@ and will be used in the following implementation.
 
 \subsection{The driven-cavity benchmark}
 
-For our example we choose to simulate a two-dimensional driven cavity.  This is a standard benchmark
+For our example we choose to simulate a two-dimensional driven-cavity.  This is a standard benchmark
 for the Stokes problem in the literature \cite{schreiber1983driven}.
 Let $\Omega$ be the unit square $[0,1]^2$, and set the Dirichlet
 boundary conditions for the velocity $\mathbf{u}$ to
@@ -3052,7 +3060,7 @@ To mark the boundary degrees of freedom for the velocity subtree write:
 \lstinputlisting[linerange={determine_boundary_dofs_begin-determine_boundary_dofs_end},
                  numbers=left]{\PATH/stokes-taylorhood.cc}
 %
-The \cpp{forEachBoundaryDOF()} algorithm only considers velocity
+The \cpp{forEachBoundaryDOF} algorithm only considers velocity
 degrees of freedom because we called it with the corresponding subspace basis.
 Nevertheless, the global indices handed out by \cpp{forEachBoundaryDOF} correspond
 to the full tree, and can therefore by used to access the \cpp{isBoundary}
@@ -3206,7 +3214,7 @@ The type returned in Lines~\ref{li:stokes_taylorhood_get_global_row_index} and~\
 for the global row and column indices is a multi-index.  It has length~3 for velocity degrees of freedom and
 length~2 for pressure degrees of freedom.
 Line~\ref{li:stokes_taylorhood_scatter_matrix_indices} uses the helper function
-\cpp{matrixEntry()} again to access the nested global stiffness matrix using those multi-indices.
+\cpp{matrixEntry} again to access the nested global stiffness matrix using those multi-indices.
 
 The preceding loops write into all four of the matrix blocks, even though
 it is known that for the Stokes
