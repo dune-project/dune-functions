@@ -176,20 +176,20 @@ void setOccupationPattern(const Basis& basis, MatrixType& matrix)
   auto localView = basis.localView();
 
   // Loop over all leaf elements
-  for(const auto& e : elements(basis.gridView()))
+  for(const auto& element : elements(basis.gridView()))
   {
-    // Bind the local FE basis view to the current element
-    localView.bind(e);
+    // Bind the local  view to the current element
+    localView.bind(element);
 
     // Add element stiffness matrix onto the global stiffness matrix
     for (size_t i=0; i<localView.size(); i++) {
 
-      // The global index of the i-th local degree of freedom of the element 'e'
+      // Global index of the i-th local degree of freedom of the current element
       auto row = localView.index(i);
 
       for (size_t j=0; j<localView.size(); j++ ) {
 
-        // The global index of the j-th local degree of freedom of the element 'e'
+        // Global index of the j-th local degree of freedom of the current element
         auto col = localView.index(j);
 
         nb[row[0]][col[0]].add(row[1],col[1]);
@@ -309,9 +309,9 @@ int main (int argc, char *argv[]) try
   // { grid_setup_begin }
   const int dim = 2;
   using GridType = YaspGrid<dim>;
-  FieldVector<double,dim> bbox = {1, 1};
+  FieldVector<double,dim> upperRight = {1, 1};
   std::array<int,dim> elements = {{4, 4}};
-  GridType grid(bbox,elements);
+  GridType grid(upperRight,elements);
 
   using GridView = typename GridType::LeafGridView;
   GridView gridView = grid.leafGridView();
@@ -424,7 +424,8 @@ int main (int argc, char *argv[]) try
   // { interpolate_dirichlet_values_begin }
   using Coordinate = GridView::Codim<0> ::Geometry::GlobalCoordinate;
   using VelocityRange = FieldVector<double,dim>;
-  auto&& velocityDirichletData = [](Coordinate x) {
+  auto&& velocityDirichletData = [](Coordinate x)
+  {
     return VelocityRange{0.0, double(x[0] < 1e-8)};
   };
 
@@ -441,9 +442,9 @@ int main (int argc, char *argv[]) try
   // loop over the matrix rows
   // { set_dirichlet_matrix_begin }
   auto localView = taylorHoodBasis.localView();
-  for(const auto& e : Dune::elements(taylorHoodBasis.gridView()))
+  for(const auto& element : Dune::elements(taylorHoodBasis.gridView()))
   {
-    localView.bind(e);
+    localView.bind(element);
     for (size_t i=0; i<localView.size(); ++i)
     {
       auto row = localView.index(i);
@@ -467,19 +468,19 @@ int main (int argc, char *argv[]) try
   VectorType x = rhs;
 
   // Technicality:  turn the matrix into a linear operator
-  MatrixAdapter<MatrixType,VectorType,VectorType> op(stiffnessMatrix);
+  MatrixAdapter<MatrixType,VectorType,VectorType> stiffnessOperator(stiffnessMatrix);
 
   // Fancy (but only) way to not have a preconditioner at all
   Richardson<VectorType,VectorType> preconditioner(1.0);
 
-  // Preconditioned conjugate-gradient solver
+  // Construct the actual iterative solver
   RestartedGMResSolver<VectorType> solver(
-          op,               // operator to invert
-          preconditioner,   // preconditioner for interation
-          1e-10,            // desired residual reduction factor
-          500,              // number of iterations between restarts
-          500,              // maximum number of iterations
-          2);               // verbosity of the solver
+          stiffnessOperator,  // operator to invert
+          preconditioner,     // preconditioner for interation
+          1e-10,              // desired residual reduction factor
+          500,                // number of iterations between restarts
+          500,                // maximum number of iterations
+          2);                 // verbosity of the solver
 
   // Object storing some statistics about the solving process
   InverseOperatorResult statistics;
@@ -511,7 +512,7 @@ int main (int argc, char *argv[]) try
   // { vtk_output_begin }
   SubsamplingVTKWriter<GridView> vtkWriter(
           gridView,
-          Dune::refinementLevels(2));
+          refinementLevels(2));
   vtkWriter.addVertexData(
           velocityFunction,
           VTK::FieldInfo("velocity", VTK::FieldInfo::Type::vector, dim));

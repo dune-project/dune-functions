@@ -2861,9 +2861,11 @@ the file can also be accessed by clicking on the icon in the margin.%
 
 \begin{figure}
  \begin{center}
-  \includegraphics[height=0.3\textheight]{driven_cavity}
+  \begin{overpic}[height=0.25\textheight]{driven_cavity}
+   \put(50,45){$\Omega$}
+  \end{overpic}
   \qquad
-  \includegraphics[height=0.3\textheight]{driven_cavity_result}
+  \includegraphics[height=0.25\textheight]{driven_cavity_result}
  \end{center}
  \caption{Driven cavity. Left: domain and boundary conditions;
      right: simulation result.  The arrows show the {\em normalized} velocity.}
@@ -2871,7 +2873,7 @@ the file can also be accessed by clicking on the icon in the margin.%
 \end{figure}
 
 The Stokes equation models a viscous incompressible
-fluid in a $d$-dimensional domain $\Omega$~\cite{braess:2013}.
+fluid in a $d$-dimensional domain~$\Omega$.
 There are two unknowns in this problem: a stationary
 fluid velocity field $\mathbf{u} : \Omega \to \R^d$, and the fluid pressure $p : \Omega \to \R$.
 Together, they have to solve the boundary value problem
@@ -2938,7 +2940,7 @@ method. Both will be discussed in the following.
 \label{sec:stokes_example_main}
 
 The \cpp{main} method sets up the algebraic Stokes problem, calls a linear solver,
-and write the result to a VTK file. It begins by setting up MPI and the grid.
+and writes the result to a VTK file. It begins by setting up MPI and the grid.
 We choose to discretize the domain using a structured $4 \times 4$ quadrilateral
 grid, which we get by using the \cpp{YaspGrid} grid implementation from the
 \dunemodule{dune-grid} module.  Note that there is the line
@@ -2959,7 +2961,7 @@ given explicitly.
 \lstinputlisting[linerange={grid_setup_begin-grid_setup_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-The \cpp{gridView} object is the flat finite element grid that we will use for
+The \cpp{gridView} object is the non-hierarchical finite element grid that we will use for
 the computation.
 On this grid view, we then set up the function space basis for the Taylor--Hood element.  This is as simple as
 %
@@ -2996,7 +2998,7 @@ Note that \cpp{VectorType} and \cpp{MatrixType}
 are no classical containers, because the entries have non-uniform types.
 Rather, they are constructed similarly to \cpp{std::tuple} from the C++ standard library.
 However, it must be emphasized that the use of such advanced data structures is by no
-means mandatory. As detailed in Section~\ref{sec:index_strategies}
+means mandatory. As detailed in Sections~\ref{sec:index_strategies}
 and~\ref{sec:composed_bases} it is trivial to make the Taylor--Hood basis
 use flat global indices, which work directly with standard container types like \cpp{std::vector}.
 
@@ -3033,8 +3035,8 @@ as \cpp{VectorType} and is again initialized using the \cpp{ISTLVectorBackend}.
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 We now want to mark all the velocity degrees of freedom on the Dirichlet boundary.
-In the driven cavity example, the entire boundary is Dirichlet boundary.
-For convenience \dunemodule{dune-functions} provides the method
+In the driven-cavity example, the entire boundary is Dirichlet boundary.
+For convenience, \dunemodule{dune-functions} provides the method
 \begin{lstlisting}[style=Interface]
 template<class Basis, class F>
 void forEachBoundaryDOF(const Basis& basis, F&& f);
@@ -3054,7 +3056,8 @@ Nevertheless, the global indices handed out by \cpp{forEachBoundaryDOF} correspo
 to the full tree, and can therefore by used to access the \cpp{isBoundary}
 container via the \cpp{ISTLVectorBackend} (Section~\ref{sec:subtrees}).
 
-Finally, we define a method implementing the actual Dirichlet values function $\mathbf{g}$, and interpolate
+Now that we have determined the set of Dirichlet degrees of freedom,
+we define a method implementing the actual Dirichlet values function $\mathbf{g}$, and interpolate
 that into the right-hand-side vector \cpp{rhs}.
 %
 \lstinputlisting[linerange={interpolate_dirichlet_values_begin-interpolate_dirichlet_values_end},
@@ -3094,13 +3097,13 @@ The additional \cpp{[0][0]} in Line~\ref{li:matrixentry_pressure_pressure} is ne
 because the entries of the lower-right matrix diagonal block are of type \cpp{FieldMatrix<double,1,1>}
 (see Line~\ref{li:matrix_type_pressure_pressure}), and the \cpp{[0][0]} is needed to get the \cpp{double} from that.
 Similarly the entries of the $(0,1)$- and $(1,0)$-blocks of the matrix are
-interpreted as single-column and single-row matrix, respectively, such that
+interpreted as single-column and single-row matrices, respectively, such that
 corresponding \cpp{[0]} indices have to be inserted.
 
 Finally, we can solve the linear system.
 Dedicated Stokes solvers frequently operate on some sort of Schur complement,
 and hence they need direct access to the submatrices~\cite{john:2016}.
-This can be elegantly done using the nested matrix type used for the stiffness matrix.
+This can be elegantly done using the nested matrix type used in this example.
 However, efficiently solving the Stokes system is an art,
 which we do not want to get into here.
 Instead, we use a GMRes solver, without any preconditioner at all.  This is known to converge,
@@ -3116,7 +3119,7 @@ at all.
 Observe how the \cpp{RestartedGMResSolver} object is completely oblivious to the fact that the matrix
 has a nesting structure.
 
-Once the iterative solver has terminated, we write the result to a VTK file.
+Once the iterative solver has terminated, the result is written to a VTK file.
 However, as the \cpp{VTKWriter} class from the \dunemodule{dune-grid} module
 expects discrete functions rather than coefficient vectors, we construct
 velocity and pressure discrete functions by combining the appropriate
@@ -3149,8 +3152,8 @@ matrices in the global matrix. The signature of the method is
 %
 The only arguments it gets are the finite element basis and the matrix to fill.  Observe that the Taylor--Hood basis is not
 hard-wired here, so we could call the method with a different basis.
-However, not surprisingly the assembler for the Stokes problem makes relatively tight assumptions on the basis tree
-structure, so relatively little practical freedom is possible here.  Ideally, a global assembler should be fully
+However, not surprisingly the local assembler for the Stokes problem makes relatively tight assumptions on the basis tree
+structure, so there is relatively little practical freedom here.  Ideally, a global assembler should be fully
 generic, and all knowledge about the current spaces and differential operators should be confined to the local
 assembler.  Real discretization frameworks like \dunemodule{dune-pdelab} do achieve this separation,
 but for our example here we are less strict, to avoid technicalities.
@@ -3188,9 +3191,8 @@ for the element stiffness matrix:
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 The \cpp{getLocalMatrix} method is discussed in detail below.
-In addition to the \cpp{elementMatrix} object, it gets only the \cpp{localView} object.  This object contains
+It gets only the \cpp{localView} object in addition to the \cpp{elementMatrix}.  The former object contains
 all necessary information.
-
 After the call to \cpp{getLocalMatrix} the \cpp{elementMatrix} object contains the
 element stiffness matrix for the current element.
 The code loops over the entries of the element stiffness matrix and adds them onto the global matrix.
@@ -3202,11 +3204,11 @@ The type returned in Lines~\ref{li:stokes_taylorhood_get_global_row_index} and~\
 for the global row and column indices is a multi-index.  It has length~3 for velocity degrees of freedom and
 length~2 for pressure degrees of freedom.
 Line~\ref{li:stokes_taylorhood_scatter_matrix_indices} uses the helper function
-\cpp{matrixEntry()} again to access the nested matrix type using those multi-indices.
+\cpp{matrixEntry()} again to access the nested global stiffness matrix using those multi-indices.
 
-The preceding loops write in particular into the lower right matrix block, even though
+The preceding loops write into all four of the matrix blocks, even though
 it is known that for the Stokes
-system this block contains only zeros.  A more optimized version of the code would leave out the lower right
+system the lower right block contains only zeros.  A more optimized version of the code would leave out the lower right
 submatrix altogether.
 
 \subsubsection{The local assembler}
@@ -3217,7 +3219,7 @@ It remains to investigate the method that assembles the element stiffness matric
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
 It only receives the local view of the Taylor--Hood basis, expected to be bound to an element,
-and the empty matrix.  There is no explicit requirement that the \cpp{LocalView} object
+and the empty element matrix.  There is no explicit requirement that the \cpp{LocalView} object
 be a local view of a Taylor--Hood basis, but the assumption is made implicitly in various
 parts of the local assembler.
 The first few lines of the \cpp{getLocalMatrix} method gather some information about the element the method is to work on.
@@ -3234,14 +3236,15 @@ number of matrix rows and columns:
 \lstinputlisting[linerange={initialize_element_matrix_begin-initialize_element_matrix_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-Finally, we first ask for the set of velocity and pressure shape functions.
+Finally, we ask for the set of velocity and pressure shape functions:
 %
 \lstinputlisting[linerange={get_local_fe_begin-get_local_fe_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-The two objects are \cpp{LocalFiniteElement}s in the \dunemodule{dune-localfunctions} sense of the word.
-
+The two objects returned in
 Lines~\ref{li:stokes_taylorhood_get_velocity_lfe}--\ref{li:stokes_taylorhood_get_pressure_lfe}
+are \cpp{LocalFiniteElement}s in the \dunemodule{dune\-localfunctions} sense of the word.
+These lines also
 show the tree structure of the Taylor--Hood basis in action:
 The expression
 \begin{lstlisting}[style=Example]
@@ -3273,7 +3276,7 @@ on a cube grid.
 The quadrature loop starts like similar local assembler codes seen elsewhere.
 First, we get the inverse transposed Jacobian
 of the map from the reference element to the grid element, and the Jacobian determinant for the integral
-transformation formula
+transformation formula:
 %
 \lstinputlisting[linerange={quad_loop_preamble_begin-quad_loop_preamble_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
@@ -3282,12 +3285,13 @@ With these preparations done, we can assemble the first part of the stiffness ma
 velocity--velocity coupling.  For two $d$-valued velocity basis functions $\bm{\varphi}_i^k = \mathbf{e}_k \varphi_i$
 and $\bm{\varphi}_j^l = \mathbf{e}_l \varphi_j$ we need to compute
 \begin{equation*}
- a(\bm{\varphi}_i^k, \bm{\varphi}_j^l)
+ a_e(\bm{\varphi}_i^k, \bm{\varphi}_j^l)
+ \colonequals
+ \int_e \nabla \bm{\varphi}_i^k \nabla \bm{\varphi}_j^l \,dx
  =
- \int_\Omega \nabla \bm{\varphi}_i^k \nabla \bm{\varphi}_j^l \,dx
- =
- \delta_{kl} \int_\Omega \nabla \varphi_i \nabla \varphi_j \,dx,
+ \delta_{kl} \int_e \nabla \varphi_i \nabla \varphi_j \,dx
 \end{equation*}
+on the current element $e$,
 where $\varphi_i$ and $\varphi_j$ are the corresponding scalar basis functions.
 The code first computes the derivatives of the velocity
 shape functions at the current quadrature point,
@@ -3322,15 +3326,15 @@ Once this part is understood, computing the velocity--pressure coupling terms is
 For a given velocity shape function $\bm{\varphi}_i^k$ and pressure shape function $\theta_j$ we need
 to compute
 \begin{equation*}
- b(\bm{\varphi}_i^k,\theta_j)
+ b_e(\bm{\varphi}_i^k,\theta_j)
  \colonequals
- \int_\Omega \operatorname{div} \bm{\varphi}_i^k \cdot \theta_j\,dx
+ \int_e \operatorname{div} \bm{\varphi}_i^k \cdot \theta_j\,dx
  =
- \int_\Omega \sum_{l=1}^d \frac{\partial (\bm{\varphi}_i^k)_l}{\partial x_l} \cdot \theta_j\,dx
+ \int_e \sum_{l=1}^d \frac{\partial (\bm{\varphi}_i^k)_l}{\partial x_l} \cdot \theta_j\,dx
  =
- \int_\Omega \frac{\partial \varphi_i}{\partial x_k} \cdot \theta_j\,dx
+ \int_e \frac{\partial \varphi_i}{\partial x_k} \cdot \theta_j\,dx
  =
- \int_\Omega (\nabla \varphi_i)_k \cdot \theta_j\,dx.
+ \int_e (\nabla \varphi_i)_k \cdot \theta_j\,dx.
 \end{equation*}
 At this point in the code the value of $\nabla \varphi_i$ at the current quadrature point
 has been computed already, but value of $\theta_i$ is still unknown.
@@ -3339,7 +3343,7 @@ The values for all $i$ are evaluated by the following two lines:
 \lstinputlisting[linerange={pressure_values_begin-pressure_values_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
 %
-Then, the actual matrix assembly of the bilinear form $b(\cdot,\cdot)$ is
+Then, the actual matrix assembly of the bilinear form $b_e(\cdot,\cdot)$ is
 %
 \lstinputlisting[linerange={velocity_pressure_coupling_begin-velocity_pressure_coupling_end},
                  numbers=left]{../../examples/stokes-taylorhood.cc}
@@ -3350,7 +3354,7 @@ and Line~\ref{li:stokes_taylorhood_compute_vp_element_matrix_column} computes th
 the pressure basis).  Finally, Lines~\ref{li:stokes_taylorhood_update_vp_element_matrix_a}--\ref{li:stokes_taylorhood_update_vp_element_matrix_b}
 then compute the integrand value $(\nabla \varphi_i)_k \cdot \theta_j$,
 and add the resulting terms to the matrix.
-
+This concludes the implementation of the local assembler for the Stokes problem.
 
 
 
