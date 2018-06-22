@@ -5,7 +5,9 @@
 \usepackage{scrhack}  % Fix a LaTeX warning
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\usepackage[utf8x]{inputenc}
+\usepackage[utf8]{inputenc}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
@@ -61,9 +63,11 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%   hyperref should be loaded late to avoid incompatibilities
-\usepackage[pdftitle={Function space bases in the dune-functions module},
-            pdfauthor={Christian Engwer, Carsten Gräser, Steffen Müthing, and Oliver Sander}]
-             {hyperref}
+\usepackage{hyperref}
+
+\hypersetup{pdftitle={Function space bases in the dune-functions module},
+            pdfauthor={Christian Engwer, Carsten Gräser, Steffen Müthing, and Oliver Sander} }
+
 
 \usepackage{attachfile2}
 \usepackage{fancyvrb}
@@ -139,6 +143,9 @@
 \title{Function space bases in the dune-functions module}
 \author{Christian Engwer, Carsten Gräser,\\ Steffen Müthing, and Oliver Sander}
 %\date{}
+
+\lhead{C.~Engwer, C.~Gräser, S.~Müthing, O.~Sander}
+\rhead{Bases in dune-functions}
 
 \begin{document}
 
