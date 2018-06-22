@@ -57,6 +57,7 @@
 \usepackage{todonotes}
 \usepackage{attachfile2}
 \usepackage{tikz}
+\usepackage{minibox}
 
 
 \theoremstyle{remark}
@@ -95,6 +96,18 @@
 \begin{document}
 
 \maketitle
+
+\begin{center}
+\minibox[frame,c]{
+  This paper was publish in the \emph{Archive of Numerical Software},
+  please cite this as \cite{engwer_graeser_muething_sander:2015}.
+%  This work is licensed under a\\
+%  \emph{Creative Commons Attribution-NoDerivatives 4.0 International License}.\\
+%  \includegraphics[width=3cm]{cc-by-nd.pdf}\\
+%  The full license text is available here:\\
+%  \url{https://creativecommons.org/licenses/by-nd/4.0/legalcode}
+  }
+\end{center}
 
 \begin{abstract}
 The \dunemodule{dune-functions} \dune module introduces a new programmer interface for discrete and non-discrete functions.
