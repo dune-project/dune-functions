@@ -85,7 +85,7 @@ class SubEntityDOFs
     // only loop over codim>=subEntityCodim+1.
     isInSubEntity_[dim-subEntityCodim][subEntityIndex] = true;
     for(std::size_t codim=subEntityCodim+1; codim<=dim; ++codim)
-      for(int i=0; i<re.size(subEntityIndex, subEntityCodim, codim); ++i)
+      for(std::size_t i=0; i<static_cast<std::size_t>(re.size(subEntityIndex, subEntityCodim, codim)); ++i)
         isInSubEntity_[dim-codim][re.subEntity(subEntityIndex, subEntityCodim, i, codim)] = true;
   }
 
