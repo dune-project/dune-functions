@@ -1,0 +1,90 @@
+# Building and running the code
+
+These are the build instructions for the code to reproduce
+the numerical examples in the article
+
+> The interface for functions in the dune-functions module
+
+by Christian Engwer, Carsten Gräser, Steffen Müthing, and Oliver Sander.
+
+
+
+## Numerical examples
+
+### Requirements
+
+Since the numerical examples are self-contained, building and running
+them does not require special external libraries.  In particular, no
+Dune installation is necessary.  However, in order to exactly reproduce
+the numbers in the test, specific compilers and compiler versions are
+needed, because the code mainly compares the abilities of different
+compiler optimizers.  For the results in the text we used
+
+* g++ (c++ compiler of the GNU compiler collection, version 4.9.2)
+* clang++ (c++ compiler of the clang compiler suite, version 3.6)
+
+While the presented tests were run with the given compiler versions,
+we expect to get comparable results with newer ones.
+
+The script generating the presented plots additionally requires
+a python interpreter and the python libraries numpy and matplotlib.
+
+
+
+### Building and running the example programs
+
+To build and run the example programs you have to call
+
+    ./run.sh
+
+This will build the example programs, execute them, and
+store the results in the newly generated directories
+build_gcc, build_gcc_pgo, and build_clang.
+
+
+
+### Generating the plots
+
+After the examples have been built and executed, calling
+
+    ./generate_plots.sh
+
+in the same directory will generate the plots presented
+in the paper.
+
+
+
+## Full dune-functions library
+
+Additionally to the example programs used for the paper the
+full dune-functions library based on the concepts described
+in the paper is also available as a dune-module. This module
+requires preview versions of the upcoming 3.0 release of the
+dune core modules and the dune-typetree module. These modules,
+as well as dune-functions itself, can be obtained using git via
+
+    git clone https://gitlab.dune-project.org/core/dune-common.git
+    git clone https://gitlab.dune-project.org/core/dune-istl.git
+    git clone https://gitlab.dune-project.org/core/dune-geometry.git
+    git clone https://gitlab.dune-project.org/core/dune-localfunctions.git
+    git clone https://gitlab.dune-project.org/core/dune-grid.git
+    git clone https://gitlab.dune-project.org/staging/dune-functions.git
+    git clone https://gitlab.dune-project.org/pdelab/dune-typetree.git
+
+The desired versions can be obtained via
+
+    cd dune-common         ; git checkout 834b14c044 ; cd ..
+    cd dune-istl           ; git checkout b0efdba0e6 ; cd ..
+    cd dune-geometry       ; git checkout 2334a10bdb ; cd ..
+    cd dune-localfunctions ; git checkout d6ea557cb5 ; cd ..
+    cd dune-grid           ; git checkout a1aa47aac3 ; cd ..
+    cd dune-typetree       ; git checkout 78104bb969 ; cd ..
+    cd dune-functions      ; git checkout aa9ed7a094 ; cd ..
+
+To use those libraries in other dune projects, they can be
+configured and build using
+
+    ./dune-common/bin/dunecontrol --builddir=$PWD/build all
+
+Note that dune-functions does not introduce any dependencies on third
+party software beyond what is already required by the Dune core modules.
