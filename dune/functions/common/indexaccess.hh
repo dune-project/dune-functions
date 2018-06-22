@@ -111,8 +111,7 @@ namespace Imp {
       index_(index)
     {}
 
-    template<class P>
-    std::size_t operator[](const P& position) const
+    std::size_t operator[](std::size_t position) const
     {
       if (position<size())
         return index_[position+offset];
