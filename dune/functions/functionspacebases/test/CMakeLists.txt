@@ -9,6 +9,8 @@ dune_add_test(SOURCES bsplinebasistest.cc)
 
 dune_add_test(SOURCES gridviewfunctionspacebasistest.cc)
 
+# dune_add_test(SOURCES lagrangebasistest.cc)
+
 dune_add_test(SOURCES lagrangedgbasistest.cc)
 
 dune_add_test(SOURCES taylorhoodbasistest.cc)

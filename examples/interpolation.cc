@@ -95,10 +95,12 @@ int main (int argc, char *argv[])
   // { taylorhood_velocity_end }
 
   // { setup_mask_begin }
-  BlockVector<FieldVector<char,1>> isBoundary;
+//  BlockVector<FieldVector<char,1>> isBoundary;
+  std::vector<bool> isBoundary;
   auto isBoundaryBackend = Functions::istlVectorBackend(isBoundary);
   isBoundaryBackend.resize(taylorHoodBasis);
-  isBoundary = false;
+//  isBoundary = false;
+  isBoundaryBackend.assign(false);
   forEachBoundaryDOF(subspaceBasis(taylorHoodBasis, _0),
     [&] (auto&& index) {
       isBoundaryBackend[index] = true;

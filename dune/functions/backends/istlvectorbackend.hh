@@ -11,6 +11,7 @@
 #include <dune/common/indices.hh>
 #include <dune/common/hybridutilities.hh>
 
+#include <dune/functions/common/functionconcepts.hh>
 #include <dune/functions/common/indexaccess.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
@@ -172,6 +173,21 @@ class ISTLVectorBackend
       DUNE_THROW(RangeError, "Can't resize scalar vector entry v[" << prefix << "] to size(" << prefix << ")=" << size);
   }
 
+  template<class C, class T>
+  static void assignHelper(C&& c, T&& t)
+  {
+//    auto assignment = [](auto&& cc, auto&& tt) -> decltype(cc = tt) {};
+//    Hybrid::ifElse(Concept::isCallable(assignment, c, t), [&](auto id){
+    auto assignableFrom = callableCheck([](auto&& cc, auto&& tt) -> decltype(cc = tt) {});
+    Hybrid::ifElse(assignableFrom(c, t), [&](auto id){
+        id(c) = t;
+      }, [&](auto id) {
+        Hybrid::forEach(c, [&](auto&& ci) {
+          assignHelper(id(ci), t);
+        });
+      });
+  }
+
 public:
 
   using Vector = V;
@@ -220,6 +236,12 @@ public:
   Vector& vector()
   {
     return *vector_;
+  }
+
+  template<class T>
+  void assign(const T& t)
+  {
+    assignHelper(vector(), t);
   }
 
 private:
