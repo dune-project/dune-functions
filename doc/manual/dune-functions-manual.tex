@@ -2406,20 +2406,19 @@ returns the
 path of the subtree associated to the \cpp{SubspaceBasis}
 within the full tree.
 For convenience a global basis behaves like a trivial \cpp{SubspaceBasis},
-i.e., it has the method \cpp{rootBasis()} returning the basis itself
-and \cpp{prefixPath()} returns an empty tree-path.
-
-Notice that a \cpp{SubspaceBasis} differs from a classical
-global basis, because the global multi-indices are the
-same as the ones of the root basis and thus in general
-neither consecutive nor zero-based. As a consequence those multi-indices
+i.e., it has the method \cpp{rootBasis()} returning the basis itself,
+and \cpp{prefixPath()} returning an empty tree-path.
+Note that a \cpp{SubspaceBasis} differs from a full
+global basis because the global multi-indices are the
+same as the ones of the root basis, and thus they are in general
+neither consecutive nor zero-based. Instead, those multi-indices
 allow to access containers storing coefficients for the
 full root basis.
 
 \cpp{SubspaceBasis} objects are created using a global
 factory function from the root basis and the path
 to the desired subtree. The path can either be passed
-as a single \cpp{HybridTreePath} object (see Section~\ref{sec:multi_indices}) or
+as a single \cpp{HybridTreePath} object (see Section~\ref{sec:multi_indices}), or
 as a sequence of individual indices.
 
 \begin{lstlisting}[style=Interface]
@@ -2430,7 +2429,7 @@ auto subspaceBasis(const RootBasis& rootBasis,
 template<class RootBasis, class... PathIndices>
 auto subspaceBasis(const RootBasis& rootBasis, const PathIndices&... indices);
 \end{lstlisting}
-
+%
 For example, suppose that \cpp{taylorHoodBasis} is any one of the implementations
 of the Taylor--Hood basis defined in Section~\ref{sec:composed_bases}.
 Then
@@ -2448,9 +2447,11 @@ best illustrated by extracting a single velocity component
 auto velocityZBasis = subspaceBasis(taylorHoodBasis, _0, 2);
 \end{lstlisting}
 For this example the following table shows the multi-indices
-of the \cpp{SubspaceBasis} extracted from the full basis
-(cf.\ Table~\ref{tab:th_indexing_variants})
-with different columns representing different index merging strategies:
+of the \cpp{SubspaceBasis} extracted from the full basis,
+with columns representing the different index merging strategies also
+used in Table~\ref{tab:th_indexing_variants}:
+
+\medskip
 
 \noindent
 \makebox[\textwidth][c]{
@@ -2513,9 +2514,10 @@ with different columns representing different index merging strategies:
 \end{tabular}
 }
 
+\medskip
 
 \cpp{SubspaceBasis} objects can be combined with
-coefficient vectors to represent the corresponding vector and scalar fields.
+coefficient vectors to represent vector- and scalar-valued discrete functions.
 The interface for this construction is discussed in the next section.
 
 
