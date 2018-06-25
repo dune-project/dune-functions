@@ -9,6 +9,7 @@ if(LATEX_USABLE)
     gfx/driven_cavity.pdf
     gfx/driven_cavity_result.png
     gfx/febasis_interface_schematic.pdf
+    gfx/cc-by-nd.pdf
   )
 
   dune_add_latex_document(dune-functions-bases.tex
