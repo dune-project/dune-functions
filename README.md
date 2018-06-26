@@ -68,10 +68,19 @@ The interface of function is described in the article
     The interface for functions in the dune-functions module.
     Archive of Numerical Software, 5(1):95--109, 2017.
 
-This is [freely available][functions paper] via the website of the journal.
-The interface of the function space bases is described in a manual paper
-contained in the module. Like the class documentation this is build
-on `make doc`.
+This is freely available
+via the [website of the journal][functions paper] and
+as [arXiv:1512.06136][functions paper arxiv] preprint.
+The interface of the function space bases is described in the article
+
+    C. Engwer, C. Gräser, S. Müthing, and O. Sander.
+    Function space bases in the dune-functions module.
+    Preprint, arxiv:1806.09545, 2018.
+
+This is freely available
+as [arXiv:1806.09545][bases paper arxiv] preprint.
+Both are also contained in the module. Like the class documentation
+this is build on `make doc`.
 
 ### Examples
 Several example applications demonstrate how to use the module. These
@@ -84,7 +93,9 @@ described in detail in the manual (see above).
 The module is licensed by different variants of the GPL licence.
 Please have a look at the `COPYING` file for more information
 and a list of all contributors. When using dune-functions
-**please make sure to cite the [publication][functions paper]** listed above.
+**please make sure to cite the publications on the
+[functions interface][functions paper] and the
+[bases interface][bases paper]** listed above.
 
 
 
@@ -121,5 +132,8 @@ dune-common module.
 [core]: https://dune-project.org/groups/core
 [typetree]: https://gitlab.dune-project.org/staging/dune-typetree
 [dune docs]: https://dune-project.org/doxygen
+[functions paper arxiv]: https://arxiv.org/abs/1512.06136
 [functions paper]: http://journals.ub.uni-heidelberg.de/index.php/ans/article/view/27683
+[bases paper arxiv]: https://arxiv.org/abs/1806.09545
+[bases paper]: https://arxiv.org/abs/1806.09545
 [doxygen]: http://www.stack.nl/~dimitri/doxygen/
