@@ -8,6 +8,7 @@
 #include <type_traits>
 
 #include <dune/common/concept.hh>
+#include <dune/common/tuplevector.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>
 #include <dune/functions/common/indexaccess.hh>
@@ -28,11 +29,23 @@ namespace Functions {
  */
 struct HierarchicNodeToRangeMap
 {
+  template<std::size_t... i>
+  static constexpr auto makeHybrid(TypeTree::TreePath<i...>)
+  {
+    return Dune::TupleVector<Dune::index_constant<i>...>();
+  }
+
+  template<class... I>
+  static constexpr auto makeHybrid(const TypeTree::HybridTreePath<I...>& treePath)
+  {
+    return treePath;
+  }
+
   template<class Node, class TreePath, class Range,
     std::enable_if_t< models<Concept::HasIndexAccess, Range, Dune::index_constant<0>>(), int> = 0>
   decltype(auto) operator()(const Node& node, const TreePath& treePath, Range&& y) const
   {
-    return resolveStaticMultiIndex(y, treePath);
+    return resolveStaticMultiIndex(y, makeHybrid(treePath));
   }
 
   template<class Node, class TreePath, class Range,
