@@ -385,16 +385,6 @@ auto indexTransformation(IndexTransformation&& indexTransformation, SizeImplemen
 
 } // end namespace Experimental
 } // end namespace BasisFactory
-
-// Backward compatibility
-namespace BasisBuilder {
-
-  using namespace BasisFactory;
-
-}
-
-
-
 } // end namespace Functions
 } // end namespace Dune
 
