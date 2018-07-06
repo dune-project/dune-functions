@@ -361,7 +361,7 @@ private:
  * functionality take care to follow the dune-functions
  * development to be aware of possible changes.
  *
- * This implements the transformation based on two callbacks: One transforms an
+ * This implements an index-transformation based on two callbacks: One transforms an
  * existing multi-index inplace, the other implements the size() method of the
  * pre-basis for a given prefix. Both are passed the wrapped pre-basis as second
  * argument.
@@ -369,7 +369,7 @@ private:
  * \tparam IndexTransformation Callback type for transforming multi-indices
  * \tparam SizeImplementation Callback type for implemenation of size(prefix)
  * \tparam minIS Minimal multi-index size
- * \tparam maxIS Maximal multi-index size. Notice that this has to large enough to also store the untransformed indices.
+ * \tparam maxIS Maximal multi-index size. Notice that this has to be large enough to also store the untransformed indices.
  */
 template<class IndexTransformation, class SizeImplementation, std::size_t minIndexSize, std::size_t maxIndexSize>
 auto indexTransformation(IndexTransformation&& indexTransformation, SizeImplementation&& sizeImplementation, Dune::index_constant<minIndexSize>, Dune::index_constant<maxIndexSize>)
