@@ -10,6 +10,7 @@ install(FILES
         functionconcepts.hh
         indexaccess.hh
         interfaces.hh
+        lagrangelfecache.hh
         localfunction.hh
         localfunction_imp.hh
         optional.hh
