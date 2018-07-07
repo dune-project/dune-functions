@@ -44,7 +44,7 @@ namespace Imp {
 
 
   // Create Lagrange finite element for given geometry type, ctypes and order
-  template<class D, class R, unsigned int order, unsigned int topologyId, std::size_t dim, bool none>
+  template<class D, class R, std::size_t order, std::size_t dim, unsigned int topologyId, bool none>
   constexpr auto lagrangeFiniteElement(const StaticGeometryType<topologyId, dim, none>& type)
   {
     // Using orderedOverload allows to avoid explicit SFINAE
@@ -78,6 +78,12 @@ namespace Imp {
       )(Dune::index_constant<order>(), type);
   }
 
+  // Don't call this method. It is only used to determine the return
+  // value of LagrangeFiniteElementCache::get() because clang
+  // refuses a simple decltype(...get(...)) due to an incomplete type.
+  template<class D, class R, std::size_t order, std::size_t dim>
+  constexpr auto lagrangeFiniteElement(const GeometryType& type)
+    -> const typename Dune::PQkLocalFiniteElementCache<D, R, dim, order>::FiniteElementType&;
 
 } // namespace Imp
 
@@ -97,7 +103,7 @@ namespace Imp {
  * \tparam dim Element dimension
  * \tparam order Element order
  */
-template<class D, class R, int dim, int order>
+template<class D, class R, std::size_t dim, std::size_t order>
 class LagrangeFiniteElementCache
 {
 
@@ -142,10 +148,7 @@ public:
   //  using FiniteElement = std::decay_t<decltype(std::declval<LagrangeFiniteElementCache>().get(std::declval<GT>()))>;
 
   template<class GT>
-  using FiniteElement = std::conditional_t<
-    std::is_same<Dune::GeometryType, std::decay_t<GT>>::value,
-    typename Dune::PQkLocalFiniteElementCache<D, R, dim, order>::FiniteElementType,
-    decltype(Imp::lagrangeFiniteElement<D,R,order>(std::declval<GT>()))>;
+  using FiniteElement = std::decay_t<decltype(Imp::lagrangeFiniteElement<D,R,order,dim>(std::declval<GT>()))>;
 
 private:
 
