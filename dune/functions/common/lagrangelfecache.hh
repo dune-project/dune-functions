@@ -134,8 +134,18 @@ public:
     return dynamicCache_.get(gt);
   }
 
+
+  // The next typedef is a little complicated since clang does not
+  // like the following because it uses members of an incomplete type.
+  //
+  //  template<class GT>
+  //  using FiniteElement = std::decay_t<decltype(std::declval<LagrangeFiniteElementCache>().get(std::declval<GT>()))>;
+
   template<class GT>
-  using FiniteElement = std::decay_t<decltype(std::declval<LagrangeFiniteElementCache>().get(std::declval<GT>()))>;
+  using FiniteElement = std::conditional_t<
+    std::is_same<Dune::GeometryType, std::decay_t<GT>>::value,
+    typename Dune::PQkLocalFiniteElementCache<D, R, dim, order>::FiniteElementType,
+    decltype(Imp::lagrangeFiniteElement<D,R,order>(std::declval<GT>()))>;
 
 private:
 
