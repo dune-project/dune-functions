@@ -59,7 +59,9 @@ struct AutoGeometryTypeProvider
     std::enable_if_t<Dune::Capabilities::hasSingleGeometryType<typename GridView::Grid>::v, int> = 0>
   static constexpr auto type(const Entity& entity)
   {
-    return StaticGeometryType<Dune::Capabilities::hasSingleGeometryType<typename GridView::Grid>::topologyId, GridView::dimension, false>{};
+    constexpr unsigned int topologyId = Dune::Capabilities::hasSingleGeometryType<typename GridView::Grid>::topologyId;
+    constexpr unsigned int normalizedTopologyId = (topologyId >> 1) << 1;
+    return StaticGeometryType<normalizedTopologyId, GridView::dimension, false>{};
   }
 
   template<class GridView, class Entity,
