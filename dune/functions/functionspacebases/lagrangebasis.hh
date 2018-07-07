@@ -5,11 +5,13 @@
 
 #include <dune/common/exceptions.hh>
 
-#include <dune/localfunctions/lagrange/pqkfactory.hh>
-
+#include <dune/functions/common/lagrangelfecache.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+#include <dune/functions/functionspacebases/geometrytypeprovider.hh>
+
+
 
 
 namespace Dune {
@@ -27,13 +29,13 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k, typename TP>
+template<typename GV, int k, typename TP, typename GeometryTypeProvider=AutoGeometryTypeProvider>
 class LagrangeNode;
 
-template<typename GV, int k, class MI, class TP>
+template<typename GV, int k, class MI, class TP, typename GeometryTypeProvider=AutoGeometryTypeProvider>
 class LagrangeNodeIndexSet;
 
-template<typename GV, int k, class MI>
+template<typename GV, int k, class MI, typename GeometryTypeProvider=AutoGeometryTypeProvider>
 class LagrangePreBasis;
 
 
@@ -52,7 +54,7 @@ class LagrangePreBasis;
  * - If k is larger than 3 then the grid must be two-dimensional
  * - If k is 3, then the grid can be 3d *if* it is a simplex grid
  */
-template<typename GV, int k, class MI>
+template<typename GV, int k, class MI, typename GeometryTypeProvider>
 class LagrangePreBasis
 {
   static const int dim = GV::dimension;
@@ -67,7 +69,7 @@ public:
 
 private:
 
-  template<typename, int, class, class>
+  template<typename, int, class, class, class>
   friend class LagrangeNodeIndexSet;
 
   // Precompute the number of dofs per entity type
@@ -92,11 +94,11 @@ public:
 
   //! Template mapping root tree path to type of created tree node
   template<class TP>
-  using Node = LagrangeNode<GV, k, TP>;
+  using Node = LagrangeNode<GV, k, TP, GeometryTypeProvider>;
 
   //! Template mapping root tree path to type of created tree node index set
   template<class TP>
-  using IndexSet = LagrangeNodeIndexSet<GV, k, MI, TP>;
+  using IndexSet = LagrangeNodeIndexSet<GV, k, MI, TP, GeometryTypeProvider>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -241,7 +243,7 @@ protected:
 
 
 
-template<typename GV, int k, typename TP>
+template<typename GV, int k, typename TP, typename GeometryTypeProvider>
 class LagrangeNode :
   public LeafBasisNode<std::size_t, TP>
 {
@@ -249,14 +251,15 @@ class LagrangeNode :
   static const int maxSize = StaticPower<(k+1),GV::dimension>::power;
 
   using Base = LeafBasisNode<std::size_t,TP>;
-  using FiniteElementCache = typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k>;
+
+  using FiniteElementCache = typename Dune::Functions::LagrangeFiniteElementCache<typename GV::ctype, double, dim, k>;
 
 public:
 
   using size_type = std::size_t;
   using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElement = typename FiniteElementCache::FiniteElementType;
+  using FiniteElement = typename FiniteElementCache::template FiniteElement<typename GeometryTypeProvider::template Type<GV>>;
 
   LagrangeNode(const TreePath& treePath) :
     Base(treePath),
@@ -283,7 +286,8 @@ public:
   void bind(const Element& e)
   {
     element_ = &e;
-    finiteElement_ = &(cache_.get(element_->type()));
+    const auto& geometryType = GeometryTypeProvider::template type<GV>(*element_);
+    finiteElement_ = &(cache_.get(geometryType));
     this->setSize(finiteElement_->size());
   }
 
@@ -296,7 +300,7 @@ protected:
 
 
 
-template<typename GV, int k, class MI, class TP>
+template<typename GV, int k, class MI, class TP, typename GeometryTypeProvider>
 class LagrangeNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -308,7 +312,7 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using PreBasis = LagrangePreBasis<GV, k, MI>;
+  using PreBasis = LagrangePreBasis<GV, k, MI, GeometryTypeProvider>;
 
   using Node = typename PreBasis::template Node<TP>;
 
@@ -476,7 +480,7 @@ namespace BasisFactory {
 
 namespace Imp {
 
-template<std::size_t k>
+template<std::size_t k, class GeometryTypeProvider>
 class LagrangePreBasisFactory
 {
 public:
@@ -485,7 +489,7 @@ public:
   template<class MultiIndex, class GridView>
   auto makePreBasis(const GridView& gridView) const
   {
-    return LagrangePreBasis<GridView, k, MultiIndex>(gridView);
+    return LagrangePreBasis<GridView, k, MultiIndex, GeometryTypeProvider>(gridView);
   }
 
 };
@@ -497,14 +501,26 @@ public:
 /**
  * \brief Create a pre-basis factory that can create a  Lagrange pre-basis
  *
+ * The GeometryTypeProvider allows to explicitly fix how geometry types
+ * are derived. The default version is AutoGeometryTypeProvider which
+ * uses a fixed finite element implementation if the mesh is statically
+ * known to only contain a single geometry type. Otherwise is uses
+ * the polymorphic VirtualFiniteElement interface.
+ *
+ * If your grid type allows for mixed geometry types but you know,
+ * that your grid only contains a single one, then you can explicitly
+ * provide a SimplexGeometryTypeProvider or CubeGeometryTypeProvider
+ * to avoid the polymorphic interface.
+ *
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam k   The polynomial order of ansatz functions
+ * \tparam GeometryTypeProvider Helper struct to determine geometry types
  */
-template<std::size_t k>
+template<std::size_t k, class GeometryTypeProvider=AutoGeometryTypeProvider>
 auto lagrange()
 {
-  return Imp::LagrangePreBasisFactory<k>();
+  return Imp::LagrangePreBasisFactory<k, GeometryTypeProvider>();
 }
 
 } // end namespace BasisFactory
@@ -523,11 +539,23 @@ auto lagrange()
  * All arguments passed to the constructor will be forwarded to the constructor
  * of LagrangePreBasis.
  *
+ * The GeometryTypeProvider allows to explicitly fix how geometry types
+ * are derived. The default version is AutoGeometryTypeProvider which
+ * uses a fixed finite element implementation if the mesh is statically
+ * known to only contain a single geometry type. Otherwise is uses
+ * the polymorphic VirtualFiniteElement interface.
+ *
+ * If your grid type allows for mixed geometry types but you know,
+ * that your grid only contains a single one, then you can explicitly
+ * provide a SimplexGeometryTypeProvider or CubeGeometryTypeProvider
+ * to avoid the polymorphic interface.
+ *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
+ * \tparam GeometryTypeProvider Helper struct to determine geometry types
  */
-template<typename GV, int k>
-using LagrangeBasis = DefaultGlobalBasis<LagrangePreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
+template<typename GV, int k, class GeometryTypeProvider=AutoGeometryTypeProvider>
+using LagrangeBasis = DefaultGlobalBasis<LagrangePreBasis<GV, k, FlatMultiIndex<std::size_t>, GeometryTypeProvider> >;
 
 
 
