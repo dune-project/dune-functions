@@ -356,6 +356,7 @@ public:
         Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
         const auto& gridIndexSet = preBasis_->gridView().indexSet();
         const auto& element = node_->element();
+        const auto& geometryType = GeometryTypeProvider::template type<GV>(element);
 
         // The dimension of the entity that the current dof is related to
         auto dofDim = dim - localKey.codim();
@@ -382,7 +383,7 @@ public:
             else
               {
                 const auto refElement
-                  = Dune::referenceElement<double,dim>(element.type());
+                  = Dune::referenceElement<double,dim>(geometryType);
 
                 // we have to reverse the numbering if the local triangle edge is
                 // not aligned with the global edge
@@ -404,13 +405,13 @@ public:
           {
             if (dim==2)   // element dof -- any local numbering is fine
               {
-                if (element.type().isTriangle())
+                if (geometryType.isTriangle())
                   {
                     const int interiorLagrangeNodesPerTriangle = (k-1)*(k-2)/2;
                     *it = {{ preBasis_->triangleOffset_ + interiorLagrangeNodesPerTriangle*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
-                else if (element.type().isQuadrilateral())
+                else if (geometryType.isQuadrilateral())
                   {
                     const int interiorLagrangeNodesPerQuadrilateral = (k-1)*(k-1);
                     *it = {{ preBasis_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
@@ -421,7 +422,7 @@ public:
               } else
               {
                 const auto refElement
-                  = Dune::referenceElement<double,dim>(element.type());
+                  = Dune::referenceElement<double,dim>(geometryType);
 
                 if (k>3)
                   DUNE_THROW(Dune::NotImplemented, "LagrangeNodalBasis for 3D grids is only implemented if k<=3");
@@ -438,22 +439,22 @@ public:
           {
             if (dim==3)   // element dof -- any local numbering is fine
               {
-                if (element.type().isTetrahedron())
+                if (geometryType.isTetrahedron())
                   {
                     *it = {{ preBasis_->tetrahedronOffset_ + PreBasis::dofsPerTetrahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
-                else if (element.type().isHexahedron())
+                else if (geometryType.isHexahedron())
                   {
                     *it = {{ preBasis_->hexahedronOffset_ + PreBasis::dofsPerHexahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
-                else if (element.type().isPrism())
+                else if (geometryType.isPrism())
                   {
                     *it = {{ preBasis_->prismOffset_ + PreBasis::dofsPerPrism*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
-                else if (element.type().isPyramid())
+                else if (geometryType.isPyramid())
                   {
                     *it = {{ preBasis_->pyramidOffset_ + PreBasis::dofsPerPyramid*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
