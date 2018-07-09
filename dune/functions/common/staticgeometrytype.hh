@@ -16,26 +16,91 @@ namespace Functions {
 template<unsigned int topologyId_T, std::size_t dim_T, bool none_T>
 class StaticGeometryType
 {
+  using NormalizedType = StaticGeometryType<((topologyId_T >> 1) << 1), dim_T, none_T>;
 public:
 
-  static constexpr auto topologyId()
+  /** \brief Return the topology id of the type */
+  static constexpr auto id()
   {
     return Dune::index_constant<topologyId_T>();
   }
 
+  /** \brief Return dimension of the type */
   static constexpr auto dim()
   {
     return Dune::index_constant<dim_T>();
   }
 
-  static constexpr auto none()
+  /** \brief Return true if entity is a singular of any dimension */
+  static constexpr auto isNone()
   {
     return Dune::Std::bool_constant<none_T>();
   }
 
+
+  /** \brief Return true if entity is a vertex */
+  static constexpr auto isVertex()
+  {
+    return Dune::Std::bool_constant<dim()==0>();
+  }
+
+  /** \brief Return true if entity is a line segment */
+  static constexpr auto isLine()
+  {
+    return Dune::Std::bool_constant<dim()==1>();
+  }
+
+  /** \brief Return true if entity is a triangle */
+  static constexpr auto isTriangle()
+  {
+    return std::is_same<NormalizedType, StaticGeometryType<0, 2, false>>();
+  }
+
+  /** \brief Return true if entity is a quadrilateral */
+  static constexpr auto isQuadrilateral()
+  {
+    return std::is_same<NormalizedType, StaticGeometryType<0b0010, 2, false>>();
+  }
+
+  /** \brief Return true if entity is a tetrahedron */
+  static constexpr auto isTetrahedron()
+  {
+    return std::is_same<NormalizedType, StaticGeometryType<0, 3, false>>();
+  }
+
+  /** \brief Return true if entity is a pyramid */
+  static constexpr auto isPyramid()
+  {
+    return std::is_same<NormalizedType, StaticGeometryType<0b0010, 3, false>>();
+  }
+
+  /** \brief Return true if entity is a prism */
+  static constexpr auto isPrism()
+  {
+    return std::is_same<NormalizedType, StaticGeometryType<0b0100, 3, false>>();
+  }
+
+  /** \brief Return true if entity is a hexahedron */
+  static constexpr auto isHexahedron()
+  {
+    return std::is_same<NormalizedType, StaticGeometryType<0b0110, 3, false>>();
+  }
+
+  /** \brief Return true if entity is a simplex of any dimension */
+  static constexpr auto isSimplex()
+  {
+    return Dune::Std::bool_constant<(!isNone()) && ((id() | 1) == 1)>();
+  }
+
+  /** \brief Return true if entity is a cube of any dimension */
+  static constexpr auto isCube()
+  {
+    return Dune::Std::bool_constant<(!isNone()) && ((id() ^ ((1 << dim())-1)) >> 1 == 0)>();
+  }
+
   static constexpr Dune::GeometryType dynamicType()
   {
-    return Dune::GeometryType(topologyId(), dim(), none());
+    return Dune::GeometryType(id(), dim(), isNone());
   }
 
   constexpr operator Dune::GeometryType () const
