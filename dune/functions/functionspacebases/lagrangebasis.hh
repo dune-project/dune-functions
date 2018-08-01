@@ -114,9 +114,13 @@ public:
   {
     vertexOffset_        = 0;
     edgeOffset_          = vertexOffset_          + dofsPerVertex * ((size_type)gridView_.size(dim));
-    triangleOffset_      = edgeOffset_            + dofsPerEdge * ((size_type) gridView_.size(dim-1));
 
-    quadrilateralOffset_ = triangleOffset_        + dofsPerTriangle * ((size_type)gridView_.size(Dune::GeometryTypes::triangle));
+    if (dim>=2)
+    {
+      triangleOffset_      = edgeOffset_            + dofsPerEdge * ((size_type) gridView_.size(dim-1));
+
+      quadrilateralOffset_ = triangleOffset_        + dofsPerTriangle * ((size_type)gridView_.size(Dune::GeometryTypes::triangle));
+    }
 
     if (dim==3) {
       tetrahedronOffset_   = quadrilateralOffset_ + dofsPerQuad * ((size_type)gridView_.size(Dune::GeometryTypes::quadrilateral));
