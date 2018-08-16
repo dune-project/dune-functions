@@ -484,7 +484,7 @@ int main (int argc, char *argv[]) try
 
 }
 // Error handling
-catch (Exception e)
+catch (Exception& e)
 {
-  std::cout << e << std::endl;
+  std::cout << e.what() << std::endl;
 }
