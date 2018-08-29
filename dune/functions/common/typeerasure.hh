@@ -155,9 +155,9 @@ public:
  *
  * \ingroup TypeErasure
  *
- * This is menat as a base class for the type-erased interface
+ * This is meant as a base class for the type-erased interface
  * wrapper that is actually visible to the user. By deriving
- * from this you get small object optimization for the interlan
+ * from this you get small object optimization for the internal
  * polymorphic wrapper.
  */
 template<class Interface, template<class> class Implementation, size_t bufferSize = 56>
