@@ -36,8 +36,8 @@ namespace Functions {
 template<class F>
 class CallableFunctionWrapper
 {
-    typedef typename F::Range Range;
-    typedef typename F::Domain Domain;
+    using Range = typename F::RangeType;
+    using Domain = typename F::DomainType;
 
   public:
 
