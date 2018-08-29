@@ -397,7 +397,7 @@ public:
     return multiIndices;
   }
 
-  static const void multiIndexPushFront(MultiIndex& M, size_type M0)
+  static void multiIndexPushFront(MultiIndex& M, size_type M0)
   {
     M.resize(M.size()+1);
     for(std::size_t i=M.size()-1; i>0; --i)
