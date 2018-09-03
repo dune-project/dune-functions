@@ -7,6 +7,7 @@
 #include <tuple>
 
 #include <dune/common/concept.hh>
+#include <dune/common/std/optional.hh>
 #include <dune/common/hybridutilities.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>
@@ -72,7 +73,7 @@ public:
   void bind(const Element& e)
   {
     element_ = e;
-    bindTree(tree_, element_);
+    bindTree(tree_, element_.value());
     nodeIndexSet_.bind(tree_);
     indices_.resize(size());
     Hybrid::ifElse(
@@ -86,13 +87,23 @@ public:
       });
   }
 
+  /** \brief Return if the view is bound to a grid element
+   */
+  bool isBound() const {
+    return static_cast<bool>(element_);
+  }
+
   /** \brief Return the grid element that the view is bound to
    *
    * \throws Dune::Exception if the view is not bound to anything
    */
   const Element& element() const
   {
-    return element_;
+    // TODO we could pass element_.value() fail exception (bad_optinonal_access)
+    if(not isBound())
+      DUNE_THROW(Dune::Exception, "Default local view was not bound on "
+                                  "element retrieval call.");
+    return element_.value();
   }
 
   /** \brief Unbind from the current element
@@ -102,6 +113,7 @@ public:
   void unbind()
   {
     nodeIndexSet_.unbind();
+    element_.reset();
   }
 
   /** \brief Return the local ansatz tree associated to the bound entity
@@ -151,7 +163,7 @@ public:
 
 protected:
   const GlobalBasis* globalBasis_;
-  Element element_;
+  Std::optional<Element> element_;
   Tree tree_;
   NodeIndexSet nodeIndexSet_;
   std::vector<MultiIndex> indices_;
