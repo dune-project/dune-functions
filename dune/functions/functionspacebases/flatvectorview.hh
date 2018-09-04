@@ -6,6 +6,7 @@
 
 #include <dune/common/concept.hh>
 #include <dune/common/fmatrix.hh>
+#include <dune/common/diagonalmatrix.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>
 
@@ -15,7 +16,6 @@
 namespace Dune {
 namespace Functions {
 namespace Impl {
-
 
 
 template<class V>
@@ -57,7 +57,15 @@ struct FlatVectorBackend
 
 
 
+template<class K, int n>
+struct FlatVectorBackend<Dune::DiagonalMatrix<K, n> >
+{
+  template<class VV, class Index>
+  static decltype(auto) getEntry(VV&& v, const Index& i) { return v[i/n][i%n]; }
 
+  template<class VV>
+  static int size(VV&&) { return n*n; }
+};
 
 template<class K, int n, int m>
 struct FlatVectorBackend<Dune::FieldMatrix<K, n, m> >
@@ -69,7 +77,22 @@ struct FlatVectorBackend<Dune::FieldMatrix<K, n, m> >
   static int size(VV&&) { return n*m; }
 };
 
+template <class F, size_t n1, size_t n2, size_t d>
+struct FlatVectorBackend<std::array<FieldMatrix<F, n1, n2>, d>> {
+  static_assert(d == 1, "No FlatVector access for generic arrays implemented.");
 
+  template <class VV>
+  static decltype(auto) getEntry(VV&& v, size_t i) {
+    auto&& x = v[0];
+    return FlatVectorBackend<std::decay_t<decltype(x)>>::getEntry(x, i);
+  }
+
+  template <class VV>
+  static auto size(VV&& v) {
+    auto&& x = v[0];
+    return FlatVectorBackend<std::decay_t<decltype(x)>>::size(x);
+  }
+};
 
 
 template<class T>
