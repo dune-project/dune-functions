@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_ISTLVECTORBACKEND_HH
 
 #include <cstddef>
+#include <memory>
 #include <utility>
 #include <type_traits>
 
@@ -11,6 +12,7 @@
 #include <dune/common/indices.hh>
 #include <dune/common/hybridutilities.hh>
 
+#include <dune/functions/backends/concepts.hh>
 #include <dune/functions/common/indexaccess.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
@@ -306,6 +308,56 @@ auto istlVectorBackend(const Vector& v)
 }
 
 
+namespace Impl {
+
+template <class T>
+struct is_shared_ptr : std::false_type {};
+
+template <class T>
+struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
+
+template <class T>
+constexpr auto isSharedPtr() {
+  return Std::bool_constant<is_shared_ptr<std::decay_t<T>>::value>();
+}
+
+template <class T, class R = void>
+using EnableSharedPtr = std::enable_if_t<isSharedPtr<T>(), R>;
+
+template <class T, class R = void>
+using DisableSharedPtr = std::enable_if_t<not is_shared_ptr<T>::value, R>;
+
+} // end namespace Impl
+
+/**
+ * \brief Small helper functions to wrap vectors using istlVectorBackend
+ * if they do not already satisfy the VectorBackend interface.
+ */
+template <class Basis, class Vector, Impl::DisableSharedPtr<Vector, int> = 0>
+auto toConstVectorBackend(Vector&& vector) {
+  return Dune::Hybrid::ifElse(
+      models<Concept::ConstVectorBackend<Basis>, decltype(vector)>(),
+      [&](auto) { return std::forward<decltype(vector)>(vector); },
+      [&](auto) { return istlVectorBackend(vector); });
+}
+
+template <class Basis, class Vector, Impl::EnableSharedPtr<Vector, int> = 0>
+auto toConstVectorBackend(Vector&& vector) {
+  return toConstVectorBackend(*vector);
+}
+
+template <class Basis, class Vector, Impl::DisableSharedPtr<Vector, int> = 0>
+auto toVectorBackend(Vector&& vector) {
+  return Dune::Hybrid::ifElse(
+      models<Concept::VectorBackend<Basis>, decltype(vector)>(),
+      [&](auto) { return std::forward<decltype(vector)>(vector); },
+      [&](auto) { return istlVectorBackend(vector); });
+}
+
+template <class Basis, class Vector, Impl::EnableSharedPtr<Vector, int> = 0>
+auto toVectorBackend(Vector&& vector) {
+  return toVectorBackend(*vector);
+}
 
 } // namespace Functions
 } // namespace Dune
