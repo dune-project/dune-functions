@@ -185,7 +185,7 @@ public:
     using Element = GlobalFunction::Element;
 
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
-      : globalFunction_(&globalFunction)
+      : globalFunction_(globalFunction)
       , localView_(globalFunction.basis().localView())
     {
       init();
@@ -238,7 +238,7 @@ public:
     {
       auto y = Range(0);
 
-      LocalEvaluateVisitor localEvaluateVisitor(x, y, localView_, globalFunction_->dofs(), globalFunction_->nodeToRangeEntry(), shapeFunctionValueContainer_);
+      LocalEvaluateVisitor localEvaluateVisitor(x, y, localView_, globalFunction_.dofs(), globalFunction_.nodeToRangeEntry(), shapeFunctionValueContainer_);
       TypeTree::applyToTree(*subTree_, localEvaluateVisitor);
 
       return y;
@@ -249,9 +249,8 @@ public:
       DUNE_THROW(NotImplemented,"not implemented");
     }
 
-  private:
-
-    const DiscreteGlobalBasisFunction* globalFunction_;
+  protected:
+    const DiscreteGlobalBasisFunction& globalFunction_;
     LocalView localView_;
 
     mutable ShapeFunctionValueContainer shapeFunctionValueContainer_;
@@ -262,7 +261,7 @@ public:
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
       using namespace TypeTree;
-      subTree_ = &child(localView_.tree(), globalFunction_->treePath());
+      subTree_ = &child(localView_.tree(), globalFunction_.treePath());
       shapeFunctionValueContainer_.init(*subTree_);
     }
   };
