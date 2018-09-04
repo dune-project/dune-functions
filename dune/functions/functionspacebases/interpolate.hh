@@ -18,7 +18,6 @@
 #include <dune/functions/common/functionfromcallable.hh>
 #include <dune/functions/common/functionconcepts.hh>
 
-#include <dune/functions/backends/concepts.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/sizeinfo.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>
@@ -197,25 +196,6 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
   static_assert(Dune::Functions::Concept::isCallable<F, GlobalDomain>(), "Function passed to interpolate does not model the Callable<GlobalCoordinate> concept");
 
   auto&& gridView = basis.gridView();
-
-  // Small helper functions to wrap vectors using istlVectorBackend
-  // if they do not already satisfy the VectorBackend interface.
-  auto toVectorBackend = [&](auto& v) -> decltype(auto) {
-    return Dune::Hybrid::ifElse(models<Concept::VectorBackend<B>, decltype(v)>(),
-    [&](auto id) -> decltype(auto) {
-      return v;
-    }, [&](auto id) -> decltype(auto) {
-      return istlVectorBackend(v);
-    });
-  };
-  auto toConstVectorBackend = [&](auto& v) -> decltype(auto) {
-    return Dune::Hybrid::ifElse(models<Concept::ConstVectorBackend<B>, decltype(v)>(),
-    [&](auto id) -> decltype(auto) {
-      return v;
-    }, [&](auto id) -> decltype(auto) {
-      return istlVectorBackend(v);
-    });
-  };
 
   auto&& bitVector = toConstVectorBackend(bv);
   auto&& vector = toVectorBackend(coeff);
