@@ -188,11 +188,7 @@ public:
       : globalFunction_(&globalFunction)
       , localView_(globalFunction.basis().localView())
     {
-      // Here we assume that the tree can be accessed, traversed,
-      // and queried for tree indices even in unbound state.
-      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
-      shapeFunctionValueContainer_.init(*subTree_);
-//      localDoFs_.reserve(localView_.maxSize());
+      init();
     }
 
     LocalFunction(const LocalFunction& other)
@@ -200,21 +196,14 @@ public:
       , localView_(other.localView_)
       , bound_(other.bound_)
     {
-      // Here we assume that the tree can be accessed, traversed,
-      // and queried for tree indices even in unbound state.
-      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
-      shapeFunctionValueContainer_.init(*subTree_);
+      init();
     }
 
     LocalFunction operator=(const LocalFunction& other)
     {
       globalFunction_ = other.globalFunction_;
       localView_ = other.localView_;
-      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
-
-      // Here we assume that the tree can be accessed, traversed,
-      // and queried for tree indices even in unbound state.
-      shapeFunctionValueContainer_.init(*subTree_);
+      init();
     }
 
     /**
@@ -285,6 +274,14 @@ public:
 //    std::vector<typename V::value_type> localDoFs_;
     const SubTree* subTree_;
 
+  private:
+    void init() {
+      // Here we assume that the tree can be accessed, traversed,
+      // and queried for tree indices even in unbound state.
+      using namespace TypeTree;
+      subTree_ = &child(localView_.tree(), globalFunction_->treePath());
+      shapeFunctionValueContainer_.init(*subTree_);
+    }
     bool bound_ = false;
   };
 
