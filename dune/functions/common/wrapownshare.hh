@@ -13,25 +13,25 @@ namespace Impl {
 
 //! Wrap const reference as shared_ptr
 template <class T, class S>
-std::shared_ptr<const T> wrap_own_share(const S& t) {
+std::shared_ptr<const T> wrap_own_share_impl(const S& t) {
   return std::shared_ptr<T>(&t, [](auto*) {});
 }
 
 //! Wrap reference as shared_ptr
 template <class T, class S>
-std::shared_ptr<T> wrap_own_share(S& t) {
+std::shared_ptr<T> wrap_own_share_impl(S& t) {
   return std::shared_ptr<T>(&t, [](auto*) {});
 }
 
 //! Move r-value reference to shared_ptr
 template <class T, class S>
-std::shared_ptr<T> wrap_own_share(S&& t) {
+std::shared_ptr<T> wrap_own_share_impl(S&& t) {
   return std::make_shared<S>(std::move(t));
 }
 
 //! Share ownership of shared_ptr
 template <class T, class S>
-std::shared_ptr<T> wrap_own_share(std::shared_ptr<S> t) {
+std::shared_ptr<T> wrap_own_share_impl(std::shared_ptr<S> t) {
   return t;
 }
 
@@ -54,7 +54,7 @@ using DisablePointer = std::enable_if_t<not std::is_pointer<T>::value>;
  */
 template <class T, class S, typename = Impl::DisablePointer<S>>
 auto wrap_own_share(S&& s) {
-  return Impl::wrap_own_share<T>(std::forward<S>(s));
+  return Impl::wrap_own_share_impl<T>(std::forward<S>(s));
 }
 
 } // namespace Functions
