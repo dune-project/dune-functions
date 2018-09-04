@@ -13,7 +13,6 @@
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/common/treedata.hh>
-#include <dune/functions/backends/concepts.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 
 namespace Dune {
@@ -385,22 +384,13 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
   using Basis = std::decay_t<B>;
   using NTREM = HierarchicNodeToRangeMap;
 
-  // Small helper functions to wrap vectors using istlVectorBackend
-  // if they do not already satisfy the VectorBackend interface.
-  auto toConstVectorBackend = [&](auto&& v) -> decltype(auto) {
-    return Dune::Hybrid::ifElse(models<Concept::ConstVectorBackend<Basis>, decltype(v)>(),
-    [&](auto id) -> decltype(auto) {
-      return std::forward<decltype(v)>(v);
-    }, [&](auto id) -> decltype(auto) {
-      return istlVectorBackend(v);
-    });
-  };
+  auto&& vectorBackend = toConstVectorBackend<Basis>(std::forward<V>(vector));
+  using VectorBackend = decltype(vectorBackend);
 
-  using Vector = std::decay_t<decltype(toConstVectorBackend(std::forward<V>(vector)))>;
-  return DiscreteGlobalBasisFunction<Basis, TP, Vector, NTREM, R>(
+  return DiscreteGlobalBasisFunction<Basis, TP, VectorBackend, NTREM, R>(
       std::forward<B>(basis),
       treePath,
-      toConstVectorBackend(std::forward<V>(vector)),
+      std::forward<VectorBackend>(vectorBackend),
       HierarchicNodeToRangeMap());
 }
 
