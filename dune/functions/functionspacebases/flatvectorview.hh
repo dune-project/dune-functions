@@ -77,7 +77,7 @@ struct FlatVectorBackend<Dune::FieldMatrix<K, n, m> >
   static int size(VV&&) { return n*m; }
 };
 
-template <class F, size_t n1, size_t n2, size_t d>
+template <class F, int n1, int n2, size_t d>
 struct FlatVectorBackend<std::array<FieldMatrix<F, n1, n2>, d>> {
   static_assert(d == 1, "No FlatVector access for generic arrays implemented.");
 
