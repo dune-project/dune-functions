@@ -105,7 +105,7 @@ public:
   template <class Signature>
   using GridFunctionTraits = Imp::GridFunctionTraits<Signature, EntitySet, DerivativeTraits, bufferSize>;
 
-  // function signature and traits
+  // function signature and traits // TODO (not longer used internally)
   using Signature = Range(Domain);
   using Traits = GridFunctionTraits<Signature>;
 
@@ -240,6 +240,11 @@ public:
     const Element& localContext() const { return localView_.element(); }
 
     /**
+     * \brief Return global function.
+     */
+    const DiscreteGlobalBasisFunction& globalFunction() const { return globalFunction_; }
+
+    /**
      * \brief Evaluate LocalFunction at bound element.
      *
      * The result of this method is undefined if you did
@@ -258,9 +263,15 @@ public:
       return y;
     }
 
-    friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction&)
+    /**
+     * \brief Obtain the derivative of the local function of a
+     * DiscreteGlobalBasisFunction as a local function of the derivative of it.
+     */
+    friend auto derivative(const LocalFunction& lf)
     {
-      DUNE_THROW(NotImplemented, "Derivative of LocalFunction of DiscreteGlobalBasisFunction.");
+      auto dlf = localFunction(derivative(lf.globalFunction()));
+      if (lf.bound()) dlf.bind(lf.localContext());
+      return dlf;
     }
 
   protected:
