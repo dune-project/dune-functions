@@ -150,8 +150,6 @@ public:
           // Get value of i-th shape function
           auto v = flatVectorView(shapeFunctionValues[i]);
 
-
-
           // Notice that the range entry re, the coefficient c, and the shape functions
           // value v may all be scalar, vector, matrix, or general container valued.
           // The matching of their entries is done via the multistage procedure described
@@ -168,6 +166,7 @@ public:
         }
       }
 
+    private:
       const LocalDomain& x_;
       Range& y_;
       const LocalView& localView_;
@@ -178,7 +177,6 @@ public:
 
 
   public:
-
     using GlobalFunction = DiscreteGlobalBasisFunction;
     using Domain = LocalDomain;
     using Range = GlobalFunction::Range;
@@ -283,25 +281,12 @@ public:
     nodeToRangeEntry_(nodeToRangeEntry)
   {}
 
-  const Basis& basis() const
-  {
-    return *basis_;
-  }
-
-  const TreePath& treePath() const
-  {
-    return treePath_;
-  }
-
-  const V& dofs() const
-  {
-    return *coefficients_;
-  }
-
-  const NodeToRangeEntry& nodeToRangeEntry() const
-  {
-    return *nodeToRangeEntry_;
-  }
+  // getters
+  const auto& basis() const { return *basis_; }
+  const auto& treePath() const { return treePath_; }
+  const auto& dofs() const { return *coefficients_; }
+  const auto& nodeToRangeEntry() const { return *nodeToRangeEntry_; }
+  const auto& entitySet() const { return entitySet_; }
 
   // TODO: Implement this using hierarchic search
   Range operator() (const Domain& x) const
@@ -334,16 +319,7 @@ public:
     return LocalFunction(t);
   }
 
-  /**
-   * \brief Get associated EntitySet
-   */
-  const EntitySet& entitySet() const
-  {
-    return entitySet_;
-  }
-
 private:
-
   EntitySet entitySet_;
   std::shared_ptr<const B> basis_;
   const TreePath treePath_;
