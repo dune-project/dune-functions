@@ -77,8 +77,9 @@ public:
   using Vector = V;
 
   using GridView = typename Basis::GridView;
+  using LocalView = typename Basis::LocalView;
   using EntitySet = GridViewEntitySet<GridView, 0>;
-  using Tree = typename Basis::LocalView::Tree;
+  using Tree = typename LocalView::Tree;
   using SubTree = typename TypeTree::ChildForTreePath<Tree, TreePath>;
   using NodeToRangeEntry = NTRE;
 
@@ -88,18 +89,29 @@ public:
   using LocalDomain = typename EntitySet::LocalCoordinate;
   using Element = typename EntitySet::Element;
 
-  using Traits = Imp::GridFunctionTraits<Range(Domain), EntitySet, DefaultDerivativeTraits, 16>;
+  // some internal template defaults
+  template <class Signature>
+  using DerivativeTraits = DefaultDerivativeTraits<Signature>;
+  static constexpr size_t bufferSize = 16;
+  template <class Signature>
+  using GridFunctionTraits = Imp::GridFunctionTraits<Signature, EntitySet, DerivativeTraits, bufferSize>;
+
+  // function signature and traits
+  using Signature = Range(Domain);
+  using Traits = GridFunctionTraits<Signature>;
+
+  // internal node traits
+  template <class Node>
+  struct NodeTraits {
+    using FETraits = typename Node::FiniteElement::Traits;
+    using LBTraits = typename FETraits::LocalBasisType::Traits;
+    using Range = typename LBTraits::RangeType;
+  };
 
   class LocalFunction
   {
-    using LocalView = typename Basis::LocalView;
-    using size_type = typename SubTree::size_type;
-
     template<class Node>
-    using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
-
-    template<class Node>
-    using NodeData = typename std::vector<LocalBasisRange<Node>>;
+    using NodeData = typename std::vector<typename NodeTraits<Node>::Range>;
 
     using ShapeFunctionValueContainer = TreeData<SubTree, NodeData, true>;
 
@@ -128,8 +140,7 @@ public:
         // Get range entry associated to this node
         auto re = flatVectorView(nodeToRangeEntry_(node, treePath, y_));
 
-
-        for (size_type i = 0; i < localBasis.size(); ++i)
+        for (size_t i = 0; i < localBasis.size(); ++i)
         {
           auto&& multiIndex = localView_.index(node.localIndex(i));
 
@@ -148,10 +159,10 @@ public:
           auto&& dimC = c.size();
           auto dimV = v.size();
           assert(dimC*dimV == re.size());
-          for(size_type j=0; j<dimC; ++j)
+          for(size_t j=0; j<dimC; ++j)
           {
             auto&& c_j = c[j];
-            for(size_type k=0; k<dimV; ++k)
+            for(size_t k=0; k<dimV; ++k)
               re[j*dimV + k] += c_j*v[k];
           }
         }
@@ -356,10 +367,10 @@ public:
 private:
 
   EntitySet entitySet_;
-  std::shared_ptr<const Basis> basis_;
+  std::shared_ptr<const B> basis_;
   const TreePath treePath_;
   std::shared_ptr<const V> coefficients_;
-  std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry_;
+  std::shared_ptr<const NTRE> nodeToRangeEntry_;
 };
 
 
