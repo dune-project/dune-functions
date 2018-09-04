@@ -13,6 +13,7 @@
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/common/treedata.hh>
+#include <dune/functions/common/wrapownshare.hh>
 #include <dune/functions/backends/concepts.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 
@@ -267,18 +268,10 @@ public:
   template<class B_T, class V_T, class NTRE_T>
   DiscreteGlobalBasisFunction(B_T && basis, const TreePath& treePath, V_T && coefficients, NTRE_T&& nodeToRangeEntry) :
     entitySet_(basis.gridView()),
-    basis_(wrap_or_move(std::forward<B_T>(basis))),
+    basis_(wrap_own_share<const B>(std::forward<B_T>(basis))),
     treePath_(treePath),
-    coefficients_(wrap_or_move(std::forward<V_T>(coefficients))),
-    nodeToRangeEntry_(wrap_or_move(std::forward<NTRE_T>(nodeToRangeEntry)))
-  {}
-
-  DiscreteGlobalBasisFunction(std::shared_ptr<const Basis> basis, const TreePath& treePath, std::shared_ptr<const V> coefficients, std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry) :
-    entitySet_(basis->gridView()),
-    basis_(basis),
-    treePath_(treePath),
-    coefficients_(coefficients),
-    nodeToRangeEntry_(nodeToRangeEntry)
+    coefficients_(wrap_own_share<const V>(std::forward<V_T>(coefficients))),
+    nodeToRangeEntry_(wrap_own_share<const NTRE>(std::forward<NTRE_T>(nodeToRangeEntry)))
   {}
 
   // getters
