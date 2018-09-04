@@ -5,17 +5,20 @@
 
 #include <memory>
 
-#include <dune/common/shared_ptr.hh>
 #include <dune/common/hybridutilities.hh>
+#include <dune/common/shared_ptr.hh>
+#include <dune/typetree/childextraction.hh>
 
-#include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
-#include <dune/functions/functionspacebases/flatvectorview.hh>
-#include <dune/functions/gridfunctions/gridviewentityset.hh>
-#include <dune/functions/gridfunctions/gridfunction.hh>
-#include <dune/functions/common/treedata.hh>
-#include <dune/functions/common/wrapownshare.hh>
 #include <dune/functions/backends/concepts.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
+#include <dune/functions/common/defaultderivativetraits.hh>
+#include <dune/functions/common/treedata.hh>
+#include <dune/functions/common/wrapownshare.hh>
+#include <dune/functions/functionspacebases/flatvectorview.hh>
+#include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
+#include <dune/functions/gridfunctions/gridfunction.hh>
+#include <dune/functions/gridfunctions/gridviewentityset.hh>
+
 
 namespace Dune {
 namespace Functions {
