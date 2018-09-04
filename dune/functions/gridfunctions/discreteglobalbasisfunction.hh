@@ -194,7 +194,6 @@ public:
     LocalFunction(const LocalFunction& other)
       : globalFunction_(other.globalFunction_)
       , localView_(other.localView_)
-      , bound_(other.bound_)
     {
       init();
     }
@@ -212,24 +211,19 @@ public:
      * You must call this method before evaluate()
      * and after changes to the coefficient vector.
      */
-    void bind(const Element& element)
-    {
-      localView_.bind(element);
-      bound_ = true;
+    void bind(const Element& element) { localView_.bind(element); }
 
-
-    void unbind()
-    {
-      localView_.unbind();
-      bound_ = false;
-    }
+    void unbind() { localView_.unbind(); }
 
     /**
      * \brief Check if LocalFunction is already bound to an element.
      */
-    bool bound() const {
-      return bound_;
-    }
+    bool bound() const { return localView_.isBound(); }
+
+    /**
+     * \brief Return element that LocalFunction is bound to.
+     */
+    const Element& localContext() const { return localView_.element(); }
 
     /**
      * \brief Evaluate LocalFunction at bound element.
@@ -248,11 +242,6 @@ public:
       TypeTree::applyToTree(*subTree_, localEvaluateVisitor);
 
       return y;
-    }
-
-    const Element& localContext() const
-    {
-      return localView_.element();
     }
 
     friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction& t)
@@ -276,7 +265,6 @@ public:
       subTree_ = &child(localView_.tree(), globalFunction_->treePath());
       shapeFunctionValueContainer_.init(*subTree_);
     }
-    bool bound_ = false;
   };
 
   template<class B_T, class V_T, class NTRE_T>
