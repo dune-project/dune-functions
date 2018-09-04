@@ -242,9 +242,9 @@ public:
       return y;
     }
 
-    friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction& t)
+    friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction&)
     {
-      DUNE_THROW(NotImplemented,"not implemented");
+      DUNE_THROW(NotImplemented, "Derivative of LocalFunction of DiscreteGlobalBasisFunction.");
     }
 
   protected:
@@ -289,14 +289,14 @@ public:
   const auto& entitySet() const { return entitySet_; }
 
   // TODO: Implement this using hierarchic search
-  Range operator() (const Domain& x) const
+  Range operator() (const Domain&) const
   {
-    DUNE_THROW(NotImplemented,"not implemented");
+    DUNE_THROW(NotImplemented, "Evaluation of DiscreteGlobalBasisFunction.");
   }
 
-  friend typename Traits::DerivativeInterface derivative(const DiscreteGlobalBasisFunction& t)
+  friend typename Traits::DerivativeInterface derivative(const DiscreteGlobalBasisFunction&)
   {
-    DUNE_THROW(NotImplemented,"not implemented");
+    DUNE_THROW(NotImplemented, "Derivative of DiscreteGlobalBasisFunction.");
   }
 
   /**
