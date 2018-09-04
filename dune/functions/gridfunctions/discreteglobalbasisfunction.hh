@@ -217,11 +217,6 @@ public:
       localView_.bind(element);
       bound_ = true;
 
-      // Read dofs associated to bound element
-//      localDoFs_.resize(subTree.size());
-//      for (size_type i = 0; i < subTree.size(); ++i)
-//        localDoFs_[i] = globalFunction_->dofs()[localView.index(i)];
-    }
 
     void unbind()
     {
@@ -271,7 +266,6 @@ public:
     LocalView localView_;
 
     mutable ShapeFunctionValueContainer shapeFunctionValueContainer_;
-//    std::vector<typename V::value_type> localDoFs_;
     const SubTree* subTree_;
 
   private:
