@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_ISTLVECTORBACKEND_HH
 
 #include <cstddef>
+#include <memory>
 #include <utility>
 #include <type_traits>
 
@@ -11,7 +12,9 @@
 #include <dune/common/indices.hh>
 #include <dune/common/hybridutilities.hh>
 
+#include <dune/functions/backends/concepts.hh>
 #include <dune/functions/common/indexaccess.hh>
+#include <dune/functions/common/typeutilities.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
 
@@ -305,7 +308,35 @@ auto istlVectorBackend(const Vector& v)
   return Impl::ISTLVectorBackend<const Vector>(v);
 }
 
+/**
+ * \brief Small helper functions to wrap vectors using istlVectorBackend
+ * if they do not already satisfy the VectorBackend interface.
+ */
+template <class Basis, class Vector, disableIfSharedPtr<Vector, int> = 0>
+auto toConstVectorBackend(Vector&& vector) {
+  return Dune::Hybrid::ifElse(
+      models<Concept::ConstVectorBackend<Basis>, decltype(vector)>(),
+      [&](auto) { return std::forward<decltype(vector)>(vector); },
+      [&](auto) { return istlVectorBackend(vector); });
+}
 
+template <class Basis, class Vector, enableIfSharedPtr<Vector, int> = 0>
+auto toConstVectorBackend(Vector&& vector) {
+  return toConstVectorBackend(*vector);
+}
+
+template <class Basis, class Vector, disableIfSharedPtr<Vector, int> = 0>
+auto toVectorBackend(Vector&& vector) {
+  return Dune::Hybrid::ifElse(
+      models<Concept::VectorBackend<Basis>, decltype(vector)>(),
+      [&](auto) { return std::forward<decltype(vector)>(vector); },
+      [&](auto) { return istlVectorBackend(vector); });
+}
+
+template <class Basis, class Vector, enableIfSharedPtr<Vector, int> = 0>
+auto toVectorBackend(Vector&& vector) {
+  return toVectorBackend(*vector);
+}
 
 } // namespace Functions
 } // namespace Dune
