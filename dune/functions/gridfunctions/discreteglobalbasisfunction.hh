@@ -344,7 +344,7 @@ public:
 
       struct LocalDerivativeVisitor
           : TypeTree::TreeVisitor
-          , TypeTree::StaticTraversal {
+          , TypeTree::DynamicTraversal {
 
         // Note: we assume that the NodeToRangeEntry can also be used as
         // a NodeToJacobianEntry. See all lines tagged with (NTJE)
