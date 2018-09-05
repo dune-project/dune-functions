@@ -224,7 +224,7 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
 
 
   // Make a grid function supporting local evaluation out of f
-  auto gf = makeGridViewFunction(f, gridView);
+  auto&& gf = makeGridViewFunction(f, gridView);
 
   // Obtain a local view of f
   auto localF = localFunction(gf);
