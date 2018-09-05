@@ -313,28 +313,28 @@ auto istlVectorBackend(const Vector& v)
  * if they do not already satisfy the VectorBackend interface.
  */
 template <class Basis, class Vector, disableIfSharedPtr<Vector, int> = 0>
-auto toConstVectorBackend(Vector&& vector) {
+decltype(auto) toConstVectorBackend(Vector&& vector) {
   return Dune::Hybrid::ifElse(
-      models<Concept::ConstVectorBackend<Basis>, decltype(vector)>(),
-      [&](auto) { return std::forward<decltype(vector)>(vector); },
+      models<Concept::ConstVectorBackend<Basis>, Vector>(),
+      [&](auto) -> decltype(auto) { return std::forward<Vector>(vector); },
       [&](auto) { return istlVectorBackend(vector); });
 }
 
 template <class Basis, class Vector, enableIfSharedPtr<Vector, int> = 0>
-auto toConstVectorBackend(Vector&& vector) {
+decltype(auto) toConstVectorBackend(Vector&& vector) {
   return toConstVectorBackend<Basis>(*vector);
 }
 
 template <class Basis, class Vector, disableIfSharedPtr<Vector, int> = 0>
-auto toVectorBackend(Vector&& vector) {
+decltype(auto) toVectorBackend(Vector&& vector) {
   return Dune::Hybrid::ifElse(
-      models<Concept::VectorBackend<Basis>, decltype(vector)>(),
-      [&](auto) { return std::forward<decltype(vector)>(vector); },
+      models<Concept::VectorBackend<Basis>, Vector>(),
+      [&](auto) -> decltype(auto) { return std::forward<Vector>(vector); },
       [&](auto) { return istlVectorBackend(vector); });
 }
 
 template <class Basis, class Vector, enableIfSharedPtr<Vector, int> = 0>
-auto toVectorBackend(Vector&& vector) {
+decltype(auto) toVectorBackend(Vector&& vector) {
   return toVectorBackend<Basis>(*vector);
 }
 
