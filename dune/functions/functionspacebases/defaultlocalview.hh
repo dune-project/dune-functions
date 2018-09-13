@@ -99,10 +99,6 @@ public:
    */
   const Element& element() const
   {
-    // TODO we could pass element_.value() fail exception (bad_optinonal_access)
-    if(not isBound())
-      DUNE_THROW(Dune::Exception, "Default local view was not bound on "
-                                  "element retrieval call.");
     return element_.value();
   }
 
