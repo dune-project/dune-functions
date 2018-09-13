@@ -99,7 +99,7 @@ public:
    */
   const Element& element() const
   {
-    return element_.value();
+    return *element_;
   }
 
   /** \brief Unbind from the current element
