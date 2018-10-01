@@ -5,6 +5,11 @@ correponding version of the Dune core modules.
 
 ## Release 2.6
 
+- The functionality provided by `LocalIndexSet`, namely the `indices`
+  method and the `MultiIndex` typedef, have been merged into
+  `LocalView`.  The global multi-indices are now precomputed and cached
+  when binding the `LocalView`. `LocalIndexSet` as well as the `localIndexSet()`
+  method of global bases have been deprecated.
 - When using `DiscreteGlobalBasisFunction` and `interpolate` the
   function range is accessed hierarchically. I.e. a leaf node
   with tree path i0,...,in is mapped to the range entry `r[i0]...[in]`.
