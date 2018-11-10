@@ -386,6 +386,6 @@ int main (int argc, char *argv[]) try
 
  }
 // Error handling
- catch (Exception e) {
-    std::cout << e << std::endl;
+ catch (Exception& e) {
+    std::cout << e.what() << std::endl;
  }
