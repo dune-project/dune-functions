@@ -208,26 +208,6 @@ struct LocalView
 
 
 
-// Concept for a LocalIndexSet
-template<class LocalView>
-struct LocalIndexSet
-{
-  template<class I>
-  auto require(const I& indexSet) -> decltype(
-    requireType<typename I::size_type>(),
-    requireType<typename I::MultiIndex>(),
-    requireType<typename I::LocalView>(),
-    requireSameType<typename I::LocalView, LocalView>(),
-    const_cast<I&>(indexSet).bind(std::declval<typename I::LocalView>()),
-    const_cast<I&>(indexSet).unbind(),
-    requireConvertible<typename I::size_type>(indexSet.size()),
-    requireConvertible<typename I::MultiIndex>(indexSet.index(std::declval<typename I::size_type>())),
-    requireConvertible<typename I::LocalView>(indexSet.localView())
-  );
-};
-
-
-
 // Concept for a GlobalBasis
 template<class GridView>
 struct GlobalBasis
