@@ -12,7 +12,6 @@
 #include <dune/common/concept.hh>
 
 #include <dune/functions/common/type_traits.hh>
-#include <dune/functions/functionspacebases/defaultlocalindexset.hh>
 #include <dune/functions/functionspacebases/defaultlocalview.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -66,15 +65,8 @@ public:
   //! Type of the local view on the restriction of the basis to a single element
   using LocalView = DefaultLocalView<DefaultGlobalBasis<PreBasis>>;
 
-  //! Node index set provided by PreBasis
-  using NodeIndexSet = typename PreBasis::template IndexSet<PrefixPath>;
-
   //! Type used for prefixes handed to the size() method
   using SizePrefix = typename PreBasis::SizePrefix;
-
-  //! Type of local indixes set exported by localIndexSet()
-  using LocalIndexSet = DefaultLocalIndexSet<LocalView, NodeIndexSet>;
-
 
   /**
    * \brief Constructor

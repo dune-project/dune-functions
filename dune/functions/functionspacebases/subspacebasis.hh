@@ -41,7 +41,6 @@ public:
   using LocalView = SubspaceLocalView<RootLocalView, PrefixPath>;
 
   using SizePrefix = typename RootBasis::SizePrefix;
-  using LocalIndexSet = typename RootBasis::LocalIndexSet;
 
 
   /** \brief Constructor for a given grid view object */

@@ -105,7 +105,7 @@ void forEachBoundaryDOF(const Basis& basis, F&& f)
  * \param f A callback that will be called with the global index of the visited boundary DOF
  */
 template<class Basis, class F,
-  decltype(std::declval<std::decay_t<F>>()(std::declval<typename Basis::LocalIndexSet::MultiIndex>()),0) = 0>
+  decltype(std::declval<std::decay_t<F>>()(std::declval<typename Basis::MultiIndex>()),0) = 0>
 void forEachBoundaryDOF(const Basis& basis, F&& f)
 {
   auto localView = basis.localView();
