@@ -10,7 +10,6 @@
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
 #include <dune/common/concept.hh>
-#include <dune/common/deprecated.hh>
 
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/defaultlocalindexset.hh>
@@ -148,14 +147,6 @@ public:
   LocalView localView() const
   {
     return LocalView(*this);
-  }
-
-  //! Return local index set for basis
-  LocalIndexSet
-    DUNE_DEPRECATED_MSG("localIndexSet() is deprecated. The index() method and the MultiIndex alias are now available on the LocalView. Indices are computed when binding the LocalView.")
-    localIndexSet() const
-  {
-    return LocalIndexSet(preBasis_.template indexSet<PrefixPath>());
   }
 
   //! Return *this because we are not embedded in a larger basis

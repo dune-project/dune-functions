@@ -181,18 +181,6 @@ namespace BasisFactory {
 
 
   /**
-   * \brief Same as BlockedInterleaved
-   *
-   * This alias is deprecated, use BlockedInterleaved instead.
-   *
-   * \deprecated
-   *
-   * \ingroup FunctionSpaceBasesUtilities
-   */
-  using LeafBlockedInterleaved  = BlockedInterleaved;
-
-
-  /**
    * \brief Creates a lexicographic merging of direct children without blocking.
    *
    * \ingroup FunctionSpaceBasesUtilities
@@ -228,20 +216,6 @@ namespace BasisFactory {
    * \ingroup FunctionSpaceBasesUtilities
    */
   constexpr BlockedInterleaved blockedInterleaved()
-  {
-    return {};
-  }
-
-  /**
-   * \brief Same as blockedInterleaved()
-   *
-   * This function is deprecated, use blockedInterleaved() instead.
-   *
-   * \deprecated
-   *
-   * \ingroup FunctionSpaceBasesUtilities
-   */
-  constexpr BlockedInterleaved DUNE_DEPRECATED_MSG("leafBlockedInterleaved() is deprecated, use blockedInterleaved() instead.") leafBlockedInterleaved ()
   {
     return {};
   }
