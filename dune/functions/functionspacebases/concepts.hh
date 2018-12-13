@@ -53,12 +53,13 @@ struct BasisNode
   template<class N>
   auto require(const N& node) -> decltype(
     requireType<typename N::size_type>(),
-    requireType<typename N::TreePath>(),
+//    requireType<typename N::TreePath>(),
     requireConvertible<typename N::size_type>(node.size()),
     requireConvertible<typename N::size_type>(node.localIndex(std::declval<typename N::size_type>())),
     requireConvertible<typename N::size_type>(node.treeIndex()),
-    requireConvertible<typename N::TreePath>(node.treePath()),
-    requireBaseOf<BasisNodeMixin<typename N::TreePath>, N>()
+//    requireConvertible<typename N::TreePath>(node.treePath()),
+//    requireBaseOf<BasisNodeMixin<typename N::TreePath>, N>()
+    requireBaseOf<BasisNodeMixin<typename N::TreePathX>, N>()
   );
 };
 
@@ -75,7 +76,8 @@ struct LeafBasisNode : Refines<BasisNode>
     requireConvertible<typename N::Element>(node.element()),
     requireConvertible<const typename N::FiniteElement&>(node.finiteElement()),
     requireSameType<typename N::Element, typename GridView::template Codim<0>::Entity>(),
-    requireBaseOf<Dune::Functions::LeafBasisNode<typename N::size_type, typename N::TreePath>, N>()
+//    requireBaseOf<Dune::Functions::LeafBasisNode<typename N::size_type, typename N::TreePath>, N>()
+    requireBaseOf<Dune::Functions::LeafBasisNode<typename N::size_type, typename N::TreePathX>, N>()
   );
 };
 
@@ -89,7 +91,8 @@ struct PowerBasisNode : Refines<BasisNode>
 {
   template<class N>
   auto require(const N& node) -> decltype(
-    requireBaseOf<Dune::Functions::PowerBasisNode<typename N::size_type, typename N::TreePath, typename N::ChildType, N::CHILDREN>, N>(),
+//    requireBaseOf<Dune::Functions::PowerBasisNode<typename N::size_type, typename N::TreePath, typename N::ChildType, N::CHILDREN>, N>(),
+    requireBaseOf<Dune::Functions::PowerBasisNode<typename N::size_type, typename N::TreePathX, typename N::ChildType, N::CHILDREN>, N>(),
     requireConcept<BasisTree<GridView>, typename N::ChildType>()
   );
 };
@@ -108,7 +111,8 @@ struct CompositeBasisNode : Refines<BasisNode>
 
   template<class N>
   auto require(const N& node) -> decltype(
-    requireBaseOf<ExpandTuple<FixArgs<typename N::size_type, typename N::TreePath>::template CompositeBasisNode, typename N::ChildTypes>, N>(),
+//    requireBaseOf<ExpandTuple<FixArgs<typename N::size_type, typename N::TreePath>::template CompositeBasisNode, typename N::ChildTypes>, N>(),
+    requireBaseOf<ExpandTuple<FixArgs<typename N::size_type, typename N::TreePathX>::template CompositeBasisNode, typename N::ChildTypes>, N>(),
     requireConceptForTupleEntries<BasisTree<GridView>, typename N::ChildTypes>()
   );
 };

@@ -286,7 +286,8 @@ public:
 
   using Node = typename PreBasis::template Node<TP>;
 
-  using SubTreePath = typename TypeTree::Child<Node,0>::TreePath;
+  using SubTreePath = decltype(TypeTree::push_back(TP(), 0));
+//  using SubTreePath = typename TypeTree::Child<Node,0>::TreePath;
 
   using SubNodeIndexSet = typename PreBasis::SubPreBasis::template IndexSet<SubTreePath>;
 

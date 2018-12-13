@@ -127,13 +127,13 @@ namespace Dune {
 
     public:
 
-      using TreePath = TP;
+      using TreePathX = TP;
       using size_type = std::size_t;
 
-      BasisNodeMixin(const TreePath& treePath) :
+      BasisNodeMixin(const TreePathX& treePath) :
         offset_(0),
         size_(0),
-        treePath_(treePath),
+//        treePath_(treePath),
         treeIndex_(0)
       {}
 
@@ -147,10 +147,10 @@ namespace Dune {
         return size_;
       }
 
-      const TreePath& treePath() const
-      {
-        return treePath_;
-      }
+//      const TreePath& treePath() const
+//      {
+//        return treePath_;
+//      }
 
       size_type treeIndex() const
       {
@@ -183,7 +183,7 @@ namespace Dune {
 
       size_type offset_;
       size_type size_;
-      const TreePath treePath_;
+//      const TreePath treePath_;
       size_type treeIndex_;
 
     };
@@ -199,10 +199,10 @@ namespace Dune {
 
     public:
 
-      using TreePath = TP;
+      using TreePathX = TP;
       using size_type = std::size_t;
 
-      LeafBasisNode(TreePath treePath = TreePath()) :
+      LeafBasisNode(TreePathX treePath = TreePathX()) :
         Mixin(treePath)
       {}
 
