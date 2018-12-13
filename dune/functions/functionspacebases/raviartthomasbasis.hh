@@ -227,10 +227,8 @@ public:
   using GridView = GV;
   using size_type = std::size_t;
 
-  template<class TP>
   using Node = RaviartThomasNode<GV, k>;
 
-  template<class TP>
   using IndexSet = RaviartThomasNodeIndexSet<GV, k, MI>;
 
   /** \brief Type used for global numbering of the basis vectors */
@@ -274,16 +272,23 @@ public:
     gridView_ = gv;
   }
 
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  /**
+   * \brief Create tree node
+   */
+  Node makeNode() const
   {
-    return Node<TP>{&finiteElementMap_};
+    return Node{&finiteElementMap_};
   }
 
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  /**
+   * \brief Create tree node index set
+   *
+   * Create an index set suitable for the tree node obtained
+   * by makeNode().
+   */
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   size_type size() const

@@ -142,28 +142,26 @@ struct NodeIndexSet
 template<class GridView>
 struct PreBasis
 {
-  using RootTreePath = decltype(TypeTree::hybridTreePath());
-
   template<class PB>
   auto require(const PB& preBasis) -> decltype(
     requireType<typename PB::GridView>(),
     requireType<typename PB::size_type>(),
     requireType<typename PB::MultiIndex>(),
     requireType<typename PB::SizePrefix>(),
-    requireType<typename PB::template Node<RootTreePath>>(),
-    requireType<typename PB::template IndexSet<RootTreePath>>(),
+    requireType<typename PB::Node>(),
+    requireType<typename PB::IndexSet>(),
     requireSameType<typename PB::GridView, GridView>(),
     const_cast<PB&>(preBasis).initializeIndices(),
     requireConvertible<typename PB::GridView>(preBasis.gridView()),
-    requireConvertible<typename PB::template Node<RootTreePath>>(preBasis.node(RootTreePath())),
-    requireConvertible<typename PB::template IndexSet<RootTreePath>>(preBasis.template indexSet<RootTreePath>()),
+    requireConvertible<typename PB::Node>(preBasis.makeNode()),
+    requireConvertible<typename PB::IndexSet>(preBasis.makeIndexSet()),
     requireConvertible<typename PB::size_type>(preBasis.size()),
     requireConvertible<typename PB::size_type>(preBasis.size(std::declval<typename PB::SizePrefix>())),
     requireConvertible<typename PB::size_type>(preBasis.dimension()),
     requireConvertible<typename PB::size_type>(preBasis.maxNodeSize()),
     requireSameType<decltype(const_cast<PB&>(preBasis).update(preBasis.gridView())),void>(),
-    requireConcept<BasisTree<typename PB::GridView>>(preBasis.node(RootTreePath())),
-    requireConcept<NodeIndexSet<PB>>(preBasis.template indexSet<RootTreePath>())
+    requireConcept<BasisTree<typename PB::GridView>>(preBasis.makeNode()),
+    requireConcept<NodeIndexSet<PB>>(preBasis.makeIndexSet())
   );
 };
 

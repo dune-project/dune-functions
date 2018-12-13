@@ -37,7 +37,7 @@ class TaylorHoodVelocityTree;
 template<typename GV>
 class TaylorHoodBasisTree;
 
-template<typename GV, class MI, class TP, bool HI>
+template<typename GV, class MI, bool HI>
 class TaylorHoodNodeIndexSet;
 
 
@@ -69,7 +69,7 @@ class TaylorHoodPreBasis
 
   static const int dim = GV::dimension;
 
-  template<class, class, class, bool>
+  template<class, class, bool>
   friend class TaylorHoodNodeIndexSet;
 
 public:
@@ -81,12 +81,10 @@ public:
   using size_type = std::size_t;
 
   //! Template mapping root tree path to type of created tree node
-  template<class TP>
   using Node = TaylorHoodBasisTree<GV>;
 
   //! Template mapping root tree path to type of created tree node index set
-  template<class TP>
-  using IndexSet = TaylorHoodNodeIndexSet<GV, MI, TP, HI>;
+  using IndexSet = TaylorHoodNodeIndexSet<GV, MI, HI>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -130,34 +128,22 @@ public:
   }
 
   /**
-   * \brief Create tree node with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
-   *
-   * By passing a non-trivial root tree path this can be used
-   * to create a node suitable for being placed in a tree at
-   * the position specified by the root tree path.
+   * \brief Create tree node
    */
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  Node makeNode() const
   {
-    return Node<TP>{};
+    return Node{};
   }
 
   /**
-   * \brief Create tree node index set with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
+   * \brief Create tree node index set
    *
    * Create an index set suitable for the tree node obtained
-   * by node(tp).
+   * by makeNode().
    */
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   //! Same as size(prefix) with empty prefix
@@ -277,7 +263,7 @@ public:
 
 
 
-template<typename GV, class MI, class TP, bool HI>
+template<typename GV, class MI, bool HI>
 class TaylorHoodNodeIndexSet
 {
   static const bool useHybridIndices = HI;
@@ -295,18 +281,13 @@ public:
 
   using Node = TaylorHoodBasisTree<GV>;
 
-
-  using PQ1TreePath = decltype(TypeTree::push_back(TP(), Dune::Indices::_1));
-  using VelocityTreePath = decltype(TypeTree::push_back(TP(), Dune::Indices::_0));
-  using PQ2TreePath = decltype(TypeTree::push_back(VelocityTreePath(), 0));
-
-  using PQ1NodeIndexSet = typename PreBasis::PQ1PreBasis::template IndexSet<PQ1TreePath>;
-  using PQ2NodeIndexSet = typename PreBasis::PQ2PreBasis::template IndexSet<PQ2TreePath>;
+  using PQ1NodeIndexSet = typename PreBasis::PQ1PreBasis::IndexSet;
+  using PQ2NodeIndexSet = typename PreBasis::PQ2PreBasis::IndexSet;
 
   TaylorHoodNodeIndexSet(const PreBasis & preBasis) :
     preBasis_(&preBasis),
-    pq1NodeIndexSet_(preBasis_->pq1PreBasis_.template indexSet<PQ1TreePath>()),
-    pq2NodeIndexSet_(preBasis_->pq2PreBasis_.template indexSet<PQ2TreePath>())
+    pq1NodeIndexSet_(preBasis_->pq1PreBasis_.makeIndexSet()),
+    pq2NodeIndexSet_(preBasis_->pq2PreBasis_.makeIndexSet())
   {}
 
   void bind(const Node& node)

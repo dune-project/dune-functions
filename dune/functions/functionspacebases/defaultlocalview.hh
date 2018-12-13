@@ -22,10 +22,8 @@ namespace Functions {
 template<class GB>
 class DefaultLocalView
 {
-  using PrefixPath = TypeTree::HybridTreePath<>;
-
   // Node index set provided by PreBasis
-  using NodeIndexSet = typename GB::PreBasis::template IndexSet<PrefixPath>;
+  using NodeIndexSet = typename GB::PreBasis::IndexSet;
 
 public:
 
@@ -42,7 +40,7 @@ public:
   using size_type = std::size_t;
 
   //! Tree of local finite elements / local shape function sets
-  using Tree = typename GlobalBasis::PreBasis::template Node<PrefixPath>;
+  using Tree = typename GlobalBasis::PreBasis::Node;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = typename NodeIndexSet::MultiIndex;
@@ -57,8 +55,8 @@ public:
   /** \brief Construct local view for a given global finite element basis */
   DefaultLocalView(const GlobalBasis& globalBasis) :
     globalBasis_(&globalBasis),
-    tree_(globalBasis_->preBasis().node(PrefixPath())),
-    nodeIndexSet_(globalBasis_->preBasis().template indexSet<PrefixPath>())
+    tree_(globalBasis_->preBasis().makeNode()),
+    nodeIndexSet_(globalBasis_->preBasis().makeIndexSet())
   {
     static_assert(models<Concept::BasisTree<GridView>, Tree>(), "Tree type passed to DefaultLocalView does not model the BasisNode concept.");
     initializeTree(tree_);
