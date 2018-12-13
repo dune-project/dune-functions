@@ -242,16 +242,15 @@ protected:
 
 template<typename GV, typename TP>
 class TaylorHoodVelocityTree :
-    public PowerBasisNode<std::size_t, TP ,LagrangeNode<GV,2, decltype(TypeTree::push_back(TP(), 0)) >, GV::dimension>
+    public PowerBasisNode<LagrangeNode<GV,2, decltype(TypeTree::push_back(TP(), 0)) >, GV::dimension>
 {
   using ComponentTreePath = decltype(TypeTree::push_back(TP(), 0));
 
   using PQ2Node = LagrangeNode<GV,2, ComponentTreePath >;
-  using Base = PowerBasisNode<std::size_t, TP ,PQ2Node, GV::dimension>;
+  using Base = PowerBasisNode<PQ2Node, GV::dimension>;
 
 public:
-  TaylorHoodVelocityTree(const TP& tp) :
-    Base(tp)
+  TaylorHoodVelocityTree(const TP& tp)
   {
     for(int i=0; i<GV::dimension; ++i)
       this->setChild(i, std::make_shared<PQ2Node>(TypeTree::push_back(tp, i)));
@@ -260,7 +259,7 @@ public:
 
 template<typename GV, typename TP>
 class TaylorHoodBasisTree :
-    public CompositeBasisNode<std::size_t, TP,
+    public CompositeBasisNode<
       TaylorHoodVelocityTree<GV, decltype(TypeTree::push_back<0>(TP()))>,
       LagrangeNode<GV,1, decltype(TypeTree::push_back<1ul>(TP()))>
     >
@@ -271,11 +270,10 @@ class TaylorHoodBasisTree :
   using VelocityNode=TaylorHoodVelocityTree<GV, VelocityTreePath>;
   using PressureNode=LagrangeNode<GV,1, PressureTreePath>;
 
-  using Base=CompositeBasisNode<std::size_t, TP, VelocityNode, PressureNode>;
+  using Base=CompositeBasisNode<VelocityNode, PressureNode>;
 
 public:
-  TaylorHoodBasisTree(const TP& tp):
-    Base(tp)
+  TaylorHoodBasisTree(const TP& tp)
   {
     using namespace Dune::TypeTree::Indices;
     this->template setChild<0>(std::make_shared<VelocityNode>(push_back(tp, _0)));
@@ -303,8 +301,10 @@ public:
 
   using Node = typename PreBasis::template Node<TP>;
 
-  using PQ1TreePath = typename TypeTree::Child<Node,1>::TreePath;
-  using PQ2TreePath = typename TypeTree::Child<Node,0,0>::TreePath;
+
+  using PQ1TreePath = decltype(TypeTree::push_back(TP(), Dune::Indices::_1));
+  using VelocityTreePath = decltype(TypeTree::push_back(TP(), Dune::Indices::_0));
+  using PQ2TreePath = decltype(TypeTree::push_back(VelocityTreePath(), 0));
 
   using PQ1NodeIndexSet = typename PreBasis::PQ1PreBasis::template IndexSet<PQ1TreePath>;
   using PQ2NodeIndexSet = typename PreBasis::PQ2PreBasis::template IndexSet<PQ2TreePath>;

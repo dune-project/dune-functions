@@ -243,12 +243,11 @@ protected:
 
 template<typename GV, int k, typename TP>
 class LagrangeNode :
-  public LeafBasisNode<std::size_t, TP>
+  public LeafBasisNode
 {
   static const int dim = GV::dimension;
   static const int maxSize = StaticPower<(k+1),GV::dimension>::power;
 
-  using Base = LeafBasisNode<std::size_t,TP>;
   using FiniteElementCache = typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k>;
 
 public:
@@ -259,7 +258,6 @@ public:
   using FiniteElement = typename FiniteElementCache::FiniteElementType;
 
   LagrangeNode(const TreePath& treePath) :
-    Base(treePath),
     finiteElement_(nullptr),
     element_(nullptr)
   {}

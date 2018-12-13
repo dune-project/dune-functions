@@ -78,7 +78,7 @@ public:
 
   //! Template mapping root tree path to type of created tree node
   template<class TP>
-  using Node = PowerBasisNode<size_type, TP, SubNode<TP>, children>;
+  using Node = PowerBasisNode<SubNode<TP>, children>;
 
   //! Template mapping root tree path to type of created tree node index set
   template<class TP>
@@ -141,7 +141,7 @@ public:
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
-    auto node = Node<TP>(tp);
+    auto node = Node<TP>();
     for (std::size_t i=0; i<children; ++i)
       node.setChild(i, subPreBasis_.node(TypeTree::push_back(tp, i)));
     return node;
@@ -286,7 +286,7 @@ public:
 
   using Node = typename PreBasis::template Node<TP>;
 
-  using SubTreePath = typename TypeTree::Child<Node,0>::TreePath;
+  using SubTreePath = decltype(TypeTree::push_back(TP(), 0));
 
   using SubNodeIndexSet = typename PreBasis::SubPreBasis::template IndexSet<SubTreePath>;
 

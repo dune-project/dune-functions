@@ -98,7 +98,7 @@ protected:
 
     using SubIndexSets = std::tuple<SubIndexSet<indices>...>;
 
-    using Node = CompositeBasisNode<size_type, TP, SubNode<indices>...>;
+    using Node = CompositeBasisNode<SubNode<indices>...>;
   };
 
   template<class TP>
@@ -175,7 +175,7 @@ public:
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
-    auto node = Node<TP>(tp);
+    auto node = Node<TP>();
     Hybrid::forEach(ChildIndices(), [&](auto i) {
       node.setChild(Hybrid::elementAt(subPreBases_, i).node(TypeTree::push_back(tp, i)), i);
     });

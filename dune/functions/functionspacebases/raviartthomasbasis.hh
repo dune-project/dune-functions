@@ -330,11 +330,9 @@ protected:
 
 template<typename GV, int k, typename ST, typename TP>
 class RaviartThomasNode :
-  public LeafBasisNode<ST, TP>
+  public LeafBasisNode
 {
   static const int dim = GV::dimension;
-
-  using Base = LeafBasisNode<ST,TP>;
 
 public:
 
@@ -345,7 +343,6 @@ public:
   using FiniteElement = typename FiniteElementMap::FiniteElement;
 
   RaviartThomasNode(const TreePath& treePath, const FiniteElementMap* finiteElementMap) :
-    Base(treePath),
     finiteElement_(nullptr),
     element_(nullptr),
     finiteElementMap_(finiteElementMap)

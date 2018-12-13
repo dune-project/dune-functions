@@ -163,12 +163,10 @@ protected:
 
 template<typename GV, typename TP>
 class RannacherTurekNode :
-  public LeafBasisNode<std::size_t, TP>
+  public LeafBasisNode
 {
   static const int dim = GV::dimension;
   static const int maxSize = 2*dim;
-
-  using Base = LeafBasisNode<std::size_t,TP>;
 
 public:
 
@@ -178,7 +176,6 @@ public:
   using FiniteElement = RannacherTurekLocalFiniteElement<typename GV::ctype, double, dim>;
 
   RannacherTurekNode(const TreePath& treePath) :
-    Base(treePath),
     finiteElement_(),
     element_(nullptr)
   {}
