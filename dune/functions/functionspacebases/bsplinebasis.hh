@@ -559,10 +559,8 @@ public:
   using GridView = GV;
   using size_type = std::size_t;
 
-  template<class TP>
   using Node = BSplineNode<GV, MI>;
 
-  template<class TP>
   using IndexSet = BSplineNodeIndexSet<GV, MI>;
 
   /** \brief Type used for global numbering of the basis vectors */
@@ -693,34 +691,22 @@ public:
   }
 
   /**
-   * \brief Create tree node with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
-   *
-   * By passing a non-trivial root tree path this can be used
-   * to create a node suitable for being placed in a tree at
-   * the position specified by the root tree path.
+   * \brief Create tree node
    */
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  Node makeNode() const
   {
-    return Node<TP>(this);
+    return Node{this};
   }
 
   /**
-   * \brief Create tree node index set with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
+   * \brief Create tree node index set
    *
    * Create an index set suitable for the tree node obtained
-   * by node(tp).
+   * by makeNode().
    */
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   //! Return number of possible values for next position in multi index
