@@ -27,10 +27,10 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k, typename TP>
+template<typename GV, int k>
 class LagrangeNode;
 
-template<typename GV, int k, class MI, class TP>
+template<typename GV, int k, class MI>
 class LagrangeNodeIndexSet;
 
 template<typename GV, int k, class MI>
@@ -67,7 +67,7 @@ public:
 
 private:
 
-  template<typename, int, class, class>
+  template<typename, int, class>
   friend class LagrangeNodeIndexSet;
 
   // Precompute the number of dofs per entity type
@@ -92,11 +92,11 @@ public:
 
   //! Template mapping root tree path to type of created tree node
   template<class TP>
-  using Node = LagrangeNode<GV, k, TP>;
+  using Node = LagrangeNode<GV, k>;
 
   //! Template mapping root tree path to type of created tree node index set
   template<class TP>
-  using IndexSet = LagrangeNodeIndexSet<GV, k, MI, TP>;
+  using IndexSet = LagrangeNodeIndexSet<GV, k, MI>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -158,7 +158,7 @@ public:
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
-    return Node<TP>{tp};
+    return Node<TP>{};
   }
 
   /**
@@ -241,7 +241,7 @@ protected:
 
 
 
-template<typename GV, int k, typename TP>
+template<typename GV, int k>
 class LagrangeNode :
   public LeafBasisNode
 {
@@ -253,11 +253,10 @@ class LagrangeNode :
 public:
 
   using size_type = std::size_t;
-  using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElement = typename FiniteElementCache::FiniteElementType;
 
-  LagrangeNode(const TreePath& treePath) :
+  LagrangeNode() :
     finiteElement_(nullptr),
     element_(nullptr)
   {}
@@ -294,7 +293,7 @@ protected:
 
 
 
-template<typename GV, int k, class MI, class TP>
+template<typename GV, int k, class MI>
 class LagrangeNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -308,7 +307,7 @@ public:
 
   using PreBasis = LagrangePreBasis<GV, k, MI>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = LagrangeNode<GV, k>;
 
   LagrangeNodeIndexSet(const PreBasis& preBasis) :
     preBasis_(&preBasis),

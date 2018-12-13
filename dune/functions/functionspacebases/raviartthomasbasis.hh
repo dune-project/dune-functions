@@ -206,32 +206,32 @@ namespace Impl {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k, typename ST, typename TP>
+template<typename GV, int k>
 class RaviartThomasNode;
 
-template<typename GV, int k, class MI, class TP, class ST>
+template<typename GV, int k, class MI>
 class RaviartThomasNodeIndexSet;
 
-template<typename GV, int k, class MI, class ST>
+template<typename GV, int k, class MI>
 class RaviartThomasPreBasis
 {
   static const int dim = GV::dimension;
   using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, double, k>;
 
-  template<typename, int, class, class, class>
+  template<typename, int, class>
   friend class RaviartThomasNodeIndexSet;
 
 public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = GV;
-  using size_type = ST;
+  using size_type = std::size_t;
 
   template<class TP>
-  using Node = RaviartThomasNode<GV, k, size_type, TP>;
+  using Node = RaviartThomasNode<GV, k>;
 
   template<class TP>
-  using IndexSet = RaviartThomasNodeIndexSet<GV, k, MI, TP, ST>;
+  using IndexSet = RaviartThomasNodeIndexSet<GV, k, MI>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -277,7 +277,7 @@ public:
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
-    return Node<TP>{tp, &finiteElementMap_};
+    return Node<TP>{&finiteElementMap_};
   }
 
   template<class TP>
@@ -328,7 +328,7 @@ protected:
 
 
 
-template<typename GV, int k, typename ST, typename TP>
+template<typename GV, int k>
 class RaviartThomasNode :
   public LeafBasisNode
 {
@@ -336,13 +336,12 @@ class RaviartThomasNode :
 
 public:
 
-  using size_type = ST;
-  using TreePath = TP;
+  using size_type = std::size_t;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, double, k>;
   using FiniteElement = typename FiniteElementMap::FiniteElement;
 
-  RaviartThomasNode(const TreePath& treePath, const FiniteElementMap* finiteElementMap) :
+  RaviartThomasNode(const FiniteElementMap* finiteElementMap) :
     finiteElement_(nullptr),
     element_(nullptr),
     finiteElementMap_(finiteElementMap)
@@ -378,21 +377,21 @@ protected:
   const FiniteElementMap* finiteElementMap_;
 };
 
-template<typename GV, int k, class MI, class TP, class ST>
+template<typename GV, int k, class MI>
 class RaviartThomasNodeIndexSet
 {
   enum {dim = GV::dimension};
 
 public:
 
-  using size_type = ST;
+  using size_type = std::size_t;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using PreBasis = RaviartThomasPreBasis<GV, k, MI, ST>;
+  using PreBasis = RaviartThomasPreBasis<GV, k, MI>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = RaviartThomasNode<GV,k>;
 
   RaviartThomasNodeIndexSet(const PreBasis& preBasis) :
     preBasis_(&preBasis)
@@ -466,7 +465,7 @@ namespace BasisFactory {
 
 namespace Imp {
 
-template<std::size_t k, class size_type=std::size_t>
+template<std::size_t k>
 class RaviartThomasPreBasisFactory
 {
 public:
@@ -475,7 +474,7 @@ public:
   template<class MultiIndex, class GridView>
   auto makePreBasis(const GridView& gridView) const
   {
-    return RaviartThomasPreBasis<GridView, k, MultiIndex, size_type>(gridView);
+    return RaviartThomasPreBasis<GridView, k, MultiIndex>(gridView);
   }
 
 };
@@ -489,10 +488,10 @@ public:
  *
  * \tparam k Order of the Raviart-Thomas element
  */
-template<std::size_t k, class size_type=std::size_t>
+template<std::size_t k>
 auto raviartThomas()
 {
-  return Imp::RaviartThomasPreBasisFactory<k, size_type>();
+  return Imp::RaviartThomasPreBasisFactory<k>();
 }
 
 } // end namespace BasisFactory
@@ -510,8 +509,8 @@ auto raviartThomas()
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
-template<typename GV, int k, class ST = std::size_t>
-using RaviartThomasBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<ST>, ST> >;
+template<typename GV, int k>
+using RaviartThomasBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
 
 } // end namespace Functions
 } // end namespace Dune

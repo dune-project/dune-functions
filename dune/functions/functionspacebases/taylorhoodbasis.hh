@@ -31,10 +31,10 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, typename TP>
+template<typename GV>
 class TaylorHoodVelocityTree;
 
-template<typename GV, typename TP>
+template<typename GV>
 class TaylorHoodBasisTree;
 
 template<typename GV, class MI, class TP, bool HI>
@@ -82,7 +82,7 @@ public:
 
   //! Template mapping root tree path to type of created tree node
   template<class TP>
-  using Node = TaylorHoodBasisTree<GV, TP>;
+  using Node = TaylorHoodBasisTree<GV>;
 
   //! Template mapping root tree path to type of created tree node index set
   template<class TP>
@@ -142,7 +142,7 @@ public:
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
-    return Node<TP>{tp};
+    return Node<TP>{};
   }
 
   /**
@@ -240,44 +240,38 @@ protected:
 
 
 
-template<typename GV, typename TP>
+template<typename GV>
 class TaylorHoodVelocityTree :
-    public PowerBasisNode<LagrangeNode<GV,2, decltype(TypeTree::push_back(TP(), 0)) >, GV::dimension>
+    public PowerBasisNode<LagrangeNode<GV,2>, GV::dimension>
 {
-  using ComponentTreePath = decltype(TypeTree::push_back(TP(), 0));
-
-  using PQ2Node = LagrangeNode<GV,2, ComponentTreePath >;
+  using PQ2Node = LagrangeNode<GV,2>;
   using Base = PowerBasisNode<PQ2Node, GV::dimension>;
 
 public:
-  TaylorHoodVelocityTree(const TP& tp)
+  TaylorHoodVelocityTree()
   {
     for(int i=0; i<GV::dimension; ++i)
-      this->setChild(i, std::make_shared<PQ2Node>(TypeTree::push_back(tp, i)));
+      this->setChild(i, std::make_shared<PQ2Node>());
   }
 };
 
-template<typename GV, typename TP>
+template<typename GV>
 class TaylorHoodBasisTree :
     public CompositeBasisNode<
-      TaylorHoodVelocityTree<GV, decltype(TypeTree::push_back<0>(TP()))>,
-      LagrangeNode<GV,1, decltype(TypeTree::push_back<1ul>(TP()))>
+      TaylorHoodVelocityTree<GV>,
+      LagrangeNode<GV,1>
     >
 {
-  using VelocityTreePath = decltype(TypeTree::push_back<0ul>(TP()));
-  using PressureTreePath = decltype(TypeTree::push_back<1ul>(TP()));
-
-  using VelocityNode=TaylorHoodVelocityTree<GV, VelocityTreePath>;
-  using PressureNode=LagrangeNode<GV,1, PressureTreePath>;
+  using VelocityNode=TaylorHoodVelocityTree<GV>;
+  using PressureNode=LagrangeNode<GV,1>;
 
   using Base=CompositeBasisNode<VelocityNode, PressureNode>;
 
 public:
-  TaylorHoodBasisTree(const TP& tp)
+  TaylorHoodBasisTree()
   {
-    using namespace Dune::TypeTree::Indices;
-    this->template setChild<0>(std::make_shared<VelocityNode>(push_back(tp, _0)));
-    this->template setChild<1>(std::make_shared<PressureNode>(push_back(tp, _1)));
+    this->template setChild<0>(std::make_shared<VelocityNode>());
+    this->template setChild<1>(std::make_shared<PressureNode>());
   }
 };
 
@@ -299,7 +293,7 @@ public:
 
   using PreBasis = TaylorHoodPreBasis<GV, MI, HI>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = TaylorHoodBasisTree<GV>;
 
 
   using PQ1TreePath = decltype(TypeTree::push_back(TP(), Dune::Indices::_1));
