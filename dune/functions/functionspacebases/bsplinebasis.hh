@@ -1230,11 +1230,9 @@ public:
 
 template<typename GV, typename MI, typename TP>
 class BSplineNode :
-  public LeafBasisNode<std::size_t, TP>
+  public LeafBasisNode
 {
   static const int dim = GV::dimension;
-
-  using Base = LeafBasisNode<std::size_t,TP>;
 
 public:
 
@@ -1244,7 +1242,6 @@ public:
   using FiniteElement = BSplineLocalFiniteElement<GV,double,MI>;
 
   BSplineNode(const TreePath& treePath, const BSplinePreBasis<GV, MI>* preBasis) :
-    Base(treePath),
     preBasis_(preBasis),
     finiteElement_(*preBasis)
   {}
