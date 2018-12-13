@@ -29,10 +29,10 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, typename TP>
+template<typename GV>
 class RannacherTurekNode;
 
-template<typename GV, class MI, class TP>
+template<typename GV, class MI>
 class RannacherTurekNodeIndexSet;
 
 template<typename GV, class MI>
@@ -66,11 +66,11 @@ public:
 
   //! Template mapping root tree path to type of created tree node
   template<class TP>
-  using Node = RannacherTurekNode<GV, TP>;
+  using Node = RannacherTurekNode<GV>;
 
   //! Template mapping root tree path to type of created tree node index set
   template<class TP>
-  using IndexSet = RannacherTurekNodeIndexSet<GV, MI, TP>;
+  using IndexSet = RannacherTurekNodeIndexSet<GV, MI>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -112,7 +112,7 @@ public:
   template<class TP>
   Node<TP> node(const TP& tp) const
   {
-    return Node<TP>{tp};
+    return Node<TP>{};
   }
 
   /**
@@ -161,7 +161,7 @@ protected:
 
 
 
-template<typename GV, typename TP>
+template<typename GV>
 class RannacherTurekNode :
   public LeafBasisNode
 {
@@ -171,11 +171,10 @@ class RannacherTurekNode :
 public:
 
   using size_type = std::size_t;
-  using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElement = RannacherTurekLocalFiniteElement<typename GV::ctype, double, dim>;
 
-  RannacherTurekNode(const TreePath& treePath) :
+  RannacherTurekNode() :
     finiteElement_(),
     element_(nullptr)
   {}
@@ -215,7 +214,7 @@ protected:
 
 
 
-template<typename GV, class MI, class TP>
+template<typename GV, class MI>
 class RannacherTurekNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -229,7 +228,7 @@ public:
 
   using PreBasis = RannacherTurekPreBasis<GV, MI>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = RannacherTurekNode<GV>;
 
   RannacherTurekNodeIndexSet(const PreBasis& preBasis) :
     preBasis_(&preBasis)
