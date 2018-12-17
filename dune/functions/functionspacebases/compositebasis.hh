@@ -41,7 +41,7 @@ namespace Functions {
 // *****************************************************************************
 
 
-template<class MI, class IT, class... SPB>
+template<class PB, class IMS>
 class CompositeNodeIndexSet;
 
 /**
@@ -76,7 +76,7 @@ public:
 protected:
   static const std::size_t children = sizeof...(SPB);
 
-  template<class, class, class...>
+  template<class, class>
   friend class CompositeNodeIndexSet;
 
   using ChildIndices = std::make_index_sequence<children>;
@@ -102,15 +102,11 @@ protected:
 
 public:
 
-  //! Template mapping index of child to its pre-basis type
-  template<std::size_t k>
-  using SubPreBasis = typename std::tuple_element<k, std::tuple<SPB...>>::type;
-
   //! Template mapping root tree path to type of created tree node
   using Node = typename Types<ChildIndices>::Node;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = CompositeNodeIndexSet<MI, IMS, SPB...>;
+  using IndexSet = CompositeNodeIndexSet<CompositePreBasis, IMS>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -277,30 +273,27 @@ protected:
 
 
 
-template<class MI, class IMS, class... SPB>
+template<class PB, class IMS>
 class CompositeNodeIndexSet
 {
-  static const std::size_t children = sizeof...(SPB);
-
-  using ChildIndices = std::make_index_sequence<children>;
 public:
 
-  using PreBasis = CompositePreBasis<MI, IMS, SPB...>;
-
-  using GridView = typename PreBasis::GridView;
   using size_type = std::size_t;
-  using IndexMergingStrategy = IMS;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
+  using PreBasis = PB;
+  using MultiIndex = typename PreBasis::MultiIndex;
   using Node = typename PreBasis::Node;
 
-  using SubIndexSets = typename PreBasis::SubIndexSets;
+protected:
 
-  CompositeNodeIndexSet(const PreBasis & preBasis, SubIndexSets&& subNodeIndexSets_) :
+  using IndexMergingStrategy = IMS;
+  using SubIndexSets = typename PreBasis::SubIndexSets;
+  using ChildIndices = typename PreBasis::ChildIndices;
+
+public:
+
+  CompositeNodeIndexSet(const PreBasis & preBasis, SubIndexSets&& subNodeIndexSets) :
     preBasis_(&preBasis),
-    subNodeIndexSetTuple_(std::move(subNodeIndexSets_)),
+    subNodeIndexSetTuple_(std::move(subNodeIndexSets)),
     node_(nullptr)
   {}
 
@@ -380,7 +373,6 @@ public:
     });
     return multiIndices;
   }
-
 
 private:
   const PreBasis* preBasis_;

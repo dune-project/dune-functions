@@ -32,7 +32,7 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<class MI, class IMS, class SPB, std::size_t C>
+template<class PB, class IMS>
 class PowerNodeIndexSet;
 
 
@@ -53,7 +53,7 @@ class PowerPreBasis
 {
   static const std::size_t children = C;
 
-  template<class, class, class, std::size_t>
+  template<class, class>
   friend class PowerNodeIndexSet;
 
 public:
@@ -78,7 +78,7 @@ public:
   using Node = PowerBasisNode<SubNode, children>;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = PowerNodeIndexSet<MI, IMS, SPB, C>;
+  using IndexSet = PowerNodeIndexSet<PowerPreBasis, IMS>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -249,28 +249,23 @@ protected:
 
 
 
-template<class MI, class IMS, class SPB, std::size_t C>
+template<class PB, class IMS>
 class PowerNodeIndexSet
 {
-  static const std::size_t children = C;
-
 public:
 
-  using SubPreBasis = SPB;
-
-  /** \brief The grid view that the FE space is defined on */
-  using GridView = typename SPB::GridView;
   using size_type = std::size_t;
-  using IndexMergingStrategy = IMS;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = PowerPreBasis<MI, IMS, SPB, C>;
-
+  using PreBasis = PB;
+  using MultiIndex = typename PreBasis::MultiIndex;
   using Node = typename PreBasis::Node;
 
-  using SubNodeIndexSet = typename PreBasis::SubPreBasis::IndexSet;
+protected:
+
+  using IndexMergingStrategy = IMS;
+  using SubIndexSet = typename PreBasis::SubPreBasis::IndexSet;
+  static const std::size_t children = PreBasis::children;
+
+public:
 
   PowerNodeIndexSet(const PreBasis & preBasis) :
     preBasis_(&preBasis),
@@ -301,6 +296,8 @@ public:
   {
     return indices(it, IndexMergingStrategy{});
   }
+
+private:
 
   template<typename It>
   It indices(It multiIndices, BasisFactory::FlatInterleaved) const
@@ -411,9 +408,8 @@ public:
     return next;
   }
 
-private:
   const PreBasis* preBasis_;
-  SubNodeIndexSet subNodeIndexSet_;
+  SubIndexSet subNodeIndexSet_;
   const Node* node_;
 };
 
