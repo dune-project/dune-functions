@@ -31,10 +31,10 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k, typename TP>
-using LagrangeDGNode = LagrangeNode<GV, k, TP>;
+template<typename GV, int k>
+using LagrangeDGNode = LagrangeNode<GV, k>;
 
-template<typename GV, int k, class MI, class TP>
+template<typename GV, int k, class MI>
 class LagrangeDGNodeIndexSet;
 
 
@@ -60,11 +60,9 @@ public:
   const static int dofsPerPyramid     = (k+1)*(k+2)*(2*k+3)/6;
 
 
-  template<class TP>
-  using Node = LagrangeDGNode<GV, k, TP>;
+  using Node = LagrangeDGNode<GV, k>;
 
-  template<class TP>
-  using IndexSet = LagrangeDGNodeIndexSet<GV, k, MI, TP>;
+  using IndexSet = LagrangeDGNodeIndexSet<GV, k, MI>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -114,16 +112,23 @@ public:
     gridView_ = gv;
   }
 
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  /**
+   * \brief Create tree node
+   */
+  Node makeNode() const
   {
-    return Node<TP>{tp};
+    return Node{};
   }
 
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  /**
+   * \brief Create tree node index set
+   *
+   * Create an index set suitable for the tree node obtained
+   * by makeNode().
+   */
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   size_type size() const
@@ -176,7 +181,7 @@ public:
 
 
 
-template<typename GV, int k, class MI, class TP>
+template<typename GV, int k, class MI>
 class LagrangeDGNodeIndexSet
 {
   // Cannot be an enum -- otherwise the switch statement below produces compiler warnings
@@ -191,7 +196,7 @@ public:
 
   using PreBasis = LagrangeDGPreBasis<GV, k, MI>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = LagrangeDGNode<GV, k>;
 
   LagrangeDGNodeIndexSet(const PreBasis& preBasis) :
     preBasis_(&preBasis)

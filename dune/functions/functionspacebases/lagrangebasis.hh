@@ -27,10 +27,10 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k, typename TP>
+template<typename GV, int k>
 class LagrangeNode;
 
-template<typename GV, int k, class MI, class TP>
+template<typename GV, int k, class MI>
 class LagrangeNodeIndexSet;
 
 template<typename GV, int k, class MI>
@@ -67,7 +67,7 @@ public:
 
 private:
 
-  template<typename, int, class, class>
+  template<typename, int, class>
   friend class LagrangeNodeIndexSet;
 
   // Precompute the number of dofs per entity type
@@ -91,12 +91,10 @@ private:
 public:
 
   //! Template mapping root tree path to type of created tree node
-  template<class TP>
-  using Node = LagrangeNode<GV, k, TP>;
+  using Node = LagrangeNode<GV, k>;
 
   //! Template mapping root tree path to type of created tree node index set
-  template<class TP>
-  using IndexSet = LagrangeNodeIndexSet<GV, k, MI, TP>;
+  using IndexSet = LagrangeNodeIndexSet<GV, k, MI>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -146,34 +144,22 @@ public:
   }
 
   /**
-   * \brief Create tree node with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
-   *
-   * By passing a non-trivial root tree path this can be used
-   * to create a node suitable for being placed in a tree at
-   * the position specified by the root tree path.
+   * \brief Create tree node
    */
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  Node makeNode() const
   {
-    return Node<TP>{tp};
+    return Node{};
   }
 
   /**
-   * \brief Create tree node index set with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
+   * \brief Create tree node index set
    *
    * Create an index set suitable for the tree node obtained
-   * by node(tp).
+   * by makeNode().
    */
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   //! Same as size(prefix) with empty prefix
@@ -241,25 +227,22 @@ protected:
 
 
 
-template<typename GV, int k, typename TP>
+template<typename GV, int k>
 class LagrangeNode :
-  public LeafBasisNode<std::size_t, TP>
+  public LeafBasisNode
 {
   static const int dim = GV::dimension;
   static const int maxSize = StaticPower<(k+1),GV::dimension>::power;
 
-  using Base = LeafBasisNode<std::size_t,TP>;
   using FiniteElementCache = typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k>;
 
 public:
 
   using size_type = std::size_t;
-  using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElement = typename FiniteElementCache::FiniteElementType;
 
-  LagrangeNode(const TreePath& treePath) :
-    Base(treePath),
+  LagrangeNode() :
     finiteElement_(nullptr),
     element_(nullptr)
   {}
@@ -296,7 +279,7 @@ protected:
 
 
 
-template<typename GV, int k, class MI, class TP>
+template<typename GV, int k, class MI>
 class LagrangeNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -310,7 +293,7 @@ public:
 
   using PreBasis = LagrangePreBasis<GV, k, MI>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = LagrangeNode<GV, k>;
 
   LagrangeNodeIndexSet(const PreBasis& preBasis) :
     preBasis_(&preBasis),

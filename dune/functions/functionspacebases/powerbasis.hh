@@ -32,7 +32,7 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<class MI, class TP, class IMS, class SPB, std::size_t C>
+template<class MI, class IMS, class SPB, std::size_t C>
 class PowerNodeIndexSet;
 
 
@@ -53,7 +53,7 @@ class PowerPreBasis
 {
   static const std::size_t children = C;
 
-  template<class, class, class, class, std::size_t>
+  template<class, class, class, std::size_t>
   friend class PowerNodeIndexSet;
 
 public:
@@ -70,19 +70,15 @@ public:
   //! Strategy used to merge the global indices of the child factories
   using IndexMergingStrategy = IMS;
 
-  template<class TP>
-  using SubNode = typename SubPreBasis::template Node<decltype(TypeTree::push_back(TP(), 0))>;
+  using SubNode = typename SubPreBasis::Node;
 
-  template<class TP>
-  using SubIndexSet = typename SubPreBasis::template IndexSet<decltype(TypeTree::push_back(TP(), 0))>;
+  using SubIndexSet = typename SubPreBasis::IndexSet;
 
   //! Template mapping root tree path to type of created tree node
-  template<class TP>
-  using Node = PowerBasisNode<size_type, TP, SubNode<TP>, children>;
+  using Node = PowerBasisNode<SubNode, children>;
 
   //! Template mapping root tree path to type of created tree node index set
-  template<class TP>
-  using IndexSet = PowerNodeIndexSet<MI, TP, IMS, SPB, C>;
+  using IndexSet = PowerNodeIndexSet<MI, IMS, SPB, C>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -129,37 +125,25 @@ public:
   }
 
   /**
-   * \brief Create tree node with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
-   *
-   * By passing a non-trivial root tree path this can be used
-   * to create a node suitable for being placed in a tree at
-   * the position specified by the root tree path.
+   * \brief Create tree node
    */
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  Node makeNode() const
   {
-    auto node = Node<TP>(tp);
+    auto node = Node{};
     for (std::size_t i=0; i<children; ++i)
-      node.setChild(i, subPreBasis_.node(TypeTree::push_back(tp, i)));
+      node.setChild(i, subPreBasis_.makeNode());
     return node;
   }
 
   /**
-   * \brief Create tree node index set with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
+   * \brief Create tree node index set
    *
    * Create an index set suitable for the tree node obtained
-   * by node(tp).
+   * by makeNode().
    */
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   //! Same as size(prefix) with empty prefix
@@ -265,7 +249,7 @@ protected:
 
 
 
-template<class MI, class TP, class IMS, class SPB, std::size_t C>
+template<class MI, class IMS, class SPB, std::size_t C>
 class PowerNodeIndexSet
 {
   static const std::size_t children = C;
@@ -284,15 +268,13 @@ public:
 
   using PreBasis = PowerPreBasis<MI, IMS, SPB, C>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = typename PreBasis::Node;
 
-  using SubTreePath = typename TypeTree::Child<Node,0>::TreePath;
-
-  using SubNodeIndexSet = typename PreBasis::SubPreBasis::template IndexSet<SubTreePath>;
+  using SubNodeIndexSet = typename PreBasis::SubPreBasis::IndexSet;
 
   PowerNodeIndexSet(const PreBasis & preBasis) :
     preBasis_(&preBasis),
-    subNodeIndexSet_(preBasis_->subPreBasis_.template indexSet<SubTreePath>())
+    subNodeIndexSet_(preBasis_->subPreBasis_.makeIndexSet())
   {}
 
   void bind(const Node& node)

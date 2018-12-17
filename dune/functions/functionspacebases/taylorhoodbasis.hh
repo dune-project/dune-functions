@@ -31,13 +31,13 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, typename TP>
+template<typename GV>
 class TaylorHoodVelocityTree;
 
-template<typename GV, typename TP>
+template<typename GV>
 class TaylorHoodBasisTree;
 
-template<typename GV, class MI, class TP, bool HI>
+template<typename GV, class MI, bool HI>
 class TaylorHoodNodeIndexSet;
 
 
@@ -69,7 +69,7 @@ class TaylorHoodPreBasis
 
   static const int dim = GV::dimension;
 
-  template<class, class, class, bool>
+  template<class, class, bool>
   friend class TaylorHoodNodeIndexSet;
 
 public:
@@ -81,12 +81,10 @@ public:
   using size_type = std::size_t;
 
   //! Template mapping root tree path to type of created tree node
-  template<class TP>
-  using Node = TaylorHoodBasisTree<GV, TP>;
+  using Node = TaylorHoodBasisTree<GV>;
 
   //! Template mapping root tree path to type of created tree node index set
-  template<class TP>
-  using IndexSet = TaylorHoodNodeIndexSet<GV, MI, TP, HI>;
+  using IndexSet = TaylorHoodNodeIndexSet<GV, MI, HI>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -130,34 +128,22 @@ public:
   }
 
   /**
-   * \brief Create tree node with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
-   *
-   * By passing a non-trivial root tree path this can be used
-   * to create a node suitable for being placed in a tree at
-   * the position specified by the root tree path.
+   * \brief Create tree node
    */
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  Node makeNode() const
   {
-    return Node<TP>{tp};
+    return Node{};
   }
 
   /**
-   * \brief Create tree node index set with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
+   * \brief Create tree node index set
    *
    * Create an index set suitable for the tree node obtained
-   * by node(tp).
+   * by makeNode().
    */
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   //! Same as size(prefix) with empty prefix
@@ -240,52 +226,44 @@ protected:
 
 
 
-template<typename GV, typename TP>
+template<typename GV>
 class TaylorHoodVelocityTree :
-    public PowerBasisNode<std::size_t, TP ,LagrangeNode<GV,2, decltype(TypeTree::push_back(TP(), 0)) >, GV::dimension>
+    public PowerBasisNode<LagrangeNode<GV,2>, GV::dimension>
 {
-  using ComponentTreePath = decltype(TypeTree::push_back(TP(), 0));
-
-  using PQ2Node = LagrangeNode<GV,2, ComponentTreePath >;
-  using Base = PowerBasisNode<std::size_t, TP ,PQ2Node, GV::dimension>;
+  using PQ2Node = LagrangeNode<GV,2>;
+  using Base = PowerBasisNode<PQ2Node, GV::dimension>;
 
 public:
-  TaylorHoodVelocityTree(const TP& tp) :
-    Base(tp)
+  TaylorHoodVelocityTree()
   {
     for(int i=0; i<GV::dimension; ++i)
-      this->setChild(i, std::make_shared<PQ2Node>(TypeTree::push_back(tp, i)));
+      this->setChild(i, std::make_shared<PQ2Node>());
   }
 };
 
-template<typename GV, typename TP>
+template<typename GV>
 class TaylorHoodBasisTree :
-    public CompositeBasisNode<std::size_t, TP,
-      TaylorHoodVelocityTree<GV, decltype(TypeTree::push_back<0>(TP()))>,
-      LagrangeNode<GV,1, decltype(TypeTree::push_back<1ul>(TP()))>
+    public CompositeBasisNode<
+      TaylorHoodVelocityTree<GV>,
+      LagrangeNode<GV,1>
     >
 {
-  using VelocityTreePath = decltype(TypeTree::push_back<0ul>(TP()));
-  using PressureTreePath = decltype(TypeTree::push_back<1ul>(TP()));
+  using VelocityNode=TaylorHoodVelocityTree<GV>;
+  using PressureNode=LagrangeNode<GV,1>;
 
-  using VelocityNode=TaylorHoodVelocityTree<GV, VelocityTreePath>;
-  using PressureNode=LagrangeNode<GV,1, PressureTreePath>;
-
-  using Base=CompositeBasisNode<std::size_t, TP, VelocityNode, PressureNode>;
+  using Base=CompositeBasisNode<VelocityNode, PressureNode>;
 
 public:
-  TaylorHoodBasisTree(const TP& tp):
-    Base(tp)
+  TaylorHoodBasisTree()
   {
-    using namespace Dune::TypeTree::Indices;
-    this->template setChild<0>(std::make_shared<VelocityNode>(push_back(tp, _0)));
-    this->template setChild<1>(std::make_shared<PressureNode>(push_back(tp, _1)));
+    this->template setChild<0>(std::make_shared<VelocityNode>());
+    this->template setChild<1>(std::make_shared<PressureNode>());
   }
 };
 
 
 
-template<typename GV, class MI, class TP, bool HI>
+template<typename GV, class MI, bool HI>
 class TaylorHoodNodeIndexSet
 {
   static const bool useHybridIndices = HI;
@@ -301,18 +279,15 @@ public:
 
   using PreBasis = TaylorHoodPreBasis<GV, MI, HI>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = TaylorHoodBasisTree<GV>;
 
-  using PQ1TreePath = typename TypeTree::Child<Node,1>::TreePath;
-  using PQ2TreePath = typename TypeTree::Child<Node,0,0>::TreePath;
-
-  using PQ1NodeIndexSet = typename PreBasis::PQ1PreBasis::template IndexSet<PQ1TreePath>;
-  using PQ2NodeIndexSet = typename PreBasis::PQ2PreBasis::template IndexSet<PQ2TreePath>;
+  using PQ1NodeIndexSet = typename PreBasis::PQ1PreBasis::IndexSet;
+  using PQ2NodeIndexSet = typename PreBasis::PQ2PreBasis::IndexSet;
 
   TaylorHoodNodeIndexSet(const PreBasis & preBasis) :
     preBasis_(&preBasis),
-    pq1NodeIndexSet_(preBasis_->pq1PreBasis_.template indexSet<PQ1TreePath>()),
-    pq2NodeIndexSet_(preBasis_->pq2PreBasis_.template indexSet<PQ2TreePath>())
+    pq1NodeIndexSet_(preBasis_->pq1PreBasis_.makeIndexSet()),
+    pq2NodeIndexSet_(preBasis_->pq2PreBasis_.makeIndexSet())
   {}
 
   void bind(const Node& node)

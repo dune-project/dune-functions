@@ -146,32 +146,30 @@ namespace Impl {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k, typename ST, typename TP>
+template<typename GV, int k>
 class BrezziDouglasMariniNode;
 
-template<typename GV, int k, class MI, class TP, class ST>
+template<typename GV, int k, class MI>
 class BrezziDouglasMariniNodeIndexSet;
 
-template<typename GV, int k, class MI, class ST>
+template<typename GV, int k, class MI>
 class BrezziDouglasMariniPreBasis
 {
   static const int dim = GV::dimension;
   using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, double, k>;
 
-  template<typename, int, class, class, class>
+  template<typename, int, class>
   friend class BrezziDouglasMariniNodeIndexSet;
 
 public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = GV;
-  using size_type = ST;
+  using size_type = std::size_t;
 
-  template<class TP>
-  using Node = BrezziDouglasMariniNode<GV, k, size_type, TP>;
+  using Node = BrezziDouglasMariniNode<GV, k>;
 
-  template<class TP>
-  using IndexSet = BrezziDouglasMariniNodeIndexSet<GV, k, MI, TP, ST>;
+  using IndexSet = BrezziDouglasMariniNodeIndexSet<GV, k, MI>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -209,16 +207,23 @@ public:
     gridView_ = gv;
   }
 
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  /**
+   * \brief Create tree node
+   */
+  Node makeNode() const
   {
-    return Node<TP>{tp, &finiteElementMap_};
+    return Node{&finiteElementMap_};
   }
 
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  /**
+   * \brief Create tree node index set
+   *
+   * Create an index set suitable for the tree node obtained
+   * by makeNode().
+   */
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   size_type size() const
@@ -258,24 +263,20 @@ protected:
 
 
 
-template<typename GV, int k, typename ST, typename TP>
+template<typename GV, int k>
 class BrezziDouglasMariniNode :
-  public LeafBasisNode<ST, TP>
+  public LeafBasisNode
 {
   static const int dim = GV::dimension;
 
-  using Base = LeafBasisNode<ST,TP>;
-
 public:
 
-  using size_type = ST;
-  using TreePath = TP;
+  using size_type = std::size_t;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, double, k>;
   using FiniteElement = typename FiniteElementMap::FiniteElement;
 
-  BrezziDouglasMariniNode(const TreePath& treePath, const FiniteElementMap* finiteElementMap) :
-    Base(treePath),
+  BrezziDouglasMariniNode(const FiniteElementMap* finiteElementMap) :
     finiteElement_(nullptr),
     element_(nullptr),
     finiteElementMap_(finiteElementMap)
@@ -313,21 +314,21 @@ protected:
 
 
 
-template<typename GV, int k, class MI, class TP, class ST>
+template<typename GV, int k, class MI>
 class BrezziDouglasMariniNodeIndexSet
 {
   enum {dim = GV::dimension};
 
 public:
 
-  using size_type = ST;
+  using size_type = std::size_t;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using PreBasis = BrezziDouglasMariniPreBasis<GV, k, MI, ST>;
+  using PreBasis = BrezziDouglasMariniPreBasis<GV, k, MI>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = BrezziDouglasMariniNode<GV, k>;
 
   BrezziDouglasMariniNodeIndexSet(const PreBasis& preBasis) :
     preBasis_(&preBasis)
@@ -404,9 +405,9 @@ class BrezziDouglasMariniPreBasisFactory
 public:
   static const std::size_t requiredMultiIndexSize=1;
 
-  template<class MultiIndex, class GridView, class size_type=std::size_t>
+  template<class MultiIndex, class GridView>
   auto makePreBasis(const GridView& gridView) const
-    -> BrezziDouglasMariniPreBasis<GridView, k, MultiIndex, size_type>
+    -> BrezziDouglasMariniPreBasis<GridView, k, MultiIndex>
   {
     return {gridView};
   }
@@ -442,8 +443,8 @@ auto brezziDouglasMarini()
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
  */
-template<typename GV, int k, class ST = std::size_t>
-using BrezziDouglasMariniBasis = DefaultGlobalBasis<BrezziDouglasMariniPreBasis<GV, k, FlatMultiIndex<ST>, ST> >;
+template<typename GV, int k>
+using BrezziDouglasMariniBasis = DefaultGlobalBasis<BrezziDouglasMariniPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
 
 } // end namespace Functions
 } // end namespace Dune

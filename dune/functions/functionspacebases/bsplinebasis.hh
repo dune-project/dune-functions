@@ -477,10 +477,10 @@ public:
 };
 
 
-template<typename GV, typename MI, typename TP>
+template<typename GV, typename MI>
 class BSplineNode;
 
-template<typename GV, class MI, class TP>
+template<typename GV, class MI>
 class BSplineNodeIndexSet;
 
 /** \brief Pre-basis for B-spline basis
@@ -559,11 +559,9 @@ public:
   using GridView = GV;
   using size_type = std::size_t;
 
-  template<class TP>
-  using Node = BSplineNode<GV, MI, TP>;
+  using Node = BSplineNode<GV, MI>;
 
-  template<class TP>
-  using IndexSet = BSplineNodeIndexSet<GV, MI, TP>;
+  using IndexSet = BSplineNodeIndexSet<GV, MI>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -693,34 +691,22 @@ public:
   }
 
   /**
-   * \brief Create tree node with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
-   *
-   * By passing a non-trivial root tree path this can be used
-   * to create a node suitable for being placed in a tree at
-   * the position specified by the root tree path.
+   * \brief Create tree node
    */
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  Node makeNode() const
   {
-    return Node<TP>(tp,this);
+    return Node{this};
   }
 
   /**
-   * \brief Create tree node index set with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
+   * \brief Create tree node index set
    *
    * Create an index set suitable for the tree node obtained
-   * by node(tp).
+   * by makeNode().
    */
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   //! Return number of possible values for next position in multi index
@@ -1228,23 +1214,19 @@ public:
 
 
 
-template<typename GV, typename MI, typename TP>
+template<typename GV, typename MI>
 class BSplineNode :
-  public LeafBasisNode<std::size_t, TP>
+  public LeafBasisNode
 {
   static const int dim = GV::dimension;
-
-  using Base = LeafBasisNode<std::size_t,TP>;
 
 public:
 
   using size_type = std::size_t;
-  using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElement = BSplineLocalFiniteElement<GV,double,MI>;
 
-  BSplineNode(const TreePath& treePath, const BSplinePreBasis<GV, MI>* preBasis) :
-    Base(treePath),
+  BSplineNode(const BSplinePreBasis<GV, MI>* preBasis) :
     preBasis_(preBasis),
     finiteElement_(*preBasis)
   {}
@@ -1283,7 +1265,7 @@ protected:
 
 
 
-template<typename GV, class MI, class TP>
+template<typename GV, class MI>
 class BSplineNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -1297,7 +1279,7 @@ public:
 
   using PreBasis = BSplinePreBasis<GV, MI>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = BSplineNode<GV,MI>;
 
   BSplineNodeIndexSet(const PreBasis& preBasis) :
     preBasis_(&preBasis)

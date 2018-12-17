@@ -41,7 +41,7 @@ namespace Functions {
 // *****************************************************************************
 
 
-template<class MI, class TP, class IT, class... SPB>
+template<class MI, class IT, class... SPB>
 class CompositeNodeIndexSet;
 
 /**
@@ -76,33 +76,29 @@ public:
 protected:
   static const std::size_t children = sizeof...(SPB);
 
-  template<class, class, class, class...>
+  template<class, class, class...>
   friend class CompositeNodeIndexSet;
 
   using ChildIndices = std::make_index_sequence<children>;
 
-  template<class TP, class Indices>
+  template<class Indices>
   struct Types;
 
-  template<class TP, std::size_t... indices>
-  struct Types<TP, Dune::Std::index_sequence<indices...>>
+  template<std::size_t... indices>
+  struct Types<Dune::Std::index_sequence<indices...>>
   {
     template<std::size_t i>
-    using SubTreePath = decltype(TypeTree::push_back(TP(), Dune::index_constant<i>()));
+    using SubNode = typename std::tuple_element_t<i, SubPreBases>::Node;
 
     template<std::size_t i>
-    using SubNode = typename std::tuple_element_t<i, SubPreBases>::template Node<SubTreePath<i>>;
-
-    template<std::size_t i>
-    using SubIndexSet = typename std::tuple_element_t<i, SubPreBases>::template IndexSet<SubTreePath<i>>;
+    using SubIndexSet = typename std::tuple_element_t<i, SubPreBases>::IndexSet;
 
     using SubIndexSets = std::tuple<SubIndexSet<indices>...>;
 
-    using Node = CompositeBasisNode<size_type, TP, SubNode<indices>...>;
+    using Node = CompositeBasisNode<SubNode<indices>...>;
   };
 
-  template<class TP>
-  using SubIndexSets = typename Types<TP, ChildIndices>::SubIndexSets;
+  using SubIndexSets = typename Types<ChildIndices>::SubIndexSets;
 
 public:
 
@@ -111,12 +107,10 @@ public:
   using SubPreBasis = typename std::tuple_element<k, std::tuple<SPB...>>::type;
 
   //! Template mapping root tree path to type of created tree node
-  template<class TP>
-  using Node = typename Types<TP, ChildIndices>::Node;
+  using Node = typename Types<ChildIndices>::Node;
 
   //! Template mapping root tree path to type of created tree node index set
-  template<class TP>
-  using IndexSet = CompositeNodeIndexSet<MI, TP, IMS, SPB...>;
+  using IndexSet = CompositeNodeIndexSet<MI, IMS, SPB...>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -163,40 +157,28 @@ public:
   }
 
   /**
-   * \brief Create tree node with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
-   *
-   * By passing a non-trivial root tree path this can be used
-   * to create a node suitable for being placed in a tree at
-   * the position specified by the root tree path.
+   * \brief Create tree node
    */
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  Node makeNode() const
   {
-    auto node = Node<TP>(tp);
+    auto node = Node{};
     Hybrid::forEach(ChildIndices(), [&](auto i) {
-      node.setChild(Hybrid::elementAt(subPreBases_, i).node(TypeTree::push_back(tp, i)), i);
+      node.setChild(Hybrid::elementAt(subPreBases_, i).makeNode(), i);
     });
     return node;
   }
 
   /**
-   * \brief Create tree node index set with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
+   * \brief Create tree node index set
    *
    * Create an index set suitable for the tree node obtained
-   * by node(tp).
+   * by makeNode().
    */
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this,
+    return IndexSet{*this,
       unpackIntegerSequence([&](auto... i) {
-        return std::make_tuple(Hybrid::elementAt(subPreBases_, i).template indexSet<decltype(TypeTree::push_back(TP(), i))>()...);
+        return std::make_tuple(Hybrid::elementAt(subPreBases_, i).makeIndexSet()...);
       }, ChildIndices())};
   }
 
@@ -295,7 +277,7 @@ protected:
 
 
 
-template<class MI, class TP, class IMS, class... SPB>
+template<class MI, class IMS, class... SPB>
 class CompositeNodeIndexSet
 {
   static const std::size_t children = sizeof...(SPB);
@@ -312,9 +294,9 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = typename PreBasis::Node;
 
-  using SubIndexSets = typename PreBasis::template SubIndexSets<TP>;
+  using SubIndexSets = typename PreBasis::SubIndexSets;
 
   CompositeNodeIndexSet(const PreBasis & preBasis, SubIndexSets&& subNodeIndexSets_) :
     preBasis_(&preBasis),

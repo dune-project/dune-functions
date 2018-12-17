@@ -29,10 +29,10 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, typename TP>
+template<typename GV>
 class RannacherTurekNode;
 
-template<typename GV, class MI, class TP>
+template<typename GV, class MI>
 class RannacherTurekNodeIndexSet;
 
 template<typename GV, class MI>
@@ -65,12 +65,10 @@ public:
   using size_type = std::size_t;
 
   //! Template mapping root tree path to type of created tree node
-  template<class TP>
-  using Node = RannacherTurekNode<GV, TP>;
+  using Node = RannacherTurekNode<GV>;
 
   //! Template mapping root tree path to type of created tree node index set
-  template<class TP>
-  using IndexSet = RannacherTurekNodeIndexSet<GV, MI, TP>;
+  using IndexSet = RannacherTurekNodeIndexSet<GV, MI>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -100,34 +98,22 @@ public:
   }
 
   /**
-   * \brief Create tree node with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
-   *
-   * By passing a non-trivial root tree path this can be used
-   * to create a node suitable for being placed in a tree at
-   * the position specified by the root tree path.
+   * \brief Create tree node
    */
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  Node makeNode() const
   {
-    return Node<TP>{tp};
+    return Node{};
   }
 
   /**
-   * \brief Create tree node index set with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
+   * \brief Create tree node index set
    *
    * Create an index set suitable for the tree node obtained
-   * by node(tp).
+   * by makeNode().
    */
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   //! Same as size(prefix) with empty prefix
@@ -161,24 +147,20 @@ protected:
 
 
 
-template<typename GV, typename TP>
+template<typename GV>
 class RannacherTurekNode :
-  public LeafBasisNode<std::size_t, TP>
+  public LeafBasisNode
 {
   static const int dim = GV::dimension;
   static const int maxSize = 2*dim;
 
-  using Base = LeafBasisNode<std::size_t,TP>;
-
 public:
 
   using size_type = std::size_t;
-  using TreePath = TP;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElement = RannacherTurekLocalFiniteElement<typename GV::ctype, double, dim>;
 
-  RannacherTurekNode(const TreePath& treePath) :
-    Base(treePath),
+  RannacherTurekNode() :
     finiteElement_(),
     element_(nullptr)
   {}
@@ -218,7 +200,7 @@ protected:
 
 
 
-template<typename GV, class MI, class TP>
+template<typename GV, class MI>
 class RannacherTurekNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -232,7 +214,7 @@ public:
 
   using PreBasis = RannacherTurekPreBasis<GV, MI>;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = RannacherTurekNode<GV>;
 
   RannacherTurekNodeIndexSet(const PreBasis& preBasis) :
     preBasis_(&preBasis)

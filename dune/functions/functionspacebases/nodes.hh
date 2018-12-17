@@ -18,7 +18,6 @@ namespace Dune {
     namespace Impl {
 
 
-      template<typename size_type>
       struct ClearSizeVisitor
         : public TypeTree::TreeVisitor
         , public TypeTree::DynamicTraversal
@@ -37,16 +36,16 @@ namespace Dune {
           node.setOffset(offset_);
         }
 
-        ClearSizeVisitor(size_type offset)
+        ClearSizeVisitor(std::size_t offset)
           : offset_(offset)
         {}
 
-        const size_type offset_;
+        const std::size_t offset_;
 
       };
 
 
-      template<typename Entity, typename size_type>
+      template<typename Entity>
       struct BindVisitor
         : public TypeTree::TreeVisitor
         , public TypeTree::DynamicTraversal
@@ -72,18 +71,17 @@ namespace Dune {
           offset_ += node.size();
         }
 
-        BindVisitor(const Entity& entity, size_type offset = 0)
+        BindVisitor(const Entity& entity, std::size_t offset = 0)
           : entity_(entity)
           , offset_(offset)
         {}
 
         const Entity& entity_;
-        size_type offset_;
+        std::size_t offset_;
 
       };
 
 
-      template<typename size_type>
       struct InitializeTreeVisitor :
         public TypeTree::TreeVisitor,
         public TypeTree::DynamicTraversal
@@ -102,38 +100,33 @@ namespace Dune {
           ++treeIndex_;
         }
 
-        InitializeTreeVisitor(size_type treeIndexOffset = 0) :
+        InitializeTreeVisitor(std::size_t treeIndexOffset = 0) :
           treeIndex_(treeIndexOffset)
         {}
 
-        size_type treeIndex_;
+        std::size_t treeIndex_;
       };
 
     } // end namespace Impl
 
 
-    template<typename TP>
     class BasisNodeMixin
     {
 
-      template<typename>
       friend struct Impl::ClearSizeVisitor;
 
-      template<typename,typename>
+      template<typename>
       friend struct Impl::BindVisitor;
 
-      template<typename>
       friend struct Impl::InitializeTreeVisitor;
 
     public:
 
-      using TreePath = TP;
       using size_type = std::size_t;
 
-      BasisNodeMixin(const TreePath& treePath) :
+      BasisNodeMixin() :
         offset_(0),
         size_(0),
-        treePath_(treePath),
         treeIndex_(0)
       {}
 
@@ -145,11 +138,6 @@ namespace Dune {
       size_type size() const
       {
         return size_;
-      }
-
-      const TreePath& treePath() const
-      {
-        return treePath_;
       }
 
       size_type treeIndex() const
@@ -183,51 +171,32 @@ namespace Dune {
 
       size_type offset_;
       size_type size_;
-      const TreePath treePath_;
       size_type treeIndex_;
 
     };
 
 
-    template<typename SIZE_T_DUMMY, typename TP>
     class LeafBasisNode :
-        public BasisNodeMixin<TP>,
+        public BasisNodeMixin,
         public TypeTree::LeafNode
-    {
-
-      using Mixin = BasisNodeMixin<TP>;
-
-    public:
-
-      using TreePath = TP;
-      using size_type = std::size_t;
-
-      LeafBasisNode(TreePath treePath = TreePath()) :
-        Mixin(treePath)
-      {}
-
-    };
+    {};
 
 
-    template<typename SIZE_T_DUMMY, typename TP, typename T, std::size_t n>
+    template<typename T, std::size_t n>
     class PowerBasisNode :
-      public BasisNodeMixin<TP>,
+      public BasisNodeMixin,
       public TypeTree::PowerNode<T,n>
     {
 
-      using Mixin = BasisNodeMixin<TP>;
       using Node = TypeTree::PowerNode<T,n>;
 
     public:
 
       using Element = typename T::Element;
 
-      PowerBasisNode(const TP& tp) :
-        Mixin(tp)
-      {}
+      PowerBasisNode() = default;
 
-      PowerBasisNode(const TP& tp, const typename Node::NodeStorage& children) :
-        Mixin(tp),
+      PowerBasisNode(const typename Node::NodeStorage& children) :
         Node(children)
       {}
 
@@ -239,32 +208,27 @@ namespace Dune {
     };
 
 
-    template<typename SIZE_T_DUMMY, typename TP, typename... T>
+    template<typename... T>
     class CompositeBasisNode :
-      public BasisNodeMixin<TP>,
+      public BasisNodeMixin,
       public TypeTree::CompositeNode<T...>
     {
 
-      using Mixin = BasisNodeMixin<TP>;
       using Node = TypeTree::CompositeNode<T...>;
 
     public:
 
       using Element = typename Node::template Child<0>::Type;
 
-      CompositeBasisNode(const TP& tp)
-        : Mixin(tp)
-      {}
+      CompositeBasisNode() = default;
 
-      CompositeBasisNode(const TP& tp, const typename Node::NodeStorage& children) :
-        Mixin(tp),
+      CompositeBasisNode(const typename Node::NodeStorage& children) :
         Node(children)
       {}
 
       template<typename... Children>
-      CompositeBasisNode(const shared_ptr<Children>&... children, const TP& tp)
-        : Mixin(tp)
-        , Node(children...)
+      CompositeBasisNode(const shared_ptr<Children>&... children) :
+        Node(children...)
       {}
 
       const Element& element() const
@@ -278,20 +242,20 @@ namespace Dune {
     template<typename Tree>
     void clearSize(Tree& tree, std::size_t offset)
     {
-      TypeTree::applyToTree(tree,Impl::ClearSizeVisitor<std::size_t>(offset));
+      TypeTree::applyToTree(tree,Impl::ClearSizeVisitor(offset));
     }
 
     template<typename Tree, typename Entity>
     void bindTree(Tree& tree, const Entity& entity, std::size_t offset = 0)
     {
-      Impl::BindVisitor<Entity,std::size_t> visitor(entity,offset);
+      Impl::BindVisitor<Entity> visitor(entity,offset);
       TypeTree::applyToTree(tree,visitor);
     }
 
     template<typename Tree>
     void initializeTree(Tree& tree, std::size_t treeIndexOffset = 0)
     {
-      Impl::InitializeTreeVisitor<std::size_t> visitor(treeIndexOffset);
+      Impl::InitializeTreeVisitor visitor(treeIndexOffset);
       TypeTree::applyToTree(tree,visitor);
     }
 
