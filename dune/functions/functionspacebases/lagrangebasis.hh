@@ -232,7 +232,6 @@ class LagrangeNode :
   public LeafBasisNode
 {
   static const int dim = GV::dimension;
-  static const int maxSize = StaticPower<(k+1),GV::dimension>::power;
 
   using FiniteElementCache = typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k>;
 
