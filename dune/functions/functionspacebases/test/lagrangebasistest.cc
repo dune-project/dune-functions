@@ -70,9 +70,17 @@ int main (int argc, char* argv[])
       = StructuredGridFactory<OneDGrid>::createCubeGrid({0}, {1}, {10});
 
     auto gridView = grid->levelGridView(0);
-    auto basis = makeBasis(gridView, lagrange<3>());
 
-    test.subTest(checkBasis(basis));
+    {
+      auto basis = makeBasis(gridView, lagrange<3>());
+      test.subTest(checkBasis(basis));
+    }
+
+    {
+      auto basis = makeBasis(gridView, lagrange(2));
+      test.subTest(checkBasis(basis));
+    }
+
   }
 
 
