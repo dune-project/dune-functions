@@ -529,7 +529,7 @@ where, in the simplest case, $L(\mathcal{D}, \mathcal{R})$ is the set of linear 
     Since we can identify any linear map $M : \mathbb{R}^n \to \mathbb{R}^m$
     with a matrix $M \in \mathbb{R}^{m \times n}$
     such that the value $M(y)$ of $M$ at $y \in \mathbb{R}^n$
-    is given by the matrix vector product $M(y) = My \in \mathbb{R}^m$
+    is given by the matrix--vector product $M(y) = My \in \mathbb{R}^m$
     we have identified $L(\mathcal{D}, \mathcal{R})$ with $\mathbb{R}^{m \times n}$.
     Hence $Df$ is itself a function mapping vectors from $\mathbb{R}^n$ to matrices
     from $\mathbb{R}^{m \times n}$. Notice that $Df(x) \in \mathbb{R}^{m \times n}$
@@ -743,7 +743,7 @@ The local functions are described by \cpp{Concept::LocalFunction}.
 Both concepts are provided in the \dunemodule{dune-functions} module.
 
 Since functions in a finite element context are usually at least piecewise
-differentiable, grid view functions as well as local functions provid the full
+differentiable, grid view functions as well as local functions provide the full
 interface of differentiable functions as outlined in Section~\ref{sec:differentiable_functions}.
 To completely grasp the semantics of the interface, observe that strictly speaking localization does
 not commute with taking the derivative. Formally, a localized version of the derivative is given by

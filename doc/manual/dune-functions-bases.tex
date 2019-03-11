@@ -355,7 +355,7 @@ finite element spaces as tree structures.  In these structures, leaf nodes repre
 and inner nodes represent products of their children.  Subtrees then represent composite
 finite element spaces.  Figure~\ref{fig:taylor_hood_space_tree} shows the Tayor--Hood finite element
 space in such a tree representation. Note that in this document all trees are \emph{rooted} and \emph{ordered},
-i.e., they have a dedicated root note, and the children of each node have a fixed given ordering.
+i.e., they have a dedicated root node, and the children of each node have a fixed given ordering.
 Based on this child ordering we associate to each child the corresponding zero-based index.
 
 \begin{figure}
@@ -398,8 +398,8 @@ Then
   \colonequals (0,\dots,0,\underbrace{f}_{\text{$i$-th entry}},0,\dots,0)
   \in \prod_{j=0}^{m-1} \Bigl(R_j^\Omega\Bigr) = \Bigl(\prod_{j=0}^{m-1} R_j\Bigr)^\Omega,
 \end{align*}
-where $0$ in the $j$-th position denotes the zero-function in $R_j^\Omega$.
-Let $\Lambda_i$ be a function space basis of the space $V_i = \operatorname{span} \Lambda_i$
+where $0$ in the $j$-th position denotes the zero function in $R_j^\Omega$.
+Let $\Lambda_i$ be a (finite) function space basis of the space $V_i = \operatorname{span} \Lambda_i$
 for $i=0,\dots,m-1$. Then a natural basis $\Lambda$ of the product space
 \begin{align*}
   V_0 \times \dots \times V_{m-1}
@@ -417,7 +417,7 @@ is given by
 The product $\mathbf{e}_i \otimes \Lambda_i$ is to be understood element-wise,
 and the ``disjoint union'' symbol $\sqcup$ is used here
 as a simple short-hand notation for \eqref{eq:basis_product}
-and not to be understood as an associative binary operation.
+and not to be understood as an actual binary operation.
 Using this new notation we have
 \begin{align*}
   \operatorname{span} \Lambda
@@ -997,7 +997,7 @@ Unlike the previous two strategies, the following two do not introduce new
 multi-index digits. Such strategies are called \emph{flat}.
 \begin{itemize}
   \item \textbf{FlatLexicographic}: This strategy merges the roots of all
-    index tree $\iota_i(\Lambda_i)$ into a single new one.
+    index trees $\iota_i(\Lambda_i)$ into a single new one.
     Assume that we split the multi-index
     $\iota_i(\hat{\lambda})$ according to
     \begin{align}\label{eq:multiindex-split}
@@ -1661,7 +1661,7 @@ This encapsulates the set $\Lambda|_e$ of basis functions localized to the
 element $e$, organized in the tree of function space bases.
 While the tree  itself can be queried in unbound state,
 the local view must be bound in order to use most of the
-trees methods.
+tree's methods.
 A detailed discussion of the interface of the tree object is
 given below.
 
@@ -1805,7 +1805,7 @@ for (auto v : values)
 \end{lstlisting}
 %
 
-To obtain the entries of the element stiffness matrix that corresponds to a
+To obtain the entries of the element stiffness matrix that correspond to a
 given shape function from a given leaf node, the local index needs to be computed
 from the leaf-local index of that shape function.
 For each local basis function the method
@@ -1963,9 +1963,9 @@ Note that this construction is necessary although the function is already
 \cpp{constexpr}:
 Since \cpp{HybridTreePath} objects are intended to select
 children of different type in run-time contexts, they have to encode
-compile time index values into the run-time index objects.
+compile-time index values into the run-time index objects.
 The latter is only possible by making the types of those index objects
-dependent on their compile time values.
+dependent on their compile-time values.
 
 However, as objects of type \cpp{Dune::index_constant} can be implicitly converted
 to \cpp{std::size_t}, there is also
@@ -2178,7 +2178,7 @@ The pre-basis of the final basis tree can then be turned into an actual basis.
 
 Since all pre-bases in the product pre-basis have to know some common information
 like, e.g., the grid view, doing this hierarchic construction
-manually is verbose and error prone. As a more user friendly and safer solution
+manually is verbose and error prone. As a more user-friendly and safer solution
 a global basis can be constructed by a call to
 \begin{lstlisting}[style=Interface]
 template <class GridView, class PreBasis>
@@ -2307,7 +2307,7 @@ to be constructed by the factory method \cpp{BasisFactory::power()}.
 The interface is again a single method
 \begin{lstlisting}[style=Interface]
 template<std::size_t k, class ChildPreBasis>
-auto power(ChildPreBasis&& childPreBasis)
+auto power(ChildPreBasis&& childPreBasis);
 \end{lstlisting}
 provided in the file \file{dune/functions/functionspacebases/powerbasis.hh}.
 It combines \cpp{k} copies of a subtree of type \cpp{ChildPreBasis} in a new tree.  Therefore, the
@@ -2426,12 +2426,12 @@ to the \cpp{GlobalBasis} interface the \cpp{SubspaceBasis} provides
 information about how the subtree is embedded into the global basis.
 More specifically, the method
 \begin{lstlisting}[style=Interface]
-const @@<implementation defined>@@& rootBasis() const
+const @@<implementation defined>@@& rootBasis() const;
 \end{lstlisting}
 provides access to the root basis, and the method
 \begin{lstlisting}[style=Interface]
 using PrefixPath = TypeTree::HybridTreePath@@<implementation defined>@@;
-const PrefixPath& prefixPath() const
+const PrefixPath& prefixPath() const;
 \end{lstlisting}
 returns the
 path of the subtree associated to the \cpp{SubspaceBasis}
@@ -2765,8 +2765,8 @@ Note that this will only work if the range type of \cpp{f}
 and the global basis \cpp{basis} are compatible.
 \dunemodule{dune-functions} implements a compatibility layer
 that allows to use different vector (or matrix) types
-from the dune core modules and scalar types like, e.g. \cpp{double}
-for the range of \cpp{f} as long as the number of scalar entries
+from the \dune core modules and scalar types like, e.g., \cpp{double}
+for the range of \cpp{f}, as long as the number of scalar entries
 of this range type is the same as the dimension of the range space of
 the function space spanned by the basis.
 This also implies the assumption that the coefficients for
@@ -3296,7 +3296,7 @@ localView.tree().child(_1)
 \end{lstlisting}
 is the basis for the pressure space.
 As the root of the tree combines two different bases, the static identifiers \cpp{_0} and \cpp{_1}
-from the \cpp{Dune::TypeTree::Indices} namespace are needed to specify its children.  The inner node for the velocities
+from the \cpp{Dune::Indices} namespace are needed to specify its children.  The inner node for the velocities
 combines $d$ times the same basis, and hence the normal integer \cpp{0} can be used to address its first child.
 This particular implementation of the local Stokes assembler is actually ``cheating'', because it exploits the knowledge
 that the same basis is used for all velocity components.  Therefore, only the first leaf of the velocity
