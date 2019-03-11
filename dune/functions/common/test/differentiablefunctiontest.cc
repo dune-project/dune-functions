@@ -111,7 +111,7 @@ struct DifferentiableFunctionImplementableTest
         auto dg = derivative(gg);
         passed = false;
       }
-      catch (Dune::NotImplemented e)
+      catch (Dune::NotImplemented& e)
       {
         std::cout << "Obtaining derivative from nondifferentiable function failed expectedly" << std::endl;
         passed = checkTrue(not(isDifferentiableFunction(g, SignatureTag<double(double)>())), "But unwrapped function g does satisfy DifferentiableFunction concept");
