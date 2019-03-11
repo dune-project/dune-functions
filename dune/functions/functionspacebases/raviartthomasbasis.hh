@@ -429,7 +429,7 @@ public:
   /**
    * \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
    *
-   * This assume dim \in \lbrace 2, 3 \rbrace.
+   * This assumes dim \in \lbrace 2, 3 \rbrace.
    */
   template<typename It>
   It indices(It it) const
