@@ -20,36 +20,9 @@ using namespace Dune::Functions;
 using namespace Dune::Functions::Test;
 
 
-template<class B, class C>
-bool checkInterpolationConsistency(B&& basis, C&& x)
-{
-  using Coeff = typename std::decay<C>::type;
-  using Range = typename Coeff::value_type;
-
-  // generate a discrete function
-  auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<Range>
-                            (basis, Dune::TypeTree::hybridTreePath(), x);
-
-  Coeff y;
-  interpolate(basis, y, f);
-  for (typename std::decay_t<C>::size_type i=0; i<x.size(); ++i)
-  {
-    auto diff = x[i];
-    diff -= y[i];
-    if (diff.infinity_norm()> 1e-10)
-    {
-      std::cout << "Interpolation of DiscreteGlobalBasisFunction differs from original coefficient vector" << std::endl;
-      return false;
-    }
-  }
-  return true;
-}
-
-
 int main (int argc, char* argv[]) try
 {
   Dune::MPIHelper::instance(argc, argv);
-  bool passed = true;
 
   // Generate grid for testing
   const int dim = 2;
@@ -67,44 +40,22 @@ int main (int argc, char* argv[]) try
 
   using Domain = GridView::template Codim<0>::Geometry::GlobalCoordinate;
 
-  {
-    using Range = FieldVector<double,5>;
-    auto f = [](const Domain& x){
-      Range y;
-      for (typename Range::size_type i=0; i<y.size(); ++i)
-        y[i] = x[0]+i;
-      return y;
-    };
-
-    std::vector<Range> x;
-    interpolate(feBasis, x, f);
-    passed = passed and checkInterpolationConsistency(feBasis, x);
-  }
-
-
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
   // we know its integral and can check whether quadrature returns
   // the correct result. Notice that resizing is done by the interpolate method.
-  std::vector<FieldVector<double,1> > x;
-  auto fAnalytic = [](const Domain& x){ return x[0];};
-  interpolate(feBasis, x, fAnalytic);
+  std::vector<FieldVector<double,1> > x(feBasis.size());
+  std::fill(x.begin(), x.end(), 0);
 
-  passed = passed and checkInterpolationConsistency(feBasis, x);
-
-  // generate a discrete function to evaluate the integral
+  // generate a discrete function
   auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<double>
                             (feBasis, Dune::TypeTree::hybridTreePath(), x);
 
-  double exactIntegral = 0.5;
-
-  std::cout << "Testing with raw DiscreteGlobalBasisFunction" << std::endl;
-  passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, f, exactIntegral);
-
-  if (passed)
-    std::cout << "All tests passed" << std::endl;
-
-  return passed ? 0: 1;
+  using F = decltype(f);
+  using EntitySet = typename F::EntitySet;
+  using Range = typename std::result_of<F(Domain)>::type;
+  GridViewFunction<Range(Domain), GridView> f3 = f;
+  checkTrue(Functions::Concept::isGridFunction<decltype(f3), Range(Domain), EntitySet>(), "Function does not model GridFunction concept");
 
 } catch ( Dune::Exception &e )
 {
