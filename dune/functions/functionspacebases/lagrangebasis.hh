@@ -469,14 +469,12 @@ public:
               {
                 if (element.type().isTriangle())
                   {
-                    const int interiorLagrangeNodesPerTriangle = (order()-1)*(order()-2)/2;
-                    *it = {{ preBasis_->triangleOffset_ + interiorLagrangeNodesPerTriangle*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->triangleOffset_ + preBasis_->dofsPerTriangle()*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else if (element.type().isQuadrilateral())
                   {
-                    const int interiorLagrangeNodesPerQuadrilateral = (order()-1)*(order()-1);
-                    *it = {{ preBasis_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->quadrilateralOffset_ + preBasis_->dofsPerQuad()*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else
