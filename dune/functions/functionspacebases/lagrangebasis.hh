@@ -88,15 +88,15 @@ public:
   using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
   //! Constructor for a given grid view object with compile-time order
-  LagrangePreBasis(const GridView& gv) :
-    gridView_(gv)
+  LagrangePreBasis(const GridView& gv)
+  : LagrangePreBasis(gv, std::numeric_limits<unsigned int>::max())
   {}
 
   //! Constructor for a given grid view object and run-time order
   LagrangePreBasis(const GridView& gv, unsigned int order) :
     gridView_(gv), order_(order)
   {
-    if (!useDynamicOrder)
+    if (!useDynamicOrder && order!=std::numeric_limits<unsigned int>::max())
       DUNE_THROW(RangeError, "Template argument k has to be -1 when supplying a run-time order!");
   }
 
@@ -215,7 +215,7 @@ protected:
   }
 
   // Run-time order, only valid if k<0
-  unsigned int order_;
+  const unsigned int order_;
 
     // Compute the number of dofs per entity type
   size_type dofsPerVertex() const
