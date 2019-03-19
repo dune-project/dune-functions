@@ -109,6 +109,19 @@ int main (int argc, char *argv[])
   interpolate(subspaceBasis(taylorHoodBasis, _1), x2, f2, isBoundary);
   // { masked_interpolation_end }
 
+  // Test whether I can use std::vector<bool> as an argument to 'interpolate'
+  {
+    std::vector<bool> isBoundary;
+    auto isBoundaryBackend = Functions::istlVectorBackend(isBoundary);
+    isBoundaryBackend.resize(taylorHoodBasis);
+    std::fill(isBoundary.begin(), isBoundary.end(), false);
+    forEachBoundaryDOF(subspaceBasis(taylorHoodBasis, _0),
+      [&] (auto&& index) {
+        isBoundaryBackend[index] = true;
+      });
+
+    interpolate(subspaceBasis(taylorHoodBasis, _0), x2, f2, isBoundary);
+  }
 
   return 0;
 }
