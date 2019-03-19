@@ -98,6 +98,14 @@ public:
   {
     if (!useDynamicOrder && order!=std::numeric_limits<unsigned int>::max())
       DUNE_THROW(RangeError, "Template argument k has to be -1 when supplying a run-time order!");
+
+    for (int i=0; i<=dim; i++)
+    {
+      dofsPerCube_[i] = computeDofsPerCube(i);
+      dofsPerSimplex_[i] = computeDofsPerSimplex(i);
+    }
+    dofsPerPrism_ = computeDofsPerPrism();
+    dofsPerPyramid_ = computeDofsPerPyramid();
   }
 
   //! Initialize the global indices
@@ -220,24 +228,52 @@ protected:
   //! Number of degrees of freedom assigned to a simplex (without the ones assigned to its faces!)
   size_type dofsPerSimplex(std::size_t simplexDim) const
   {
-    return order() == 0 ? (dim == simplexDim ? 1 : 0) : Dune::binomial(std::size_t(order()-1),simplexDim);
+    return useDynamicOrder ? dofsPerSimplex_[simplexDim] : computeDofsPerSimplex(simplexDim);
   }
 
   //! Number of degrees of freedom assigned to a cube (without the ones assigned to its faces!)
   size_type dofsPerCube(std::size_t cubeDim) const
   {
-    return order() == 0 ? (dim == cubeDim ? 1 : 0) : power(order()-1, cubeDim);
+    return useDynamicOrder ? dofsPerCube_[cubeDim] : computeDofsPerCube(cubeDim);
   }
 
   size_type dofsPerPrism() const
   {
-    return order() == 0 ? (dim == 3 ? 1 : 0) : (order()-1)*(order()-1)*(order()-2)/2;
+    return useDynamicOrder ? dofsPerPrism_ : computeDofsPerPrism();
   }
 
   size_type dofsPerPyramid() const
   {
+    return useDynamicOrder ? dofsPerPyramid_ : computeDofsPerPyramid();
+  }
+
+  //! Number of degrees of freedom assigned to a simplex (without the ones assigned to its faces!)
+  size_type computeDofsPerSimplex(std::size_t simplexDim) const
+  {
+    return order() == 0 ? (dim == simplexDim ? 1 : 0) : Dune::binomial(std::size_t(order()-1),simplexDim);
+  }
+
+  //! Number of degrees of freedom assigned to a cube (without the ones assigned to its faces!)
+  size_type computeDofsPerCube(std::size_t cubeDim) const
+  {
+    return order() == 0 ? (dim == cubeDim ? 1 : 0) : Dune::power(order()-1, cubeDim);
+  }
+
+  size_type computeDofsPerPrism() const
+  {
+    return order() == 0 ? (dim == 3 ? 1 : 0) : (order()-1)*(order()-1)*(order()-2)/2;
+  }
+
+  size_type computeDofsPerPyramid() const
+  {
     return order() == 0 ? (dim == 3 ? 1 : 0) : (order()-2)*(order()-1)*(2*order()-3)/6;
   }
+
+  // When the order is given at run-time, the following numbers are pre-computed:
+  std::array<size_type,dim+1> dofsPerSimplex_;
+  std::array<size_type,dim+1> dofsPerCube_;
+  size_type dofsPerPrism_;
+  size_type dofsPerPyramid_;
 
   size_type vertexOffset_;
   size_type edgeOffset_;
