@@ -257,7 +257,7 @@ void boundaryTreatment (const FEBasis& feBasis, std::vector<char>& dirichletNode
   dirichletNodes.clear();
   dirichletNodes.resize(feBasis.size(), false);
 
-  Dune::Functions::forEachBoundaryDOF(feBasis, [&] (auto&& index) {
+  Functions::forEachBoundaryDOF(feBasis, [&] (auto&& index) {
     dirichletNodes[index] = true;
   });
 }
@@ -326,7 +326,7 @@ int main (int argc, char *argv[]) try
   auto dirichletValueFunction = [pi](FieldVector<double,dim> x){ return std::sin(2*pi*x[0]); };
 
   // Interpolate dirichlet values at the boundary nodes
-  interpolate(feBasis, Dune::TypeTree::hybridTreePath(), rhs, dirichletValueFunction, dirichletNodes);
+  interpolate(feBasis, rhs, dirichletValueFunction, dirichletNodes);
 
   ////////////////////////////////////////////
   //   Modify Dirichlet rows
@@ -374,7 +374,7 @@ int main (int argc, char *argv[]) try
   //  Make a discrete function from the FE basis and the coefficient vector
   ////////////////////////////////////////////////////////////////////////////
 
-  auto xFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(feBasis, Dune::TypeTree::hybridTreePath(), x);
+  auto xFunction = Functions::makeDiscreteGlobalBasisFunction<double>(feBasis, x);
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file

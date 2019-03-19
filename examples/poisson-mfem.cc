@@ -48,7 +48,7 @@ void getLocalMatrix(const LocalView& localView,
   elementMatrix = 0;      // fills the entire matrix with zeroes
 
   // Get set of shape functions for this element
-  using namespace Dune::TypeTree::Indices;
+  using namespace Dune::Indices;
   const auto& fluxLocalFiniteElement     = localView.tree().child(_0).finiteElement();
   const auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();
 
@@ -159,7 +159,7 @@ void getVolumeTerm( const LocalView& localView,
   localRhs = 0;
 
   // Get set of shape functions for this element
-  using namespace Dune::TypeTree::Indices;
+  using namespace Dune::Indices;
   const auto& fluxLocalFiniteElement     = localView.tree().child(_0).finiteElement();
   const auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();
 
@@ -292,7 +292,7 @@ void assembleMixedPoissonRhs(const Basis& basis,
   auto localVolumeTerm = localFunction(Functions::makeGridViewFunction(volumeTerm, gridView));
 
   // set rhs to correct length -- the total number of basis vectors in the basis
-  using Dune::Functions::istlVectorBackend;
+  using Functions::istlVectorBackend;
   istlVectorBackend(rhs).resize(basis);
 
   // Set all entries to zero
@@ -367,7 +367,7 @@ int main (int argc, char *argv[])
   typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
   typedef BlockVector<BlockVector<FieldVector<double,1> > > VectorType;
 
-  using Dune::Functions::istlVectorBackend;
+  using Functions::istlVectorBackend;
 
   MatrixType stiffnessMatrix;
   VectorType rhs;
@@ -490,8 +490,8 @@ int main (int argc, char *argv[])
   using FluxRange = FieldVector<double,dim>;
   using PressureRange = double;
 
-  auto fluxFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<FluxRange>(basis, TypeTree::hybridTreePath(_0), istlVectorBackend(x));
-  auto pressureFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<PressureRange>(basis, TypeTree::hybridTreePath(_1), istlVectorBackend(x));
+  auto fluxFunction = Functions::makeDiscreteGlobalBasisFunction<FluxRange>(basis, TypeTree::hybridTreePath(_0), istlVectorBackend(x));
+  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(basis, TypeTree::hybridTreePath(_1), istlVectorBackend(x));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
