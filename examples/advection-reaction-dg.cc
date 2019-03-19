@@ -472,7 +472,7 @@ int main (int argc, char *argv[]) try
   //  Make a discrete function from the FE basis and the coefficient vector
   ////////////////////////////////////////////////////////////////////////////
 
-  auto xFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(feBasis, Dune::TypeTree::hybridTreePath(), x);
+  auto xFunction = Functions::makeDiscreteGlobalBasisFunction<double>(feBasis, x);
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
