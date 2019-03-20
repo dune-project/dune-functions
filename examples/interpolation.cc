@@ -123,5 +123,43 @@ int main (int argc, char *argv[])
     interpolate(subspaceBasis(taylorHoodBasis, _0), x2, f2, isBoundary);
   }
 
+  // Test with a TupleVector
+  {
+    auto taylorHoodBasis = makeBasis(
+          gridView,
+          composite(
+            power<dim>(
+              lagrange<2>(),
+              blockedInterleaved()),
+            lagrange<1>()
+          ));
+
+    using VelocityBitVector = std::vector<std::bitset<dim> >;
+    using PressureBitVector = std::vector<bool>;
+    using BitVectorType
+            = TupleVector<VelocityBitVector, PressureBitVector>;
+
+    BitVectorType isBoundary;
+
+    auto isBoundaryBackend = Functions::istlVectorBackend(isBoundary);
+    isBoundaryBackend.resize(taylorHoodBasis);
+    for (auto& bs : isBoundary[_0])
+      bs.reset();
+    std::fill(isBoundary[_1].begin(), isBoundary[_1].end(), false);
+
+    using namespace Indices;
+    Functions::forEachBoundaryDOF(
+            Functions::subspaceBasis(taylorHoodBasis, _0),
+            [&] (auto&& index) {
+              isBoundaryBackend[index] = true;
+            });
+
+    using VelocityVector = BlockVector<FieldVector<double,dim>>;
+    using PressureVector = BlockVector<double>;
+    using VectorType = MultiTypeBlockVector<VelocityVector, PressureVector>;
+    VectorType x;
+    interpolate(taylorHoodBasis, x, f2, isBoundary);
+  }
+
   return 0;
 }
