@@ -134,8 +134,10 @@ int main (int argc, char *argv[])
             lagrange<1>()
           ));
 
-    using VelocityBitVector = std::vector<std::bitset<dim> >;
-    using PressureBitVector = std::vector<bool>;
+//    using VelocityBitVector = Dune::BitSetVector<dim>;
+//    using PressureBitVector = std::vector<bool>;
+    using VelocityBitVector = std::vector<std::array<char,dim> >;
+    using PressureBitVector = std::vector<char>;
     using BitVectorType
             = TupleVector<VelocityBitVector, PressureBitVector>;
 
@@ -143,8 +145,9 @@ int main (int argc, char *argv[])
 
     auto isBoundaryBackend = Functions::istlVectorBackend(isBoundary);
     isBoundaryBackend.resize(taylorHoodBasis);
-    for (auto& bs : isBoundary[_0])
-      bs.reset();
+    for (auto&& b0i : isBoundary[_0])
+      for (std::size_t j=0; j<b0i.size(); ++j)
+        b0i[j] = false;
     std::fill(isBoundary[_1].begin(), isBoundary[_1].end(), false);
 
     using namespace Indices;
@@ -158,7 +161,7 @@ int main (int argc, char *argv[])
     using PressureVector = BlockVector<double>;
     using VectorType = MultiTypeBlockVector<VelocityVector, PressureVector>;
     VectorType x;
-    interpolate(taylorHoodBasis, x, f2, isBoundary);
+    interpolate(subspaceBasis(taylorHoodBasis, _0), x, f2, isBoundary);
   }
 
   return 0;
