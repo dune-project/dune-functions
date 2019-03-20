@@ -280,9 +280,9 @@ namespace Imp {
   {
     // If c is already considered final simply return it,
     // else resolve the next multiIndex entry.
-    return Hybrid::ifElse(isFinal(c), [&](auto id) -> decltype(auto) {
+    return Hybrid::ifElse(isFinal(c), [&, c = forwardCapture(std::forward<C>(c))](auto id) -> decltype(auto) {
       assert(multiIndex.size() == 0);
-      return std::forward<C>(c);
+      return c.forward();
     }, [&](auto id) -> decltype(auto) {
       auto hasDynamicAccess = callableCheck([](auto&& cc) -> void_t<decltype(cc[0])> {});
 
@@ -315,8 +315,8 @@ namespace Imp {
   constexpr decltype(auto) resolveStaticMultiIndex(C&& c, const MultiIndex& multiIndex)
   {
     auto isExhausted = Hybrid::equals(Hybrid::size(multiIndex), Dune::Indices::_0);
-    return Hybrid::ifElse(isExhausted, [&](auto id) -> decltype(auto) {
-      return std::forward<C>(c);
+    return Hybrid::ifElse(isExhausted, [&, c = forwardCapture(std::forward<C>(c))](auto id) -> decltype(auto) {
+      return c.forward();
     }, [&](auto id) -> decltype(auto) {
       auto head = multiIndex[Dune::Indices::_0];
       auto tail = multiIndex.pop();
