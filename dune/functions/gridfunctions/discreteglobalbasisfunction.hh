@@ -392,7 +392,7 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
     [&](auto id) -> decltype(auto) {
       return std::forward<decltype(v)>(v);
     }, [&](auto id) -> decltype(auto) {
-      return istlVectorBackend(v);
+      return istlVectorBackend(id(v));
     });
   };
 

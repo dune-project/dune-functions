@@ -22,12 +22,21 @@ namespace Functions {
 namespace Imp {
 
 namespace Concept {
+
 template<class size_type>
 struct HasDynamicIndexAccess
 {
   template<class C>
   auto require(C&& c) -> decltype(
     c[std::declval<size_type>()]
+  );
+};
+
+struct HasStaticIndexAccess
+{
+  template<class C>
+  auto require(C&& c) -> decltype(
+    c[Dune::Indices::_0]
   );
 };
 

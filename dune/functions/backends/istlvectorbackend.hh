@@ -10,6 +10,7 @@
 #include <dune/common/std/type_traits.hh>
 #include <dune/common/indices.hh>
 #include <dune/common/hybridutilities.hh>
+#include <dune/common/concept.hh>
 
 #include <dune/functions/common/indexaccess.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
@@ -18,11 +19,66 @@
 namespace Dune {
 namespace Functions {
 
+namespace Impl {
+
+template<class V,
+  std::enable_if_t<not Dune::models<Imp::Concept::HasStaticIndexAccess, V>() , int> = 0>
+auto fieldTypes(V&& v)
+{
+  return TypeList<V>{};
+}
+
+template<class V,
+  std::enable_if_t<Dune::models<Imp::Concept::HasStaticIndexAccess, V>(), int> = 0>
+auto fieldTypes(V&& v)
+{
+  return Hybrid::ifElse(Dune::models<Imp::Concept::HasDynamicIndexAccess<std::size_t>, V>(),
+    [&](auto id) -> decltype(auto) {
+      return fieldTypes(id(v)[std::size_t{0}]);
+    }, [&](auto id) -> decltype(auto) {
+      auto indexRange = typename decltype(range(Hybrid::size(id(v))))::integer_sequence();
+      return unpackIntegerSequence([&](auto... i) {
+        return uniqueTypeList(std::tuple_cat(fieldTypes(id(v)[i])...));
+      }, indexRange);
+    });
+}
+
+} // namespace Impl
+
+
+
+/**
+ * \brief Generate list of field types in container
+ *
+ * This generates a Dune::TypeList of the field types
+ * in the given container type. To determine the field
+ * types, operator[] is called as often as passible with
+ * std::size_t or Dune::index_constant arguments. The return
+ * types obtained if no more operator[] call is available
+ * are returned as Dune::TypeList. Notice that possible duplicate
+ * entries are removed. However, const and reference qualifiers
+ * are deliberately preserved.
+ */
+template<class V>
+constexpr auto fieldTypes()
+{
+  return decltype(Impl::fieldTypes(std::declval<V>())){};
+}
+
+/**
+ * \brief Check if container has a unique field type
+ *
+ * This returns if fieldTypes<V>() has exactly one entry.
+ */
+template<class V>
+constexpr bool hasUniqueFieldType()
+{
+  return std::tuple_size<std::decay_t<decltype(fieldTypes<V>())>>::value==1;
+}
+
 
 
 namespace Impl {
-
-
 
 /*
  * \brief A wrapper providing multi-index access to vector entries
@@ -265,6 +321,7 @@ private:
 template<class Vector>
 auto istlVectorBackend(Vector& v)
 {
+  static_assert(hasUniqueFieldType<Vector&>(), "Vector type passed to istlVectorBackend() does not have a unique field type.");
   return Impl::ISTLVectorBackend<Vector>(v);
 }
 
@@ -302,6 +359,7 @@ auto istlVectorBackend(Vector& v)
 template<class Vector>
 auto istlVectorBackend(const Vector& v)
 {
+  static_assert(hasUniqueFieldType<const Vector&>(), "Vector type passed to istlVectorBackend() does not have a unique field type.");
   return Impl::ISTLVectorBackend<const Vector>(v);
 }
 

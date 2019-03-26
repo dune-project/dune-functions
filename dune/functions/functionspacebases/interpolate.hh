@@ -203,17 +203,17 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
   auto toVectorBackend = [&](auto& v) -> decltype(auto) {
     return Dune::Hybrid::ifElse(models<Concept::VectorBackend<B>, decltype(v)>(),
     [&](auto id) -> decltype(auto) {
-      return v;
+      return id(v);
     }, [&](auto id) -> decltype(auto) {
-      return istlVectorBackend(v);
+      return istlVectorBackend(id(v));
     });
   };
   auto toConstVectorBackend = [&](auto& v) -> decltype(auto) {
     return Dune::Hybrid::ifElse(models<Concept::ConstVectorBackend<B>, decltype(v)>(),
     [&](auto id) -> decltype(auto) {
-      return v;
+      return id(v);
     }, [&](auto id) -> decltype(auto) {
-      return istlVectorBackend(v);
+      return istlVectorBackend(id(v));
     });
   };
 
