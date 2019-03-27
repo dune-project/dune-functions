@@ -31,7 +31,7 @@ namespace Experimental {
 // *****************************************************************************
 // *****************************************************************************
 
-template<class TP, class TPB>
+template<class TPB>
 class TransformedIndexNodeIndexSet;
 
 /**
@@ -69,12 +69,10 @@ public:
   using size_type = std::size_t;
 
   //! Template mapping root tree path to type of created tree node
-  template<class TP>
-  using Node = typename RawPreBasis::template Node<TP>;
+  using Node = typename RawPreBasis::Node;
 
   //! Template mapping root tree path to type of created tree node index set
-  template<class TP>
-  using IndexSet = TransformedIndexNodeIndexSet<TP, This>;
+  using IndexSet = TransformedIndexNodeIndexSet<This>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -121,10 +119,9 @@ public:
    * to create a node suitable for being placed in a tree at
    * the position specified by the root tree path.
    */
-  template<class TP>
-  Node<TP> node(const TP& tp) const
+  Node makeNode() const
   {
-    return rawPreBasis_.node(tp);
+    return rawPreBasis_.makeNode();
   }
 
   /**
@@ -136,10 +133,9 @@ public:
    * Create an index set suitable for the tree node obtained
    * by node(tp).
    */
-  template<class TP>
-  IndexSet<TP> indexSet() const
+  IndexSet makeIndexSet() const
   {
-    return IndexSet<TP>{*this};
+    return IndexSet{*this};
   }
 
   //! Same as size(prefix) with empty prefix
@@ -188,7 +184,7 @@ protected:
 
 
 
-template<class TP, class TPB>
+template<class TPB>
 class TransformedIndexNodeIndexSet
 {
 public:
@@ -199,13 +195,13 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = typename PreBasis::MultiIndex;
 
-  using Node = typename PreBasis::template Node<TP>;
+  using Node = typename PreBasis::Node;
 
-  using RawNodeIndexSet = typename PreBasis::RawPreBasis::template IndexSet<TP>;
+  using RawNodeIndexSet = typename PreBasis::RawPreBasis::IndexSet;
 
   TransformedIndexNodeIndexSet(const PreBasis& preBasis) :
     preBasis_(&preBasis),
-    rawNodeIndexSet_(preBasis_->rawPreBasis().template indexSet<TP>())
+    rawNodeIndexSet_(preBasis_->rawPreBasis().makeIndexSet())
   {}
 
   void bind(const Node& node)
