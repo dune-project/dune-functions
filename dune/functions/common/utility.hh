@@ -313,6 +313,67 @@ auto negatePredicate(Check check)
 }
 
 
+namespace Impl {
+
+  // Wrapper to capture values in a lambda for perfect forwarding.
+  // This captures value types by value and reference types by reference.
+  template <typename T>
+  struct ForwardCaptureWrapper;
+
+  template <typename T>
+  struct ForwardCaptureWrapper
+  {
+    template <typename TT>
+    ForwardCaptureWrapper(TT&& t) : t_{std::forward<TT>(t)} {}
+
+    auto forward() const { return std::move(t_); }
+
+    T t_;
+  };
+
+  template <typename T>
+  struct ForwardCaptureWrapper<T&>
+  {
+    ForwardCaptureWrapper(T& t) : t_{t} {}
+
+    T& forward() const { return t_; };
+
+    T& t_;
+  };
+
+  template <typename T>
+  struct ForwardCaptureWrapper<const T&>
+  {
+    ForwardCaptureWrapper(const T& t) : t_{t} {}
+
+    const T& forward() const { return t_; };
+
+    const T& t_;
+  };
+
+} // end namespace Dune::Functions::Impl
+
+
+
+/**
+ * \brief Create a capture object for perfect forwarding.
+ *
+ * The returned object will capture the passed argument t.
+ * If t is passed as r-value, then it is captured by value,
+ * otherwise by reference. The captured value is accessible
+ * once using the forward() method which either returns the
+ * catured reference or moves the captured value.
+ *
+ * This allows to capture values for perfect forwarding
+ * in lambda functions using
+ * [t=forwardCapture(std::forward<T>(t))]() -> decltype(auto) { return t.forward(); }
+ */
+template <class T>
+auto forwardCapture(T&& t)
+{
+    return Impl::ForwardCaptureWrapper<T>(std::forward<T>(t));
+}
+
 
 
 } // namespace Dune::Functions

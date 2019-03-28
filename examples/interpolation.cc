@@ -109,6 +109,68 @@ int main (int argc, char *argv[])
   interpolate(subspaceBasis(taylorHoodBasis, _1), x2, f2, isBoundary);
   // { masked_interpolation_end }
 
+  // Test whether I can use std::vector<bool> as an argument to 'interpolate'
+  {
+    std::vector<bool> isBoundary;
+    auto isBoundaryBackend = Functions::istlVectorBackend(isBoundary);
+    isBoundaryBackend.resize(taylorHoodBasis);
+    std::fill(isBoundary.begin(), isBoundary.end(), false);
+    forEachBoundaryDOF(subspaceBasis(taylorHoodBasis, _0),
+      [&] (auto&& index) {
+        isBoundaryBackend[index] = true;
+      });
+
+    interpolate(subspaceBasis(taylorHoodBasis, _0), x2, f2, isBoundary);
+  }
+
+  // Test with a TupleVector
+  {
+    auto taylorHoodBasis = makeBasis(
+          gridView,
+          composite(
+            power<dim>(
+              lagrange<2>(),
+              blockedInterleaved()),
+            lagrange<1>()
+          ));
+
+    // Note: In the following code we cannot use
+    //
+    //    using VelocityBitVector = std::vector<std::bitset>dim> >;
+    //    using PressureBitVector = std::vector<bool>;
+    //    using BitVectorType = TupleVector<VelocityBitVector, PressureBitVector>;
+    //
+    // Reason: istlVectorBackend requires all terminal entries to have the same type.
+    // However, accessing entries  of std::bitset and std::vector<bool> by operator[]
+    // does *not* return the same type. Instead, it returns two different proxy types.
+
+    using VelocityBitVector = std::vector<std::array<char,dim> >;
+    using PressureBitVector = std::vector<char>;
+    using BitVectorType
+            = TupleVector<VelocityBitVector, PressureBitVector>;
+
+    BitVectorType isBoundary;
+
+    auto isBoundaryBackend = Functions::istlVectorBackend(isBoundary);
+    isBoundaryBackend.resize(taylorHoodBasis);
+    for (auto&& b0i : isBoundary[_0])
+      for (std::size_t j=0; j<b0i.size(); ++j)
+        b0i[j] = false;
+    std::fill(isBoundary[_1].begin(), isBoundary[_1].end(), false);
+
+    using namespace Indices;
+    Functions::forEachBoundaryDOF(
+            Functions::subspaceBasis(taylorHoodBasis, _0),
+            [&] (auto&& index) {
+              isBoundaryBackend[index] = true;
+            });
+
+    using VelocityVector = BlockVector<FieldVector<double,dim>>;
+    using PressureVector = BlockVector<double>;
+    using VectorType = MultiTypeBlockVector<VelocityVector, PressureVector>;
+    VectorType x;
+    interpolate(subspaceBasis(taylorHoodBasis, _0), x, f2, isBoundary);
+  }
 
   return 0;
 }
