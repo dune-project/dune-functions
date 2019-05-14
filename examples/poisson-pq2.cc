@@ -11,6 +11,7 @@
 #include <dune/geometry/quadraturerules.hh>
 
 #include <dune/grid/yaspgrid.hh>
+#include <dune/grid/uggrid.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
 #include <dune/istl/matrix.hh>
@@ -262,8 +263,31 @@ void boundaryTreatment (const FEBasis& feBasis, std::vector<char>& dirichletNode
   });
 }
 
+template<int dim>
+auto createUniformCubeGrid()
+{
+  using Grid = Dune::YaspGrid<dim>;
+  Dune::FieldVector<double,dim> l(1.0);
+  std::array<int,dim> elements = {{2, 2}};
+  return std::make_unique<Grid>(l, elements);
+}
 
-
+#if HAVE_UG
+auto createMixedGrid()
+{
+  using Grid = Dune::UGGrid<2>;
+  Dune::GridFactory<Grid> factory;
+  for(unsigned int k : Dune::range(9))
+    factory.insertVertex({0.5*(k%3), 0.5*(k/3)});
+  factory.insertElement(Dune::GeometryTypes::cube(2), {0, 1, 3, 4});
+  factory.insertElement(Dune::GeometryTypes::cube(2), {1, 2, 4, 5});
+  factory.insertElement(Dune::GeometryTypes::simplex(2), {3, 4, 6});
+  factory.insertElement(Dune::GeometryTypes::simplex(2), {4, 7, 6});
+  factory.insertElement(Dune::GeometryTypes::simplex(2), {4, 5, 7});
+  factory.insertElement(Dune::GeometryTypes::simplex(2), {5, 8, 7});
+  return std::unique_ptr<Grid>{factory.createGrid()};
+}
+#endif
 
 int main (int argc, char *argv[]) try
 {
@@ -274,14 +298,17 @@ int main (int argc, char *argv[]) try
   //   Generate the grid
   ///////////////////////////////////
 
-  const int dim = 2;
-  typedef YaspGrid<dim> GridType;
-  FieldVector<double,dim> l(1);
-  std::array<int,dim> elements = {{10, 10}};
-  GridType grid(l,elements);
+#if HAVE_UG
+  auto gridPtr = createMixedGrid();
+#else
+  auto gridPtr = createUniformCubeGrid<2>();
+#endif
 
-  typedef GridType::LeafGridView GridView;
-  GridView gridView = grid.leafGridView();
+  auto& grid = *gridPtr;
+  grid.globalRefine(4);
+
+  auto gridView = grid.leafGridView();
+  using GridView = decltype(gridView);
 
   /////////////////////////////////////////////////////////
   //   Choose a finite element space
@@ -304,10 +331,13 @@ int main (int argc, char *argv[]) try
   //  Assemble the system
   /////////////////////////////////////////////////////////
 
-  using Domain = GridType::template Codim<0>::Geometry::GlobalCoordinate;
+  std::cout << "Number of DOFs is " << feBasis.dimension() << std::endl;
 
-  auto rightHandSide = [] (const Domain& x) { return 10;};
+  auto rightHandSide = [] (const auto& x) { return 10;};
+
+  Dune::Timer timer;
   assembleLaplaceMatrix(feBasis, stiffnessMatrix, rhs, rightHandSide);
+  std::cout << "Assembling the problem took " << timer.elapsed() << "s" << std::endl;
 
   /////////////////////////////////////////////////
   //   Choose an initial iterate
@@ -323,28 +353,38 @@ int main (int argc, char *argv[]) try
 
   // Don't trust on non-standard M_PI.
   auto pi = std::acos(-1.0);
-  auto dirichletValueFunction = [pi](FieldVector<double,dim> x){ return std::sin(2*pi*x[0]); };
+  auto dirichletValueFunction = [pi](const auto& x){ return std::sin(2*pi*x[0]); };
 
   // Interpolate dirichlet values at the boundary nodes
-  interpolate(feBasis, rhs, dirichletValueFunction, dirichletNodes);
+  interpolate(feBasis, x, dirichletValueFunction, dirichletNodes);
 
-  ////////////////////////////////////////////
-  //   Modify Dirichlet rows
-  ////////////////////////////////////////////
+  //////////////////////////////////////////////////////
+  //   Incorporate dirichlet values in a symmetric way
+  //////////////////////////////////////////////////////
 
-  // loop over the matrix rows
+  // Compute residual for non-homogeneous Dirichlet values
+  // stored in x. Since x is zero for non-Dirichlet DOFs,
+  // we can simply multiply by the matrix.
+  stiffnessMatrix.mmv(x, rhs);
+
+  // Change Dirichlet matrix rows and columns to the identity.
   for (size_t i=0; i<stiffnessMatrix.N(); i++) {
-
     if (dirichletNodes[i]) {
-
+      rhs[i] = x[i];
       auto cIt    = stiffnessMatrix[i].begin();
       auto cEndIt = stiffnessMatrix[i].end();
       // loop over nonzero matrix entries in current row
       for (; cIt!=cEndIt; ++cIt)
         *cIt = (i==cIt.index()) ? 1 : 0;
-
     }
-
+    else {
+      auto cIt    = stiffnessMatrix[i].begin();
+      auto cEndIt = stiffnessMatrix[i].end();
+      // loop over nonzero matrix entries in current row
+      for (; cIt!=cEndIt; ++cIt)
+        if (dirichletNodes[cIt.index()])
+          *cIt = 0;
+    }
   }
 
   ////////////////////////////
@@ -355,13 +395,13 @@ int main (int argc, char *argv[]) try
   MatrixAdapter<MatrixType,VectorType,VectorType> op(stiffnessMatrix);
 
   // Sequential incomplete LU decomposition as the preconditioner
-  SeqILU<MatrixType,VectorType,VectorType> ilu0(stiffnessMatrix,1.0);
+  SeqILDL<MatrixType,VectorType,VectorType> ildl(stiffnessMatrix,1.0);
 
   // Preconditioned conjugate-gradient solver
   CGSolver<VectorType> cg(op,
-                          ilu0, // preconditioner
+                          ildl, // preconditioner
                           1e-4, // desired residual reduction factor
-                          50,   // maximum number of iterations
+                          100,   // maximum number of iterations
                           2);   // verbosity of the solver
 
   // Object storing some statistics about the solving process
