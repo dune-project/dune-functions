@@ -1,14 +1,14 @@
 add_executable("advection-reaction-dg" advection-reaction-dg.cc)
-target_link_dune_default_libraries("advection-reaction-dg")
+dune_target_enable_all_packages("advection-reaction-dg")
 
 add_executable("interpolation" interpolation.cc)
-target_link_dune_default_libraries("interpolation")
+dune_target_enable_all_packages("interpolation")
 
 add_executable("poisson-pq2" poisson-pq2.cc)
-target_link_dune_default_libraries("poisson-pq2")
+dune_target_enable_all_packages(poisson-pq2)
 
 add_executable("stokes-taylorhood" stokes-taylorhood.cc)
-target_link_dune_default_libraries("stokes-taylorhood")
+dune_target_enable_all_packages("stokes-taylorhood")
 
 add_executable("poisson-mfem" poisson-mfem.cc)
-target_link_dune_default_libraries("poisson-mfem")
+dune_target_enable_all_packages("poisson-mfem")
