@@ -124,7 +124,7 @@ public:
   GridFunction(F&& f) :
     Base(std::forward<F>(f))
   {
-    static_assert(Dune::Functions::Concept::isGridFunction<F, Range(Domain), EntitySet, DerivativeTraits>(), "Trying to construct a GridFunction from type that does not model the GridFunction concept");
+    static_assert(Dune::Functions::Concept::isGridFunction<F, Range(Domain), EntitySet, DerivativeTraits, false>(), "Trying to construct a GridFunction from type that does not model the GridFunction concept");
   }
 
   GridFunction() = default;
