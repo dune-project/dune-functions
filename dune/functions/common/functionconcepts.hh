@@ -135,7 +135,7 @@ static constexpr bool isDifferentiableFunction(F&& f, SignatureTag<Signature, De
 
 
 // LocalFunction concept ##############################################
-template<class Signature, class LocalContext, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+template<class Signature, class LocalContext, template<class> class DerivativeTraits = DefaultDerivativeTraits, bool differentiable = true>
 struct LocalFunction;
 
 /**
@@ -150,9 +150,13 @@ struct LocalFunction;
  * \tparam LocalContext The local context this function is defined on
  * \tparam DerivativeTraits Traits class for computation of derivative range
  */
-template<class Range, class Domain, class LocalContext, template<class> class DerivativeTraits>
-struct LocalFunction<Range(Domain), LocalContext, DerivativeTraits> :
-    Refines<Dune::Functions::Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> >
+template<class Range, class Domain, class LocalContext, template<class> class DerivativeTraits, bool differentiable>
+struct LocalFunction<Range(Domain), LocalContext, DerivativeTraits, differentiable> :
+    std::conditional_t<
+      differentiable,
+      Refines<Dune::Functions::Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> >,
+      Refines<Dune::Functions::Concept::Function<Range(Domain)> >
+      >
 {
   template<class F>
   auto require(F&& f) -> decltype(
@@ -164,9 +168,9 @@ struct LocalFunction<Range(Domain), LocalContext, DerivativeTraits> :
 };
 
 /// Check if F models the LocalFunction concept with given signature and local context \ingroup FunctionConcepts
-template<class F, class Signature, class LocalContext, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+template<class F, class Signature, class LocalContext, template<class> class DerivativeTraits = DefaultDerivativeTraits, bool differentiable=true>
 static constexpr bool isLocalFunction()
-{ return models<Concept::LocalFunction<Signature, LocalContext, DerivativeTraits>, F>(); }
+{ return models<Concept::LocalFunction<Signature, LocalContext, DerivativeTraits, differentiable>, F>(); }
 
 
 
@@ -199,7 +203,7 @@ static constexpr bool isEntitySet()
 
 
 // GridFunction concept ##############################################
-template<class Signature, class EntitySet, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+template<class Signature, class EntitySet, template<class> class DerivativeTraits = DefaultDerivativeTraits, bool differentiable = true>
 struct GridFunction;
 
 /**
@@ -214,9 +218,13 @@ struct GridFunction;
  * \tparam EntitySet Set of entities on which the function can be localized
  * \tparam DerivativeTraits Traits class for computation of derivative range
  */
-template<class Range, class Domain, class EntitySet, template<class> class DerivativeTraits>
-struct GridFunction<Range(Domain), EntitySet, DerivativeTraits> :
-    Refines<Dune::Functions::Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> >
+template<class Range, class Domain, class EntitySet, template<class> class DerivativeTraits, bool differentiable>
+struct GridFunction<Range(Domain), EntitySet, DerivativeTraits,differentiable> :
+    std::conditional_t<
+      differentiable,
+      Refines<Dune::Functions::Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> >,
+      Refines<Dune::Functions::Concept::Function<Range(Domain)> >
+      >
 {
   using LocalSignature = Range(typename EntitySet::LocalCoordinate);
   using LocalContext = typename EntitySet::Element;
@@ -228,7 +236,7 @@ struct GridFunction<Range(Domain), EntitySet, DerivativeTraits> :
   auto require(F&& f) -> decltype(
     localFunction(f),
     f.entitySet(),
-    requireConcept<LocalFunction<LocalSignature, LocalContext, LocalDerivativeTraits>>(localFunction(f)),
+    requireConcept<LocalFunction<LocalSignature, LocalContext, LocalDerivativeTraits, differentiable>>(localFunction(f)),
     requireConcept<Concept::EntitySet, EntitySet>(),
     requireConvertible<EntitySet>(f.entitySet()),
     requireConvertible<typename EntitySet::GlobalCoordinate, Domain>()
@@ -236,14 +244,14 @@ struct GridFunction<Range(Domain), EntitySet, DerivativeTraits> :
 };
 
 /// Check if F models the GridFunction concept with given signature and entity set \ingroup FunctionConcepts
-template<class F, class Signature, class EntitySet, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+template<class F, class Signature, class EntitySet, template<class> class DerivativeTraits = DefaultDerivativeTraits, bool differentiable = true>
 static constexpr bool isGridFunction()
-{ return models<Concept::GridFunction<Signature, EntitySet, DerivativeTraits>, F>(); }
+{ return models<Concept::GridFunction<Signature, EntitySet, DerivativeTraits, differentiable>, F>(); }
 
 
 
 // GridViewFunction concept ##############################################
-template<class Signature, class GridView, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+template<class Signature, class GridView, template<class> class DerivativeTraits = DefaultDerivativeTraits, bool differentiable = true>
 struct GridViewFunction;
 
 /**
@@ -259,9 +267,9 @@ struct GridViewFunction;
  * \tparam GridView GridView on which the function can be localized
  * \tparam DerivativeTraits Traits class for computation of derivative range
  */
-template<class Range, class Domain, class GridView, template<class> class DerivativeTraits>
-struct GridViewFunction<Range(Domain), GridView, DerivativeTraits> :
-    Refines<Dune::Functions::Concept::GridFunction<Range(Domain), GridViewEntitySet<GridView,0>, DerivativeTraits>>
+template<class Range, class Domain, class GridView, template<class> class DerivativeTraits, bool differentiable>
+struct GridViewFunction<Range(Domain), GridView, DerivativeTraits, differentiable> :
+  Refines<Dune::Functions::Concept::GridFunction<Range(Domain), GridViewEntitySet<GridView,0>, DerivativeTraits, differentiable>>
 {
   template<class F>
   auto require(F&& f) -> decltype(
@@ -270,9 +278,9 @@ struct GridViewFunction<Range(Domain), GridView, DerivativeTraits> :
 };
 
 /// Check if F models the GridViewFunction concept with given signature \ingroup FunctionConcepts
-template<class F, class Signature, class GridView, template<class> class DerivativeTraits = DefaultDerivativeTraits>
+template<class F, class Signature, class GridView, template<class> class DerivativeTraits = DefaultDerivativeTraits, bool differentiable = true>
 static constexpr bool isGridViewFunction()
-{ return models<Concept::GridViewFunction<Signature, GridView, DerivativeTraits>, F>(); }
+{ return models<Concept::GridViewFunction<Signature, GridView, DerivativeTraits, differentiable>, F>(); }
 
 
 
