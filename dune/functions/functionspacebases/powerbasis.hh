@@ -243,7 +243,19 @@ public:
     return subPreBasis_.maxNodeSize() * children;
   }
 
-protected:
+  //! Const access to the stored prebasis of the factor in the power space
+  const SubPreBasis& subPreBasis() const
+  {
+    return subPreBasis_;
+  }
+
+  //! Mutable access to the stored prebasis of the factor in the power space
+  SubPreBasis& subPreBasis()
+  {
+    return subPreBasis_;
+  }
+
+private:
   SubPreBasis subPreBasis_;
 };
 
@@ -269,7 +281,7 @@ public:
 
   PowerNodeIndexSet(const PreBasis & preBasis) :
     preBasis_(&preBasis),
-    subNodeIndexSet_(preBasis_->subPreBasis_.makeIndexSet())
+    subNodeIndexSet_(preBasis_->subPreBasis().makeIndexSet())
   {}
 
   void bind(const Node& node)
@@ -331,7 +343,7 @@ private:
   {
     using namespace Dune::TypeTree::Indices;
     size_type subTreeSize = node_->child(_0).size();
-    size_type firstIndexEntrySize = preBasis_->subPreBasis_.size({});
+    size_type firstIndexEntrySize = preBasis_->subPreBasis().size({});
     // Fill indices for first child at the beginning.
     auto next = subNodeIndexSet_.indices(multiIndices);
     for (std::size_t child = 1; child<children; ++child)
