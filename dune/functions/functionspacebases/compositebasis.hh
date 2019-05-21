@@ -64,6 +64,10 @@ public:
   //! Tuple of child pre-bases
   using SubPreBases = std::tuple<SPB...>;
 
+  //! Export individual child pre-bases by index
+  template<std::size_t i>
+  using SubPreBasis = std::tuple_element_t<i, SubPreBases>;
+
   //! The grid view that the FE basis is defined on
   using GridView = typename std::tuple_element_t<0, SubPreBases>::GridView;
 
@@ -134,7 +138,7 @@ public:
   void initializeIndices()
   {
     Hybrid::forEach(ChildIndices(), [&](auto i) {
-      Hybrid::elementAt(subPreBases_, i).initializeIndices();
+      subPreBasis(i).initializeIndices();
     });
   }
 
@@ -148,7 +152,7 @@ public:
   void update(const GridView& gv)
   {
     Hybrid::forEach(ChildIndices(), [&](auto i) {
-      Hybrid::elementAt(subPreBases_, i).update(gv);
+      subPreBasis(i).update(gv);
     });
   }
 
@@ -159,7 +163,7 @@ public:
   {
     auto node = Node{};
     Hybrid::forEach(ChildIndices(), [&](auto i) {
-      node.setChild(Hybrid::elementAt(subPreBases_, i).makeNode(), i);
+      node.setChild(subPreBasis(i).makeNode(), i);
     });
     return node;
   }
@@ -174,7 +178,7 @@ public:
   {
     return IndexSet{*this,
       unpackIntegerSequence([&](auto... i) {
-        return std::make_tuple(Hybrid::elementAt(subPreBases_, i).makeIndexSet()...);
+        return std::make_tuple(subPreBasis(i).makeIndexSet()...);
       }, ChildIndices())};
   }
 
@@ -198,11 +202,10 @@ private:
       return children;
 
     return Hybrid::switchCases(ChildIndices(), prefix[0], [&] (auto i) {
-      const auto& subPreBasis = std::get<i.value>(subPreBases_);
-      typename std::decay<decltype(subPreBasis)>::type::SizePrefix subPrefix;
+      typename SubPreBasis<i>::SizePrefix subPrefix;
       for(std::size_t i=1; i<prefix.size(); ++i)
         subPrefix.push_back(prefix[i]);
-      return subPreBasis.size(subPrefix);
+      return subPreBasis(i).size(subPrefix);
     }, []() {
       return size_type(0);
     });
@@ -267,7 +270,21 @@ public:
     return r;
   }
 
-protected:
+  //! Const access to the stored prebasis of the factor in the power space
+  template<std::size_t i>
+  const SubPreBasis<i>& subPreBasis(Dune::index_constant<i> = {}) const
+  {
+    return std::get<i>(subPreBases_);
+  }
+
+  //! Mutable access to the stored prebasis of the factor in the power space
+  template<std::size_t i>
+  SubPreBasis<i>& subPreBasis(Dune::index_constant<i> = {})
+  {
+    return std::get<i>(subPreBases_);
+  }
+
+private:
   std::tuple<SPB...> subPreBases_;
 };
 
@@ -332,7 +349,7 @@ public:
     // Loop over all children
     Hybrid::forEach(ChildIndices(), [&](auto child){
       const auto& subNodeIndexSet = Hybrid::elementAt(subNodeIndexSetTuple_, child);
-      const auto& subPreBasis = Hybrid::elementAt(preBasis_->subPreBases_, child);
+      const auto& subPreBasis = preBasis_->subPreBasis(child);
       size_type subTreeSize = subNodeIndexSet.size();
       // Fill indices for current child into index buffer starting from current
       // buffer position and shift first index component of any index for current
