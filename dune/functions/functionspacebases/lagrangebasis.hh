@@ -5,6 +5,8 @@
 
 #include <dune/common/exceptions.hh>
 
+#include <dune/localfunctions/lagrange.hh>
+#include <dune/localfunctions/lagrange/equidistantpoints.hh>
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
@@ -44,7 +46,7 @@ class LagrangePreBasis;
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV  The grid view that the FE basis is defined on
- * \tparam k   The polynomial order of ansatz functions
+ * \tparam k   The polynomial order of ansatz functions; -1 means 'order determined at run-time'
  * \tparam MI  Type to be used for multi-indices
  *
  * \note This only works for certain grids.  The following restrictions hold
@@ -56,6 +58,7 @@ template<typename GV, int k, class MI>
 class LagrangePreBasis
 {
   static const int dim = GV::dimension;
+  static const bool useDynamicOrder = (k<0);
 
 public:
 
@@ -69,24 +72,6 @@ private:
 
   template<typename, int, class>
   friend class LagrangeNodeIndexSet;
-
-  // Precompute the number of dofs per entity type
-  const static size_type dofsPerVertex =
-      k == 0 ? (dim == 0 ? 1 : 0) : 1;
-  const static size_type dofsPerEdge =
-      k == 0 ? (dim == 1 ? 1 : 0) : k-1;
-  const static size_type dofsPerTriangle =
-      k == 0 ? (dim == 2 ? 1 : 0) : (k-1)*(k-2)/2;
-  const static size_type dofsPerQuad =
-      k == 0 ? (dim == 2 ? 1 : 0) : (k-1)*(k-1);
-  const static size_type dofsPerTetrahedron =
-      k == 0 ? (dim == 3 ? 1 : 0) : (k-3)*(k-2)*(k-1)/6;
-  const static size_type dofsPerPrism =
-      k == 0 ? (dim == 3 ? 1 : 0) : (k-1)*(k-1)*(k-2)/2;
-  const static size_type dofsPerHexahedron =
-      k == 0 ? (dim == 3 ? 1 : 0) : (k-1)*(k-1)*(k-1);
-  const static size_type dofsPerPyramid =
-      k == 0 ? (dim == 3 ? 1 : 0) : (k-2)*(k-1)*(2*k-3)/6;
 
 public:
 
@@ -102,32 +87,48 @@ public:
   //! Type used for prefixes handed to the size() method
   using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
-  //! Constructor for a given grid view object
-  LagrangePreBasis(const GridView& gv) :
-    gridView_(gv)
+  //! Constructor for a given grid view object with compile-time order
+  LagrangePreBasis(const GridView& gv)
+  : LagrangePreBasis(gv, std::numeric_limits<unsigned int>::max())
   {}
+
+  //! Constructor for a given grid view object and run-time order
+  LagrangePreBasis(const GridView& gv, unsigned int order) :
+    gridView_(gv), order_(order)
+  {
+    if (!useDynamicOrder && order!=std::numeric_limits<unsigned int>::max())
+      DUNE_THROW(RangeError, "Template argument k has to be -1 when supplying a run-time order!");
+
+    for (int i=0; i<=dim; i++)
+    {
+      dofsPerCube_[i] = computeDofsPerCube(i);
+      dofsPerSimplex_[i] = computeDofsPerSimplex(i);
+    }
+    dofsPerPrism_ = computeDofsPerPrism();
+    dofsPerPyramid_ = computeDofsPerPyramid();
+  }
 
   //! Initialize the global indices
   void initializeIndices()
   {
     vertexOffset_        = 0;
-    edgeOffset_          = vertexOffset_          + dofsPerVertex * ((size_type)gridView_.size(dim));
+    edgeOffset_            = vertexOffset_          + dofsPerCube(0) * ((size_type)gridView_.size(dim));
 
     if (dim>=2)
     {
-      triangleOffset_      = edgeOffset_            + dofsPerEdge * ((size_type) gridView_.size(dim-1));
+      triangleOffset_      = edgeOffset_            + dofsPerCube(1) * ((size_type) gridView_.size(dim-1));
 
-      quadrilateralOffset_ = triangleOffset_        + dofsPerTriangle * ((size_type)gridView_.size(Dune::GeometryTypes::triangle));
+      quadrilateralOffset_ = triangleOffset_        + dofsPerSimplex(2) * ((size_type)gridView_.size(Dune::GeometryTypes::triangle));
     }
 
     if (dim==3) {
-      tetrahedronOffset_   = quadrilateralOffset_ + dofsPerQuad * ((size_type)gridView_.size(Dune::GeometryTypes::quadrilateral));
+      tetrahedronOffset_   = quadrilateralOffset_ + dofsPerCube(2) * ((size_type)gridView_.size(Dune::GeometryTypes::quadrilateral));
 
-      prismOffset_         = tetrahedronOffset_   +   dofsPerTetrahedron * ((size_type)gridView_.size(Dune::GeometryTypes::tetrahedron));
+      prismOffset_         = tetrahedronOffset_   +   dofsPerSimplex(3) * ((size_type)gridView_.size(Dune::GeometryTypes::tetrahedron));
 
-      hexahedronOffset_    = prismOffset_         +   dofsPerPrism * ((size_type)gridView_.size(Dune::GeometryTypes::prism));
+      hexahedronOffset_    = prismOffset_         +   dofsPerPrism() * ((size_type)gridView_.size(Dune::GeometryTypes::prism));
 
-      pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * ((size_type)gridView_.size(Dune::GeometryTypes::hexahedron));
+      pyramidOffset_       = hexahedronOffset_    +   dofsPerCube(3) * ((size_type)gridView_.size(Dune::GeometryTypes::hexahedron));
     }
   }
 
@@ -148,7 +149,7 @@ public:
    */
   Node makeNode() const
   {
-    return Node{};
+    return Node{order_};
   }
 
   /**
@@ -168,25 +169,25 @@ public:
     switch (dim)
     {
       case 1:
-        return dofsPerVertex * ((size_type)gridView_.size(dim))
-          + dofsPerEdge*((size_type)gridView_.size(dim-1));
+        return dofsPerCube(0) * ((size_type)gridView_.size(dim))
+          + dofsPerCube(1) * ((size_type)gridView_.size(dim-1));
       case 2:
       {
-        return dofsPerVertex * ((size_type)gridView_.size(dim))
-          + dofsPerEdge * ((size_type)gridView_.size(dim-1))
-          + dofsPerTriangle * ((size_type)gridView_.size(Dune::GeometryTypes::triangle))
-          + dofsPerQuad * ((size_type)gridView_.size(Dune::GeometryTypes::quadrilateral));
+        return dofsPerCube(0) * ((size_type)gridView_.size(dim))
+          + dofsPerCube(1) * ((size_type)gridView_.size(dim-1))
+          + dofsPerSimplex(2) * ((size_type)gridView_.size(Dune::GeometryTypes::triangle))
+          + dofsPerCube(2) * ((size_type)gridView_.size(Dune::GeometryTypes::quadrilateral));
       }
       case 3:
       {
-        return dofsPerVertex * ((size_type)gridView_.size(dim))
-          + dofsPerEdge * ((size_type)gridView_.size(dim-1))
-          + dofsPerTriangle * ((size_type)gridView_.size(Dune::GeometryTypes::triangle))
-          + dofsPerQuad * ((size_type)gridView_.size(Dune::GeometryTypes::quadrilateral))
-          + dofsPerTetrahedron * ((size_type)gridView_.size(Dune::GeometryTypes::tetrahedron))
-          + dofsPerPyramid * ((size_type)gridView_.size(Dune::GeometryTypes::pyramid))
-          + dofsPerPrism * ((size_type)gridView_.size(Dune::GeometryTypes::prism))
-          + dofsPerHexahedron * ((size_type)gridView_.size(Dune::GeometryTypes::hexahedron));
+        return dofsPerCube(0) * ((size_type)gridView_.size(dim))
+          + dofsPerCube(1) * ((size_type)gridView_.size(dim-1))
+          + dofsPerSimplex(2) * ((size_type)gridView_.size(Dune::GeometryTypes::triangle))
+          + dofsPerCube(2) * ((size_type)gridView_.size(Dune::GeometryTypes::quadrilateral))
+          + dofsPerSimplex(3) * ((size_type)gridView_.size(Dune::GeometryTypes::tetrahedron))
+          + dofsPerPyramid() * ((size_type)gridView_.size(Dune::GeometryTypes::pyramid))
+          + dofsPerPrism() * ((size_type)gridView_.size(Dune::GeometryTypes::prism))
+          + dofsPerCube(3) * ((size_type)gridView_.size(Dune::GeometryTypes::hexahedron));
       }
     }
     DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
@@ -208,11 +209,71 @@ public:
   //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
-    return StaticPower<(k+1),GV::dimension>::power;
+    // That cast to unsigned int is necessary because GV::dimension is an enum,
+    // which is not recognized by the power method as an integer type...
+    return power(order()+1, (unsigned int)GV::dimension);
   }
 
 protected:
   GridView gridView_;
+
+  unsigned int order() const
+  {
+    return (useDynamicOrder) ? order_ : k;
+  }
+
+  // Run-time order, only valid if k<0
+  const unsigned int order_;
+
+  //! Number of degrees of freedom assigned to a simplex (without the ones assigned to its faces!)
+  size_type dofsPerSimplex(std::size_t simplexDim) const
+  {
+    return useDynamicOrder ? dofsPerSimplex_[simplexDim] : computeDofsPerSimplex(simplexDim);
+  }
+
+  //! Number of degrees of freedom assigned to a cube (without the ones assigned to its faces!)
+  size_type dofsPerCube(std::size_t cubeDim) const
+  {
+    return useDynamicOrder ? dofsPerCube_[cubeDim] : computeDofsPerCube(cubeDim);
+  }
+
+  size_type dofsPerPrism() const
+  {
+    return useDynamicOrder ? dofsPerPrism_ : computeDofsPerPrism();
+  }
+
+  size_type dofsPerPyramid() const
+  {
+    return useDynamicOrder ? dofsPerPyramid_ : computeDofsPerPyramid();
+  }
+
+  //! Number of degrees of freedom assigned to a simplex (without the ones assigned to its faces!)
+  size_type computeDofsPerSimplex(std::size_t simplexDim) const
+  {
+    return order() == 0 ? (dim == simplexDim ? 1 : 0) : Dune::binomial(std::size_t(order()-1),simplexDim);
+  }
+
+  //! Number of degrees of freedom assigned to a cube (without the ones assigned to its faces!)
+  size_type computeDofsPerCube(std::size_t cubeDim) const
+  {
+    return order() == 0 ? (dim == cubeDim ? 1 : 0) : Dune::power(order()-1, cubeDim);
+  }
+
+  size_type computeDofsPerPrism() const
+  {
+    return order() == 0 ? (dim == 3 ? 1 : 0) : (order()-1)*(order()-1)*(order()-2)/2;
+  }
+
+  size_type computeDofsPerPyramid() const
+  {
+    return order() == 0 ? (dim == 3 ? 1 : 0) : (order()-2)*(order()-1)*(2*order()-3)/6;
+  }
+
+  // When the order is given at run-time, the following numbers are pre-computed:
+  std::array<size_type,dim+1> dofsPerSimplex_;
+  std::array<size_type,dim+1> dofsPerCube_;
+  size_type dofsPerPrism_;
+  size_type dofsPerPyramid_;
 
   size_type vertexOffset_;
   size_type edgeOffset_;
@@ -231,10 +292,32 @@ template<typename GV, int k>
 class LagrangeNode :
   public LeafBasisNode
 {
-  static const int dim = GV::dimension;
-  static const int maxSize = StaticPower<(k+1),GV::dimension>::power;
+  // Stores LocalFiniteElement implementations with run-time order as a function of GeometryType
+  template<typename D, typename R, int dim>
+  class LagrangeRunTimeLFECache
+  {
+  public:
+    using FiniteElementType = LagrangeLocalFiniteElement<EquidistantPointSet,dim,D,R>;
 
-  using FiniteElementCache = typename Dune::PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k>;
+    const FiniteElementType& get(GeometryType type)
+    {
+      auto i = data_.find(type);
+      if (i==data_.end())
+        i = data_.emplace(type,FiniteElementType(type,order_)).first;
+      return (*i).second;
+    }
+
+    std::map<GeometryType, FiniteElementType> data_;
+    unsigned int order_;
+  };
+
+  static const int dim = GV::dimension;
+  static const bool useDynamicOrder = (k<0);
+
+  using FiniteElementCache = typename std::conditional<(useDynamicOrder),
+                                                       LagrangeRunTimeLFECache<typename GV::ctype, double, dim>,
+                                                       PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k>
+                                                      >::type;
 
 public:
 
@@ -242,10 +325,26 @@ public:
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElement = typename FiniteElementCache::FiniteElementType;
 
+  //! Constructor without order (uses the compile-time value)
   LagrangeNode() :
     finiteElement_(nullptr),
     element_(nullptr)
   {}
+
+  //! Constructor with a run-time order
+  LagrangeNode(unsigned int order) :
+    order_(order),
+    finiteElement_(nullptr),
+    element_(nullptr)
+  {
+    // Only the cache for the run-time-order case (i.e., k<0), has the 'order_' member
+    Hybrid::ifElse(Std::bool_constant<(useDynamicOrder)>(),
+      [&](auto id) {
+        id(cache_).order_ = order;
+      },
+      [&](auto id) {}
+      );
+  }
 
   //! Return current element, throw if unbound
   const Element& element() const
@@ -272,6 +371,14 @@ public:
 
 protected:
 
+  unsigned int order() const
+  {
+    return (useDynamicOrder) ? order_ : k;
+  }
+
+  // Run-time order, only valid if k<0
+  unsigned int order_;
+
   FiniteElementCache cache_;
   const FiniteElement* finiteElement_;
   const Element* element_;
@@ -283,6 +390,7 @@ template<typename GV, int k, class MI>
 class LagrangeNodeIndexSet
 {
   enum {dim = GV::dimension};
+  static const bool useDynamicOrder = (k<0);
 
 public:
 
@@ -354,7 +462,7 @@ public:
             if (dim==1)  // element dof -- any local numbering is fine
               {
                 *it = {{ preBasis_->edgeOffset_
-                         + preBasis_->dofsPerEdge * ((size_type)gridIndexSet.subIndex(element,0,0))
+                         + preBasis_->dofsPerCube(1) * ((size_type)gridIndexSet.subIndex(element,0,0))
                          + localKey.index() }};
                 continue;
               }
@@ -370,10 +478,10 @@ public:
                 bool flip = (v0 > v1);
                 *it = {{ (flip)
                          ? preBasis_->edgeOffset_
-                         + preBasis_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
-                         + (preBasis_->dofsPerEdge-1)-localKey.index()
+                         + preBasis_->dofsPerCube(1)*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
+                         + (preBasis_->dofsPerCube(1)-1)-localKey.index()
                          : preBasis_->edgeOffset_
-                         + preBasis_->dofsPerEdge*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
+                         + preBasis_->dofsPerCube(1)*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
                          + localKey.index() }};
                 continue;
               }
@@ -385,14 +493,12 @@ public:
               {
                 if (element.type().isTriangle())
                   {
-                    const int interiorLagrangeNodesPerTriangle = (k-1)*(k-2)/2;
-                    *it = {{ preBasis_->triangleOffset_ + interiorLagrangeNodesPerTriangle*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->triangleOffset_ + preBasis_->dofsPerSimplex(2)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else if (element.type().isQuadrilateral())
                   {
-                    const int interiorLagrangeNodesPerQuadrilateral = (k-1)*(k-1);
-                    *it = {{ preBasis_->quadrilateralOffset_ + interiorLagrangeNodesPerQuadrilateral*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->quadrilateralOffset_ + preBasis_->dofsPerCube(2)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else
@@ -402,10 +508,10 @@ public:
                 const auto refElement
                   = Dune::referenceElement<double,dim>(element.type());
 
-                if (k>3)
+                if (order()>3)
                   DUNE_THROW(Dune::NotImplemented, "LagrangeNodalBasis for 3D grids is only implemented if k<=3");
 
-                if (k==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
+                if (order()==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
                   DUNE_THROW(Dune::NotImplemented, "LagrangeNodalBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
 
                 *it = {{ preBasis_->triangleOffset_ + ((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())) }};
@@ -419,22 +525,22 @@ public:
               {
                 if (element.type().isTetrahedron())
                   {
-                    *it = {{ preBasis_->tetrahedronOffset_ + PreBasis::dofsPerTetrahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->tetrahedronOffset_ + preBasis_->dofsPerSimplex(3)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else if (element.type().isHexahedron())
                   {
-                    *it = {{ preBasis_->hexahedronOffset_ + PreBasis::dofsPerHexahedron*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->hexahedronOffset_ + preBasis_->dofsPerCube(3)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else if (element.type().isPrism())
                   {
-                    *it = {{ preBasis_->prismOffset_ + PreBasis::dofsPerPrism*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->prismOffset_ + preBasis_->dofsPerPrism()*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else if (element.type().isPyramid())
                   {
-                    *it = {{ preBasis_->pyramidOffset_ + PreBasis::dofsPerPyramid*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                    *it = {{ preBasis_->pyramidOffset_ + preBasis_->dofsPerPyramid()*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
                     continue;
                   }
                 else
@@ -448,6 +554,12 @@ public:
   }
 
 protected:
+
+  auto order() const
+  {
+    return (useDynamicOrder) ? preBasis_->order() : k;
+  }
+
   const PreBasis* preBasis_;
 
   const Node* node_;
@@ -459,18 +571,32 @@ namespace BasisFactory {
 
 namespace Imp {
 
-template<std::size_t k>
+template<int k>
 class LagrangePreBasisFactory
 {
+  static const bool useDynamicOrder = (k<0);
 public:
   static const std::size_t requiredMultiIndexSize = 1;
+
+  // \brief Constructor for factory with compile-time order
+  LagrangePreBasisFactory()
+  {}
+
+  // \brief Constructor for factory with run-time order (template argument k is disregarded)
+  LagrangePreBasisFactory(unsigned int order)
+  : order_(order)
+  {}
 
   template<class MultiIndex, class GridView>
   auto makePreBasis(const GridView& gridView) const
   {
-    return LagrangePreBasis<GridView, k, MultiIndex>(gridView);
+    return (useDynamicOrder)
+      ? LagrangePreBasis<GridView, k, MultiIndex>(gridView, order_)
+      : LagrangePreBasis<GridView, k, MultiIndex>(gridView);
   }
 
+private:
+  unsigned int order_;
 };
 
 } // end namespace BasisFactory::Imp
@@ -482,12 +608,22 @@ public:
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
- * \tparam k   The polynomial order of ansatz functions
+ * \tparam k   The polynomial order of the ansatz functions; -1 means 'order determined at run-time'
  */
 template<std::size_t k>
 auto lagrange()
 {
   return Imp::LagrangePreBasisFactory<k>();
+}
+
+/**
+ * \brief Create a pre-basis factory that can create a  Lagrange pre-basis with a run-time order
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ */
+auto lagrange(int order)
+{
+  return Imp::LagrangePreBasisFactory<-1>(order);
 }
 
 } // end namespace BasisFactory
@@ -506,10 +642,17 @@ auto lagrange()
  * All arguments passed to the constructor will be forwarded to the constructor
  * of LagrangePreBasis.
  *
+ * \warning The implementation of the basis with run-time order order uses the
+ *   LagrangeFiniteElement implementation of dune-localfunctions, which is known
+ *   to violate strict-aliasing rules
+ *   (see https://gitlab.dune-project.org/core/dune-localfunctions/issues/14)
+ *   Keep this in mind if ever you experience difficult-to-explain crashes
+ *   or wrong results.
+ *
  * \tparam GV The GridView that the space is defined on
- * \tparam k The order of the basis
+ * \tparam k The order of the basis; -1 means 'order determined at run-time'
  */
-template<typename GV, int k>
+template<typename GV, int k=-1>
 using LagrangeBasis = DefaultGlobalBasis<LagrangePreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
 
 

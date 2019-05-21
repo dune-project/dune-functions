@@ -5,6 +5,17 @@ correponding version of the Dune core modules.
 
 ## Master (will become release 2.7)
 
+- The `LagrangeBasis` class can now be used with a run-time polynomial order.
+  For this, the template parameter setting the order now has a default value of -1.
+  If this default value is used, the class accepts an integer constructor
+  argument with a run-time order.  As the decision whether to use a compile-time
+  or run-time order is taken at compile-time there should be no efficiency
+  decrease for the compile-time-order case.
+  (Note: The implementation currently uses the `LagrangeFiniteElement`
+  implementation of `dune-localfunctions`, which violates strict-aliasing rules.
+  This may lead to surprising crashes and miscalculations when compiling
+  with optimization.)
+
 ## Release 2.6
 
 - The functionality provided by `LocalIndexSet`, namely the `indices`
