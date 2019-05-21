@@ -66,7 +66,7 @@ public:
 
   //! Export individual child pre-bases by index
   template<std::size_t i>
-  using SubPreBasis = std::tuple_element_t<0, SubPreBases>;
+  using SubPreBasis = std::tuple_element_t<i, SubPreBases>;
 
   //! The grid view that the FE basis is defined on
   using GridView = typename std::tuple_element_t<0, SubPreBases>::GridView;
@@ -272,14 +272,14 @@ public:
 
   //! Const access to the stored prebasis of the factor in the power space
   template<std::size_t i>
-  const auto& subPreBasis(Dune::index_constant<i> = {}) const
+  const SubPreBasis<i>& subPreBasis(Dune::index_constant<i> = {}) const
   {
     return std::get<i>(subPreBases_);
   }
 
   //! Mutable access to the stored prebasis of the factor in the power space
   template<std::size_t i>
-  auto& subPreBasis(Dune::index_constant<i> = {})
+  SubPreBasis<i>& subPreBasis(Dune::index_constant<i> = {})
   {
     return std::get<i>(subPreBases_);
   }
