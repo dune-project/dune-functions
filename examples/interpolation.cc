@@ -37,7 +37,6 @@ int main (int argc, char *argv[])
   const int dim = 2;
   FieldVector<double,dim> L(1.0);
   std::array<int,dim> N = {{1,1}};
-  std::bitset<dim> periodic(false);
   YaspGrid<2> grid(L,N);
   using GridView = YaspGrid<2>::LeafGridView;
   GridView gridView = grid.leafGridView();
