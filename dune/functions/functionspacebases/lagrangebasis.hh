@@ -8,6 +8,7 @@
 #include <dune/localfunctions/lagrange.hh>
 #include <dune/localfunctions/lagrange/equidistantpoints.hh>
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
+#include <dune/localfunctions/lagrange/lagrangelfecache.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -317,6 +318,7 @@ class LagrangeNode :
   using FiniteElementCache = typename std::conditional<(useDynamicOrder),
                                                        LagrangeRunTimeLFECache<typename GV::ctype, double, dim>,
                                                        PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k>
+//                                                       LagrangeLocalFiniteElementCache<typename GV::ctype, double, dim, k>
                                                       >::type;
 
 public:
@@ -579,7 +581,7 @@ public:
   static const std::size_t requiredMultiIndexSize = 1;
 
   // \brief Constructor for factory with compile-time order
-  LagrangePreBasisFactory()
+  LagrangePreBasisFactory() : order_(0)
   {}
 
   // \brief Constructor for factory with run-time order (template argument k is disregarded)

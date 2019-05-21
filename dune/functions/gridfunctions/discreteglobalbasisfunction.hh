@@ -98,8 +98,25 @@ public:
     template<class Node>
     using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
 
+//    template<class Node>
+//    static auto makeNodeValue(const Node& node)
+//    {
+//      return Dune::ReservedVector<LocalBasisRange<Node>, Node::maxSize()>();
+//    }
+
+//    static auto makeShapeFunctionValueContainer(const typename LocalView::Tree& tree)
+//    {
+//      auto nodeToVectorOfRange = [](const auto& node){
+//        return Dune::ReservedVector<LocalBasisRange<Node>, Node::maxSize()>();
+//      };
+
+//      return Dune::TypeTree::makeTreeContainer(tree, [](const auto& node) {});
+//      return Dune::ReservedVector<LocalBasisRange<Node>, Node::maxSize()>();
+//    }
+
     template<class Node>
     using NodeData = typename std::vector<LocalBasisRange<Node>>;
+//    using NodeData = typename Dune::ReservedVector<LocalBasisRange<Node>, Node::maxSize()>;
 
     using ShapeFunctionValueContainer = TreeData<SubTree, NodeData, true>;
 

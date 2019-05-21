@@ -211,39 +211,31 @@ private:
     });
   }
 
-  struct Lambda_size_flat_sizeInSubtree
-  {
-    template<class I, class PB>
-    size_type operator()(const I&, const PB& subPreBases, const SizePrefix& prefix, size_type& shiftedFirst, size_type& r)
-    {
-      using SubPreBasis = typename std::tuple_element<I::value, PB>::type;
-      const SubPreBasis& subPreBasis = std::get<I::value>(subPreBases);
-      if (shiftedFirst < subPreBasis.size())
-      {
-        typename SubPreBasis::SizePrefix subPrefix;
-        subPrefix.push_back(shiftedFirst);
-        for(std::size_t i=1; i<prefix.size(); ++i)
-          subPrefix.push_back(prefix[i]);
-        r = subPreBasis.size(subPrefix);
-        return true;
-      }
-      shiftedFirst -= subPreBasis.size();
-      return false;
-    }
-  };
-
   size_type size(const SizePrefix& prefix, BasisFactory::FlatLexicographic) const
   {
-    size_type r = 0;
+    size_type result = 0;
     if (prefix.size() == 0)
       Hybrid::forEach(ChildIndices(), [&](auto i) {
-        r += Hybrid::elementAt(subPreBases_, i).size();
+        result += subPreBasis(i).size();
       });
     else {
-      size_type shiftedFirst = prefix[0];
-      staticFindInRange<0, sizeof...(SPB)>(Lambda_size_flat_sizeInSubtree(), subPreBases_, prefix, shiftedFirst, r);
+      size_type shiftedFirstDigit = prefix[0];
+      staticFindInRange<0, children>([&](auto i) {
+          auto firstDigitSize = subPreBasis(i).size();
+          if (shiftedFirstDigit < firstDigitSize)
+          {
+            typename SubPreBasis<i>::SizePrefix subPrefix;
+            subPrefix.push_back(shiftedFirstDigit);
+            for(std::size_t i=1; i<prefix.size(); ++i)
+              subPrefix.push_back(prefix[i]);
+            result = subPreBasis(i).size(subPrefix);
+            return true;
+          }
+          shiftedFirstDigit -= firstDigitSize;
+          return false;
+        });
     }
-    return r;
+    return result;
   }
 
 public:
