@@ -409,7 +409,7 @@ int main (int argc, char *argv[])
   };
 
   // Mark lower boundary.
-  auto lowerBoundaryIndicator = [&l] (Domain x)
+  auto lowerBoundaryIndicator = [] (Domain x)
   {
 #ifdef DIM2
     double isBoundary = x[dim-1] < 1e-8 ? x[0]: 0.0;

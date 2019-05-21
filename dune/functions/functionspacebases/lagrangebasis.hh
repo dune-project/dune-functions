@@ -579,7 +579,7 @@ public:
   static const std::size_t requiredMultiIndexSize = 1;
 
   // \brief Constructor for factory with compile-time order
-  LagrangePreBasisFactory()
+  LagrangePreBasisFactory() : order_(0)
   {}
 
   // \brief Constructor for factory with run-time order (template argument k is disregarded)
