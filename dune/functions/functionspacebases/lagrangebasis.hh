@@ -29,13 +29,13 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k>
+template<typename GV, int k, typename R=double>
 class LagrangeNode;
 
-template<typename GV, int k, class MI>
+template<typename GV, int k, class MI, typename R=double>
 class LagrangeNodeIndexSet;
 
-template<typename GV, int k, class MI>
+template<typename GV, int k, class MI, typename R=double>
 class LagrangePreBasis;
 
 
@@ -48,13 +48,14 @@ class LagrangePreBasis;
  * \tparam GV  The grid view that the FE basis is defined on
  * \tparam k   The polynomial order of ansatz functions; -1 means 'order determined at run-time'
  * \tparam MI  Type to be used for multi-indices
+ * \tparam R   Range type used for shape function values
  *
  * \note This only works for certain grids.  The following restrictions hold
  * - If k is no larger than 2, then the grids can have any dimension
  * - If k is larger than 3 then the grid must be two-dimensional
  * - If k is 3, then the grid can be 3d *if* it is a simplex grid
  */
-template<typename GV, int k, class MI>
+template<typename GV, int k, class MI, typename R>
 class LagrangePreBasis
 {
   static const int dim = GV::dimension;
@@ -70,16 +71,16 @@ public:
 
 private:
 
-  template<typename, int, class>
+  template<typename, int, class, typename>
   friend class LagrangeNodeIndexSet;
 
 public:
 
   //! Template mapping root tree path to type of created tree node
-  using Node = LagrangeNode<GV, k>;
+  using Node = LagrangeNode<GV, k, R>;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = LagrangeNodeIndexSet<GV, k, MI>;
+  using IndexSet = LagrangeNodeIndexSet<GV, k, MI, R>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -288,16 +289,16 @@ protected:
 
 
 
-template<typename GV, int k>
+template<typename GV, int k, typename R>
 class LagrangeNode :
   public LeafBasisNode
 {
   // Stores LocalFiniteElement implementations with run-time order as a function of GeometryType
-  template<typename D, typename R, int dim>
+  template<typename Domain, typename Range, int dim>
   class LagrangeRunTimeLFECache
   {
   public:
-    using FiniteElementType = LagrangeLocalFiniteElement<EquidistantPointSet,dim,D,R>;
+    using FiniteElementType = LagrangeLocalFiniteElement<EquidistantPointSet,dim,Domain,Range>;
 
     const FiniteElementType& get(GeometryType type)
     {
@@ -315,8 +316,8 @@ class LagrangeNode :
   static const bool useDynamicOrder = (k<0);
 
   using FiniteElementCache = typename std::conditional<(useDynamicOrder),
-                                                       LagrangeRunTimeLFECache<typename GV::ctype, double, dim>,
-                                                       PQkLocalFiniteElementCache<typename GV::ctype, double, dim, k>
+                                                       LagrangeRunTimeLFECache<typename GV::ctype, R, dim>,
+                                                       PQkLocalFiniteElementCache<typename GV::ctype, R, dim, k>
                                                       >::type;
 
 public:
@@ -386,7 +387,7 @@ protected:
 
 
 
-template<typename GV, int k, class MI>
+template<typename GV, int k, class MI, typename R>
 class LagrangeNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -399,9 +400,9 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using PreBasis = LagrangePreBasis<GV, k, MI>;
+  using PreBasis = LagrangePreBasis<GV, k, MI, R>;
 
-  using Node = LagrangeNode<GV, k>;
+  using Node = LagrangeNode<GV, k, R>;
 
   LagrangeNodeIndexSet(const PreBasis& preBasis) :
     preBasis_(&preBasis),
@@ -571,7 +572,7 @@ namespace BasisFactory {
 
 namespace Imp {
 
-template<int k>
+template<int k, typename R=double>
 class LagrangePreBasisFactory
 {
   static const bool useDynamicOrder = (k<0);
@@ -591,8 +592,8 @@ public:
   auto makePreBasis(const GridView& gridView) const
   {
     return (useDynamicOrder)
-      ? LagrangePreBasis<GridView, k, MultiIndex>(gridView, order_)
-      : LagrangePreBasis<GridView, k, MultiIndex>(gridView);
+      ? LagrangePreBasis<GridView, k, MultiIndex, R>(gridView, order_)
+      : LagrangePreBasis<GridView, k, MultiIndex, R>(gridView);
   }
 
 private:
@@ -609,21 +610,25 @@ private:
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam k   The polynomial order of the ansatz functions; -1 means 'order determined at run-time'
+ * \tparam R   The range type of the local basis
  */
-template<std::size_t k>
+template<std::size_t k, typename R=double>
 auto lagrange()
 {
-  return Imp::LagrangePreBasisFactory<k>();
+  return Imp::LagrangePreBasisFactory<k,R>();
 }
 
 /**
  * \brief Create a pre-basis factory that can create a  Lagrange pre-basis with a run-time order
  *
  * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam R   The range type of the local basis
  */
+template<typename R=double>
 auto lagrange(int order)
 {
-  return Imp::LagrangePreBasisFactory<-1>(order);
+  return Imp::LagrangePreBasisFactory<-1,R>(order);
 }
 
 } // end namespace BasisFactory
@@ -651,9 +656,10 @@ auto lagrange(int order)
  *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis; -1 means 'order determined at run-time'
+ * \tparam R The range type of the local basis
  */
-template<typename GV, int k=-1>
-using LagrangeBasis = DefaultGlobalBasis<LagrangePreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
+template<typename GV, int k=-1, typename R=double>
+using LagrangeBasis = DefaultGlobalBasis<LagrangePreBasis<GV, k, FlatMultiIndex<std::size_t>, R> >;
 
 
 

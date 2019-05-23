@@ -81,6 +81,16 @@ int main (int argc, char* argv[])
       test.subTest(checkBasis(basis));
     }
 
+    {
+      auto basis = makeBasis(gridView, lagrange<3,float>());
+      test.subTest(checkBasis(basis));
+    }
+
+    {
+      auto basis = makeBasis(gridView, lagrange<float>(2));
+      test.subTest(checkBasis(basis));
+    }
+
   }
 
 
