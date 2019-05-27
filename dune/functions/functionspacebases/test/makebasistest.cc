@@ -51,6 +51,11 @@ int main (int argc, char* argv[])
         blockedInterleaved())
       );
 
+  {
+    DUNE_UNUSED auto& firstLagrangeFactor = basis.preBasis().subPreBasis().subPreBasis().subPreBasis(Dune::Indices::_0);
+    DUNE_UNUSED auto& secondLagrangeFactor = basis.preBasis().subPreBasis().subPreBasis().subPreBasis<1>();
+  }
+
   using Vector = std::vector<Dune::FieldVector<double,N>>;
 
   Vector x;
