@@ -138,7 +138,7 @@ public:
   void initializeIndices()
   {
     Hybrid::forEach(ChildIndices(), [&](auto i) {
-      subPreBasis(i).initializeIndices();
+      this->subPreBasis(i).initializeIndices();
     });
   }
 
@@ -163,7 +163,7 @@ public:
   {
     auto node = Node{};
     Hybrid::forEach(ChildIndices(), [&](auto i) {
-      node.setChild(subPreBasis(i).makeNode(), i);
+      node.setChild(this->subPreBasis(i).makeNode(), i);
     });
     return node;
   }
@@ -178,7 +178,7 @@ public:
   {
     return IndexSet{*this,
       unpackIntegerSequence([&](auto... i) {
-        return std::make_tuple(subPreBasis(i).makeIndexSet()...);
+        return std::make_tuple(this->subPreBasis(i).makeIndexSet()...);
       }, ChildIndices())};
   }
 
@@ -205,7 +205,7 @@ private:
       typename SubPreBasis<i>::SizePrefix subPrefix;
       for(std::size_t i=1; i<prefix.size(); ++i)
         subPrefix.push_back(prefix[i]);
-      return subPreBasis(i).size(subPrefix);
+      return this->subPreBasis(i).size(subPrefix);
     }, []() {
       return size_type(0);
     });
@@ -216,19 +216,19 @@ private:
     size_type result = 0;
     if (prefix.size() == 0)
       Hybrid::forEach(ChildIndices(), [&](auto i) {
-        result += subPreBasis(i).size();
+        result += this->subPreBasis(i).size();
       });
     else {
       size_type shiftedFirstDigit = prefix[0];
       staticFindInRange<0, children>([&](auto i) {
-          auto firstDigitSize = subPreBasis(i).size();
+          auto firstDigitSize = this->subPreBasis(i).size();
           if (shiftedFirstDigit < firstDigitSize)
           {
             typename SubPreBasis<i>::SizePrefix subPrefix;
             subPrefix.push_back(shiftedFirstDigit);
             for(std::size_t i=1; i<prefix.size(); ++i)
               subPrefix.push_back(prefix[i]);
-            result = subPreBasis(i).size(subPrefix);
+            result = this->subPreBasis(i).size(subPrefix);
             return true;
           }
           shiftedFirstDigit -= firstDigitSize;
