@@ -621,7 +621,7 @@ auto lagrange()
  *
  * \ingroup FunctionSpaceBasesImplementations
  */
-auto lagrange(int order)
+inline auto lagrange(int order)
 {
   return Imp::LagrangePreBasisFactory<-1>(order);
 }
