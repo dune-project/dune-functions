@@ -152,7 +152,7 @@ public:
   void update(const GridView& gv)
   {
     Hybrid::forEach(ChildIndices(), [&](auto i) {
-      subPreBasis(i).update(gv);
+      this->subPreBasis(i).update(gv);
     });
   }
 
@@ -246,7 +246,7 @@ public:
     size_type r=0;
     // Accumulate dimension() for all subprebases
     Hybrid::forEach(ChildIndices(), [&](auto i) {
-      r += Hybrid::elementAt(subPreBases_, i).dimension();
+      r += this->subPreBasis(i).dimension();
     });
     return r;
   }
@@ -257,7 +257,7 @@ public:
     size_type r=0;
     // Accumulate maxNodeSize() for all subprebases
     Hybrid::forEach(ChildIndices(), [&](auto i) {
-      r += Hybrid::elementAt(subPreBases_, i).maxNodeSize();
+      r += this->subPreBasis(i).maxNodeSize();
     });
     return r;
   }
