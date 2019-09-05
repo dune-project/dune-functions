@@ -37,7 +37,8 @@ int main (int argc, char *argv[]) try
 
   using namespace Functions::BasisFactory;
 
-  auto basis DUNE_UNUSED = makeBasis(
+  // use default index-merging strategy
+  auto basis1 DUNE_UNUSED = makeBasis(
     gridView,
     composite(
       lagrange<1>(),
@@ -45,6 +46,18 @@ int main (int argc, char *argv[]) try
       lagrange<1>()
     ));
 
+  // use flat index-merging strategy
+  auto basis2 DUNE_UNUSED = makeBasis(
+    gridView,
+    composite(
+      lagrange<1>(),
+      lagrange<1>(),
+      lagrange<1>(),
+      flatLexicographic()
+    ));
+
+  // convert basis2 to type of basis1
+  auto basis3 = decltype(basis1)(basis2);
 }
 // Error handling
 catch (Exception& e)

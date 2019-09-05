@@ -59,6 +59,9 @@ class CompositeNodeIndexSet;
 template<class MI, class IMS, class... SPB>
 class CompositePreBasis
 {
+  template<class, class, class...>
+  friend class CompositePreBasis;
+
 public:
 
   //! Tuple of child pre-bases
@@ -133,6 +136,20 @@ public:
       static_assert(models<Concept::PreBasis<GridView>, std::decay_t<decltype(subPreBasis)>>(), "Subprebases passed to CompositePreBasis does not model the PreBasis concept.");
     });
   }
+
+  //! Converting copy-constructor.
+  template<class MI_, class IMS_, class... SPB_,
+    enableIfConstructible<std::tuple<SPB...>, std::tuple<SPB_...>> = 0>
+  CompositePreBasis(const CompositePreBasis<MI_, IMS_, SPB_...>& that) :
+    subPreBases_(that.subPreBases_)
+  {}
+
+  //! Converting move-constructor.
+  template<class MI_, class IMS_, class... SPB_,
+    enableIfConstructible<std::tuple<SPB...>, std::tuple<SPB_...>> = 0>
+  CompositePreBasis(CompositePreBasis<MI_, IMS_, SPB_...>&& that) :
+    subPreBases_(std::move(that.subPreBases_))
+  {}
 
   //! Initialize the global indices
   void initializeIndices()

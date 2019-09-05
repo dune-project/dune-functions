@@ -45,6 +45,9 @@ namespace Functions {
 template<class PB>
 class DefaultGlobalBasis
 {
+  template <class>
+  friend class DefaultGlobalBasis;
+
 public:
 
   //! Pre-basis providing the implementation details
@@ -86,6 +89,23 @@ public:
     static_assert(models<Concept::PreBasis<GridView>, PreBasis>(), "Type passed to DefaultGlobalBasis does not model the PreBasis concept.");
     preBasis_.initializeIndices();
   }
+
+  //! Converting copy-constructor.
+  template<class PB_,
+    enableIfConstructible<PB, PB_> = 0>
+  DefaultGlobalBasis(const DefaultGlobalBasis<PB_>& that) :
+    preBasis_(that.preBasis_),
+    prefixPath_(that.prefixPath_)
+  {}
+
+  //! Converting move-constructor.
+  template<class PB_,
+    enableIfConstructible<PB, PB_> = 0>
+  DefaultGlobalBasis(DefaultGlobalBasis<PB_>&& that) :
+    preBasis_(std::move(that.preBasis_)),
+    prefixPath_(std::move(that.prefixPath_))
+  {}
+
 
   //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
