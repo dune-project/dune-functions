@@ -53,6 +53,9 @@ class PowerPreBasis
 {
   static const std::size_t children = C;
 
+  template<class, class, class, std::size_t>
+  friend class PowerPreBasis;
+
   template<class, class>
   friend class PowerNodeIndexSet;
 
@@ -105,6 +108,20 @@ public:
   {
     static_assert(models<Concept::PreBasis<GridView>, SubPreBasis>(), "Subprebasis passed to PowerPreBasis does not model the PreBasis concept.");
   }
+
+  //! Converting copy-constructor.
+  template<class MI_, class IMS_, class SPB_,
+    enableIfConstructible<SPB, SPB_> = 0>
+  PowerPreBasis(const PowerPreBasis<MI_, IMS_, SPB_, C>& that) :
+    subPreBasis_(that.subPreBasis_)
+  {}
+
+  //! Converting move-constructor.
+  template<class MI_, class IMS_, class SPB_,
+    enableIfConstructible<SPB, SPB_> = 0>
+  PowerPreBasis(PowerPreBasis<MI_, IMS_, SPB_, C>&& that) :
+    subPreBasis_(std::move(that.subPreBasis_))
+  {}
 
   //! Initialize the global indices
   void initializeIndices()

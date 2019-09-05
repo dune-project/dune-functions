@@ -71,6 +71,9 @@ public:
 private:
 
   template<typename, int, class>
+  friend class LagrangePreBasis;
+
+  template<typename, int, class>
   friend class LagrangeNodeIndexSet;
 
 public:
@@ -107,6 +110,20 @@ public:
     dofsPerPrism_ = computeDofsPerPrism();
     dofsPerPyramid_ = computeDofsPerPyramid();
   }
+
+  //! Converting copy-constructor.
+  template<class MI_>
+  LagrangePreBasis(const LagrangePreBasis<GV,k,MI_>& that) :
+    gridView_(that.gridView_),
+    order_(that.order_)
+  {}
+
+  //! Converting move-constructor.
+  template<class MI_>
+  LagrangePreBasis(LagrangePreBasis<GV,k,MI_>&& that) :
+    gridView_(that.gridView_),
+    order_(that.order_)
+  {}
 
   //! Initialize the global indices
   void initializeIndices()
