@@ -56,8 +56,8 @@ int main (int argc, char *argv[]) try
       flatLexicographic()
     ));
 
-  // convert basis2 to type of basis1
-  auto basis3 = decltype(basis1)(basis2);
+  // convert basis1 to type of basis2
+  auto basis3 = decltype(basis2)(basis1);
 }
 // Error handling
 catch (Exception& e)
