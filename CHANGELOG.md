@@ -5,6 +5,12 @@ correponding version of the Dune core modules.
 
 ## Master (will become release 2.7)
 
+- The `LagrangeBasis` is extended by a template parameter to set the range type of
+  the underlying LocalBasis. This parameter is also added to the basis factory.
+  One can write `lagrange<k, float>()` to create a lagrange basis with compile-time
+  order `k` and range type `float`. The range type defaults to `double` if
+  nothing is given. The run-time order lagrange functions can be created by
+  `lagrange<float>(k)`, correspondingly.
 - The `LagrangeBasis` class can now be used with a run-time polynomial order.
   For this, the template parameter setting the order now has a default value of -1.
   If this default value is used, the class accepts an integer constructor
