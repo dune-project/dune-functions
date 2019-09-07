@@ -11,7 +11,6 @@
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 
 
 namespace Dune {
@@ -32,10 +31,10 @@ namespace Functions {
 template<typename GV>
 class RannacherTurekNode;
 
-template<typename GV, class MI>
+template<typename GV>
 class RannacherTurekNodeIndexSet;
 
-template<typename GV, class MI>
+template<typename GV>
 class RannacherTurekPreBasis;
 
 /**
@@ -49,9 +48,8 @@ class RannacherTurekPreBasis;
  *  element. Numerical Methods for Partial Differential Equations, 8:97–111, 1992.
  *
  * \tparam GV  The grid view that the FE basis is defined on
- * \tparam MI  Type to be used for multi-indices
  */
-template<typename GV, class MI>
+template<typename GV>
 class RannacherTurekPreBasis
 {
   static const int dim = GV::dimension;
@@ -68,13 +66,7 @@ public:
   using Node = RannacherTurekNode<GV>;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = RannacherTurekNodeIndexSet<GV, MI>;
-
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = MI;
-
-  //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, 1>;
+  using IndexSet = RannacherTurekNodeIndexSet<GV>;
 
   //! Constructor for a given grid view object
   RannacherTurekPreBasis(const GridView& gv) :
@@ -123,6 +115,7 @@ public:
   }
 
   //! Return number of possible values for next position in multi index
+  template <class SizePrefix>
   size_type size(const SizePrefix prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
@@ -200,7 +193,7 @@ protected:
 
 
 
-template<typename GV, class MI>
+template<typename GV>
 class RannacherTurekNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -209,10 +202,7 @@ public:
 
   using size_type = std::size_t;
 
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = RannacherTurekPreBasis<GV, MI>;
+  using PreBasis = RannacherTurekPreBasis<GV>;
 
   using Node = RannacherTurekNode<GV>;
 
@@ -275,12 +265,10 @@ template<class Dummy=void>
 class RannacherTurekPreBasisFactory
 {
 public:
-  static const std::size_t requiredMultiIndexSize = 1;
-
-  template<class MultiIndex, class GridView>
+  template<class GridView>
   auto makePreBasis(const GridView& gridView) const
   {
-    return RannacherTurekPreBasis<GridView, MultiIndex>(gridView);
+    return RannacherTurekPreBasis<GridView>(gridView);
   }
 
 };
@@ -317,7 +305,7 @@ auto rannacherTurek()
  * \tparam GV The GridView that the space is defined on
  */
 template<typename GV>
-using RannacherTurekBasis = DefaultGlobalBasis<RannacherTurekPreBasis<GV, FlatMultiIndex<std::size_t> > >;
+using RannacherTurekBasis = DefaultGlobalBasis<RannacherTurekPreBasis<GV> >;
 
 } // end namespace Functions
 } // end namespace Dune

@@ -10,7 +10,6 @@
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 
@@ -32,10 +31,10 @@ namespace Functions {
 template<typename GV, int k, typename R=double>
 class LagrangeNode;
 
-template<typename GV, int k, class MI, typename R=double>
+template<typename GV, int k, typename R=double>
 class LagrangeNodeIndexSet;
 
-template<typename GV, int k, class MI, typename R=double>
+template<typename GV, int k, typename R=double>
 class LagrangePreBasis;
 
 
@@ -55,7 +54,7 @@ class LagrangePreBasis;
  * - If k is larger than 3 then the grid must be two-dimensional
  * - If k is 3, then the grid can be 3d *if* it is a simplex grid
  */
-template<typename GV, int k, class MI, typename R>
+template<typename GV, int k, typename R>
 class LagrangePreBasis
 {
   static const int dim = GV::dimension;
@@ -71,7 +70,7 @@ public:
 
 private:
 
-  template<typename, int, class, typename>
+  template<typename, int, typename>
   friend class LagrangeNodeIndexSet;
 
 public:
@@ -80,13 +79,7 @@ public:
   using Node = LagrangeNode<GV, k, R>;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = LagrangeNodeIndexSet<GV, k, MI, R>;
-
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = MI;
-
-  //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, 1>;
+  using IndexSet = LagrangeNodeIndexSet<GV, k, R>;
 
   //! Constructor for a given grid view object with compile-time order
   LagrangePreBasis(const GridView& gv)
@@ -195,6 +188,7 @@ public:
   }
 
   //! Return number of possible values for next position in multi index
+  template <class SizePrefix>
   size_type size(const SizePrefix prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
@@ -387,7 +381,7 @@ protected:
 
 
 
-template<typename GV, int k, class MI, typename R>
+template<typename GV, int k, typename R>
 class LagrangeNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -397,10 +391,7 @@ public:
 
   using size_type = std::size_t;
 
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = LagrangePreBasis<GV, k, MI, R>;
+  using PreBasis = LagrangePreBasis<GV, k, R>;
 
   using Node = LagrangeNode<GV, k, R>;
 
@@ -567,7 +558,6 @@ protected:
 };
 
 
-
 namespace BasisFactory {
 
 namespace Imp {
@@ -577,7 +567,6 @@ class LagrangePreBasisFactory
 {
   static const bool useDynamicOrder = (k<0);
 public:
-  static const std::size_t requiredMultiIndexSize = 1;
 
   // \brief Constructor for factory with compile-time order
   LagrangePreBasisFactory() : order_(0)
@@ -588,12 +577,12 @@ public:
   : order_(order)
   {}
 
-  template<class MultiIndex, class GridView>
+  template<class GridView>
   auto makePreBasis(const GridView& gridView) const
   {
     return (useDynamicOrder)
-      ? LagrangePreBasis<GridView, k, MultiIndex, R>(gridView, order_)
-      : LagrangePreBasis<GridView, k, MultiIndex, R>(gridView);
+      ? LagrangePreBasis<GridView, k, R>(gridView, order_)
+      : LagrangePreBasis<GridView, k, R>(gridView);
   }
 
 private:
@@ -659,7 +648,7 @@ auto lagrange(int order)
  * \tparam R The range type of the local basis
  */
 template<typename GV, int k=-1, typename R=double>
-using LagrangeBasis = DefaultGlobalBasis<LagrangePreBasis<GV, k, FlatMultiIndex<std::size_t>, R> >;
+using LagrangeBasis = DefaultGlobalBasis<LagrangePreBasis<GV, k, R> >;
 
 
 
