@@ -13,6 +13,7 @@
 
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+#include <dune/functions/functionspacebases/multiindex.hh>
 
 namespace Dune {
 namespace Functions {
@@ -37,7 +38,7 @@ class TaylorHoodVelocityTree;
 template<typename GV>
 class TaylorHoodBasisTree;
 
-template<typename GV, class MI, bool HI>
+template<typename GV, bool HI>
 class TaylorHoodNodeIndexSet;
 
 
@@ -48,7 +49,6 @@ class TaylorHoodNodeIndexSet;
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV The grid view that the FE basis is defined on
- * \tparam MI Type to be used for multi-indices
  * \tparam HI Flag to select hybrid indices
  *
  * \note This mainly serves as an example, since you can construct a pre-basis with
@@ -62,14 +62,14 @@ class TaylorHoodNodeIndexSet;
  * Where IMS is BlockedInterleaved if HI is set and
  * FlatInterleaved otherwise.
  */
-template<typename GV, class MI, bool HI=false>
+template<typename GV, bool HI=false>
 class TaylorHoodPreBasis
 {
   static const bool useHybridIndices = HI;
 
   static const int dim = GV::dimension;
 
-  template<class, class, bool>
+  template<class, bool>
   friend class TaylorHoodNodeIndexSet;
 
 public:
@@ -84,19 +84,12 @@ public:
   using Node = TaylorHoodBasisTree<GV>;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = TaylorHoodNodeIndexSet<GV, MI, HI>;
-
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = MI;
-
-  //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, 2>;
+  using IndexSet = TaylorHoodNodeIndexSet<GV, HI>;
 
 private:
 
-  using PQMultiIndex = std::array<size_type, 1>;
-  using PQ1PreBasis = LagrangePreBasis<GV,1,PQMultiIndex>;
-  using PQ2PreBasis = LagrangePreBasis<GV,2,PQMultiIndex>;
+  using PQ1PreBasis = LagrangePreBasis<GV,1>;
+  using PQ2PreBasis = LagrangePreBasis<GV,2>;
 
 public:
 
@@ -153,6 +146,7 @@ public:
   }
 
   //! Return number of possible values for next position in multi index
+  template <class SizePrefix>
   size_type size(const SizePrefix prefix) const
   {
     return sizeImp<useHybridIndices>(prefix);
@@ -160,7 +154,7 @@ public:
 
 private:
 
-  template<bool hi,
+  template<bool hi, class SizePrefix,
     typename std::enable_if<not hi,int>::type = 0>
   size_type sizeImp(const SizePrefix prefix) const
   {
@@ -178,7 +172,7 @@ private:
     assert(false);
   }
 
-  template<bool hi,
+  template<bool hi, class SizePrefix,
     typename std::enable_if<hi,int>::type = 0>
   size_type sizeImp(const SizePrefix prefix) const
   {
@@ -263,7 +257,7 @@ public:
 
 
 
-template<typename GV, class MI, bool HI>
+template<typename GV, bool HI>
 class TaylorHoodNodeIndexSet
 {
   static const bool useHybridIndices = HI;
@@ -274,10 +268,7 @@ public:
 
   using size_type = std::size_t;
 
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = TaylorHoodPreBasis<GV, MI, HI>;
+  using PreBasis = TaylorHoodPreBasis<GV, HI>;
 
   using Node = TaylorHoodBasisTree<GV>;
 
@@ -316,6 +307,7 @@ public:
     return indicesImp<useHybridIndices>(multiIndices);
   }
 
+  template <class MultiIndex>
   static const void multiIndexPushFront(MultiIndex& M, size_type M0)
   {
     M.resize(M.size()+1);
@@ -378,6 +370,15 @@ private:
   const Node* node_;
 };
 
+// forward declaration
+template <class PreBasis>
+struct RequiredMultiIndexSize;
+
+template<typename GV, bool HI>
+struct RequiredMultiIndexSize<TaylorHoodPreBasis<GV,HI>>
+{
+  static const std::size_t value = 2;
+};
 
 
 namespace BasisFactory {
@@ -387,12 +388,10 @@ namespace Imp {
 class TaylorHoodPreBasisFactory
 {
 public:
-  static const std::size_t requiredMultiIndexSize=2;
-
-  template<class MultiIndex, class GridView>
+  template<class GridView>
   auto makePreBasis(const GridView& gridView) const
   {
-    return TaylorHoodPreBasis<GridView, MultiIndex>(gridView);
+    return TaylorHoodPreBasis<GridView>(gridView);
   }
 
 };
@@ -438,7 +437,7 @@ auto taylorHood()
  * \endcode
  */
 template<typename GV>
-using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodPreBasis<GV, Dune::ReservedVector<std::size_t, 2>> >;
+using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodPreBasis<GV> >;
 
 
 
