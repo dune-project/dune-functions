@@ -10,7 +10,6 @@
 #include <dune/common/hybridutilities.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>
-#include <dune/functions/functionspacebases/multiindex.hh>
 
 
 
@@ -44,7 +43,7 @@ public:
   using Tree = typename GlobalBasis::PreBasis::Node;
 
   /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MultiIndexType_t<typename GlobalBasis::PreBasis>;
+  using MultiIndex = typename GlobalBasis::MultiIndex;
 
 private:
 

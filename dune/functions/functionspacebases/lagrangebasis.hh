@@ -46,7 +46,6 @@ class LagrangePreBasis;
  *
  * \tparam GV  The grid view that the FE basis is defined on
  * \tparam k   The polynomial order of ansatz functions; -1 means 'order determined at run-time'
- * \tparam MI  Type to be used for multi-indices
  *
  * \note This only works for certain grids.  The following restrictions hold
  * - If k is no larger than 2, then the grids can have any dimension

@@ -356,15 +356,6 @@ private:
     return next;
   }
 
-  template <class MultiIndex>
-  static void multiIndexPushFront(MultiIndex& M, size_type M0)
-  {
-    M.resize(M.size()+1);
-    for(std::size_t i=M.size()-1; i>0; --i)
-      M[i] = M[i-1];
-    M[0] = M0;
-  }
-
   template<typename It>
   It indices(It multiIndices, BasisFactory::BlockedLexicographic) const
   {
@@ -400,7 +391,7 @@ private:
     auto next = subNodeIndexSet_.indices(multiIndices);
     // Append 0 after last component of all indices for first child.
     for (std::size_t i = 0; i<subTreeSize; ++i)
-      multiIndices[i].push_back(0);
+      multiIndexPushBack(multiIndices[i], 0);
     for (std::size_t child = 1; child<children; ++child)
     {
       for (std::size_t i = 0; i<subTreeSize; ++i)
@@ -408,7 +399,7 @@ private:
         // Copy indices from first child for all other children and overwrite
         // zero in last component as appended above by child index.
         (*next) = multiIndices[i];
-        (*next).back() = child;
+        (*next).back() = child; // what is the correct index where to insert child
         ++next;
       }
     }
@@ -420,19 +411,25 @@ private:
   const Node* node_;
 };
 
-// forward declaration
-template <class PreBasis>
-struct RequiredMultiIndexSize;
+namespace Impl {
 
+// specialization of MultiIndexSize for PowerPreBasis
 template<class IMS, class SPB, std::size_t C>
-struct RequiredMultiIndexSize<PowerPreBasis<IMS,SPB,C>>
+struct MultiIndexSize<PowerPreBasis<IMS,SPB,C>>
 {
+private:
   static const bool isBlocked = std::is_same<IMS,BasisFactory::BlockedLexicographic>::value or
                                 std::is_same<IMS,BasisFactory::BlockedInterleaved>::value;
 
-  static const std::size_t maxChildIndexSize = RequiredMultiIndexSize<SPB>::value;
-  static const std::size_t value = isBlocked ? (maxChildIndexSize+1) : maxChildIndexSize;
+  static const std::size_t minChildIndexSize = MultiIndexSize<SPB>::min;
+  static const std::size_t maxChildIndexSize = MultiIndexSize<SPB>::max;
+
+public:
+  static const std::size_t min = isBlocked ? (minChildIndexSize+1) : minChildIndexSize;
+  static const std::size_t max = isBlocked ? (maxChildIndexSize+1) : maxChildIndexSize;
 };
+
+} // end namespace Impl
 
 
 namespace BasisFactory {

@@ -353,15 +353,6 @@ public:
     return multiIndices;
   }
 
-  template <class MultiIndex>
-  static void multiIndexPushFront(MultiIndex& M, size_type M0)
-  {
-    M.resize(M.size()+1);
-    for(std::size_t i=M.size()-1; i>0; --i)
-      M[i] = M[i-1];
-    M[0] = M0;
-  }
-
   template<typename It>
   It indices(It multiIndices, BasisFactory::BlockedLexicographic) const
   {
@@ -373,7 +364,7 @@ public:
       subNodeIndexSet.indices(multiIndices);
       // Insert child index before first component of all indices of current child.
       for (std::size_t i = 0; i<subTreeSize; ++i)
-        this->multiIndexPushFront(multiIndices[i], child);
+        multiIndexPushFront(multiIndices[i], child);
       // Increment buffer iterator by the number of indices processed for current child
       multiIndices += subTreeSize;
     });
@@ -387,31 +378,25 @@ private:
 };
 
 
-// forward declaration
-template <class PreBasis>
-struct RequiredMultiIndexSize;
+namespace Impl {
 
+// specialization of MultiIndexSize for CompositePreBasis
 template<class IMS, class... SPB>
-struct RequiredMultiIndexSize<CompositePreBasis<IMS,SPB...>>
+struct MultiIndexSize<CompositePreBasis<IMS,SPB...>>
 {
-  template<class ST0>
-  static constexpr std::size_t maxHelper(ST0&& i0)
-  {
-    return i0;
-  }
-
-  template<class ST0, class... ST>
-  static constexpr std::size_t maxHelper(ST0&& i0, ST&&... i)
-  {
-    return (i0 > maxHelper(i...)) ? i0 : maxHelper(i...);
-  }
-
+private:
   static const bool isBlocked = std::is_same<IMS,BasisFactory::BlockedLexicographic>::value or
                                 std::is_same<IMS,BasisFactory::BlockedInterleaved>::value;
 
-  static const std::size_t maxChildIndexSize = maxHelper(RequiredMultiIndexSize<SPB>::value...);
-  static const std::size_t value = isBlocked ? (maxChildIndexSize+1) : maxChildIndexSize;
+  static const std::size_t minChildIndexSize = std::min({MultiIndexSize<SPB>::min...});
+  static const std::size_t maxChildIndexSize = std::max({MultiIndexSize<SPB>::max...});
+
+public:
+  static const std::size_t min = isBlocked ? (minChildIndexSize+1) : minChildIndexSize;
+  static const std::size_t max = isBlocked ? (maxChildIndexSize+1) : maxChildIndexSize;
 };
+
+} // end namespace Impl
 
 
 namespace BasisFactory {
@@ -424,7 +409,8 @@ class CompositePreBasisFactory
   template<class GridView, class... ChildPreBasis>
   auto makePreBasisFromChildPreBases(const GridView&, ChildPreBasis&&... childPreBasis) const
   {
-    return CompositePreBasis<IndexMergingStrategy, std::decay_t<ChildPreBasis>...>(std::forward<ChildPreBasis>(childPreBasis)...);
+    using CPB = CompositePreBasis<IndexMergingStrategy, std::decay_t<ChildPreBasis>...>;
+    return CPB(std::forward<ChildPreBasis>(childPreBasis)...);
   }
 
 public:
