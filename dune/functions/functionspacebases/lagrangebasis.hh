@@ -46,7 +46,6 @@ class LagrangePreBasis;
  *
  * \tparam GV  The grid view that the FE basis is defined on
  * \tparam k   The polynomial order of ansatz functions; -1 means 'order determined at run-time'
- * \tparam MI  Type to be used for multi-indices
  * \tparam R   Range type used for shape function values
  *
  * \note This only works for certain grids.  The following restrictions hold

@@ -44,6 +44,8 @@ namespace Functions {
 template<class PB>
 class DefaultGlobalBasis
 {
+  using Self = DefaultGlobalBasis;
+
 public:
 
   //! Pre-basis providing the implementation details
@@ -62,7 +64,7 @@ public:
   using size_type = std::size_t;
 
   //! Type of the local view on the restriction of the basis to a single element
-  using LocalView = DefaultLocalView<DefaultGlobalBasis<PreBasis>>;
+  using LocalView = DefaultLocalView<DefaultGlobalBasis<PB>>;
 
   //! Type used for prefixes handed to the size() method
   using SizePrefix = SizePrefixType_t<PreBasis>;

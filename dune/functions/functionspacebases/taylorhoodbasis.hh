@@ -307,15 +307,6 @@ public:
     return indicesImp<useHybridIndices>(multiIndices);
   }
 
-  template <class MultiIndex>
-  static const void multiIndexPushFront(MultiIndex& M, size_type M0)
-  {
-    M.resize(M.size()+1);
-    for(std::size_t i=M.size()-1; i>0; --i)
-      M[i] = M[i-1];
-    M[0] = M0;
-  }
-
   template<bool hi, class It,
     typename std::enable_if<not hi,int>::type = 0>
   It indicesImp(It multiIndices) const
@@ -370,15 +361,17 @@ private:
   const Node* node_;
 };
 
-// forward declaration
-template <class PreBasis>
-struct RequiredMultiIndexSize;
+namespace Impl {
 
+// specialization of MultiIndexSize for TaylorHoodPreBasis
 template<typename GV, bool HI>
-struct RequiredMultiIndexSize<TaylorHoodPreBasis<GV,HI>>
+struct MultiIndexSize<TaylorHoodPreBasis<GV,HI>>
 {
-  static const std::size_t value = 2;
+  static const std::size_t min = 1; // pressure component
+  static const std::size_t max = 2; // velocity components
 };
+
+} // end namespace Impl
 
 
 namespace BasisFactory {
