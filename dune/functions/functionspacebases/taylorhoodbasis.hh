@@ -107,13 +107,6 @@ public:
     pq2PreBasis_(gv)
   {}
 
-  //! Initialize the global indices
-  void initializeIndices()
-  {
-    pq1PreBasis_.initializeIndices();
-    pq2PreBasis_.initializeIndices();
-  }
-
   //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {

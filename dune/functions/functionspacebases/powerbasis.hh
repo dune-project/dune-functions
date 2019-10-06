@@ -106,12 +106,6 @@ public:
     static_assert(models<Concept::PreBasis<GridView>, SubPreBasis>(), "Subprebasis passed to PowerPreBasis does not model the PreBasis concept.");
   }
 
-  //! Initialize the global indices
-  void initializeIndices()
-  {
-    subPreBasis_.initializeIndices();
-  }
-
   //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {

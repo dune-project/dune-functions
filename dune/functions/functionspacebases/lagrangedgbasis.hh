@@ -72,32 +72,8 @@ public:
   /** \brief Constructor for a given grid view object */
   LagrangeDGPreBasis(const GridView& gv) :
     gridView_(gv)
-  {}
-
-
-  void initializeIndices()
   {
-    switch (dim)
-    {
-      case 1:
-      {
-        break;
-      }
-      case 2:
-      {
-        quadrilateralOffset_ = dofsPerTriangle * gridView_.size(Dune::GeometryTypes::triangle);
-        break;
-      }
-      case 3:
-      {
-        prismOffset_         = dofsPerTetrahedron * gridView_.size(Dune::GeometryTypes::tetrahedron);
-
-        hexahedronOffset_    = prismOffset_         +   dofsPerPrism * gridView_.size(Dune::GeometryTypes::prism);
-
-        pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * gridView_.size(Dune::GeometryTypes::hexahedron);
-        break;
-      }
-    }
+    initializeIndices();
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -110,6 +86,7 @@ public:
   void update(const GridView& gv)
   {
     gridView_ = gv;
+    initializeIndices();
   }
 
   /**
@@ -170,8 +147,38 @@ public:
     return StaticPower<(k+1),GV::dimension>::power;
   }
 
-//protected:
+protected:
+
+  void initializeIndices()
+  {
+    switch (dim)
+    {
+      case 1:
+      {
+        break;
+      }
+      case 2:
+      {
+        quadrilateralOffset_ = dofsPerTriangle * gridView_.size(Dune::GeometryTypes::triangle);
+        break;
+      }
+      case 3:
+      {
+        prismOffset_         = dofsPerTetrahedron * gridView_.size(Dune::GeometryTypes::tetrahedron);
+
+        hexahedronOffset_    = prismOffset_         +   dofsPerPrism * gridView_.size(Dune::GeometryTypes::prism);
+
+        pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * gridView_.size(Dune::GeometryTypes::hexahedron);
+        break;
+      }
+    }
+  }
+
+protected:
+
   GridView gridView_;
+
+public: // TODO: add access to those variables instead of making it public
 
   size_t quadrilateralOffset_;
   size_t pyramidOffset_;

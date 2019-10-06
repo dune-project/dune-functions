@@ -674,10 +674,6 @@ public:
     std::fill(order_.begin(), order_.end(), order);
   }
 
-  //! Initialize the global indices
-  void initializeIndices()
-  {}
-
   //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
