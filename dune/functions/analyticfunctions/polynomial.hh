@@ -3,6 +3,9 @@
 #ifndef DUNE_FUNCTIONS_ANALYTICFUNCTIONS_POLYNOMIAL_HH
 #define DUNE_FUNCTIONS_ANALYTICFUNCTIONS_POLYNOMIAL_HH
 
+#include <cmath>
+#include <initializer_list>
+#include <vector>
 
 namespace Dune {
 namespace Functions {
