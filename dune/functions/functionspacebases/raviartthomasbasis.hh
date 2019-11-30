@@ -6,6 +6,8 @@
 #include <array>
 #include <dune/common/exceptions.hh>
 
+#include <dune/grid/common/capabilities.hh>
+
 #include <dune/localfunctions/common/virtualinterface.hh>
 #include <dune/localfunctions/common/virtualwrappers.hh>
 
