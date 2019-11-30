@@ -5,6 +5,7 @@
 
 #include <array>
 #include <dune/common/exceptions.hh>
+#include <dune/geometry/referenceelements.hh>
 
 #include <dune/localfunctions/common/virtualinterface.hh>
 #include <dune/localfunctions/common/virtualwrappers.hh>
