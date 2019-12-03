@@ -173,9 +173,8 @@ private:
       if (prefix[0] == 1)
         return pq1PreBasis_.size();
     }
-    if (prefix.size() == 2)
-      return 0;
-    assert(false);
+    assert(prefix.size() == 2);
+    return 0;
   }
 
   template<bool hi,
@@ -198,9 +197,8 @@ private:
       if (prefix[0] == 1)
         return 0;
     }
-    if (prefix.size() == 3)
-      return 0;
-    assert(false);
+    assert(prefix.size() == 3);
+    return 0;
   }
 
 public:
