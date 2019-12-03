@@ -8,6 +8,7 @@
 
 #include <dune/grid/yaspgrid.hh>
 
+#include <dune/functions/common/differentiablefunctionfromcallables.hh>
 #include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
@@ -85,8 +86,42 @@ int main (int argc, char* argv[]) try
     passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, makeAnalyticGridViewFunction(f, gridView), exactIntegral);
   }
 
+  std::cout << "Testing makeAnalyticGridViewFunction with derivate" << std::endl;
+  {
+    using Range = double;
+    auto f = [](Domain){ return 1.0; };
+    auto df = [](Domain){ return FieldVector<Range,2>({0.0, 0.0}); };
+    auto af = makeDifferentiableFunctionFromCallables(Dune::Functions::SignatureTag<Range(Domain)>(), f, df);
+    auto gf = makeAnalyticGridViewFunction(af, gridView);
+    passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, gf, 1.0);
 
-
+    auto ep = gridView.template begin<0>();
+    {
+      std::cout << "Checking evaluation of function and derivative" << std::endl;
+      auto _lf = localFunction(gf);
+      _lf.bind(*ep);
+      auto _df = derivative(gf);
+      auto _ldf = localFunction(_df);
+      _ldf.bind(*ep);
+      passed = passed and gf({0.0,0.0}) == 1.0;
+      passed = passed and _lf({0.0,0.0}) == 1.0;
+      passed = passed and _df({0.0,0.0}) == Domain(0.0);
+      passed = passed and _ldf({0.0,0.0}) == Domain(0.0);
+    }
+    {
+      std::cout << "Checking evaluation of function and derivative via Interface class" << std::endl;
+      GridViewFunction<Range(Domain), GridView> _gf = gf;
+      auto _lf = localFunction(_gf);
+      _lf.bind(*ep);
+      auto _df = derivative(_gf);
+      auto _ldf = localFunction(_df);
+      _ldf.bind(*ep);
+      passed = passed and gf({0.0,0.0}) == 1.0;
+      passed = passed and _lf({0.0,0.0}) == 1.0;
+      passed = passed and _df({0.0,0.0}) == Domain(0.0);
+      passed = passed and _ldf({0.0,0.0}) == Domain(0.0);
+    }
+  }
 
   if (passed)
     std::cout << "All tests passed" << std::endl;
