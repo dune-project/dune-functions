@@ -3,18 +3,27 @@
 #ifndef DUNE_FUNCTIONS_GRIDFUNCTIONS_DISCRETEGLOBALBASISFUNCTIONS_HH
 #define DUNE_FUNCTIONS_GRIDFUNCTIONS_DISCRETEGLOBALBASISFUNCTIONS_HH
 
+#include <array>
 #include <memory>
+#include <type_traits>
+#include <vector>
 
-#include <dune/common/shared_ptr.hh>
 #include <dune/common/hybridutilities.hh>
+#include <dune/common/shared_ptr.hh>
+#include <dune/common/std/optional.hh>
+#include <dune/common/typeutilities.hh>
+#include <dune/typetree/childextraction.hh>
 
-#include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
-#include <dune/functions/functionspacebases/flatvectorview.hh>
-#include <dune/functions/gridfunctions/gridviewentityset.hh>
-#include <dune/functions/gridfunctions/gridfunction.hh>
-#include <dune/functions/common/treedata.hh>
 #include <dune/functions/backends/concepts.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
+#include <dune/functions/common/defaultderivativetraits.hh>
+#include <dune/functions/common/treedata.hh>
+#include <dune/functions/common/wrapownshare.hh>
+#include <dune/functions/functionspacebases/flatvectorview.hh>
+#include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
+#include <dune/functions/gridfunctions/gridfunction.hh>
+#include <dune/functions/gridfunctions/gridviewentityset.hh>
+
 
 namespace Dune {
 namespace Functions {
@@ -77,8 +86,9 @@ public:
   using Vector = V;
 
   using GridView = typename Basis::GridView;
+  using LocalView = typename Basis::LocalView;
   using EntitySet = GridViewEntitySet<GridView, 0>;
-  using Tree = typename Basis::LocalView::Tree;
+  using Tree = typename LocalView::Tree;
   using SubTree = typename TypeTree::ChildForTreePath<Tree, TreePath>;
   using NodeToRangeEntry = NTRE;
 
@@ -88,18 +98,36 @@ public:
   using LocalDomain = typename EntitySet::LocalCoordinate;
   using Element = typename EntitySet::Element;
 
-  using Traits = Imp::GridFunctionTraits<Range(Domain), EntitySet, DefaultDerivativeTraits, 16>;
+  // some internal template defaults
+  template <class Signature>
+  using DerivativeTraits = DefaultDerivativeTraits<Signature>;
+  static constexpr size_t bufferSize = 16;
+  template <class Signature>
+  using GridFunctionTraits = Imp::GridFunctionTraits<Signature, EntitySet, DerivativeTraits, bufferSize>;
+
+  // function signature and traits // TODO (not longer used internally)
+  using Signature = Range(Domain);
+  using Traits = GridFunctionTraits<Signature>;
+
+  // derivative signature and traits
+  using DSignature = typename SignatureTraits<Signature>::template DerivativeSignature<DerivativeTraits>;
+  using DTraits = GridFunctionTraits<DSignature>;
+
+  // internal node traits
+  template <class Node>
+  struct NodeTraits {
+    using FETraits = typename Node::FiniteElement::Traits;
+    using LBTraits = typename FETraits::LocalBasisType::Traits;
+    static constexpr size_t dimDomain = LBTraits::dimDomain;
+    static constexpr size_t dimRange = LBTraits::dimRange;
+    using Range = typename LBTraits::RangeType;
+    using Jacobian = typename LBTraits::JacobianType;
+  };
 
   class LocalFunction
   {
-    using LocalView = typename Basis::LocalView;
-    using size_type = typename SubTree::size_type;
-
     template<class Node>
-    using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
-
-    template<class Node>
-    using NodeData = typename std::vector<LocalBasisRange<Node>>;
+    using NodeData = typename std::vector<typename NodeTraits<Node>::Range>;
 
     using ShapeFunctionValueContainer = TreeData<SubTree, NodeData, true>;
 
@@ -122,14 +150,13 @@ public:
         auto&& fe = node.finiteElement();
         auto&& localBasis = fe.localBasis();
 
-        auto&& shapeFunctionValues = shapeFunctionValueContainer_[node];
+        auto& shapeFunctionValues = shapeFunctionValueContainer_[node];
         localBasis.evaluateFunction(x_, shapeFunctionValues);
 
         // Get range entry associated to this node
         auto re = flatVectorView(nodeToRangeEntry_(node, treePath, y_));
 
-
-        for (size_type i = 0; i < localBasis.size(); ++i)
+        for (size_t i = 0; i < localBasis.size(); ++i)
         {
           auto&& multiIndex = localView_.index(node.localIndex(i));
 
@@ -139,8 +166,6 @@ public:
           // Get value of i-th shape function
           auto v = flatVectorView(shapeFunctionValues[i]);
 
-
-
           // Notice that the range entry re, the coefficient c, and the shape functions
           // value v may all be scalar, vector, matrix, or general container valued.
           // The matching of their entries is done via the multistage procedure described
@@ -148,15 +173,16 @@ public:
           auto&& dimC = c.size();
           auto dimV = v.size();
           assert(dimC*dimV == re.size());
-          for(size_type j=0; j<dimC; ++j)
+          for(size_t j=0; j<dimC; ++j)
           {
             auto&& c_j = c[j];
-            for(size_type k=0; k<dimV; ++k)
+            for(size_t k=0; k<dimV; ++k)
               re[j*dimV + k] += c_j*v[k];
           }
         }
       }
 
+    private:
       const LocalDomain& x_;
       Range& y_;
       const LocalView& localView_;
@@ -167,43 +193,30 @@ public:
 
 
   public:
-
     using GlobalFunction = DiscreteGlobalBasisFunction;
     using Domain = LocalDomain;
     using Range = GlobalFunction::Range;
     using Element = GlobalFunction::Element;
 
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
-      : globalFunction_(&globalFunction)
+      : globalFunction_(globalFunction)
       , localView_(globalFunction.basis().localView())
     {
-      // Here we assume that the tree can be accessed, traversed,
-      // and queried for tree indices even in unbound state.
-      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
-      shapeFunctionValueContainer_.init(*subTree_);
-//      localDoFs_.reserve(localView_.maxSize());
+      init();
     }
 
     LocalFunction(const LocalFunction& other)
       : globalFunction_(other.globalFunction_)
       , localView_(other.localView_)
-      , bound_(other.bound_)
     {
-      // Here we assume that the tree can be accessed, traversed,
-      // and queried for tree indices even in unbound state.
-      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
-      shapeFunctionValueContainer_.init(*subTree_);
+      init();
     }
 
     LocalFunction operator=(const LocalFunction& other)
     {
       globalFunction_ = other.globalFunction_;
       localView_ = other.localView_;
-      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
-
-      // Here we assume that the tree can be accessed, traversed,
-      // and queried for tree indices even in unbound state.
-      shapeFunctionValueContainer_.init(*subTree_);
+      init();
     }
 
     /**
@@ -212,29 +225,24 @@ public:
      * You must call this method before evaluate()
      * and after changes to the coefficient vector.
      */
-    void bind(const Element& element)
-    {
-      localView_.bind(element);
-      bound_ = true;
+    void bind(const Element& element) { localView_.bind(element); }
 
-      // Read dofs associated to bound element
-//      localDoFs_.resize(subTree.size());
-//      for (size_type i = 0; i < subTree.size(); ++i)
-//        localDoFs_[i] = globalFunction_->dofs()[localView.index(i)];
-    }
-
-    void unbind()
-    {
-      localView_.unbind();
-      bound_ = false;
-    }
+    void unbind() { localView_.unbind(); }
 
     /**
      * \brief Check if LocalFunction is already bound to an element.
      */
-    bool bound() const {
-      return bound_;
-    }
+    bool bound() const { return localView_.isBound(); }
+
+    /**
+     * \brief Return element that LocalFunction is bound to.
+     */
+    const Element& localContext() const { return localView_.element(); }
+
+    /**
+     * \brief Return global function.
+     */
+    const DiscreteGlobalBasisFunction& globalFunction() const { return globalFunction_; }
 
     /**
      * \brief Evaluate LocalFunction at bound element.
@@ -249,80 +257,330 @@ public:
     {
       auto y = Range(0);
 
-      LocalEvaluateVisitor localEvaluateVisitor(x, y, localView_, globalFunction_->dofs(), globalFunction_->nodeToRangeEntry(), shapeFunctionValueContainer_);
+      LocalEvaluateVisitor localEvaluateVisitor(x, y, localView_, globalFunction_.dofs(), globalFunction_.nodeToRangeEntry(), shapeFunctionValueContainer_);
       TypeTree::applyToTree(*subTree_, localEvaluateVisitor);
 
       return y;
     }
 
-    const Element& localContext() const
+    /**
+     * \brief Obtain the derivative of the local function of a
+     * DiscreteGlobalBasisFunction as a local function of the derivative of it.
+     */
+    friend auto derivative(const LocalFunction& lf)
     {
-      return localView_.element();
+      auto dlf = localFunction(derivative(lf.globalFunction()));
+      if (lf.bound()) dlf.bind(lf.localContext());
+      return dlf;
     }
 
-    friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction& t)
-    {
-      DUNE_THROW(NotImplemented,"not implemented");
-    }
-
-  private:
-
-    const DiscreteGlobalBasisFunction* globalFunction_;
+  protected:
+    const DiscreteGlobalBasisFunction& globalFunction_;
     LocalView localView_;
 
     mutable ShapeFunctionValueContainer shapeFunctionValueContainer_;
-//    std::vector<typename V::value_type> localDoFs_;
     const SubTree* subTree_;
 
-    bool bound_ = false;
+  private:
+    void init() {
+      // Here we assume that the tree can be accessed, traversed,
+      // and queried for tree indices even in unbound state.
+      using namespace TypeTree;
+      subTree_ = &child(localView_.tree(), globalFunction_.treePath());
+      shapeFunctionValueContainer_.init(*subTree_);
+    }
   };
 
   template<class B_T, class V_T, class NTRE_T>
   DiscreteGlobalBasisFunction(B_T && basis, const TreePath& treePath, V_T && coefficients, NTRE_T&& nodeToRangeEntry) :
     entitySet_(basis.gridView()),
-    basis_(wrap_or_move(std::forward<B_T>(basis))),
+    basis_(wrap_own_share<const B>(std::forward<B_T>(basis))),
     treePath_(treePath),
-    coefficients_(wrap_or_move(std::forward<V_T>(coefficients))),
-    nodeToRangeEntry_(wrap_or_move(std::forward<NTRE_T>(nodeToRangeEntry)))
+    coefficients_(wrap_own_share<const V>(std::forward<V_T>(coefficients))),
+    nodeToRangeEntry_(wrap_own_share<const NTRE>(std::forward<NTRE_T>(nodeToRangeEntry)))
   {}
 
-  DiscreteGlobalBasisFunction(std::shared_ptr<const Basis> basis, const TreePath& treePath, std::shared_ptr<const V> coefficients, std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry) :
-    entitySet_(basis->gridView()),
-    basis_(basis),
-    treePath_(treePath),
-    coefficients_(coefficients),
-    nodeToRangeEntry_(nodeToRangeEntry)
-  {}
-
-  const Basis& basis() const
-  {
-    return *basis_;
-  }
-
-  const TreePath& treePath() const
-  {
-    return treePath_;
-  }
-
-  const V& dofs() const
-  {
-    return *coefficients_;
-  }
-
-  const NodeToRangeEntry& nodeToRangeEntry() const
-  {
-    return *nodeToRangeEntry_;
-  }
+  // getters
+  const auto& basis() const { return *basis_; }
+  const auto& treePath() const { return treePath_; }
+  const auto& dofs() const { return *coefficients_; }
+  const auto& nodeToRangeEntry() const { return *nodeToRangeEntry_; }
+  const auto& entitySet() const { return entitySet_; }
 
   // TODO: Implement this using hierarchic search
-  Range operator() (const Domain& x) const
+  Range operator() (const Domain&) const
   {
-    DUNE_THROW(NotImplemented,"not implemented");
+    DUNE_THROW(NotImplemented, "Evaluation of DiscreteGlobalBasisFunction.");
   }
 
-  friend typename Traits::DerivativeInterface derivative(const DiscreteGlobalBasisFunction& t)
-  {
-    DUNE_THROW(NotImplemented,"not implemented");
+  /**
+   * @brief Derivative of DiscreteGlobalFunction
+   */
+  struct Derivative {
+
+    Derivative(const DiscreteGlobalBasisFunction& f)
+        : f_(f) {}
+
+    const EntitySet& entitySet() const { return f_.entitySet(); }
+
+    typename DTraits::Range operator()(const Domain&) const {
+      DUNE_THROW(NotImplemented,
+                 "Evaluation of Derivative of DiscreteGlobalBasisFunction.");
+    }
+
+    /**
+     * @brief LocalFunction of Derivative of DiscreteGlobalBasisFunction
+     */
+    struct LocalDerivative {
+
+      using Geometry = std::decay_t<typename Element::Geometry>;
+      using JInverseT = typename Geometry::JacobianInverseTransposed;
+
+      template <class Node>
+      using NodeData = std::vector<typename NodeTraits<Node>::Jacobian>;
+      using ShapeFunctionJacobianContainer = TreeData<SubTree, NodeData, true>;
+
+      using LocalDRange = typename DTraits::LocalFunctionTraits::Range;
+
+      struct LocalDerivativeVisitor
+          : TypeTree::TreeVisitor
+          , TypeTree::DynamicTraversal {
+
+        // Note: we assume that the NodeToRangeEntry can also be used as
+        // a NodeToJacobianEntry. See all lines tagged with (NTJE)
+        using NodeToJacobianEntry = NodeToRangeEntry;
+
+        LocalDerivativeVisitor(
+            const LocalDomain& x, LocalDRange& y, const LocalView& localView,
+            const Vector& coefficients,
+            const NodeToJacobianEntry& nodeToJacobianEntry, // see (NTJE)
+            ShapeFunctionJacobianContainer& shapeFunctionJacobianContainer,
+            JInverseT jacobianInverseTransposed)
+            : x_(x)
+            , y_(y)
+            , localView_(localView)
+            , coefficients_(coefficients)
+            , nodeToJacobianEntry_(nodeToJacobianEntry) // see (NTJE)
+            , shapeFunctionJacobianContainer_(shapeFunctionJacobianContainer)
+            , jInverseT_(std::move(jacobianInverseTransposed)) {}
+
+        template <typename Node, typename TreePath>
+        void leaf(const Node& node, TreePath treePath) {
+
+          auto&& fe = node.finiteElement();
+          auto&& localBasis = fe.localBasis();
+
+          // TODO we can cache information here for power-nodes.
+          auto&& shapeFunctionJacobians = shapeFunctionJacobianContainer_[node];
+          localBasis.evaluateJacobian(x_, shapeFunctionJacobians);
+
+          /// The following approach first computes the
+          /// (1)   referenceJacobian = sum_i c_i * jacobian(localBasis_i)
+          /// and subsequently transforms them
+          /// (2)        y = referenceJacobian * jacobianInverseTransposed
+
+          // Notice that the range entry re, the coefficient c, and the shape
+          // functions value v may all be scalar, vector, matrix, or general
+          // container valued. The matching of their entries is done via the
+          // multistage procedure described in the class documentation of
+          // DiscreteGlobalBasisFunction.
+
+          /// part (1)
+          // Since the coefficients may be non-scalar, we need a way to
+          // store the respective results. We use an array to store
+          // the referenceJacobian_k for each (c_i)_k where j is a flat index
+          // for whatever (statically sized) type (c_i) is.
+          constexpr size_t dimC = 1;
+          // TODO generalize to non-scalar coefficients. A first improvement
+          // might deduce a (uniform) size. A second improvement might deduce
+          // node-dependet sizes, e.g. using a TreeData mechanism.
+          using Jacobian = typename NodeTraits<Node>::Jacobian;
+          using ReferenceJ = std::array<Jacobian, dimC>;
+          ReferenceJ referenceJData;
+          for (size_t k = 0; k < dimC; ++k)
+            referenceJData[k] = 0;
+          auto referenceJ = flatVectorView(referenceJData);
+          size_t dimReferenceJ = referenceJ.size();
+
+          // Compute the reference jacobians
+          for (size_t i = 0; i < localBasis.size(); ++i) {
+            auto&& multiIndex = localView_.index(node.localIndex(i));
+            // get i-th coefficient and jacobian of i-th local basis
+            auto&& c_i = flatVectorView(coefficients_[multiIndex]);
+            auto&& j_i = flatVectorView(shapeFunctionJacobians[i]);
+            assert(dimC == c_i.size() && "Implement non-scalar coefficients.");
+            size_t dimJ = j_i.size();
+            assert(dimC * dimJ == dimReferenceJ);
+            for (size_t k = 0; k < dimC; ++k)
+              for (size_t d = 0; d < dimJ; ++d)
+                referenceJ[k * dimJ + d] += c_i[k] * j_i[d];
+          }
+
+          /// part (2)
+          // Provide flat access
+          auto&& re = nodeToJacobianEntry_(node, treePath, y_); // see (NTJE)
+          auto&& y = flatVectorView(re);
+          size_t dimRange = y.size();
+          auto&& jInverseT = flatVectorView(jInverseT_);
+
+          // Assert some size connections
+          size_t dimLocalReferenceBasisDomain = NodeTraits<Node>::dimDomain;
+          size_t dimLocalReferenceBasisRange = NodeTraits<Node>::dimRange;
+          using Geometry = std::decay_t<decltype(node.element().geometry())>;
+          assert(Geometry::mydimension == dimLocalReferenceBasisDomain);
+          size_t dimJIT = jInverseT.size();
+          assert(dimJIT == Geometry::mydimension * Geometry::coorddimension);
+          size_t rowsRange = dimC * dimLocalReferenceBasisRange;
+          size_t colsRange = Geometry::coorddimension;
+          assert(dimRange == rowsRange * colsRange);
+
+          /*
+           * y = referenceGradients * jacobianInverse
+           *
+           *             and in terms of dimensions
+           * [rowsRange x colsRange] =
+           *         [dimC*dimLocalBasisRange x dimLocalReferenceBasisDomain]
+           *  times  [dimLocalReferenceBasisDomain x Geometry::coordimension]
+           *
+           */
+          // TODO check ordering when non-scalar coefficients are used.
+          for (size_t row = 0; row < rowsRange; ++row) {
+            for (size_t col = 0; col < colsRange; ++col) {
+              auto&& range = y[row * colsRange + col];
+              for (size_t l = 0; l < dimLocalReferenceBasisDomain; ++l) {
+                auto&& ref = referenceJ[row * dimLocalReferenceBasisDomain + l];
+                // wiggle indices to untranspose jacobianInverseTransposed
+                auto&& jit = jInverseT[col * dimLocalReferenceBasisDomain + l];
+                range += ref * jit;
+              }
+            }
+          }
+        }
+
+      private:
+        const LocalDomain& x_;
+        LocalDRange& y_;
+        const LocalView& localView_;
+        const Vector& coefficients_;
+        const NodeToRangeEntry& nodeToJacobianEntry_; // see (NTJE)
+        ShapeFunctionJacobianContainer& shapeFunctionJacobianContainer_;
+        JInverseT jInverseT_;
+      };
+
+      template <class D_, disableCopyMove<LocalDerivative, D_> = 0>
+      LocalDerivative(D_&& derivative)
+          : derivative_(wrap_own_share<const Derivative>(std::forward<D_>(derivative)))
+          , localView_(derivative_->basis().localView()) {
+        init();
+      }
+
+      LocalDerivative(const LocalDerivative& other)
+          : derivative_(other.derivative_)
+          , localView_(other.localView_) {
+        init();
+      }
+
+      LocalDerivative operator=(const LocalDerivative& other) {
+        derivative_ = other.dgbfDerivative;
+        localView_ = other.localView_;
+        init();
+      }
+
+      void bind(const Element& e) {
+        localView_.bind(e);
+        geometry_.emplace(e.geometry());
+      }
+      void unbind() {
+        geometry_.reset();
+        localView_.unbind();
+      }
+
+      const Element& localContext() const { return localView_.element(); }
+
+      LocalDRange operator()(const Domain& x) const {
+        LocalDRange y;
+        y = 0;
+
+        LocalDerivativeVisitor localDerivativeVisitor(
+            x, y, localView_, derivative_->dofs(),
+            derivative_->nodeToRangeEntry(),
+            shapeFunctionJacobianContainer_,
+            geometry_.value().jacobianInverseTransposed(x));
+        TypeTree::applyToTree(*subTree_, localDerivativeVisitor);
+
+        return y;
+      }
+
+      friend typename DTraits::LocalFunctionTraits::DerivativeInterface
+      derivative(const LocalDerivative&) {
+        DUNE_THROW(NotImplemented, "Derivative of LocalFunction of Derivative "
+                                   "of DiscreteGlobalBasisFunction.");
+      }
+
+    private:
+      std::shared_ptr<const Derivative> derivative_;
+      LocalView localView_;
+      Std::optional<Geometry> geometry_;
+      mutable ShapeFunctionJacobianContainer shapeFunctionJacobianContainer_;
+      const SubTree* subTree_;
+
+      void init() {
+        // Here we assume that the tree can be accessed, traversed,
+        // and queried for tree indices even in unbound state.
+        using namespace TypeTree;
+        subTree_ = &child(localView_.tree(), derivative_->treePath());
+        shapeFunctionJacobianContainer_.init(*subTree_);
+      }
+    };
+
+    /**
+     * \brief Construct local function from a Derivative of a DiscreteGlobalBasisFunction
+     *
+     * \ingroup FunctionImplementations
+     *
+     * The obtained local function satisfies the concept
+     * `Dune::Functions::Concept::LocalFunction` and must be bound
+     * to an entity from the entity set of the DiscreteGlobalBasisFunction (or,
+     * equivalently, its Derivative) before it can be used.
+     *
+     * Notice that the local function shares ownership for the Derivative of the
+     * global DiscreteGlobalBasisFunction, i.e. life time of the Derivative is
+     * extended appropriately (if constructed correctly).
+     * The underlying DiscreteGlobalBasisFunction needs to live though, since
+     * its derivative stores a reference (currently). Hence calling any method
+     * of this local function after the DiscreteGlobalBasisFunction exceeded its
+     * life time leads to undefined behavior.
+     */
+    friend auto localFunction(const Derivative& d) { return LocalDerivative(d); }
+    friend auto localFunction(Derivative&& d) { return LocalDerivative(std::move(d)); }
+
+    friend typename DTraits::DerivativeInterface
+    derivative(const Derivative&) {
+      DUNE_THROW(NotImplemented,
+                 "Derivative of Derivative of DiscreteGlobalBasisFunction.");
+    }
+
+    // getters
+    const auto& basis() const { return f_.basis(); }
+    const auto& treePath() const { return f_.treePath(); }
+    const auto& dofs() const { return f_.dofs(); }
+    const auto& nodeToRangeEntry() const { return f_.nodeToRangeEntry(); }
+
+  private:
+    const DiscreteGlobalBasisFunction& f_;
+  };
+
+  /**
+   * \brief Construct Derivative of a DiscreteGlobalBasisFunction
+   *
+   * \ingroup FunctionImplementations
+   *
+   * The obtained global function can be used to create local functions
+   * that yield local derivative evaluations.
+   *
+   */
+  friend auto derivative(const DiscreteGlobalBasisFunction& t) {
+    return Derivative(t);
   }
 
   /**
@@ -345,21 +603,12 @@ public:
     return LocalFunction(t);
   }
 
-  /**
-   * \brief Get associated EntitySet
-   */
-  const EntitySet& entitySet() const
-  {
-    return entitySet_;
-  }
-
 private:
-
   EntitySet entitySet_;
-  std::shared_ptr<const Basis> basis_;
+  std::shared_ptr<const B> basis_;
   const TreePath treePath_;
   std::shared_ptr<const V> coefficients_;
-  std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry_;
+  std::shared_ptr<const NTRE> nodeToRangeEntry_;
 };
 
 
