@@ -73,7 +73,7 @@ public:
   void bind(const Element& e)
   {
     element_ = e;
-    bindTree(tree_, element_.value());
+    bindTree(tree_, *element_);
     nodeIndexSet_.bind(tree_);
     indices_.resize(size());
     Hybrid::ifElse(
