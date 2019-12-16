@@ -3,6 +3,8 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_TAYLORHOODBASIS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_TAYLORHOODBASIS_HH
 
+#include <cstdlib>
+
 #include <dune/common/exceptions.hh>
 #include <dune/common/reservedvector.hh>
 
@@ -175,7 +177,7 @@ private:
     }
     if (prefix.size() == 2)
       return 0;
-    assert(false);
+    std::abort();
   }
 
   template<bool hi,
@@ -200,7 +202,7 @@ private:
     }
     if (prefix.size() == 3)
       return 0;
-    assert(false);
+    std::abort();
   }
 
 public:
