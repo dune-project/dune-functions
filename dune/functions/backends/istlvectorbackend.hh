@@ -228,6 +228,21 @@ class ISTLVectorBackend
       DUNE_THROW(RangeError, "Can't resize scalar vector entry v[" << prefix << "] to size(" << prefix << ")=" << size);
   }
 
+  template<class C, class T,
+    std::enable_if_t<std::is_assignable<C&,T>::value, int> = 0>
+  void recursiveAssign(C& c, const T& t)
+  {
+    c = t;
+  }
+
+  template<class C, class T,
+    std::enable_if_t<not std::is_assignable<C&,T>::value, int> = 0>
+  void recursiveAssign(C& c, const T& t)
+  {
+    for(auto&& ci: c)
+      recursiveAssign(ci, t);
+  }
+
 public:
 
   using Vector = V;
@@ -256,10 +271,18 @@ public:
     return resolveDynamicMultiIndex(*vector_, index);
   }
 
+  /**
+   * \brief Assign value to wrapped vector
+   *
+   * If the wrapped vector type supports assignment from T,
+   * then this is used. Otherwise assignment is done by recursively
+   * assigning all entries from T. The recursion stops for
+   * the first nested entry type which is assignable from T.
+   */
   template<typename T>
   void operator= (const T& other)
   {
-    vector() = other;
+    recursiveAssign(vector(), other);
   }
 
   template<typename T>
