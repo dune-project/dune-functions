@@ -170,27 +170,27 @@ protected:
 /**
  * \brief Interpolate given function in discrete function space
  *
- * Interpolation is done wrt the leaf node of the ansatz tree
- * corresponding to the given tree path.
+ * Only vector coefficients marked as 'true' in the
+ * bitVector argument are interpolated.  Use this, e.g., to
+ * interpolate Dirichlet boundary values.
  *
  * Notice that this will only work if the range type of f and
  * the block type of coeff are compatible and supported by
  * flatVectorView.
  *
  * \param basis Global function space basis of discrete function space
- * \param treePath Tree path specifying the part of the ansatz tree to use
  * \param coeff Coefficient vector to represent the interpolation
  * \param f Function to interpolate
- * \param nodeToRangeEntry Polymorphic functor mapping local ansatz nodes to range-indices of given function
  * \param bitVector A vector with flags marking all DOFs that should be interpolated
+ * \param nodeToRangeEntry Polymorphic functor mapping local ansatz nodes to range-indices of given function
  */
-template <class B, class... TreeIndices, class NTRE, class C, class F, class BV>
-void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f, const NTRE& nodeToRangeEntry, const BV& bv)
+template <class B, class C, class F, class BV, class NTRE>
+void interpolate(const B& basis, C&& coeff, const F& f, const BV& bv, const NTRE& nodeToRangeEntry)
 {
   using GridView = typename B::GridView;
   using Element = typename GridView::template Codim<0>::Entity;
 
-  using Tree = typename std::decay<decltype(TypeTree::child(basis.localView().tree(),treePath))>::type;
+  using Tree = typename B::LocalView::Tree;
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
@@ -236,80 +236,17 @@ void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIn
     localView.bind(e);
     localF.bind(e);
 
-    auto&& subTree = TypeTree::child(localView.tree(),treePath);
-
     Imp::LocalInterpolateVisitor<B, Tree, NTRE, decltype(vector), decltype(localF), decltype(bitVector)> localInterpolateVisitor(basis, vector, bitVector, localF, localView, nodeToRangeEntry);
-    TypeTree::applyToTree(subTree,localInterpolateVisitor);
+    TypeTree::applyToTree(localView.tree(),localInterpolateVisitor);
   }
 }
 
-
-template <class B, class... TreeIndices, class C, class F, class BV>
-void interpolateTreeSubset(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f, const BV& bitVector)
-{
-  interpolateTreeSubset(basis, treePath, coeff, f, HierarchicNodeToRangeMap(), bitVector);
-}
-
-
-template <class B, class... TreeIndices, class NTRE, class C, class F>
-void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f, const NTRE& nodeToRangeEntry)
-{
-  interpolateTreeSubset(basis, treePath, coeff, f, nodeToRangeEntry, Imp::AllTrueBitSetVector());
-}
-
-
-template <class B, class... TreeIndices, class C, class F>
-void interpolateTree(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f)
-{
-  interpolateTreeSubset(basis, treePath, coeff, f, HierarchicNodeToRangeMap(), Imp::AllTrueBitSetVector());
-}
-
-
-
 /**
  * \brief Interpolate given function in discrete function space
  *
- * Interpolation is done wrt the leaf node of the ansatz tree
- * corresponding to the given tree path.
- *
- * Notice that this will only work if the range type of f and
- * the block type of coeff are compatible and supported by
- * flatVectorView.
- *
- * \param basis Global function space basis of discrete function space
- * \param treePath Tree path specifying the part of the ansatz tree to use
- * \param coeff Coefficient vector to represent the interpolation
- * \param f Function to interpolate
- * \param bitVector A vector with flags marking all DOFs that should be interpolated
- */
-template <class B, class... TreeIndices, class C, class F, class BV>
-void interpolate(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f, const BV& bitVector)
-{
-  interpolateTreeSubset(basis, treePath, coeff, f, HierarchicNodeToRangeMap(), bitVector);
-}
-
-namespace Imp {
-
-  template<class... T>
-  constexpr std::true_type isHybridTreePath(const TypeTree::HybridTreePath<T...>&)
-  { return {}; }
-
-  template<class T>
-  constexpr std::false_type isHybridTreePath(const T&)
-  { return {}; }
-
-  template<class T>
-  constexpr auto isHybridTreePath() -> decltype(isHybridTreePath(std::declval<std::decay_t<T>>()))
-  { return {}; }
-
-}
-
-/**
- * \brief Interpolate given function in discrete function space
- *
- * Interpolation is done wrt the leaf node of the ansatz tree
- * corresponding to the given tree path.  Only vector coefficients marked as 'true' in the
- * bitVector argument are interpolated.  Use this, e.g., to interpolate Dirichlet boundary values.
+ * Only vector coefficients marked as 'true' in the
+ * bitVector argument are interpolated.  Use this, e.g., to
+ * interpolate Dirichlet boundary values.
  *
  * Notice that this will only work if the range type of f and
  * the block type of coeff are compatible and supported by
@@ -320,15 +257,11 @@ namespace Imp {
  * \param f Function to interpolate
  * \param bitVector A vector with flags marking all DOFs that should be interpolated
  */
-template <class B, class C, class F, class BV,
-         std::enable_if_t<not Imp::isHybridTreePath<C>(), int> = 0>
+template <class B, class C, class F, class BV>
 void interpolate(const B& basis, C&& coeff, const F& f, const BV& bitVector)
 {
-  auto root = Dune::TypeTree::hybridTreePath();
-  interpolateTreeSubset(basis, root, coeff, f, HierarchicNodeToRangeMap(), bitVector);
+  interpolate(basis, coeff, f, bitVector, HierarchicNodeToRangeMap());
 }
-
-
 
 /**
  * \brief Interpolate given function in discrete function space
@@ -347,28 +280,7 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bitVector)
 template <class B, class C, class F>
 void interpolate(const B& basis, C&& coeff, const F& f)
 {
-  interpolate (basis, Dune::TypeTree::hybridTreePath(), coeff, f, Imp::AllTrueBitSetVector());
-}
-
-/**
- * \brief Interpolate given function in discrete function space
- *
- * Interpolation is done wrt the leaf node of the ansatz tree
- * corresponding to the given tree path.
- *
- * Notice that this will only work if the range type of f and
- * the block type of corresponding coeff entries are compatible
- * and supported by flatVectorView.
- *
- * \param basis Global function space basis of discrete function space
- * \param treePath Tree path specifying the part of the ansatz tree to use
- * \param coeff Coefficient vector to represent the interpolation
- * \param f Function to interpolate
- */
-template <class B, class... TreeIndices, class C, class F>
-void interpolate(const B& basis, const TypeTree::HybridTreePath<TreeIndices...>& treePath, C&& coeff, const F& f)
-{
-  interpolate (basis, treePath, coeff, f, Imp::AllTrueBitSetVector());
+  interpolate (basis, coeff, f, Imp::AllTrueBitSetVector(), HierarchicNodeToRangeMap());
 }
 
 } // namespace Functions
