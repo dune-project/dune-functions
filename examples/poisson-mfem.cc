@@ -24,6 +24,7 @@
 #include <dune/functions/functionspacebases/raviartthomasbasis.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
@@ -359,6 +360,10 @@ int main (int argc, char *argv[])
       lagrange<k>()
     ));
 
+  using namespace Indices;
+  auto fluxBasis = Functions::subspaceBasis(basis, _0);
+  auto pressureBasis = Functions::subspaceBasis(basis, _1);
+
 
   /////////////////////////////////////////////////////////
   //   Stiffness matrix and right hand side vector
@@ -422,8 +427,8 @@ int main (int argc, char *argv[])
   VectorType isTopBoundaryTmp, isLowerBoundaryTmp;
 
   // Use double-valued interpolation and transfer to char-valued vectors.
-  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), istlVectorBackend(isTopBoundaryTmp),   topBoundaryIndicator);
-  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), istlVectorBackend(isLowerBoundaryTmp), lowerBoundaryIndicator);
+  interpolate(fluxBasis, istlVectorBackend(isTopBoundaryTmp),   topBoundaryIndicator);
+  interpolate(fluxBasis, istlVectorBackend(isLowerBoundaryTmp), lowerBoundaryIndicator);
   istlVectorBackend(isTopBoundary).resize(basis);
   istlVectorBackend(isLowerBoundary).resize(basis);
   isTopBoundary = 0;
@@ -434,8 +439,9 @@ int main (int argc, char *argv[])
     isLowerBoundary[0][i] = isLowerBoundaryTmp[0][i]!=0 ? 1: 0;
   }
 
-  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), istlVectorBackend(rhs), topFluxBC,   istlVectorBackend(isTopBoundary));
-  interpolate(basis, Dune::TypeTree::hybridTreePath(_0), istlVectorBackend(rhs), lowerFluxBC, istlVectorBackend(isLowerBoundary));
+
+  interpolate(fluxBasis, istlVectorBackend(rhs), topFluxBC,   istlVectorBackend(isTopBoundary));
+  interpolate(fluxBasis,istlVectorBackend(rhs), lowerFluxBC, istlVectorBackend(isLowerBoundary));
 
   ////////////////////////////////////////////
   //   Modify Dirichlet rows
@@ -490,8 +496,8 @@ int main (int argc, char *argv[])
   using FluxRange = FieldVector<double,dim>;
   using PressureRange = double;
 
-  auto fluxFunction = Functions::makeDiscreteGlobalBasisFunction<FluxRange>(basis, TypeTree::hybridTreePath(_0), istlVectorBackend(x));
-  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(basis, TypeTree::hybridTreePath(_1), istlVectorBackend(x));
+  auto fluxFunction = Functions::makeDiscreteGlobalBasisFunction<FluxRange>(fluxBasis, istlVectorBackend(x));
+  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(pressureBasis, istlVectorBackend(x));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
