@@ -10,7 +10,15 @@
 
 #include <dune/geometry/quadraturerules.hh>
 
-#include <dune/grid/yaspgrid.hh>
+
+#if HAVE_UG
+  #include <dune/grid/uggrid.hh>
+  #define CUBEGRID UGGrid
+#else
+  #include <dune/grid/yaspgrid.hh>
+  #define CUBEGRID YaspGrid
+#endif
+#include <dune/grid/utility/structuredgridfactory.hh>
 #include <dune/grid/io/file/gmshreader.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
@@ -398,10 +406,14 @@ int main (int argc, char *argv[]) try
   ///////////////////////////////////
 
   const int dim = 2;
-  typedef YaspGrid<dim> GridType;
-  FieldVector<double,dim> l = {1.0, 1.0};
-  std::array<int,dim> elements = {{10, 10}};
-  GridType grid(l,elements);
+
+  using GridType = CUBEGRID<dim>;
+  auto lowerLeft = Dune::FieldVector<double,dim>(0);
+  auto upperRight = Dune::FieldVector<double,dim>(1);
+  auto elementsPerDirection = std::array<unsigned int,dim>();
+  elementsPerDirection.fill(10);
+  auto gridPtr = Dune::StructuredGridFactory<GridType>::createCubeGrid(lowerLeft, upperRight, elementsPerDirection);
+  auto& grid = *gridPtr;
 
   typedef GridType::LeafGridView GridView;
   GridView gridView = grid.leafGridView();
