@@ -111,8 +111,7 @@ public:
     {
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
-      tree_ = &localView_.tree();
-      shapeFunctionValueContainer_.init(*tree_);
+      shapeFunctionValueContainer_.init(localView_.tree());
 //      localDoFs_.reserve(localView_.maxSize());
     }
 
@@ -123,19 +122,17 @@ public:
     {
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
-      tree_ = &localView_.tree();
-      shapeFunctionValueContainer_.init(*tree_);
+      shapeFunctionValueContainer_.init(localView_.tree());
     }
 
     LocalFunction operator=(const LocalFunction& other)
     {
       globalFunction_ = other.globalFunction_;
       localView_ = other.localView_;
-      tree_ = &localView_.tree();
 
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
-      shapeFunctionValueContainer_.init(*tree_);
+      shapeFunctionValueContainer_.init(localView_.tree());
     }
 
     /**
@@ -239,7 +236,6 @@ public:
 
     mutable ShapeFunctionValueContainer shapeFunctionValueContainer_;
 //    std::vector<typename V::value_type> localDoFs_;
-    const Tree* tree_;
 
     bool bound_ = false;
   };
