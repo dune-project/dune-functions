@@ -98,69 +98,6 @@ public:
 
     using ShapeFunctionValueContainer = TreeData<Tree, NodeData, true>;
 
-    struct LocalEvaluateVisitor
-      : public TypeTree::TreeVisitor
-      , public TypeTree::DynamicTraversal
-    {
-      LocalEvaluateVisitor(const LocalDomain& x, Range& y, const LocalView& localView, const Vector& coefficients, const NodeToRangeEntry& nodeToRangeEntry, ShapeFunctionValueContainer& shapeFunctionValueContainer):
-        x_(x),
-        y_(y),
-        localView_(localView),
-        coefficients_(coefficients),
-        nodeToRangeEntry_(nodeToRangeEntry),
-        shapeFunctionValueContainer_(shapeFunctionValueContainer)
-      {}
-
-      template<typename Node, typename TreePath>
-      void leaf(Node& node, TreePath treePath)
-      {
-        auto&& fe = node.finiteElement();
-        auto&& localBasis = fe.localBasis();
-
-        auto&& shapeFunctionValues = shapeFunctionValueContainer_[node];
-        localBasis.evaluateFunction(x_, shapeFunctionValues);
-
-        // Get range entry associated to this node
-        auto re = flatVectorView(nodeToRangeEntry_(node, treePath, y_));
-
-
-        for (size_type i = 0; i < localBasis.size(); ++i)
-        {
-          auto&& multiIndex = localView_.index(node.localIndex(i));
-
-          // Get coefficient associated to i-th shape function
-          auto c = flatVectorView(coefficients_[multiIndex]);
-
-          // Get value of i-th shape function
-          auto v = flatVectorView(shapeFunctionValues[i]);
-
-
-
-          // Notice that the range entry re, the coefficient c, and the shape functions
-          // value v may all be scalar, vector, matrix, or general container valued.
-          // The matching of their entries is done via the multistage procedure described
-          // in the class documentation of DiscreteGlobalBasisFunction.
-          auto&& dimC = c.size();
-          auto dimV = v.size();
-          assert(dimC*dimV == re.size());
-          for(size_type j=0; j<dimC; ++j)
-          {
-            auto&& c_j = c[j];
-            for(size_type k=0; k<dimV; ++k)
-              re[j*dimV + k] += c_j*v[k];
-          }
-        }
-      }
-
-      const LocalDomain& x_;
-      Range& y_;
-      const LocalView& localView_;
-      const Vector& coefficients_;
-      const NodeToRangeEntry& nodeToRangeEntry_;
-      ShapeFunctionValueContainer& shapeFunctionValueContainer_;
-    };
-
-
   public:
 
     using GlobalFunction = DiscreteGlobalBasisFunction;
@@ -244,8 +181,43 @@ public:
     {
       auto y = Range(0);
 
-      LocalEvaluateVisitor localEvaluateVisitor(x, y, localView_, globalFunction_->dofs(), globalFunction_->nodeToRangeEntry(), shapeFunctionValueContainer_);
-      TypeTree::applyToTree(*tree_, localEvaluateVisitor);
+      TypeTree::forEachLeafNode(localView_.tree(), [&](auto&& node, auto&& treePath) {
+        const auto& dofs = globalFunction_->dofs();
+        const auto& nodeToRangeEntry = globalFunction_->nodeToRangeEntry();
+        const auto& fe = node.finiteElement();
+        const auto& localBasis = fe.localBasis();
+        auto& shapeFunctionValues = shapeFunctionValueContainer_[node];
+
+        localBasis.evaluateFunction(x, shapeFunctionValues);
+
+        // Get range entry associated to this node
+        auto re = flatVectorView(nodeToRangeEntry(node, treePath, y));
+
+        for (size_type i = 0; i < localBasis.size(); ++i)
+        {
+          const auto& multiIndex = localView_.index(node.localIndex(i));
+
+          // Get coefficient associated to i-th shape function
+          auto c = flatVectorView(dofs[multiIndex]);
+
+          // Get value of i-th shape function
+          auto v = flatVectorView(shapeFunctionValues[i]);
+
+          // Notice that the range entry re, the coefficient c, and the shape functions
+          // value v may all be scalar, vector, matrix, or general container valued.
+          // The matching of their entries is done via the multistage procedure described
+          // in the class documentation of DiscreteGlobalBasisFunction.
+          auto&& dimC = c.size();
+          auto dimV = v.size();
+          assert(dimC*dimV == re.size());
+          for(size_type j=0; j<dimC; ++j)
+          {
+            auto&& c_j = c[j];
+            for(size_type k=0; k<dimV; ++k)
+              re[j*dimV + k] += c_j*v[k];
+          }
+        }
+      });
 
       return y;
     }
