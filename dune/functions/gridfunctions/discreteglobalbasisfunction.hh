@@ -8,11 +8,12 @@
 #include <dune/common/shared_ptr.hh>
 #include <dune/common/hybridutilities.hh>
 
+#include <dune/typetree/treecontainer.hh>
+
 #include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
-#include <dune/functions/common/treedata.hh>
 #include <dune/functions/backends/concepts.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 
@@ -96,7 +97,14 @@ public:
     template<class Node>
     using NodeData = typename std::vector<LocalBasisRange<Node>>;
 
-    using ShapeFunctionValueContainer = TreeData<Tree, NodeData, true>;
+    static auto makeTreeContainer(const Tree& tree)
+    {
+      return Dune::TypeTree::makeTreeContainer(tree, [](const auto& node) {
+        return NodeData<std::decay_t<decltype(node)>>{};
+      });
+    }
+
+    using PerNodeEvaluationBuffer = decltype(makeTreeContainer(std::declval<Tree>()));
 
   public:
 
@@ -108,10 +116,8 @@ public:
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
       : globalFunction_(&globalFunction)
       , localView_(globalFunction.basis().localView())
+      , evaluationBuffer_(makeTreeContainer(localView_.tree()))
     {
-      // Here we assume that the tree can be accessed, traversed,
-      // and queried for tree indices even in unbound state.
-      shapeFunctionValueContainer_.init(localView_.tree());
 //      localDoFs_.reserve(localView_.maxSize());
     }
 
@@ -119,20 +125,13 @@ public:
       : globalFunction_(other.globalFunction_)
       , localView_(other.localView_)
       , bound_(other.bound_)
-    {
-      // Here we assume that the tree can be accessed, traversed,
-      // and queried for tree indices even in unbound state.
-      shapeFunctionValueContainer_.init(localView_.tree());
-    }
+      , evaluationBuffer_(makeTreeContainer(localView_.tree()))
+    {}
 
     LocalFunction operator=(const LocalFunction& other)
     {
       globalFunction_ = other.globalFunction_;
       localView_ = other.localView_;
-
-      // Here we assume that the tree can be accessed, traversed,
-      // and queried for tree indices even in unbound state.
-      shapeFunctionValueContainer_.init(localView_.tree());
     }
 
     /**
@@ -183,7 +182,7 @@ public:
         const auto& nodeToRangeEntry = globalFunction_->nodeToRangeEntry();
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
-        auto& shapeFunctionValues = shapeFunctionValueContainer_[node];
+        auto& shapeFunctionValues = evaluationBuffer_[treePath];
 
         localBasis.evaluateFunction(x, shapeFunctionValues);
 
@@ -234,7 +233,7 @@ public:
     const DiscreteGlobalBasisFunction* globalFunction_;
     LocalView localView_;
 
-    mutable ShapeFunctionValueContainer shapeFunctionValueContainer_;
+    mutable PerNodeEvaluationBuffer evaluationBuffer_;
 //    std::vector<typename V::value_type> localDoFs_;
 
     bool bound_ = false;
