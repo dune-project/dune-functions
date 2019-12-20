@@ -66,8 +66,7 @@ int main(int argc, char** argv)
   x=1.0;
 
   // create a discrete global basis function
-  auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<double>
-    (basis, Dune::TypeTree::hybridTreePath(), xbe);
+  auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(basis, xbe);
 
   // test with DiscreteGlobalBasisFunction
   suite.subTest(checkCopyConstruction(f, grid->leafGridView()));

@@ -27,9 +27,7 @@ namespace Functions {
  * \ingroup FunctionImplementations
  *
  * This implements the grid function interface by combining a given global
- * basis and a coefficient vector. The part of the spanned space that should
- * be covered by the function is determined by a tree path that specifies the
- * corresponding local ansatz tree.
+ * basis and a coefficient vector.
  *
  * This class supports mapping of subtrees to multi-component ranges,
  * vector-valued shape functions, and implicit product spaces given
@@ -61,25 +59,22 @@ namespace Functions {
  * Hence the range entry RE must have dim(RE) = dim(C)*dim(V).
  *
  * \tparam B Type of lobal basis
- * \tparam TP Type of tree path specifying the requested subtree of ansatz functions
  * \tparam V Type of coefficient vectors
  * \tparam NTRE Type of node-to-range-entry-map that associates each leaf node in the local ansatz subtree with an entry in the range type
  * \tparam R Range type of this function
  */
-template<typename B, typename TP, typename V,
+template<typename B, typename V,
   typename NTRE = HierarchicNodeToRangeMap,
   typename R = typename V::value_type>
 class DiscreteGlobalBasisFunction
 {
 public:
   using Basis = B;
-  using TreePath = TP;
   using Vector = V;
 
   using GridView = typename Basis::GridView;
   using EntitySet = GridViewEntitySet<GridView, 0>;
   using Tree = typename Basis::LocalView::Tree;
-  using SubTree = typename TypeTree::ChildForTreePath<Tree, TreePath>;
   using NodeToRangeEntry = NTRE;
 
   using Domain = typename EntitySet::GlobalCoordinate;
@@ -93,7 +88,7 @@ public:
   class LocalFunction
   {
     using LocalView = typename Basis::LocalView;
-    using size_type = typename SubTree::size_type;
+    using size_type = typename Tree::size_type;
 
     template<class Node>
     using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
@@ -101,7 +96,7 @@ public:
     template<class Node>
     using NodeData = typename std::vector<LocalBasisRange<Node>>;
 
-    using ShapeFunctionValueContainer = TreeData<SubTree, NodeData, true>;
+    using ShapeFunctionValueContainer = TreeData<Tree, NodeData, true>;
 
     struct LocalEvaluateVisitor
       : public TypeTree::TreeVisitor
@@ -179,8 +174,8 @@ public:
     {
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
-      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
-      shapeFunctionValueContainer_.init(*subTree_);
+      tree_ = &localView_.tree();
+      shapeFunctionValueContainer_.init(*tree_);
 //      localDoFs_.reserve(localView_.maxSize());
     }
 
@@ -191,19 +186,19 @@ public:
     {
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
-      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
-      shapeFunctionValueContainer_.init(*subTree_);
+      tree_ = &localView_.tree();
+      shapeFunctionValueContainer_.init(*tree_);
     }
 
     LocalFunction operator=(const LocalFunction& other)
     {
       globalFunction_ = other.globalFunction_;
       localView_ = other.localView_;
-      subTree_ = &TypeTree::child(localView_.tree(), globalFunction_->treePath());
+      tree_ = &localView_.tree();
 
       // Here we assume that the tree can be accessed, traversed,
       // and queried for tree indices even in unbound state.
-      shapeFunctionValueContainer_.init(*subTree_);
+      shapeFunctionValueContainer_.init(*tree_);
     }
 
     /**
@@ -218,8 +213,8 @@ public:
       bound_ = true;
 
       // Read dofs associated to bound element
-//      localDoFs_.resize(subTree.size());
-//      for (size_type i = 0; i < subTree.size(); ++i)
+//      localDoFs_.resize(tree_.size());
+//      for (size_type i = 0; i < tree_.size(); ++i)
 //        localDoFs_[i] = globalFunction_->dofs()[localView.index(i)];
     }
 
@@ -250,7 +245,7 @@ public:
       auto y = Range(0);
 
       LocalEvaluateVisitor localEvaluateVisitor(x, y, localView_, globalFunction_->dofs(), globalFunction_->nodeToRangeEntry(), shapeFunctionValueContainer_);
-      TypeTree::applyToTree(*subTree_, localEvaluateVisitor);
+      TypeTree::applyToTree(*tree_, localEvaluateVisitor);
 
       return y;
     }
@@ -272,24 +267,22 @@ public:
 
     mutable ShapeFunctionValueContainer shapeFunctionValueContainer_;
 //    std::vector<typename V::value_type> localDoFs_;
-    const SubTree* subTree_;
+    const Tree* tree_;
 
     bool bound_ = false;
   };
 
   template<class B_T, class V_T, class NTRE_T>
-  DiscreteGlobalBasisFunction(B_T && basis, const TreePath& treePath, V_T && coefficients, NTRE_T&& nodeToRangeEntry) :
+  DiscreteGlobalBasisFunction(B_T && basis, V_T && coefficients, NTRE_T&& nodeToRangeEntry) :
     entitySet_(basis.gridView()),
     basis_(wrap_or_move(std::forward<B_T>(basis))),
-    treePath_(treePath),
     coefficients_(wrap_or_move(std::forward<V_T>(coefficients))),
     nodeToRangeEntry_(wrap_or_move(std::forward<NTRE_T>(nodeToRangeEntry)))
   {}
 
-  DiscreteGlobalBasisFunction(std::shared_ptr<const Basis> basis, const TreePath& treePath, std::shared_ptr<const V> coefficients, std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry) :
+  DiscreteGlobalBasisFunction(std::shared_ptr<const Basis> basis, std::shared_ptr<const V> coefficients, std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry) :
     entitySet_(basis->gridView()),
     basis_(basis),
-    treePath_(treePath),
     coefficients_(coefficients),
     nodeToRangeEntry_(nodeToRangeEntry)
   {}
@@ -297,11 +290,6 @@ public:
   const Basis& basis() const
   {
     return *basis_;
-  }
-
-  const TreePath& treePath() const
-  {
-    return treePath_;
   }
 
   const V& dofs() const
@@ -357,7 +345,6 @@ private:
 
   EntitySet entitySet_;
   std::shared_ptr<const Basis> basis_;
-  const TreePath treePath_;
   std::shared_ptr<const V> coefficients_;
   std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry_;
 };
@@ -379,8 +366,8 @@ void localFunction(DiscreteGlobalBasisFunction<TT...>&& t) = delete;
 
 
 
-template<typename R, typename B, typename TP, typename V>
-auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
+template<typename R, typename B, typename V>
+auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
 {
   using Basis = std::decay_t<B>;
   using NTREM = HierarchicNodeToRangeMap;
@@ -397,19 +384,10 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, const TP& treePath, V&& vector)
   };
 
   using Vector = std::decay_t<decltype(toConstVectorBackend(std::forward<V>(vector)))>;
-  return DiscreteGlobalBasisFunction<Basis, TP, Vector, NTREM, R>(
+  return DiscreteGlobalBasisFunction<Basis, Vector, NTREM, R>(
       std::forward<B>(basis),
-      treePath,
       toConstVectorBackend(std::forward<V>(vector)),
       HierarchicNodeToRangeMap());
-}
-
-
-
-template<typename R, typename B, typename V>
-auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
-{
-  return makeDiscreteGlobalBasisFunction<R>(std::forward<B>(basis), TypeTree::hybridTreePath(), std::forward<V>(vector));
 }
 
 

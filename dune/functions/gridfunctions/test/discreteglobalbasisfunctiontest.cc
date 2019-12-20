@@ -27,8 +27,7 @@ bool checkInterpolationConsistency(B&& basis, C&& x)
   using Range = typename Coeff::value_type;
 
   // generate a discrete function
-  auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<Range>
-                            (basis, Dune::TypeTree::hybridTreePath(), x);
+  auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<Range>(basis, x);
 
   Coeff y;
   interpolate(basis, y, f);
@@ -93,8 +92,7 @@ int main (int argc, char* argv[]) try
   passed = passed and checkInterpolationConsistency(feBasis, x);
 
   // generate a discrete function to evaluate the integral
-  auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<double>
-                            (feBasis, Dune::TypeTree::hybridTreePath(), x);
+  auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(feBasis, x);
 
   double exactIntegral = 0.5;
 
