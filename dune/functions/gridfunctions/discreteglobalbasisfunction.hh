@@ -122,6 +122,8 @@ public:
       , bound_(other.bound_)
     {
       localDoFs_.reserve(localView_.maxSize());
+      if (bound())
+        localDoFs_ = other.localDoFs_;
     }
 
     LocalFunction operator=(const LocalFunction& other)
