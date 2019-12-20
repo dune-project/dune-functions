@@ -73,6 +73,8 @@ public:
   using Basis = B;
   using Vector = V;
 
+  using Coefficient = std::decay_t<decltype(std::declval<Vector>()[std::declval<typename Basis::MultiIndex>()])>;
+
   using GridView = typename Basis::GridView;
   using EntitySet = GridViewEntitySet<GridView, 0>;
   using Tree = typename Basis::LocalView::Tree;
@@ -109,9 +111,8 @@ public:
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
       : globalFunction_(&globalFunction)
       , localView_(globalFunction.basis().localView())
-    {
-//      localDoFs_.reserve(localView_.maxSize());
-    }
+      , bound_(false)
+    {}
 
     LocalFunction(const LocalFunction& other)
       : globalFunction_(other.globalFunction_)
@@ -123,6 +124,7 @@ public:
     {
       globalFunction_ = other.globalFunction_;
       localView_ = other.localView_;
+      bound_ = other.bound_;
     }
 
     /**
@@ -135,11 +137,6 @@ public:
     {
       localView_.bind(element);
       bound_ = true;
-
-      // Read dofs associated to bound element
-//      localDoFs_.resize(tree_.size());
-//      for (size_type i = 0; i < tree_.size(); ++i)
-//        localDoFs_[i] = globalFunction_->dofs()[localView.index(i)];
     }
 
     void unbind()
@@ -223,10 +220,7 @@ public:
 
     const DiscreteGlobalBasisFunction* globalFunction_;
     LocalView localView_;
-
     mutable PerNodeEvaluationBuffer evaluationBuffer_;
-//    std::vector<typename V::value_type> localDoFs_;
-
     bool bound_ = false;
   };
 
