@@ -114,19 +114,6 @@ public:
       , bound_(false)
     {}
 
-    LocalFunction(const LocalFunction& other)
-      : globalFunction_(other.globalFunction_)
-      , localView_(other.localView_)
-      , bound_(other.bound_)
-    {}
-
-    LocalFunction operator=(const LocalFunction& other)
-    {
-      globalFunction_ = other.globalFunction_;
-      localView_ = other.localView_;
-      bound_ = other.bound_;
-    }
-
     /**
      * \brief Bind LocalFunction to grid element.
      *
