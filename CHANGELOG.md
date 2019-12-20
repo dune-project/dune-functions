@@ -1,9 +1,11 @@
 # Dune-functions changes
 
 Any version of dune-functions is supposed to be compatible with the
-correponding version of the Dune core modules.
+corresponding version of the Dune core modules.
 
-## Master (will become release 2.7)
+## Master (will become release 2.8)
+
+## Release 2.7
 
 - The `LagrangeBasis` is extended by a template parameter to set the range type of
   the underlying LocalBasis. This parameter is also added to the basis factory.
