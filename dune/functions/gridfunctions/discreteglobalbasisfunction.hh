@@ -112,19 +112,25 @@ public:
       : globalFunction_(&globalFunction)
       , localView_(globalFunction.basis().localView())
       , bound_(false)
-    {}
+    {
+      localDoFs_.reserve(localView_.maxSize());
+    }
 
     LocalFunction(const LocalFunction& other)
       : globalFunction_(other.globalFunction_)
       , localView_(other.localView_)
       , bound_(other.bound_)
-    {}
+    {
+      localDoFs_.reserve(localView_.maxSize());
+    }
 
     LocalFunction operator=(const LocalFunction& other)
     {
       globalFunction_ = other.globalFunction_;
       localView_ = other.localView_;
       bound_ = other.bound_;
+      if (bound())
+        localDoFs_ = other.localDoFs_;
     }
 
     /**
@@ -137,6 +143,9 @@ public:
     {
       localView_.bind(element);
       bound_ = true;
+      localDoFs_.resize(localView_.tree().size());
+      for (size_type i = 0; i < localView_.tree().size(); ++i)
+        localDoFs_[i] = globalFunction_->dofs()[localView_.index(i)];
     }
 
     void unbind()
@@ -182,7 +191,7 @@ public:
           const auto& multiIndex = localView_.index(node.localIndex(i));
 
           // Get coefficient associated to i-th shape function
-          auto c = flatVectorView(dofs[multiIndex]);
+          auto c = flatVectorView(localDoFs_[node.localIndex(i)]);
 
           // Get value of i-th shape function
           auto v = flatVectorView(shapeFunctionValues[i]);
@@ -222,6 +231,7 @@ public:
     LocalView localView_;
     mutable PerNodeEvaluationBuffer evaluationBuffer_;
     bool bound_ = false;
+    std::vector<Coefficient> localDoFs_;
   };
 
   template<class B_T, class V_T, class NTRE_T>
