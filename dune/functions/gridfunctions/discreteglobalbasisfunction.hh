@@ -97,14 +97,7 @@ public:
     template<class Node>
     using NodeData = typename std::vector<LocalBasisRange<Node>>;
 
-    static auto makeTreeContainer(const Tree& tree)
-    {
-      return Dune::TypeTree::makeTreeContainer(tree, [](const auto& node) {
-        return NodeData<std::decay_t<decltype(node)>>{};
-      });
-    }
-
-    using PerNodeEvaluationBuffer = decltype(makeTreeContainer(std::declval<Tree>()));
+    using PerNodeEvaluationBuffer = typename TypeTree::TreeContainer<NodeData,Tree>;
 
   public:
 
@@ -116,7 +109,6 @@ public:
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
       : globalFunction_(&globalFunction)
       , localView_(globalFunction.basis().localView())
-      , evaluationBuffer_(makeTreeContainer(localView_.tree()))
     {
 //      localDoFs_.reserve(localView_.maxSize());
     }
@@ -125,7 +117,6 @@ public:
       : globalFunction_(other.globalFunction_)
       , localView_(other.localView_)
       , bound_(other.bound_)
-      , evaluationBuffer_(makeTreeContainer(localView_.tree()))
     {}
 
     LocalFunction operator=(const LocalFunction& other)
