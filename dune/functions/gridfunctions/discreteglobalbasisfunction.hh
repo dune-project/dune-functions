@@ -177,7 +177,6 @@ public:
       auto y = Range(0);
 
       TypeTree::forEachLeafNode(localView_.tree(), [&](auto&& node, auto&& treePath) {
-        const auto& dofs = globalFunction_->dofs();
         const auto& nodeToRangeEntry = globalFunction_->nodeToRangeEntry();
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
@@ -190,8 +189,6 @@ public:
 
         for (size_type i = 0; i < localBasis.size(); ++i)
         {
-          const auto& multiIndex = localView_.index(node.localIndex(i));
-
           // Get coefficient associated to i-th shape function
           auto c = flatVectorView(localDoFs_[node.localIndex(i)]);
 
