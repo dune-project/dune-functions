@@ -126,13 +126,14 @@ public:
         localDoFs_ = other.localDoFs_;
     }
 
-    LocalFunction operator=(const LocalFunction& other)
+    LocalFunction& operator=(const LocalFunction& other)
     {
       globalFunction_ = other.globalFunction_;
       localView_ = other.localView_;
       bound_ = other.bound_;
       if (bound())
         localDoFs_ = other.localDoFs_;
+      return *this;
     }
 
     /**
