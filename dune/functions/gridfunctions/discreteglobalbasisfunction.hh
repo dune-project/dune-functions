@@ -6,6 +6,7 @@
 #include <memory>
 
 #include <dune/common/shared_ptr.hh>
+#include <dune/common/typetrait.hh>
 #include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/treecontainer.hh>
@@ -73,7 +74,9 @@ public:
   using Basis = B;
   using Vector = V;
 
-  using Coefficient = std::decay_t<decltype(std::declval<Vector>()[std::declval<typename Basis::MultiIndex>()])>;
+  // In order to make the cache work for proxy-references
+  // we have to use AutonomousValue<T> instead of std::decay_t<T>
+  using Coefficient = Dune::AutonomousValue<decltype(std::declval<Vector>()[std::declval<typename Basis::MultiIndex>()])>;
 
   using GridView = typename Basis::GridView;
   using EntitySet = GridViewEntitySet<GridView, 0>;
