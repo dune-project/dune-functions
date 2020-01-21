@@ -6,7 +6,7 @@
 #include <memory>
 
 #include <dune/common/shared_ptr.hh>
-#include <dune/common/typetrait.hh>
+#include <dune/common/typetraits.hh>
 #include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/treecontainer.hh>
