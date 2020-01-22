@@ -195,6 +195,7 @@ namespace Dune {
     public:
 
       using Element = typename T::Element;
+      using FiniteElement = typename T::FiniteElement;
 
       PowerBasisNode() = default;
 
@@ -205,6 +206,11 @@ namespace Dune {
       const Element& element() const
       {
         return this->child(Dune::Indices::_0).element();
+      }
+
+      const FiniteElement& finiteElement() const
+      {
+        return this->child(Dune::Indices::_0).finiteElement();
       }
 
     };
