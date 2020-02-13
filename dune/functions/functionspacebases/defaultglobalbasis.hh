@@ -207,11 +207,11 @@ namespace Impl {
  * Function space basis implementations that require a different transformation
  * need to specialize this class.
  */
-template <class Basis>
+template <class BasisTreeNode>
 class ToGlobalTransformator
 {
-  using Geometry = typename Basis::GridView::template Codim<0>::Entity::Geometry;
-  using RangeType = typename Basis::LocalView::Tree::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+  using Geometry = typename BasisTreeNode::Element::Geometry;
+  using RangeType = typename BasisTreeNode::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
   using LocalCoordinate = typename Geometry::LocalCoordinate;
 public:
 

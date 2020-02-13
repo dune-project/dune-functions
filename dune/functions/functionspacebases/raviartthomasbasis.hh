@@ -526,7 +526,7 @@ namespace Impl {
  *   to world coordinates using the Piola transform
  */
 template <class GridView, int k>
-class ToGlobalTransformator<RaviartThomasBasis<GridView,k> >
+class ToGlobalTransformator<RaviartThomasNode<GridView,k> >
 {
   using Geometry = typename GridView::template Codim<0>::Entity::Geometry;
   using LocalCoordinate = typename Geometry::LocalCoordinate;

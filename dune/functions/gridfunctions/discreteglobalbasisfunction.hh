@@ -174,9 +174,10 @@ public:
         localBasis.evaluateFunction(x, shapeFunctionValuesLocal);
 
         // Transform to global coordinates
-        auto shapeFunctionValues = Impl::ToGlobalTransformator<Basis>::transformValues(std::move(shapeFunctionValuesLocal),
-                                                                                       x,
-                                                                                       node.element().geometry());
+        using Node = std::decay_t<decltype(node)>;  // The leaf basis
+        auto shapeFunctionValues = Impl::ToGlobalTransformator<Node>::transformValues(std::move(shapeFunctionValuesLocal),
+                                                                                      x,
+                                                                                      node.element().geometry());
 
         // Get range entry associated to this node
         auto re = flatVectorView(nodeToRangeEntry(node, treePath, y));
