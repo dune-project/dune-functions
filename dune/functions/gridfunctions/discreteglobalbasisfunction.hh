@@ -5,7 +5,6 @@
 
 #include <memory>
 
-#include <dune/common/shared_ptr.hh>
 #include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/treecontainer.hh>
