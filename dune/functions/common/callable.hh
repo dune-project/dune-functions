@@ -53,7 +53,7 @@ class CallableFunctionWrapper
     }
 
     /**
-     * \brief Instanciate from shared_ptr to f
+     * \brief Instanciate from std::shared_ptr to f
      *
      * The CallableFunctionWrapper will share ownership
      * with the provided function.
@@ -109,15 +109,15 @@ CallableFunctionWrapper<F> callable(const F& f)
 
 
 /**
- * \brief Create a callable object from shared_ptr<F>
+ * \brief Create a callable object from std::shared_ptr<F>
  *
  * \ingroup FunctionImplementations
  *
  * \tparam F Function type derived from Dune::VirtualFunction
- * \param fp shared_ptr<F> to the function to be wrapper
+ * \param fp std::shared_ptr<F> to the function to be wrapper
  *
  * The returned object will share ownership of fp
- * using a shared_ptr. You can e.g. do the following:
+ * using a std::shared_ptr. You can e.g. do the following:
  * \code
  *   // Create some F derived from VirtualFunction<D,R>
  *   auto f = make_shared<F>();

@@ -6,7 +6,6 @@
 #include <memory>
 #include <functional>
 
-#include <dune/common/shared_ptr.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/common/parallel/mpihelper.hh>
 
