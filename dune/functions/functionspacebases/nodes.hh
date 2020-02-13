@@ -3,6 +3,8 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NODES_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NODES_HH
 
+#include <memory>
+
 #include <dune/common/indices.hh>
 
 #include <dune/typetree/leafnode.hh>
@@ -227,7 +229,7 @@ namespace Dune {
       {}
 
       template<typename... Children>
-      CompositeBasisNode(const shared_ptr<Children>&... children) :
+      CompositeBasisNode(const std::shared_ptr<Children>&... children) :
         Node(children...)
       {}
 
