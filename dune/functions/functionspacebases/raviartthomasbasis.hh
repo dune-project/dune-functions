@@ -522,35 +522,11 @@ using RaviartThomasBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatM
 
 namespace Impl {
 
-/** \brief Transforms shape function values and derivatives from reference element coordinates
- *   to world coordinates using the Piola transform
- */
-template <class GridView, int k>
-class ToGlobalTransformator<RaviartThomasNode<GridView,k> >
-{
-  using Geometry = typename GridView::template Codim<0>::Entity::Geometry;
-  using LocalCoordinate = typename Geometry::LocalCoordinate;
-  // TODO: Do not hard-wire 'double' here!
-  using RangeType = FieldVector<double, GridView::dimension>;
-public:
-  static auto transformValues(std::vector<RangeType>&& valuesLocal,
-                              const LocalCoordinate& xi,
-                              const Geometry& geometry)
+  template <class GridView, int k>
+  auto getToGlobalTransformator(RaviartThomasNode<GridView,k>)
   {
-    auto jacobianTransposed = geometry.jacobianTransposed(xi);
-    auto integrationElement = geometry.integrationElement(xi);
-
-    for (auto& value : valuesLocal)
-    {
-      auto tmp = value;
-      jacobianTransposed.mtv(tmp, value);
-      value /= integrationElement;
-    }
-
-    return std::move(valuesLocal);
+    return PiolaTransformator();
   }
-
-};
 
 } // end namespace Impl
 

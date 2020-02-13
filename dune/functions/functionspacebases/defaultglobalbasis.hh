@@ -196,6 +196,49 @@ namespace BasisBuilder {
 
 namespace Impl {
 
+  /** \brief Transform values of affine families of finite elements.
+   *
+   * For affine families, the required transformation is the identity.
+   *
+   * \param valuesLocal The shape function values to transform
+   * \param local The position in the reference element where the shape functions have been evaluated
+   * \param geometry The grid elements in world coordinates where the values should be transformed to
+   */
+  struct EmptyTransformator
+  {
+    template<typename Values, typename LocalCoordinate, typename Geometry>
+    auto apply(Values&& valuesLocal,
+      const LocalCoordinate& xi,
+      const Geometry& geometry)
+    {
+      return std::move(valuesLocal);
+    }
+  };
+
+  /** \brief Transforms shape function values and derivatives from reference element coordinates
+   *   to world coordinates using the Piola transform
+   */
+  struct PiolaTransformator
+  {
+    template<typename Values, typename LocalCoordinate, typename Geometry>
+    auto apply(Values&& valuesLocal,
+      const LocalCoordinate& xi,
+      const Geometry& geometry)
+    {
+      auto jacobianTransposed = geometry.jacobianTransposed(xi);
+      auto integrationElement = geometry.integrationElement(xi);
+
+      for (auto& value : valuesLocal)
+      {
+        auto tmp = value;
+        jacobianTransposed.mtv(tmp, value);
+        value /= integrationElement;
+      }
+
+      return std::move(valuesLocal);
+    }
+  };
+
 /** \brief A class that transforms shape function values and derivatives
  *   from reference element coordinates to world coordinates
  *
@@ -208,29 +251,10 @@ namespace Impl {
  * need to specialize this class.
  */
 template <class BasisTreeNode>
-class ToGlobalTransformator
+auto getToGlobalTransformator(BasisTreeNode)
 {
-  using Geometry = typename BasisTreeNode::Element::Geometry;
-  using RangeType = typename BasisTreeNode::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
-  using LocalCoordinate = typename Geometry::LocalCoordinate;
-public:
-
-  /** \brief Transform values of affine families of finite elements.
-   *
-   * For affine families, the required transformation is the identity.
-   *
-   * \param valuesLocal The shape function values to transform
-   * \param local The position in the reference element where the shape functions have been evaluated
-   * \param geometry The grid elements in world coordinates where the values should be transformed to
-   */
-  static auto transformValues(std::vector<RangeType>&& valuesLocal,
-                              const LocalCoordinate& local,
-                              const Geometry& geometry)
-  {
-    return std::move(valuesLocal);
-  }
-
-};
+  return EmptyTransformator();
+}
 
 } // end namespace Impl
 
