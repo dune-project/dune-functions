@@ -194,6 +194,43 @@ namespace BasisBuilder {
 
 }
 
+/** \brief A class that transforms shape function values and derivatives
+ *   from reference element coordinates to world coordinates
+ *
+ * This default implementation contains the case of affine families of
+ * finite elements, where the shape function values do not need any transformation
+ * at all, and the derivates need to be multiplied from the left with the
+ * transposed inverse Jacobian.
+ *
+ * Function space basis implementations that require a different transformation
+ * need to specialize this class.
+ */
+template <class Basis>
+class ToGlobalTransformator
+{
+  using Geometry = typename Basis::GridView::template Codim<0>::Entity::Geometry;
+  using RangeType = typename Basis::LocalView::Tree::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+  using LocalCoordinate = typename Geometry::LocalCoordinate;
+public:
+
+  /** \brief Transform values of affine families of finite elements.
+   *
+   * For affine families, the required transformation is the identity.
+   *
+   * \param valuesLocal The shape function values to transform
+   * \param local The position in the reference element where the shape functions have been evaluated
+   * \param geometry The grid elements in world coordinates where the values should be transformed to
+   */
+  static auto transformValues(std::vector<RangeType>&& valuesLocal,
+                              const LocalCoordinate& local,
+                              const Geometry& geometry)
+  {
+    return std::move(valuesLocal);
+  }
+
+};
+
+
 
 } // end namespace Functions
 } // end namespace Dune

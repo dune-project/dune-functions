@@ -519,6 +519,38 @@ auto raviartThomas()
 template<typename GV, int k>
 using RaviartThomasBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
 
+
+
+/** \brief Transforms shape function values and derivatives from reference element coordinates
+ *   to world coordinates using the Piola transform
+ */
+template <class GridView, int k>
+class ToGlobalTransformator<RaviartThomasBasis<GridView,k> >
+{
+  using Geometry = typename GridView::template Codim<0>::Entity::Geometry;
+  using LocalCoordinate = typename Geometry::LocalCoordinate;
+  // TODO: Do not hard-wire 'double' here!
+  using RangeType = FieldVector<double, GridView::dimension>;
+public:
+  static auto transformValues(std::vector<RangeType>&& valuesLocal,
+                              const LocalCoordinate& xi,
+                              const Geometry& geometry)
+  {
+    auto jacobianTransposed = geometry.jacobianTransposed(xi);
+    auto integrationElement = geometry.integrationElement(xi);
+
+    for (auto& value : valuesLocal)
+    {
+      auto tmp = value;
+      jacobianTransposed.mtv(tmp, value);
+      value /= integrationElement;
+    }
+
+    return std::move(valuesLocal);
+  }
+
+};
+
 } // end namespace Functions
 } // end namespace Dune
 

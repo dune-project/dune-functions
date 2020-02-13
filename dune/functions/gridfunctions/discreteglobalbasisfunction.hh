@@ -169,9 +169,14 @@ public:
         const auto& nodeToRangeEntry = globalFunction_->nodeToRangeEntry();
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
-        auto& shapeFunctionValues = evaluationBuffer_[treePath];
+        auto& shapeFunctionValuesLocal = evaluationBuffer_[treePath];
 
-        localBasis.evaluateFunction(x, shapeFunctionValues);
+        localBasis.evaluateFunction(x, shapeFunctionValuesLocal);
+
+        // Transform to global coordinates
+        auto shapeFunctionValues = ToGlobalTransformator<Basis>::transformValues(std::move(shapeFunctionValuesLocal),
+                                                                                 x,
+                                                                                 node.element().geometry());
 
         // Get range entry associated to this node
         auto re = flatVectorView(nodeToRangeEntry(node, treePath, y));
