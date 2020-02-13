@@ -194,6 +194,8 @@ namespace BasisBuilder {
 
 }
 
+namespace Impl {
+
 /** \brief A class that transforms shape function values and derivatives
  *   from reference element coordinates to world coordinates
  *
@@ -230,6 +232,7 @@ public:
 
 };
 
+} // end namespace Impl
 
 
 } // end namespace Functions

@@ -520,6 +520,7 @@ template<typename GV, int k>
 using RaviartThomasBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
 
 
+namespace Impl {
 
 /** \brief Transforms shape function values and derivatives from reference element coordinates
  *   to world coordinates using the Piola transform
@@ -550,6 +551,8 @@ public:
   }
 
 };
+
+} // end namespace Impl
 
 } // end namespace Functions
 } // end namespace Dune
