@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <dune/geometry/referenceelements.hh>
-#include <dune/typetree/traversal.hh>
+#include <dune/common/typetree/traversal.hh>
 
 
 

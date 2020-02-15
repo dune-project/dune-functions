@@ -8,7 +8,7 @@
 #include <dune/common/shared_ptr.hh>
 #include <dune/common/hybridutilities.hh>
 
-#include <dune/typetree/treecontainer.hh>
+#include <dune/common/typetree/treecontainer.hh>
 
 #include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>

@@ -392,7 +392,7 @@ int main (int argc, char *argv[])
   auto topFluxBC   = [&pi] (const Domain& x) { return -0.05 * (1. - x[0]) * std::sin(2.*pi*x[0]); };
   auto lowerFluxBC = [&pi] (const Domain& x) { return  0.05 * (1. - x[0]) * std::sin(2.*pi*x[0]); };
 
-  using namespace TypeTree::Indices;
+  using namespace Indices;
   using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
 
   BitVectorType isTopBoundary;
