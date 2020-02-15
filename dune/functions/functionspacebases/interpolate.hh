@@ -10,7 +10,7 @@
 #include <dune/common/bitsetvector.hh>
 #include <dune/common/hybridutilities.hh>
 
-#include <dune/typetree/childextraction.hh>
+#include <dune/common/typetree/childextraction.hh>
 
 #include <dune/localfunctions/common/virtualinterface.hh>
 
@@ -24,8 +24,8 @@
 #include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
 
-#include <dune/typetree/traversal.hh>
-#include <dune/typetree/visitor.hh>
+#include <dune/common/typetree/traversal.hh>
+#include <dune/common/typetree/visitor.hh>
 
 namespace Dune {
 namespace Functions {

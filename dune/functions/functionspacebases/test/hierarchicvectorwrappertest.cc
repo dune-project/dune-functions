@@ -15,8 +15,6 @@
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
 
-#include <dune/typetree/utility.hh>
-
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 
@@ -130,7 +128,7 @@ Dune::TestSuite checkHierarchicVector(std::string shortName="")
 {
   Dune::TestSuite test(shortName);
 
-  using namespace Dune::TypeTree::Indices;
+  using namespace Dune::Indices;
   using SizeInfo = HybridSizeInfoDummy<dim>;
   using SizePrefix = typename SizeInfo::SizePrefix;
 
