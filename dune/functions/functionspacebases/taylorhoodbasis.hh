@@ -6,8 +6,8 @@
 #include <dune/common/exceptions.hh>
 #include <dune/common/reservedvector.hh>
 
-#include <dune/typetree/powernode.hh>
-#include <dune/typetree/compositenode.hh>
+#include <dune/common/typetree/powernode.hh>
+#include <dune/common/typetree/compositenode.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
 
@@ -290,7 +290,7 @@ public:
 
   void bind(const Node& node)
   {
-    using namespace TypeTree::Indices;
+    using namespace Indices;
     node_ = &node;
     pq1NodeIndexSet_.bind(node.child(_1));
     pq2NodeIndexSet_.bind(node.child(_0, 0));

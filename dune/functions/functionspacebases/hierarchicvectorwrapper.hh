@@ -6,8 +6,6 @@
 #include <dune/common/concept.hh>
 #include <dune/common/hybridutilities.hh>
 
-#include <dune/typetree/utility.hh>
-
 #include <dune/functions/common/indexaccess.hh>
 #include <dune/functions/common/utility.hh>
 #include <dune/functions/common/type_traits.hh>
@@ -30,7 +28,7 @@ namespace Imp {
     template<class E, std::size_t size>
     struct DefaultCoefficientTypeHelper
     {
-      using E0 = decltype(std::declval<E>()[Dune::TypeTree::Indices::_0]);
+      using E0 = decltype(std::declval<E>()[Dune::Indices::_0]);
       using type = typename DefaultCoefficientTypeHelper<E0, size-1>::type;
     };
 

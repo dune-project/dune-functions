@@ -7,11 +7,11 @@
 
 #include <dune/common/indices.hh>
 
-#include <dune/typetree/leafnode.hh>
-#include <dune/typetree/powernode.hh>
-#include <dune/typetree/compositenode.hh>
-#include <dune/typetree/traversal.hh>
-#include <dune/typetree/visitor.hh>
+#include <dune/common/typetree/leafnode.hh>
+#include <dune/common/typetree/powernode.hh>
+#include <dune/common/typetree/compositenode.hh>
+#include <dune/common/typetree/traversal.hh>
+#include <dune/common/typetree/visitor.hh>
 
 namespace Dune {
   namespace Functions {
