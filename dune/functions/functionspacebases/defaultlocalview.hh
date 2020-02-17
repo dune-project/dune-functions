@@ -44,12 +44,12 @@ public:
   using Tree = typename GlobalBasis::PreBasis::Node;
 
   /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = typename NodeIndexSet::MultiIndex;
+  using MultiIndex = typename GlobalBasis::MultiIndex;
 
 private:
 
-  template<typename NodeIndexSet_>
-  using hasIndices = decltype(std::declval<NodeIndexSet_>().indices(std::declval<std::vector<typename NodeIndexSet_::MultiIndex>>().begin()));
+  template<typename NIS, typename MI>
+  using hasIndices = decltype(std::declval<NIS>().indices(std::declval<std::vector<MI>>().begin()));
 
 public:
 
@@ -75,7 +75,7 @@ public:
     nodeIndexSet_.bind(tree_);
     indices_.resize(size());
     Hybrid::ifElse(
-      Std::is_detected<hasIndices,NodeIndexSet>{},
+      Std::is_detected<hasIndices,NodeIndexSet,MultiIndex>{},
       [&](auto id) {
         id(nodeIndexSet_).indices(indices_.begin());
       },

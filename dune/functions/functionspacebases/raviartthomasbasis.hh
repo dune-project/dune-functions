@@ -24,7 +24,6 @@
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 
 namespace Dune {
 namespace Functions {
@@ -211,16 +210,16 @@ namespace Impl {
 template<typename GV, int k>
 class RaviartThomasNode;
 
-template<typename GV, int k, class MI>
+template<typename GV, int k>
 class RaviartThomasNodeIndexSet;
 
-template<typename GV, int k, class MI>
+template<typename GV, int k>
 class RaviartThomasPreBasis
 {
   static const int dim = GV::dimension;
   using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, double, k>;
 
-  template<typename, int, class>
+  template<typename, int>
   friend class RaviartThomasNodeIndexSet;
 
 public:
@@ -231,12 +230,7 @@ public:
 
   using Node = RaviartThomasNode<GV, k>;
 
-  using IndexSet = RaviartThomasNodeIndexSet<GV, k, MI>;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using SizePrefix = Dune::ReservedVector<size_type, 1>;
+  using IndexSet = RaviartThomasNodeIndexSet<GV, k>;
 
   /** \brief Constructor for a given grid view object */
   RaviartThomasPreBasis(const GridView& gv) :
@@ -299,6 +293,7 @@ public:
   }
 
   //! Return number possible values for next position in multi index
+  template <class SizePrefix>
   size_type size(const SizePrefix prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
@@ -384,7 +379,7 @@ protected:
   const FiniteElementMap* finiteElementMap_;
 };
 
-template<typename GV, int k, class MI>
+template<typename GV, int k>
 class RaviartThomasNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -393,10 +388,7 @@ public:
 
   using size_type = std::size_t;
 
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = RaviartThomasPreBasis<GV, k, MI>;
+  using PreBasis = RaviartThomasPreBasis<GV, k>;
 
   using Node = RaviartThomasNode<GV,k>;
 
@@ -476,12 +468,10 @@ template<std::size_t k>
 class RaviartThomasPreBasisFactory
 {
 public:
-  static const std::size_t requiredMultiIndexSize=1;
-
-  template<class MultiIndex, class GridView>
+  template<class GridView>
   auto makePreBasis(const GridView& gridView) const
   {
-    return RaviartThomasPreBasis<GridView, k, MultiIndex>(gridView);
+    return RaviartThomasPreBasis<GridView, k>(gridView);
   }
 
 };
@@ -517,7 +507,7 @@ auto raviartThomas()
  * \tparam k The order of the basis
  */
 template<typename GV, int k>
-using RaviartThomasBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
+using RaviartThomasBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k> >;
 
 } // end namespace Functions
 } // end namespace Dune

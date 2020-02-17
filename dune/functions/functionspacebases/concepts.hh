@@ -8,6 +8,7 @@
 
 #include <dune/functions/common/utility.hh>
 
+#include <dune/functions/functionspacebases/multiindex.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 
 
@@ -122,18 +123,18 @@ struct BasisTree : Refines<BasisNode>
 template<class PreBasis>
 struct NodeIndexSet
 {
+  using MI = MultiIndexType_t<PreBasis>;
   template<class I>
   auto require(const I& indexSet) -> decltype(
     requireType<typename I::size_type>(),
-    requireType<typename I::MultiIndex>(),
     requireType<typename I::PreBasis>(),
     requireType<typename I::Node>(),
     requireSameType<typename I::PreBasis, PreBasis>(),
     const_cast<I&>(indexSet).bind(std::declval<typename I::Node>()),
     const_cast<I&>(indexSet).unbind(),
     requireConvertible<typename I::size_type>(indexSet.size()),
-    requireConvertible<typename std::vector<typename I::MultiIndex>::iterator>(
-      indexSet.indices(std::declval<typename std::vector<typename I::MultiIndex>::iterator>()))
+    requireConvertible<typename std::vector<MI>::iterator>(
+      indexSet.indices(std::declval<typename std::vector<MI>::iterator>()))
   );
 };
 
@@ -146,8 +147,6 @@ struct PreBasis
   auto require(const PB& preBasis) -> decltype(
     requireType<typename PB::GridView>(),
     requireType<typename PB::size_type>(),
-    requireType<typename PB::MultiIndex>(),
-    requireType<typename PB::SizePrefix>(),
     requireType<typename PB::Node>(),
     requireType<typename PB::IndexSet>(),
     requireSameType<typename PB::GridView, GridView>(),
@@ -156,7 +155,7 @@ struct PreBasis
     requireConvertible<typename PB::Node>(preBasis.makeNode()),
     requireConvertible<typename PB::IndexSet>(preBasis.makeIndexSet()),
     requireConvertible<typename PB::size_type>(preBasis.size()),
-    requireConvertible<typename PB::size_type>(preBasis.size(std::declval<typename PB::SizePrefix>())),
+    requireConvertible<typename PB::size_type>(preBasis.size(std::declval<SizePrefixType_t<PB>>())),
     requireConvertible<typename PB::size_type>(preBasis.dimension()),
     requireConvertible<typename PB::size_type>(preBasis.maxNodeSize()),
     requireSameType<decltype(const_cast<PB&>(preBasis).update(preBasis.gridView())),void>(),

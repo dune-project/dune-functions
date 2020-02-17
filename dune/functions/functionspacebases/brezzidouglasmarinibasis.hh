@@ -150,16 +150,16 @@ namespace Impl {
 template<typename GV, int k>
 class BrezziDouglasMariniNode;
 
-template<typename GV, int k, class MI>
+template<typename GV, int k>
 class BrezziDouglasMariniNodeIndexSet;
 
-template<typename GV, int k, class MI>
+template<typename GV, int k>
 class BrezziDouglasMariniPreBasis
 {
   static const int dim = GV::dimension;
   using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, double, k>;
 
-  template<typename, int, class>
+  template<typename, int>
   friend class BrezziDouglasMariniNodeIndexSet;
 
 public:
@@ -170,12 +170,7 @@ public:
 
   using Node = BrezziDouglasMariniNode<GV, k>;
 
-  using IndexSet = BrezziDouglasMariniNodeIndexSet<GV, k, MI>;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using SizePrefix = Dune::ReservedVector<size_type, 1>;
+  using IndexSet = BrezziDouglasMariniNodeIndexSet<GV, k>;
 
   /** \brief Constructor for a given grid view object */
   BrezziDouglasMariniPreBasis(const GridView& gv) :
@@ -233,6 +228,7 @@ public:
   }
 
   //! Return number possible values for next position in multi index
+  template <class SizePrefix>
   size_type size(const SizePrefix prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
@@ -315,7 +311,7 @@ protected:
 
 
 
-template<typename GV, int k, class MI>
+template<typename GV, int k>
 class BrezziDouglasMariniNodeIndexSet
 {
   enum {dim = GV::dimension};
@@ -324,10 +320,7 @@ public:
 
   using size_type = std::size_t;
 
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = BrezziDouglasMariniPreBasis<GV, k, MI>;
+  using PreBasis = BrezziDouglasMariniPreBasis<GV, k>;
 
   using Node = BrezziDouglasMariniNode<GV, k>;
 
@@ -404,11 +397,9 @@ template<std::size_t k>
 class BrezziDouglasMariniPreBasisFactory
 {
 public:
-  static const std::size_t requiredMultiIndexSize=1;
-
-  template<class MultiIndex, class GridView>
+  template<class GridView>
   auto makePreBasis(const GridView& gridView) const
-    -> BrezziDouglasMariniPreBasis<GridView, k, MultiIndex>
+    -> BrezziDouglasMariniPreBasis<GridView, k>
   {
     return {gridView};
   }
@@ -445,7 +436,7 @@ auto brezziDouglasMarini()
  * \tparam k The order of the basis
  */
 template<typename GV, int k>
-using BrezziDouglasMariniBasis = DefaultGlobalBasis<BrezziDouglasMariniPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
+using BrezziDouglasMariniBasis = DefaultGlobalBasis<BrezziDouglasMariniPreBasis<GV, k> >;
 
 } // end namespace Functions
 } // end namespace Dune
