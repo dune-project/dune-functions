@@ -5,6 +5,7 @@
 
 
 #include <dune/common/concept.hh>
+#include <dune/common/typetree/nodetags.hh>
 
 #include <dune/functions/common/utility.hh>
 
@@ -87,7 +88,7 @@ struct PowerBasisNode : Refines<BasisNode>
 {
   template<class N>
   auto require(const N& node) -> decltype(
-    requireBaseOf<Dune::Functions::PowerBasisNode<typename N::ChildType, N::CHILDREN>, N>(),
+    requireBaseOf<Dune::Functions::PowerBasisNode<typename N::ChildType, N::degree()>, N>(),
     requireConcept<BasisTree<GridView>, typename N::ChildType>()
   );
 };
@@ -111,9 +112,9 @@ struct BasisTree : Refines<BasisNode>
 {
   template<class N>
   auto require(const N& node) -> decltype(
-    requireConcept<typename std::conditional< N::isLeaf, LeafBasisNode<GridView>, BasisNode>::type, N>(),
-    requireConcept<typename std::conditional< N::isPower, PowerBasisNode<GridView>, BasisNode>::type, N>(),
-    requireConcept<typename std::conditional< N::isComposite, CompositeBasisNode<GridView>, BasisNode>::type, N>()
+    requireConcept<std::conditional_t< TypeTree::isLeaf<N>, LeafBasisNode<GridView>, BasisNode>, N>(),
+    requireConcept<std::conditional_t< TypeTree::isPower<N>, PowerBasisNode<GridView>, BasisNode>, N>(),
+    requireConcept<std::conditional_t< TypeTree::isComposite<N>, CompositeBasisNode<GridView>, BasisNode>, N>()
   );
 };
 

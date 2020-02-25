@@ -218,7 +218,7 @@ namespace Dune {
 
     public:
 
-      using Element = typename Node::template Child<0>::Type;
+      using Element = typename Node::template Child<0>::Element;
 
       CompositeBasisNode() = default;
 
@@ -227,8 +227,8 @@ namespace Dune {
       {}
 
       template<typename... Children>
-      CompositeBasisNode(const shared_ptr<Children>&... children) :
-        Node(children...)
+      CompositeBasisNode(shared_ptr<Children>... children) :
+        Node(std::move(children)...)
       {}
 
       const Element& element() const
