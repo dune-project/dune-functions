@@ -36,6 +36,18 @@
 
 #define BLOCKEDBASIS 1
 
+template <class T>
+void printType()
+{
+  std::cout << __PRETTY_FUNCTION__ << std::endl;
+}
+
+template <class T>
+void printType(T const&)
+{
+  std::cout << __PRETTY_FUNCTION__ << std::endl;
+}
+
 // { using_namespace_dune_begin }
 using namespace Dune;
 // { using_namespace_dune_end }
@@ -350,6 +362,8 @@ int main (int argc, char *argv[]) try
           ));
 #endif
 
+
+  printType(taylorHoodBasis.blocking());
 
 
   /////////////////////////////////////////////////////////

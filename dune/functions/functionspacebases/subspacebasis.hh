@@ -78,6 +78,12 @@ public:
     return rootBasis_->size(prefix);
   }
 
+  //! Return the BlockingTag of the root basis
+  auto blocking() const
+  {
+    return rootBasis_.blocking();
+  }
+
   /** \brief Return local view for basis
    *
    */
