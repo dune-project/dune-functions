@@ -135,6 +135,12 @@ public:
     return size();
   }
 
+  //! Return the flat BlockingTag.
+  BlockingTag::Flat blocking() const
+  {
+    return {};
+  }
+
   //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {

@@ -746,6 +746,12 @@ public:
     return knotVectors_[d].size() - order_[d] - 1;
   }
 
+  //! Return the flat BlockingTag.
+  BlockingTag::Flat blocking() const
+  {
+    return {};
+  }
+
   /** \brief Evaluate all B-spline basis functions at a given point
    */
   void evaluateFunction (const FieldVector<typename GV::ctype,dim>& in,

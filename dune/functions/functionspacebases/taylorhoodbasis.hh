@@ -158,6 +158,14 @@ public:
     return sizeImp<useHybridIndices>(prefix);
   }
 
+  auto blocking() const
+  {
+    return std::conditional_t<useHybridIndices,
+      BlockingTag::Blocked<BlockingTag::LeafBlocked<dim>,BlockingTag::Flat>,
+      BlockingTag::Blocked<BlockingTag::Flat,BlockingTag::Flat>
+      >{};
+  }
+
 private:
 
   template<bool hi,
