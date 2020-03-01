@@ -18,6 +18,7 @@
 
 #include <dune/typetree/leafnode.hh>
 
+#include <dune/functions/functionspacebases/blockingtags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
