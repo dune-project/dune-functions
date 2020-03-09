@@ -5,6 +5,15 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.8)
 
+- The `RaviartThomasBasis` now returns Piola-transformed shape functions.
+  This is implemented by changing the return value of `tree().finiteElement()`:
+  It is not an object of type `RaviartThomasLocalFiniteElement` anymore.
+  Rather, it is an object of a new type `GlobalValuedLocalFiniteElement`,
+  which wraps other `LocalFiniteElement` implementations and applies
+  a range-space transformation.  Domain-space transformations still have
+  to be done by the calling code. The `GlobalValuedLocalFiniteElement`
+  still implements the `LocalFiniteElement` interface of `dune-localfunctions`.
+
 ## Release 2.7
 
 - The `LagrangeBasis` is extended by a template parameter to set the range type of
