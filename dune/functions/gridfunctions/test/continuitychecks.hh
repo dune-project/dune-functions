@@ -40,7 +40,8 @@ namespace Dune::Functions::Test
         outsideLocalFunction.bind(intersection.outside());
 
         // Use quadrature rule to produce test points on the intersection
-        const auto& quadRule = QuadratureRules<ctype,decltype(intersection)::mydimension>::rule(intersection.type(), 4);
+        constexpr auto intersectionDim = std::decay_t<decltype(intersection)>::mydimension;
+        const auto& quadRule = QuadratureRules<ctype,intersectionDim>::rule(intersection.type(), 4);
 
         for (const auto& quadPoint : quadRule)
         {
