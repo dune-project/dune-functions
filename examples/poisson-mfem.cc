@@ -63,40 +63,34 @@ void getLocalMatrix(const LocalView& localView,
     // Position of the current quadrature point in the reference element
     const auto quadPos = quadPoint.position();
 
-    // The transposed (inverse) Jacobian of the map from the reference element to the element
-    const auto& jacobianTransposed = geometry.jacobianTransposed(quadPos);
+    // The transposed inverse Jacobian of the map from the reference element to the element
+    const auto jacInvTrans = geometry.jacobianInverseTransposed(quadPos);
 
-    // The multiplicative factor in the integral transformation formula and its inverse
+    // The multiplicative factor in the integral transformation formula
     const auto integrationElement = geometry.integrationElement(quadPos);
-    const auto invIntegrationElement = 1.0 / integrationElement;
 
     ///////////////////////////////////////////////////////////////////////////
-    // Shape functions - flux - [assume H(div) elements]
+    // Shape functions - flux
     ///////////////////////////////////////////////////////////////////////////
 
-    // Values of the flux shape functions on the reference element
-    std::vector<FieldVector<double,dim> > fluxReferenceValues(fluxLocalFiniteElement.size());
-    fluxLocalFiniteElement.localBasis().evaluateFunction(quadPos, fluxReferenceValues);
-
-    // Values of the shape functions on the current element
+    // Values of the flux shape functions on the current element
     std::vector<FieldVector<double,dim> > fluxValues(fluxLocalFiniteElement.size());
-    for (size_t i=0; i<fluxValues.size(); i++)
-    {
-      jacobianTransposed.mtv(fluxReferenceValues[i], fluxValues[i]);
-      fluxValues[i] *= invIntegrationElement;
-    }
+    fluxLocalFiniteElement.localBasis().evaluateFunction(quadPos, fluxValues);
 
-    // Gradients of the flux shape functions on the reference element
+    // Gradients of the flux shape function gradients on the reference element
     std::vector<FieldMatrix<double,dim,dim> > fluxReferenceGradients(fluxLocalFiniteElement.size());
     fluxLocalFiniteElement.localBasis().evaluateJacobian(quadPos, fluxReferenceGradients);
 
-    // Compute the flux shape function divergence on the real element
+    // Domain transformation to current element
     std::vector<double> fluxDivergence(fluxValues.size(), 0.0);
-    for (size_t i=0; i<fluxValues.size(); i++)
+    for (size_t i=0; i<fluxReferenceGradients.size(); i++)
     {
+      FieldMatrix<double,dim,dim> fluxGradient;
+      jacInvTrans.mv(fluxReferenceGradients[i], fluxGradient);
+
+      // Compute divergence
       for (size_t j=0; j<dim; j++)
-        fluxDivergence[i] += fluxReferenceGradients[i][j][j];
-      fluxDivergence[i] *= invIntegrationElement;
+        fluxDivergence[i] += fluxGradient[j][j];
     }
 
     ///////////////////////////////////////////////////////////////////////////
