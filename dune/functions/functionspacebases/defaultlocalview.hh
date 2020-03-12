@@ -74,15 +74,12 @@ public:
     bindTree(tree_, *element_);
     nodeIndexSet_.bind(tree_);
     indices_.resize(size());
-    Hybrid::ifElse(
-      Std::is_detected<hasIndices,NodeIndexSet>{},
-      [&](auto id) {
-        id(nodeIndexSet_).indices(indices_.begin());
-      },
-      [&](auto id) {
-        for (size_type i = 0 ; i < this->size() ; ++i)
-          indices_[i] = id(nodeIndexSet_).index(i);
-      });
+
+    if constexpr (Std::is_detected<hasIndices,NodeIndexSet>{})
+      nodeIndexSet_.indices(indices_.begin());
+    else
+      for (size_type i = 0 ; i < this->size() ; ++i)
+        indices_[i] = nodeIndexSet_.index(i);
   }
 
   /** \brief Return if the view is bound to a grid element
