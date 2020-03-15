@@ -9,6 +9,7 @@
 #include <dune/localfunctions/lagrange/equidistantpoints.hh>
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
 
+#include <dune/functions/functionspacebases/blockingtags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
@@ -213,6 +214,12 @@ public:
     // That cast to unsigned int is necessary because GV::dimension is an enum,
     // which is not recognized by the power method as an integer type...
     return power(order()+1, (unsigned int)GV::dimension);
+  }
+
+  //! Return the Flat BlockingTag.
+  auto blocking() const
+  {
+    return BlockingTag::Flat{};
   }
 
 protected:

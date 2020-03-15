@@ -30,11 +30,24 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
+#include <dune/functions/functionspacebases/transformedindexbasis.hh>
 
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
-#define BLOCKEDBASIS 1
+#define BLOCKEDBASIS 0
+
+template <class T>
+void printType()
+{
+  std::cout << __PRETTY_FUNCTION__ << std::endl;
+}
+
+template <class T>
+void printType(T const&)
+{
+  std::cout << __PRETTY_FUNCTION__ << std::endl;
+}
 
 // { using_namespace_dune_begin }
 using namespace Dune;
@@ -321,12 +334,12 @@ int main (int argc, char *argv[]) try
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
-#if BLOCKEDBASIS
-  // { function_space_basis_begin }
   using namespace Functions::BasisFactory;
 
   constexpr std::size_t p = 1; // pressure order for Taylor-Hood
 
+#if BLOCKEDBASIS
+  // { function_space_basis_begin }
   auto taylorHoodBasis = makeBasis(
           gridView,
           composite(
@@ -337,19 +350,43 @@ int main (int argc, char *argv[]) try
           ));
   // { function_space_basis_end }
 #else
-  using namespace Functions::BasisFactory;
+  // Create an index transformation that transforms
+  // the BlockedInterleaved indices of the power pre-basis
+  // to FlatInterleaved indices.
+  auto transformation = Experimental::indexTransformation(
+      [](auto& multiIndex, const auto& basis) {
+        if (multiIndex[0] == 0)
+        {
+          multiIndex[1] = multiIndex[1]*dim + multiIndex[2];
+          multiIndex.resize(2);
+        }
+      },
+      [](const auto& prefix, const auto& basis) -> std::size_t {
+        if (prefix.size()>1)
+          return 0;
+        if ((prefix.size()==1) and (prefix[0]==0))
+          return basis.size(prefix) * dim;
+        return basis.size(prefix);
+      },
+      []() { return BlockingTag::Blocked<BlockingTag::Flat>{}; },
+      Dune::Indices::_2, Dune::Indices::_3);
 
-  static const std::size_t p = 1; // pressure order for Taylor-Hood
+  // This basis should behave like the basis created
+  // with the FlatInterleaved index merging strategy
+  // in the commented code above.
   auto taylorHoodBasis = makeBasis(
-          gridView,
-          composite(
-            power<dim>(
-              lagrange<p+1>(),
-              flatInterleaved()),
-            lagrange<p>()
-          ));
+    gridView,
+    Experimental::transformIndices(
+      composite(
+        power<dim>(
+          lagrange<p+1>()
+        ),
+        lagrange<p>()),
+        transformation));
 #endif
 
+
+  printType(taylorHoodBasis.blocking());
 
 
   /////////////////////////////////////////////////////////
@@ -369,6 +406,11 @@ int main (int argc, char *argv[]) try
   using MatrixRow0 = MultiTypeBlockVector<Matrix00, Matrix01>;
   using MatrixRow1 = MultiTypeBlockVector<Matrix10, Matrix11>;
   using MatrixType = MultiTypeBlockMatrix<MatrixRow0,MatrixRow1>;
+
+  using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
+  using PressureBitVector = BlockVector<FieldVector<char,1>>;
+  using BitVectorType
+          = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
   // { linear_algebra_setup_end }
 #else
   using VectorType = BlockVector<BlockVector<FieldVector<double,1> > >;
@@ -400,11 +442,6 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   // { initialize_boundary_dofs_vector_begin }
-  using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
-  using PressureBitVector = BlockVector<FieldVector<char,1>>;
-  using BitVectorType
-          = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
-
   BitVectorType isBoundary;
 
   auto isBoundaryBackend = Dune::Functions::istlVectorBackend(isBoundary);

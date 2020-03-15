@@ -6,6 +6,7 @@
 #include <array>
 #include <dune/common/exceptions.hh>
 
+#include <dune/functions/functionspacebases/blockingtags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -168,6 +169,12 @@ public:
   size_type maxNodeSize() const
   {
     return StaticPower<(k+1),GV::dimension>::power;
+  }
+
+  //! Return the Flat BlockingTag.
+  auto blocking() const
+  {
+    return BlockingTag::Flat{};
   }
 
 //protected:

@@ -12,6 +12,7 @@
 #include <dune/functions/common/utility.hh>
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
+#include <dune/functions/functionspacebases/blockingtags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
@@ -158,6 +159,12 @@ public:
     return size(prefix, IndexMergingStrategy{});
   }
 
+  //! Return the BlockingTag, either Blocked, LeafBlocked, or Flat depending on the IndexMergingStrategy.
+  auto blocking() const
+  {
+    return blocking(IndexMergingStrategy{});
+  }
+
 private:
 
   size_type size(const SizePrefix& prefix, BasisFactory::FlatInterleaved) const
@@ -227,6 +234,39 @@ private:
     if (r==0)
       return children;
     return r;
+  }
+
+  auto blocking(BasisFactory::FlatInterleaved) const
+  {
+    auto subBlocking = subPreBasis_.blocking();
+    if constexpr (!std::is_same<decltype(subBlocking),BlockingTag::Flat>::value)
+      return BlockingTag::Unknown{};
+    else
+      return BlockingTag::Flat{};
+  }
+
+  auto blocking(BasisFactory::FlatLexicographic) const
+  {
+    auto subBlocking = subPreBasis_.blocking();
+    if constexpr (!std::is_same<decltype(subBlocking),BlockingTag::Flat>::value)
+      return BlockingTag::Unknown{};
+    else
+      return BlockingTag::Flat{};
+  }
+
+  auto blocking(BasisFactory::BlockedLexicographic) const
+  {
+    auto subBlocking = subPreBasis_.blocking();
+    return BlockingTag::PowerBlocked<decltype(subBlocking),C>{};
+  }
+
+  auto blocking(BasisFactory::BlockedInterleaved) const
+  {
+    auto subBlocking = subPreBasis_.blocking();
+    if constexpr (!std::is_same<decltype(subBlocking),BlockingTag::Flat>::value)
+      return BlockingTag::Unknown{};
+    else
+      return BlockingTag::LeafBlocked<C>{};
   }
 
 public:

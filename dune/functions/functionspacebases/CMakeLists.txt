@@ -2,6 +2,7 @@ add_subdirectory("test")
 
 install(FILES
         basistags.hh
+        blockingtags.hh
         boundarydofs.hh
         brezzidouglasmarinibasis.hh
         bsplinebasis.hh
@@ -25,4 +26,5 @@ install(FILES
         subspacebasis.hh
         subspacelocalview.hh
         taylorhoodbasis.hh
+        transformedindexbasis.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/functionspacebases)

@@ -9,6 +9,7 @@
 
 #include <dune/typetree/leafnode.hh>
 
+#include <dune/functions/functionspacebases/blockingtags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -133,6 +134,12 @@ public:
   size_type dimension() const
   {
     return size();
+  }
+
+  //! Return the flat BlockingTag.
+  BlockingTag::Flat blocking() const
+  {
+    return {};
   }
 
   //! Get the maximal number of DOFs associated to node for any element

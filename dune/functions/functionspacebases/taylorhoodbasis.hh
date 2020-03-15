@@ -9,6 +9,7 @@
 #include <dune/typetree/powernode.hh>
 #include <dune/typetree/compositenode.hh>
 
+#include <dune/functions/functionspacebases/blockingtags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
@@ -156,6 +157,14 @@ public:
   size_type size(const SizePrefix prefix) const
   {
     return sizeImp<useHybridIndices>(prefix);
+  }
+
+  auto blocking() const
+  {
+    return std::conditional_t<useHybridIndices,
+      BlockingTag::Blocked<BlockingTag::LeafBlocked<dim>,BlockingTag::Flat>,
+      BlockingTag::Blocked<BlockingTag::Flat,BlockingTag::Flat>
+      >{};
   }
 
 private:

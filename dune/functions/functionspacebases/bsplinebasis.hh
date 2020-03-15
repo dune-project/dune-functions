@@ -18,6 +18,7 @@
 #include <dune/localfunctions/common/localkey.hh>
 #include <dune/localfunctions/common/localfiniteelementtraits.hh>
 #include <dune/geometry/type.hh>
+#include <dune/functions/functionspacebases/blockingtags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -744,6 +745,12 @@ public:
   unsigned int size (size_t d) const
   {
     return knotVectors_[d].size() - order_[d] - 1;
+  }
+
+  //! Return the flat BlockingTag.
+  BlockingTag::Flat blocking() const
+  {
+    return {};
   }
 
   /** \brief Evaluate all B-spline basis functions at a given point
