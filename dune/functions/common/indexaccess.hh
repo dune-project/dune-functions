@@ -159,12 +159,11 @@ namespace Imp {
     template<std::size_t i>
     auto operator[](Dune::index_constant<i>) const
     {
-      auto isContained = Dune::Std::bool_constant<(i<size())>{};
-      return Hybrid::ifElse(isContained, [&](auto id) {
-        return id(index_)[Dune::index_constant<i+offset>{}];
-      }, [](auto id) {
-        return Dune::Indices::_0;
-      });
+      if constexpr (i<size()) {
+        return index_[Dune::index_constant<i+offset>{}];
+      } else {
+        return Dune::index_constant<0>{};
+      }
     }
 
     /**
