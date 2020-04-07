@@ -32,15 +32,15 @@ template<class V,
   std::enable_if_t<Dune::models<Imp::Concept::HasStaticIndexAccess, V>(), int> = 0>
 auto fieldTypes(V&& v)
 {
-  return Hybrid::ifElse(Dune::models<Imp::Concept::HasDynamicIndexAccess<std::size_t>, V>(),
-    [&](auto id) -> decltype(auto) {
-      return fieldTypes(id(v)[std::size_t{0}]);
-    }, [&](auto id) -> decltype(auto) {
-      auto indexRange = typename decltype(range(Hybrid::size(id(v))))::integer_sequence();
-      return unpackIntegerSequence([&](auto... i) {
-        return uniqueTypeList(std::tuple_cat(fieldTypes(id(v)[i])...));
-      }, indexRange);
-    });
+  if constexpr (Dune::models<Imp::Concept::HasDynamicIndexAccess<std::size_t>, V>())
+     return fieldTypes(v[std::size_t{0}]);
+  else
+  {
+    auto indexRange = typename decltype(range(Hybrid::size(v)))::integer_sequence();
+    return unpackIntegerSequence([&](auto... i) {
+      return uniqueTypeList(std::tuple_cat(fieldTypes(v[i])...));
+    }, indexRange);
+  }
 }
 
 } // namespace Impl
