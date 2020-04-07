@@ -158,22 +158,19 @@ auto derivativeSignatureTag(SignatureTag<Range(Domain), DerivativeTraits> tag)
 template<std::size_t maxOrder, class Signature, template<class> class DerivativeTraits>
 auto derivativeSignatureTags(Dune::Functions::SignatureTag<Signature, DerivativeTraits> tag)
 {
-//  using namespace Dune::Hybrid;
-//  using namespace Dune::Std;
-
-  return Hybrid::ifElse(Std::bool_constant<maxOrder==0>(), [&](auto id) {
+  if constexpr (Std::bool_constant<maxOrder==0>()) {
     // If maxOrder== 0 we just need the given SignatureTag
     return std::make_tuple(tag);
-  }, [&](auto id) {
+  } else {
     // else we first construct the tail tuple with SignatureTags for derivatives
     // of order 1 to maxOrder
-    auto tailTagsTuple = derivativeSignatureTags<decltype((void)id,std::size_t(0))(maxOrder-1)>(derivativeSignatureTag(tag));
+    auto tailTagsTuple = derivativeSignatureTags<std::size_t(maxOrder-1)>(derivativeSignatureTag(tag));
     // and prepend this with the given SignatureTag.
     // This is done by unpacking the tail tuple with apply().
     return Std::apply([&](auto&&... tailTags){
       return std::make_tuple(tag, tailTags...);
     }, tailTagsTuple);
-  });
+  }
 }
 
 
