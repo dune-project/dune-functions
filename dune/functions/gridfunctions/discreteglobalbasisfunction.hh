@@ -5,8 +5,6 @@
 
 #include <memory>
 
-#include <dune/common/hybridutilities.hh>
-
 #include <dune/typetree/treecontainer.hh>
 
 #include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
@@ -326,12 +324,11 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
   // Small helper functions to wrap vectors using istlVectorBackend
   // if they do not already satisfy the VectorBackend interface.
   auto toConstVectorBackend = [&](auto&& v) -> decltype(auto) {
-    return Dune::Hybrid::ifElse(models<Concept::ConstVectorBackend<Basis>, decltype(v)>(),
-    [&](auto id) -> decltype(auto) {
+    if constexpr (models<Concept::ConstVectorBackend<Basis>, decltype(v)>()) {
       return std::forward<decltype(v)>(v);
-    }, [&](auto id) -> decltype(auto) {
-      return istlVectorBackend(id(v));
-    });
+    } else {
+      return istlVectorBackend(v);
+    }
   };
 
   using Vector = std::decay_t<decltype(toConstVectorBackend(std::forward<V>(vector)))>;
