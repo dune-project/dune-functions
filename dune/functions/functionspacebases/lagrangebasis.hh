@@ -3,6 +3,7 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_LAGRANGEBASIS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_LAGRANGEBASIS_HH
 
+#include <type_traits>
 #include <dune/common/exceptions.hh>
 
 #include <dune/localfunctions/lagrange.hh>
@@ -312,8 +313,8 @@ class LagrangeNode :
     unsigned int order_;
   };
 
-  static const int dim = GV::dimension;
-  static const bool useDynamicOrder = (k<0);
+  static constexpr int dim = GV::dimension;
+  static constexpr bool useDynamicOrder = (k<0);
 
   using FiniteElementCache = typename std::conditional<(useDynamicOrder),
                                                        LagrangeRunTimeLFECache<typename GV::ctype, R, dim>,
@@ -339,12 +340,8 @@ public:
     element_(nullptr)
   {
     // Only the cache for the run-time-order case (i.e., k<0), has the 'order_' member
-    Hybrid::ifElse(Std::bool_constant<(useDynamicOrder)>(),
-      [&](auto id) {
-        id(cache_).order_ = order;
-      },
-      [&](auto id) {}
-      );
+    if constexpr (useDynamicOrder)
+      cache_.order_ = order;
   }
 
   //! Return current element, throw if unbound
