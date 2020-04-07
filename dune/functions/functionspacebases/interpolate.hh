@@ -8,7 +8,6 @@
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/bitsetvector.hh>
-#include <dune/common/hybridutilities.hh>
 
 #include <dune/typetree/childextraction.hh>
 
@@ -201,20 +200,19 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bv, const NTRE
   // Small helper functions to wrap vectors using istlVectorBackend
   // if they do not already satisfy the VectorBackend interface.
   auto toVectorBackend = [&](auto& v) -> decltype(auto) {
-    return Dune::Hybrid::ifElse(models<Concept::VectorBackend<B>, decltype(v)>(),
-    [&](auto id) -> decltype(auto) {
-      return id(v);
-    }, [&](auto id) -> decltype(auto) {
-      return istlVectorBackend(id(v));
-    });
+    if constexpr (models<Concept::VectorBackend<B>, decltype(v)>()) {
+      return v;
+    } else {
+      return istlVectorBackend(v);
+    }
   };
+
   auto toConstVectorBackend = [&](auto& v) -> decltype(auto) {
-    return Dune::Hybrid::ifElse(models<Concept::ConstVectorBackend<B>, decltype(v)>(),
-    [&](auto id) -> decltype(auto) {
-      return id(v);
-    }, [&](auto id) -> decltype(auto) {
-      return istlVectorBackend(id(v));
-    });
+    if constexpr (models<Concept::ConstVectorBackend<B>, decltype(v)>()) {
+      return v;
+    } else {
+      return istlVectorBackend(v);
+    }
   };
 
   auto&& bitVector = toConstVectorBackend(bv);
