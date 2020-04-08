@@ -369,14 +369,14 @@ Dune::TestSuite checkBasisContinuity(const Basis& basis, std::size_t order = 5, 
                 // If basis function appears in neighbor element, then the
                 // jump should be (numerically) zero across the intersection.
                 for(std::size_t k=0; k<quadRule.size(); ++k)
-                  maxJump = std::max(maxJump, dist(values[k][i], neighborValues[k][j]));
+                  maxJump = std::max(maxJump, (double)dist(values[k][i], neighborValues[k][j]));
               }
             }
             // If basis function does not appear in neighbor element, then it
             // should be (numerically) zero on the intersection.
             if (not(foundInNeighbor))
               for(std::size_t k=0; k<quadRule.size(); ++k)
-                maxJump = std::max(maxJump, norm(values[k][i]));
+                maxJump = std::max(maxJump, (double)norm(values[k][i]));
             test.check(maxJump < tol)
               << "Basis function " << localView.index(node.localIndex(i))
               << " is discontinuous across intersection of elements "
