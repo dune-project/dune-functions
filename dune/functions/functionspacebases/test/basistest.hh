@@ -16,6 +16,14 @@
 
 #include <dune/functions/functionspacebases/concepts.hh>
 
+struct CheckBasisFlag {};
+struct AllowZeroBasisFunctions {};
+struct EnableContinuityCheck {};
+
+template<class T, class... S>
+struct IsContained : public std::disjunction<std::is_same<T,S>...>
+{};
+
 
 
 /*
@@ -208,11 +216,11 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
 
 
 /*
- * Check if shape functions are non-constant.
+ * Check if shape functions are not constant zero.
  * This is called by checkLocalView().
  */
 template<class LocalFiniteElement>
-Dune::TestSuite checkNonConstantShapeFunctions(const LocalFiniteElement& fe, std::size_t order = 5, double tol = 1e-10)
+Dune::TestSuite checkNonZeroShapeFunctions(const LocalFiniteElement& fe, std::size_t order = 5, double tol = 1e-10)
 {
   Dune::TestSuite test;
   static const int dimension = LocalFiniteElement::Traits::LocalBasisType::Traits::dimDomain;
@@ -240,8 +248,8 @@ Dune::TestSuite checkNonConstantShapeFunctions(const LocalFiniteElement& fe, std
  * Check localView. This especially checks for
  * consistency of local indices and local size.
  */
-template<class Basis, class LocalView>
-Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView)
+template<class Basis, class LocalView, class... Flags>
+Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView, Flags... flags)
 {
   Dune::TestSuite test(std::string("LocalView on ") + elementStr(localView.element(), basis.gridView()));
 
@@ -274,9 +282,12 @@ Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView)
   }
 
   // Check if all basis functions are non-constant.
-  Dune::TypeTree::forEachLeafNode(localView.tree(), [&](const auto& node, auto&& treePath) {
-    test.subTest(checkNonConstantShapeFunctions(node.finiteElement()));
-  });
+  if (not IsContained<AllowZeroBasisFunctions, Flags...>::value)
+  {
+    Dune::TypeTree::forEachLeafNode(localView.tree(), [&](const auto& node, auto&& treePath) {
+      test.subTest(checkNonZeroShapeFunctions(node.finiteElement()));
+    });
+  }
 
   return test;
 }
@@ -380,10 +391,8 @@ Dune::TestSuite checkBasisContinuity(const Basis& basis, std::size_t order = 5, 
   return test;
 }
 
-
-
-template<class Basis>
-Dune::TestSuite checkBasis(const Basis& basis)
+template<class Basis, class... Flags>
+Dune::TestSuite checkBasis(const Basis& basis, Flags... flags)
 {
   Dune::TestSuite test("basis check");
 
@@ -398,11 +407,15 @@ Dune::TestSuite checkBasis(const Basis& basis)
   for (const auto& e : elements(basis.gridView()))
   {
     localView.bind(e);
-    test.subTest(checkLocalView(basis, localView));
+    test.subTest(checkLocalView(basis, localView, flags...));
   }
 
   // Perform global index tests.
   test.subTest(checkBasisIndices(basis));
+
+  // Perform continuity check.
+  if (IsContained<EnableContinuityCheck, Flags...>::value)
+    test.subTest(checkBasisContinuity(basis));
 
   return test;
 }
