@@ -11,6 +11,7 @@
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/concept.hh>
 #include <dune/common/typetraits.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -18,7 +19,6 @@
 
 struct CheckBasisFlag {};
 struct AllowZeroBasisFunctions {};
-struct EnableContinuityCheck {};
 
 template<class T, class... S>
 struct IsContained : public std::disjunction<std::is_same<T,S>...>
@@ -293,72 +293,82 @@ Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView, F
 }
 
 
-// Create a local continuity check for for checking strong
+// Flag to enable a local continuity check for checking strong
 // continuity across an intersection within checkBasisContinuity().
 //
-// If a basis function appears on both sides of the intersection,
-// this will check that the values from both sides coincide at the quadrature points
-// of a quadrature rule with given order on the intersection.
-//
-// If a basis function appears only on the inside,
-// this will check that the values coincide with zero at the quadrature points
-// of a quadrature rule with given order on the intersection.
-template<class Tol=double>
-auto strongIntersectionContinuityCheck(std::size_t order= 5, Tol tol = 1e-10)
+// For each insdie basis function this will compute the jump against
+// zero or the corresponding inside basis function. The latter is then
+// checked for being (up to a tolerance) zero on a set of quadrature points.
+struct EnableContinuityCheck
 {
-  return [=](const auto& intersection, const auto& insideNode, const auto& outsideNode, const auto& insideToOutside) {
-    using Intersection = std::decay_t<decltype(intersection)>;
-    using Node = std::decay_t<decltype(insideNode)>;
+  std::size_t order_ = 5;
+  double tol_ = 1e-10;
 
-    auto norm = [](const auto& x) {
-      return x.infinity_norm();
-    };
+  template<class JumpEvaluator>
+  auto localJumpContinuityCheck(const JumpEvaluator& jumpEvaluator, std::size_t order, double tol) const
+  {
+    return [=](const auto& intersection, const auto& insideNode, const auto& outsideNode, const auto& insideToOutside) {
+      using Intersection = std::decay_t<decltype(intersection)>;
+      using Node = std::decay_t<decltype(insideNode)>;
 
-    auto dist = [norm](const auto& x, const auto& y) {
-      auto diff = x;
-      diff -= y;
-      return norm(diff);
-    };
+      std::vector<int> isContinuous(insideNode.size(), true);
+      const auto& quadRule = Dune::QuadratureRules<double, Intersection::mydimension>::rule(intersection.type(), order);
 
-    std::vector<int> isContinuous(insideNode.size(), true);
-    const auto& quadRule = Dune::QuadratureRules<double, Intersection::mydimension>::rule(intersection.type(), order);
+      using Range = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+      std::vector<std::vector<Range>> values;
+      std::vector<std::vector<Range>> neighborValues;
 
-    using Range = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
-    std::vector<std::vector<Range>> values;
-    std::vector<std::vector<Range>> neighborValues;
-
-    values.resize(quadRule.size());
-    neighborValues.resize(quadRule.size());
-    for(std::size_t k=0; k<quadRule.size(); ++k)
-    {
-      auto pointInElement = intersection.geometryInInside().global(quadRule[k].position());
-      auto pointInNeighbor = intersection.geometryInOutside().global(quadRule[k].position());
-      insideNode.finiteElement().localBasis().evaluateFunction(pointInElement, values[k]);
-      outsideNode.finiteElement().localBasis().evaluateFunction(pointInNeighbor, neighborValues[k]);
-    }
-
-    for(std::size_t i=0; i<insideNode.size(); ++i)
-    {
-      double maxJump = 0.0;
-      if (insideToOutside[i].has_value())
+      // Evaluate inside and outside basis functions.
+      values.resize(quadRule.size());
+      neighborValues.resize(quadRule.size());
+      for(std::size_t k=0; k<quadRule.size(); ++k)
       {
-        // If basis function appears in neighbor element, then the
-        // jump should be (numerically) zero across the intersection.
-        for(std::size_t k=0; k<quadRule.size(); ++k)
-          maxJump = std::max(maxJump, (double)dist(values[k][i], neighborValues[k][insideToOutside[i].value()]));
+        auto pointInElement = intersection.geometryInInside().global(quadRule[k].position());
+        auto pointInNeighbor = intersection.geometryInOutside().global(quadRule[k].position());
+        insideNode.finiteElement().localBasis().evaluateFunction(pointInElement, values[k]);
+        outsideNode.finiteElement().localBasis().evaluateFunction(pointInNeighbor, neighborValues[k]);
       }
-      else
+
+      // Check jump against outside basis function or zero.
+      for(std::size_t i=0; i<insideNode.size(); ++i)
       {
-        // If basis function does not appear in neighbor element, then it
-        // should be (numerically) zero on the intersection.
         for(std::size_t k=0; k<quadRule.size(); ++k)
-          maxJump = std::max(maxJump, (double)norm(values[k][i]));
+        {
+          auto jump = values[k][i];
+          if (insideToOutside[i].has_value())
+            jump -= neighborValues[k][insideToOutside[i].value()];
+          isContinuous[i] = isContinuous[i] and (jumpEvaluator(jump, intersection, quadRule[k].position()) < tol);
+        }
       }
-      isContinuous[i] = (maxJump < tol);
-    }
-    return isContinuous;
-  };
-}
+      return isContinuous;
+    };
+  }
+
+  auto localContinuityCheck() const {
+    auto jumpNorm = [](auto&&jump, auto&& intersection, auto&& x) -> double {
+      return jump.infinity_norm();
+    };
+    return localJumpContinuityCheck(jumpNorm, order_, tol_);
+  }
+};
+
+// Flag to enable a local normal-continuity check for checking strong
+// continuity across an intersection within checkBasisContinuity().
+//
+// For each inside basis function this will compute the normal jump against
+// zero or the corresponding inside basis function. The latter is then
+// checked for being (up to a tolerance) zero on a set of quadrature points.
+struct EnableNormalContinuityCheck : public EnableContinuityCheck
+{
+  auto localContinuityCheck() const {
+    auto normalJump = [](auto&&jump, auto&& intersection, auto&& x) -> double {
+      return jump * intersection.unitOuterNormal(x);
+    };
+    return localJumpContinuityCheck(normalJump, order_, tol_);
+  }
+};
+
+
 
 /*
  * Check if basis functions are continuous across faces.
@@ -453,8 +463,13 @@ Dune::TestSuite checkBasis(const Basis& basis, Flags... flags)
   test.subTest(checkBasisIndices(basis));
 
   // Perform continuity check.
-  if (IsContained<EnableContinuityCheck, Flags...>::value)
-    test.subTest(checkBasisContinuity(basis, strongIntersectionContinuityCheck()));
+  // First capture flags in a tuple in order to iterate.
+  auto flagTuple = std::tie(flags...);
+  Dune::Hybrid::forEach(flagTuple, [&](auto&& flag) {
+    using Flag = std::decay_t<decltype(flag)>;
+    if constexpr (std::is_base_of_v<EnableContinuityCheck, Flag>)
+      test.subTest(checkBasisContinuity(basis, flag.localContinuityCheck()));
+  });
 
   return test;
 }
