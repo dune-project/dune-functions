@@ -380,6 +380,13 @@ public:
     localBasis_(preBasis,*this)
   {}
 
+  /** \brief Copy constructor
+   */
+  BSplineLocalFiniteElement(const BSplineLocalFiniteElement& other)
+  : preBasis_(other.preBasis_),
+    localBasis_(preBasis_,*this)
+  {}
+
   /** \brief Bind LocalFiniteElement to a specific knot span of the spline patch
    *
    * Elements are the non-empty knot spans, here we do the renumbering
