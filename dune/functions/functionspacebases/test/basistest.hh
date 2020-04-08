@@ -293,6 +293,72 @@ Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView, F
 }
 
 
+// Create a local continuity check for for checking strong
+// continuity across an intersection within checkBasisContinuity().
+//
+// If a basis function appears on both sides of the intersection,
+// this will check that the values from both sides coincide at the quadrature points
+// of a quadrature rule with given order on the intersection.
+//
+// If a basis function appears only on the inside,
+// this will check that the values coincide with zero at the quadrature points
+// of a quadrature rule with given order on the intersection.
+template<class Tol=double>
+auto strongIntersectionContinuityCheck(std::size_t order= 5, Tol tol = 1e-10)
+{
+  return [=](const auto& intersection, const auto& insideNode, const auto& outsideNode, const auto& insideToOutside) {
+    using Intersection = std::decay_t<decltype(intersection)>;
+    using Node = std::decay_t<decltype(insideNode)>;
+
+    auto norm = [](const auto& x) {
+      return x.infinity_norm();
+    };
+
+    auto dist = [norm](const auto& x, const auto& y) {
+      auto diff = x;
+      diff -= y;
+      return norm(diff);
+    };
+
+    std::vector<int> isContinuous(insideNode.size(), true);
+    const auto& quadRule = Dune::QuadratureRules<double, Intersection::mydimension>::rule(intersection.type(), order);
+
+    using Range = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+    std::vector<std::vector<Range>> values;
+    std::vector<std::vector<Range>> neighborValues;
+
+    values.resize(quadRule.size());
+    neighborValues.resize(quadRule.size());
+    for(std::size_t k=0; k<quadRule.size(); ++k)
+    {
+      auto pointInElement = intersection.geometryInInside().global(quadRule[k].position());
+      auto pointInNeighbor = intersection.geometryInOutside().global(quadRule[k].position());
+      insideNode.finiteElement().localBasis().evaluateFunction(pointInElement, values[k]);
+      outsideNode.finiteElement().localBasis().evaluateFunction(pointInNeighbor, neighborValues[k]);
+    }
+
+    for(std::size_t i=0; i<insideNode.size(); ++i)
+    {
+      double maxJump = 0.0;
+      if (insideToOutside[i].has_value())
+      {
+        // If basis function appears in neighbor element, then the
+        // jump should be (numerically) zero across the intersection.
+        for(std::size_t k=0; k<quadRule.size(); ++k)
+          maxJump = std::max(maxJump, (double)dist(values[k][i], neighborValues[k][insideToOutside[i].value()]));
+      }
+      else
+      {
+        // If basis function does not appear in neighbor element, then it
+        // should be (numerically) zero on the intersection.
+        for(std::size_t k=0; k<quadRule.size(); ++k)
+          maxJump = std::max(maxJump, (double)norm(values[k][i]));
+      }
+      isContinuous[i] = (maxJump < tol);
+    }
+    return isContinuous;
+  };
+}
 
 /*
  * Check if basis functions are continuous across faces.
@@ -305,25 +371,14 @@ Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView, F
  * If a basis function only appears on one side of the intersection,
  * it should be zero on the intersection.
  */
-template<class Basis>
-Dune::TestSuite checkBasisContinuity(const Basis& basis, std::size_t order = 5, double tol = 1e-10)
+template<class Basis, class LocalCheck>
+Dune::TestSuite checkBasisContinuity(const Basis& basis, const LocalCheck& localCheck)
 {
   Dune::TestSuite test("Global continuity check of basis functions");
 
 
   auto localView = basis.localView();
   auto neighborLocalView = basis.localView();
-
-  auto norm = [](const auto& x) {
-    return x.infinity_norm();
-  };
-
-  auto dist = [norm](const auto& x, const auto& y) {
-    auto diff = x;
-    diff -= y;
-    return norm(diff);
-  };
-
 
   for (const auto& e : elements(basis.gridView()))
   {
@@ -332,53 +387,37 @@ Dune::TestSuite checkBasisContinuity(const Basis& basis, std::size_t order = 5, 
     {
       if (intersection.neighbor())
       {
-        auto quadRule = Dune::QuadratureRules<double, Basis::GridView::dimension-1>::rule(intersection.type(), order);
-
         neighborLocalView.bind(intersection.outside());
 
-        Dune::TypeTree::forEachLeafNode(localView.tree(), [&](const auto& node, auto&& treePath) {
-          const auto& neighborNode = Dune::TypeTree::child(neighborLocalView.tree(), treePath);
+        Dune::TypeTree::forEachLeafNode(localView.tree(), [&](const auto& insideNode, auto&& treePath) {
+          const auto& outsideNode = Dune::TypeTree::child(neighborLocalView.tree(), treePath);
 
-          using Range = typename std::decay_t<decltype(node)>::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
-          std::vector<std::vector<Range>> values;
-          std::vector<std::vector<Range>> neighborValues;
+          std::vector<std::optional<int>> insideToOutside;
+          insideToOutside.resize(insideNode.size());
 
-          values.resize(quadRule.size());
-          neighborValues.resize(quadRule.size());
-          for(std::size_t k=0; k<quadRule.size(); ++k)
+          // Map all inside DOFs to outside DOFs if possible
+          for(std::size_t i=0; i<insideNode.size(); ++i)
           {
-            auto pointInElement = intersection.geometryInInside().global(quadRule[k].position());
-            auto pointInNeighbor = intersection.geometryInOutside().global(quadRule[k].position());
-            node.finiteElement().localBasis().evaluateFunction(pointInElement, values[k]);
-            neighborNode.finiteElement().localBasis().evaluateFunction(pointInNeighbor, neighborValues[k]);
-          }
-
-          for(std::size_t i=0; i<node.size(); ++i)
-          {
-            bool foundInNeighbor = false;
-            double maxJump = 0.0;
-            for(std::size_t j=0; j<neighborNode.size(); ++j)
+            for(std::size_t j=0; j<outsideNode.size(); ++j)
             {
-              if (localView.index(node.localIndex(i)) == neighborLocalView.index(neighborNode.localIndex(j)))
+              if (localView.index(insideNode.localIndex(i)) == neighborLocalView.index(outsideNode.localIndex(j)))
               {
                 // Basis function should only appear once in the neighbor element.
-                test.check(foundInNeighbor==false)
-                  << "Basis function " << localView.index(node.localIndex(i))
+                test.check(not insideToOutside[i].has_value())
+                  << "Basis function " << localView.index(insideNode.localIndex(i))
                   << " appears twice in element " << elementStr(neighborLocalView.element(), basis.gridView());
-                foundInNeighbor = true;
-                // If basis function appears in neighbor element, then the
-                // jump should be (numerically) zero across the intersection.
-                for(std::size_t k=0; k<quadRule.size(); ++k)
-                  maxJump = std::max(maxJump, (double)dist(values[k][i], neighborValues[k][j]));
+                insideToOutside[i] = j;
               }
             }
-            // If basis function does not appear in neighbor element, then it
-            // should be (numerically) zero on the intersection.
-            if (not(foundInNeighbor))
-              for(std::size_t k=0; k<quadRule.size(); ++k)
-                maxJump = std::max(maxJump, (double)norm(values[k][i]));
-            test.check(maxJump < tol)
-              << "Basis function " << localView.index(node.localIndex(i))
+          }
+
+          // Apply continuity check on given intersection with given inside/outside DOF node pair.
+          auto isContinuous = localCheck(intersection, insideNode, outsideNode, insideToOutside);
+
+          for(std::size_t i=0; i<insideNode.size(); ++i)
+          {
+            test.check(isContinuous[i])
+              << "Basis function " << localView.index(insideNode.localIndex(i))
               << " is discontinuous across intersection of elements "
               << elementStr(localView.element(), basis.gridView())
               << " and " << elementStr(neighborLocalView.element(), basis.gridView());
@@ -415,7 +454,7 @@ Dune::TestSuite checkBasis(const Basis& basis, Flags... flags)
 
   // Perform continuity check.
   if (IsContained<EnableContinuityCheck, Flags...>::value)
-    test.subTest(checkBasisContinuity(basis));
+    test.subTest(checkBasisContinuity(basis, strongIntersectionContinuityCheck()));
 
   return test;
 }
