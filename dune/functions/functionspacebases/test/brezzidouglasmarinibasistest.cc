@@ -36,7 +36,7 @@ int main (int argc, char* argv[])
     typedef GridType::LeafGridView GridView;
     const GridView& gridView = grid.leafGridView();
     Functions::BrezziDouglasMariniBasis<GridView,1> basis(gridView);
-    test.subTest(checkBasis(basis));
+    test.subTest(checkBasis(basis, EnableNormalContinuityCheck()));
   }
 
 
@@ -45,7 +45,7 @@ int main (int argc, char* argv[])
   {
     using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid.leafGridView(), brezziDouglasMarini<1>());
-    test.subTest(checkBasis(basis));
+    test.subTest(checkBasis(basis, EnableNormalContinuityCheck()));
   }
 
 
@@ -54,7 +54,7 @@ int main (int argc, char* argv[])
     using Grid = UGGrid<dim>;
     std::shared_ptr<Grid> grid = StructuredGridFactory<Grid>::createCubeGrid({0.0,0.0}, l, {{10,10}});
     Functions::BrezziDouglasMariniBasis<Grid::LeafGridView,1> basis(grid->leafGridView());
-    test.subTest(checkBasis(basis));
+    test.subTest(checkBasis(basis, EnableNormalContinuityCheck()));
   }
 
   return test.exit();
