@@ -38,7 +38,7 @@ int main (int argc, char* argv[]) try
     typedef GridType::LeafGridView GridView;
     const GridView& gridView = grid.leafGridView();
     RannacherTurekBasis<GridView> basis(gridView);
-    test.subTest(checkBasis(basis));
+    test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
   }
 
 
@@ -47,7 +47,7 @@ int main (int argc, char* argv[]) try
   {
     using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid.leafGridView(), rannacherTurek());
-    test.subTest(checkBasis(basis));
+    test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
   }
 
 
