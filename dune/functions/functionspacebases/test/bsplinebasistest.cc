@@ -46,14 +46,20 @@ void testForDimension(TestSuite& test)
     {
       // Check basis created via its constructor
       Functions::BSplineBasis<GridView> basis(gridView, knotVector, order);
-      test.subTest(checkBasis(basis));
+      if (order>0)
+        test.subTest(checkBasis(basis, AllowZeroBasisFunctions(), EnableContinuityCheck()));
+      else
+        test.subTest(checkBasis(basis, AllowZeroBasisFunctions()));
     }
 
     {
       // Check basis created via makeBasis
       using namespace Functions::BasisFactory;
       auto basis = makeBasis(gridView, bSpline(knotVector, order));
-      test.subTest(checkBasis(basis));
+      if (order>0)
+        test.subTest(checkBasis(basis, AllowZeroBasisFunctions(), EnableContinuityCheck()));
+      else
+        test.subTest(checkBasis(basis, AllowZeroBasisFunctions()));
     }
 
     {
@@ -63,7 +69,10 @@ void testForDimension(TestSuite& test)
                              power<2>(
                                bSpline(knotVector, order)
                              ));
-      test.subTest(checkBasis(basis));
+      if (order>0)
+        test.subTest(checkBasis(basis, AllowZeroBasisFunctions(), EnableContinuityCheck()));
+      else
+        test.subTest(checkBasis(basis, AllowZeroBasisFunctions()));
     }
   }
 
@@ -74,14 +83,20 @@ void testForDimension(TestSuite& test)
     {
       // Check basis created via its constructor
       Functions::BSplineBasis<GridView> bSplineBasis(gridView, knotVector, order, false);
-      test.subTest(checkBasis(bSplineBasis));
+      if (order>0)
+        test.subTest(checkBasis(bSplineBasis, AllowZeroBasisFunctions(), EnableContinuityCheck()));
+      else
+        test.subTest(checkBasis(bSplineBasis, AllowZeroBasisFunctions()));
     }
 
     {
       // Check basis created via makeBasis
       using namespace Functions::BasisFactory;
       auto basis = makeBasis(gridView, bSpline(knotVector, order, false));
-      test.subTest(checkBasis(basis));
+      if (order>0)
+        test.subTest(checkBasis(basis, AllowZeroBasisFunctions(), EnableContinuityCheck()));
+      else
+        test.subTest(checkBasis(basis, AllowZeroBasisFunctions()));
     }
   }
 }

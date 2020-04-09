@@ -52,7 +52,7 @@ int main (int argc, char* argv[])
     auto gridView = grid->leafGridView();
     auto basis = makeBasis(gridView, lagrange<3>());
 
-    test.subTest(checkBasis(basis));
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
 
     std::vector<double> v;
     v.resize(basis.size(), 0);
@@ -73,22 +73,22 @@ int main (int argc, char* argv[])
 
     {
       auto basis = makeBasis(gridView, lagrange<3>());
-      test.subTest(checkBasis(basis));
+      test.subTest(checkBasis(basis, EnableContinuityCheck()));
     }
 
     {
       auto basis = makeBasis(gridView, lagrange(2));
-      test.subTest(checkBasis(basis));
+      test.subTest(checkBasis(basis, EnableContinuityCheck()));
     }
 
     {
       auto basis = makeBasis(gridView, lagrange<3,float>());
-      test.subTest(checkBasis(basis));
+      test.subTest(checkBasis(basis, EnableContinuityCheck()));
     }
 
     {
       auto basis = makeBasis(gridView, lagrange<float>(2));
-      test.subTest(checkBasis(basis));
+      test.subTest(checkBasis(basis, EnableContinuityCheck()));
     }
 
   }
