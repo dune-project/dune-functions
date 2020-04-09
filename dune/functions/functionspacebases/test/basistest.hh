@@ -368,6 +368,44 @@ struct EnableNormalContinuityCheck : public EnableContinuityCheck
   }
 };
 
+struct EnableCenterContinuityCheck : public EnableContinuityCheck
+{
+  template<class JumpEvaluator>
+  auto localJumpContinuityCheck(const JumpEvaluator& jumpEvaluator, double tol) const
+  {
+    return [=](const auto& intersection, const auto& insideNode, const auto& outsideNode, const auto& insideToOutside) {
+      using Intersection = std::decay_t<decltype(intersection)>;
+      using Node = std::decay_t<decltype(insideNode)>;
+      using Range = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+
+      std::vector<int> isContinuous(insideNode.size(), true);
+      std::vector<Range> insideValues;
+      std::vector<Range> outsideValues;
+
+      insideNode.finiteElement().localBasis().evaluateFunction(intersection.geometryInInside().center(), insideValues);
+      outsideNode.finiteElement().localBasis().evaluateFunction(intersection.geometryInOutside().center(), outsideValues);
+
+      auto centerLocal = intersection.geometry().local(intersection.geometry().center());
+
+      // Check jump against outside basis function or zero.
+      for(std::size_t i=0; i<insideNode.size(); ++i)
+      {
+          auto jump = insideValues[i];
+          if (insideToOutside[i].has_value())
+            jump -= outsideValues[insideToOutside[i].value()];
+          isContinuous[i] = isContinuous[i] and (jumpEvaluator(jump, intersection, centerLocal) < tol);
+      }
+      return isContinuous;
+    };
+  }
+
+  auto localContinuityCheck() const {
+    auto jumpNorm = [](auto&&jump, auto&& intersection, auto&& x) -> double {
+      return jump.infinity_norm();
+    };
+    return localJumpContinuityCheck(jumpNorm, tol_);
+  }
+};
 
 
 /*
