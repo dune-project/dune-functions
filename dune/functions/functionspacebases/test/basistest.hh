@@ -208,7 +208,7 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
   test.subTest(checkBasisIndexTreeConsistency(multiIndexSet));
   test.subTest(checkBasisSizeConsistency(basis, multiIndexSet));
   test.check(basis.dimension() == multiIndexSet.size())
-    << "basis.dimension() is not equals to the total number of basis functions.";
+    << "basis.dimension() does not equal the total number of basis functions.";
 
   return test;
 }
@@ -271,7 +271,7 @@ Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView, F
     }
   });
 
-  // Check if each local index appeared exactly once.
+  // Check if each local index appears exactly once.
   for(std::size_t i=0; i<localView.size(); ++i)
   {
     if (localIndices[i])
