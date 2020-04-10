@@ -495,9 +495,6 @@ int main (int argc, char *argv[])
   //////////////////////////////////////////////////////////////////////////////////////////////
   auto vtkWriter = SubsamplingVTKWriter(gridView, Dune::refinementLevels(0));
   vtkWriter.addVertexData(fluxFunction, VTK::FieldInfo("flux", VTK::FieldInfo::Type::vector, dim));
-  if (k==0)
-    vtkWriter.addCellData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
-  else
-    vtkWriter.addVertexData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
+  vtkWriter.addVertexData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.write("poisson-mfem-result");
 }
