@@ -16,8 +16,6 @@
 #include <dune/functions/analyticfunctions/polynomial.hh>
 #include <dune/functions/analyticfunctions/trigonometricfunction.hh>
 
-//#include <dune/functions/common/callable.hh>
-
 //#include "derivativecheck.hh"
 
 bool checkTrue(bool value, std::string error)
@@ -117,22 +115,6 @@ struct DifferentiableFunctionImplementableTest
       }
 
     }
-
-#if 0
-    std::cout << std::endl << "Check calling persistent derivatives through shared_ptr" << std::endl;
-
-    // Test whether I can evaluate the first derivative through shared_ptr
-    persistentDerivative->evaluate(5, df);
-    std::cout << "Derivative at x=5: " << df << std::endl;
-
-    // Test whether I can evaluate the second derivative through shared_ptr
-    persistentSecondDerivative->evaluate(5, ddf);
-    std::cout << "Second derivative at x=5: " << ddf << std::endl;
-
-    // Test whether I can evaluate the third derivative through shared_ptr
-    persistentThirdDerivative->evaluate(5, dddf);
-    std::cout << "Third derivative at x=5: " << dddf << std::endl;
-#endif
 
     return passed;
   }

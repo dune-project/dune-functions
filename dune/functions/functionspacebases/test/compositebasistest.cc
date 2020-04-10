@@ -3,7 +3,6 @@
 #include <config.h>
 
 #include <dune/common/unused.hh>
-#include <dune/common/function.hh>
 #include <dune/common/bitsetvector.hh>
 
 #include <dune/grid/yaspgrid.hh>
