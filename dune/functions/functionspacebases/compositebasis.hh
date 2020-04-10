@@ -6,7 +6,6 @@
 #include <tuple>
 #include <utility>
 
-#include <dune/common/std/utility.hh>
 #include <dune/common/std/apply.hh>
 #include <dune/common/hybridutilities.hh>
 #include <dune/common/reservedvector.hh>
@@ -89,7 +88,7 @@ protected:
   struct Types;
 
   template<std::size_t... indices>
-  struct Types<Dune::Std::index_sequence<indices...>>
+  struct Types<std::index_sequence<indices...>>
   {
     template<std::size_t i>
     using SubNode = typename std::tuple_element_t<i, SubPreBases>::Node;
@@ -435,8 +434,8 @@ public:
   template<class MultiIndex, class GridView>
   auto makePreBasis(const GridView& gridView) const
   {
-    // Use Std::apply to unpack the tuple childPreBasisFactories_
-    return Std::apply([&](const auto&... childPreBasisFactory) {
+    // Use std::apply to unpack the tuple childPreBasisFactories_
+    return std::apply([&](const auto&... childPreBasisFactory) {
         return this->makePreBasisFromChildPreBases<MultiIndex>(gridView, childPreBasisFactory.template makePreBasis<MultiIndex>(gridView)...);
       }, childPreBasisFactories_);
   }
