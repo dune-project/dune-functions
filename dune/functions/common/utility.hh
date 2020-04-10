@@ -8,7 +8,7 @@
 #include <type_traits>
 
 #include <dune/common/overloadset.hh>
-#include <dune/typetree/utility.hh>
+#include <dune/common/indices.hh>
 
 #include <dune/functions/common/functionconcepts.hh>
 
@@ -58,7 +58,7 @@ auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue, secondV
  */
 template<std::size_t end, class F, class size_type, class... Args>
 auto forwardAsStaticIndex(const size_type& i, F&& f, Args&&... args)
-  ->decltype(f(Dune::TypeTree::Indices::_0, std::forward<Args>(args)...))
+  ->decltype(f(Dune::Indices::_0, std::forward<Args>(args)...))
 {
   return forwardAsStaticInteger(std::make_index_sequence<end>{}, i, std::forward<F>(f), std::forward<Args>(args)...);
 }

@@ -14,9 +14,6 @@
 #include <dune/common/tupleutility.hh>
 #include <dune/common/tuplevector.hh>
 
-#include <dune/typetree/compositenode.hh>
-#include <dune/typetree/utility.hh>
-
 #include <dune/functions/common/staticforloop.hh>
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/common/utility.hh>
