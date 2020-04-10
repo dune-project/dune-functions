@@ -16,8 +16,6 @@
 #include <dune/functions/analyticfunctions/polynomial.hh>
 #include <dune/functions/analyticfunctions/trigonometricfunction.hh>
 
-//#include <dune/functions/common/callable.hh>
-
 //#include "derivativecheck.hh"
 
 bool checkTrue(bool value, std::string error)
