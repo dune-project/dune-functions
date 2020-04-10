@@ -11,10 +11,7 @@
 
 #include <dune/typetree/childextraction.hh>
 
-#include <dune/localfunctions/common/virtualinterface.hh>
-
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
-#include <dune/functions/common/functionfromcallable.hh>
 #include <dune/functions/common/functionconcepts.hh>
 
 #include <dune/functions/backends/concepts.hh>
@@ -109,7 +106,6 @@ public:
     using FiniteElement = typename Node::FiniteElement;
     using FiniteElementRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
     using FiniteElementRangeField = typename FiniteElement::Traits::LocalBasisType::Traits::RangeFieldType;
-    using FunctionBaseClass = typename Dune::LocalFiniteElementFunctionBase<FiniteElement>::type;
 
     // Note that we capture j by reference. Hence we can switch
     // the selected component later on by modifying j. Maybe we
@@ -118,10 +114,8 @@ public:
     std::size_t j=0;
     auto localFj = [&](const LocalDomain& x){
       const auto& y = localF_(x);
-      return flatVectorView(nodeToRangeEntry_(node, treePath, y))[j];
+      return FiniteElementRange(flatVectorView(nodeToRangeEntry_(node, treePath, y))[j]);
     };
-
-    using FunctionFromCallable = typename Dune::Functions::FunctionFromCallable<FiniteElementRange(LocalDomain), decltype(localFj), FunctionBaseClass>;
 
     auto interpolationCoefficients = std::vector<FiniteElementRangeField>();
 
@@ -134,9 +128,7 @@ public:
 
     for(j=0; j<blockSize; ++j)
     {
-
-      // We cannot use localFj directly because interpolate requires a Dune::VirtualFunction like interface
-      fe.localInterpolation().interpolate(FunctionFromCallable(localFj), interpolationCoefficients);
+      fe.localInterpolation().interpolate(localFj, interpolationCoefficients);
       for (size_t i=0; i<fe.localBasis().size(); ++i)
       {
         auto multiIndex = localView_.index(node.localIndex(i));

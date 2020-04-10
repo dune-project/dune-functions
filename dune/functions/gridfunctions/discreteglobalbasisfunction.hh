@@ -127,7 +127,7 @@ public:
     /**
      * \brief Bind LocalFunction to grid element.
      *
-     * You must call this method before evaluate()
+     * You must call this method before operator()
      * and after changes to the coefficient vector.
      */
     void bind(const Element& element)

@@ -5,7 +5,6 @@
 #include <array>
 #include <vector>
 
-#include <dune/common/function.hh>
 #include <dune/common/bitsetvector.hh>
 #include <dune/common/indices.hh>
 
