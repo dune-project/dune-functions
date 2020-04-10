@@ -4,8 +4,8 @@
 #define DUNE_FUNCTIONS_GRIDFUNCTIONS_ANALYTICGRIDVIEWFUNCTION_HH
 
 #include <type_traits>
+#include <optional>
 
-#include <dune/common/std/optional.hh>
 #include <dune/common/typeutilities.hh>
 
 #include <dune/functions/common/signature.hh>
@@ -87,7 +87,7 @@ public:
 private:
 
   // Hack around the fact that Geometry is not default constructible.
-  Std::optional<Geometry> geometry_;
+  std::optional<Geometry> geometry_;
 
   Element element_;
   F f_;

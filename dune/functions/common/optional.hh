@@ -3,6 +3,9 @@
 #ifndef DUNE_FUNCTIONS_COMMON_OPTIONAL_HH
 #define DUNE_FUNCTIONS_COMMON_OPTIONAL_HH
 
+#warning dune/functions/common/optional.hh is deprecated and will be removed after Dune 2.8.\
+ Include <optional> instead
+
 #include <dune/common/std/optional.hh>
 
 namespace Dune {

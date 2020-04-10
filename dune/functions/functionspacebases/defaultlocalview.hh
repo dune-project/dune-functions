@@ -5,9 +5,9 @@
 
 
 #include <tuple>
+#include <optional>
 
 #include <dune/common/concept.hh>
-#include <dune/common/std/optional.hh>
 #include <dune/common/hybridutilities.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>
@@ -154,7 +154,7 @@ public:
 
 protected:
   const GlobalBasis* globalBasis_;
-  Std::optional<Element> element_;
+  std::optional<Element> element_;
   Tree tree_;
   NodeIndexSet nodeIndexSet_;
   std::vector<MultiIndex> indices_;
