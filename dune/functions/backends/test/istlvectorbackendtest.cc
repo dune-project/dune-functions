@@ -9,13 +9,12 @@
 #include <dune/common/reservedvector.hh>
 #include <dune/common/classname.hh>
 #include <dune/common/fvector.hh>
+#include <dune/common/indices.hh>
 #include <dune/common/tuplevector.hh>
 #include <dune/common/test/testsuite.hh>
 
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
-
-#include <dune/typetree/utility.hh>
 
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/backends/concepts.hh>
@@ -89,7 +88,7 @@ Dune::TestSuite checkISTLVectorBackend(std::string shortName="")
 {
   Dune::TestSuite test(shortName);
 
-  using namespace Dune::TypeTree::Indices;
+  using namespace Dune::Indices;
   using Basis = GlobalBasisMoc<dim>;
   using SizePrefix = typename Basis::SizePrefix;
 

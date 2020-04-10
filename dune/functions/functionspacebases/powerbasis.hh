@@ -5,9 +5,7 @@
 
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
-
-#include <dune/typetree/powernode.hh>
-#include <dune/typetree/utility.hh>
+#include <dune/common/indices.hh>
 
 #include <dune/functions/common/utility.hh>
 #include <dune/functions/common/type_traits.hh>
@@ -286,7 +284,7 @@ public:
 
   void bind(const Node& node)
   {
-    using namespace TypeTree::Indices;
+    using namespace Indices;
     node_ = &node;
     subNodeIndexSet_.bind(node.child(_0));
   }
@@ -314,7 +312,7 @@ private:
   template<typename It>
   It indices(It multiIndices, BasisFactory::FlatInterleaved) const
   {
-    using namespace Dune::TypeTree::Indices;
+    using namespace Dune::Indices;
     size_type subTreeSize = node_->child(_0).size();
     // Fill indices for first child at the beginning.
     auto next = subNodeIndexSet_.indices(multiIndices);
@@ -341,7 +339,7 @@ private:
   template<typename It>
   It indices(It multiIndices, BasisFactory::FlatLexicographic) const
   {
-    using namespace Dune::TypeTree::Indices;
+    using namespace Dune::Indices;
     size_type subTreeSize = node_->child(_0).size();
     size_type firstIndexEntrySize = preBasis_->subPreBasis().size({});
     // Fill indices for first child at the beginning.
@@ -373,7 +371,7 @@ private:
   template<typename It>
   It indices(It multiIndices, BasisFactory::BlockedLexicographic) const
   {
-    using namespace Dune::TypeTree::Indices;
+    using namespace Dune::Indices;
     size_type subTreeSize = node_->child(_0).size();
     // Fill indices for first child at the beginning.
     auto next = subNodeIndexSet_.indices(multiIndices);
@@ -399,7 +397,7 @@ private:
   template<typename It>
   It indices(It multiIndices, BasisFactory::BlockedInterleaved) const
   {
-    using namespace Dune::TypeTree::Indices;
+    using namespace Dune::Indices;
     size_type subTreeSize = node_->child(_0).size();
     // Fill indices for first child at the beginning.
     auto next = subNodeIndexSet_.indices(multiIndices);
