@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include <dune/common/unused.hh>
+#include <dune/common/indices.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
@@ -79,7 +80,7 @@ int main (int argc, char* argv[]) try
     }
 
     // get access to the finite element
-    using namespace Dune::TypeTree::Indices;
+    using namespace Dune::Indices;
     typedef Basis::LocalView::Tree Tree DUNE_UNUSED;
     auto& p_leaf = TypeTree::child(localView.tree(),_1);
     auto& v_leaf DUNE_UNUSED = TypeTree::child(localView.tree(),_0,1);

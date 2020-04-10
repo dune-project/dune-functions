@@ -20,8 +20,6 @@
 #include <dune/localfunctions/raviartthomas/raviartthomas12d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas2cube2d.hh>
 
-#include <dune/typetree/leafnode.hh>
-
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>

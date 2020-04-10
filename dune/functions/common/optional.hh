@@ -6,12 +6,12 @@
 #warning dune/functions/common/optional.hh is deprecated and will be removed after Dune 2.8.\
  Include <optional> instead
 
-#include <dune/common/std/optional.hh>
+#include <optional>
 
 namespace Dune {
 namespace Functions {
   template< class T >
-  using Optional = Std::optional< T >;
+  using Optional = std::optional< T >;
 }} // namespace Dune::Functions
 
 #endif // DUNE_FUNCTIONS_COMMON_OPTIONAL_HH
