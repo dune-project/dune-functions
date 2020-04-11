@@ -41,7 +41,7 @@ int main (int argc, char* argv[]) try
   Basis feBasis(gridView);
 
 
-  test.subTest(checkBasis(feBasis));
+  test.subTest(checkBasis(feBasis, EnableContinuityCheck()));
 
 
   typedef Basis::MultiIndex MultiIndex;
@@ -125,14 +125,14 @@ int main (int argc, char* argv[]) try
     typedef GridType::LeafGridView GridView;
     const GridView& gridView = grid.leafGridView();
     Functions::TaylorHoodBasis<GridView> basis(gridView);
-    test.subTest(checkBasis(basis));
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
   }
 
   // check RaviartThomasBasis created using basis builder mechanism
   {
     using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid.leafGridView(), taylorHood());
-    test.subTest(checkBasis(basis));
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
   }
 
   return test.exit();

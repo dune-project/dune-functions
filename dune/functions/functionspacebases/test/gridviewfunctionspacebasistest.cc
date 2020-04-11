@@ -50,20 +50,6 @@ void testScalarBasisConst(const Basis& feBasis,
   auto localView = feBasis.localView();
 
 
-  // Test the LocalFiniteElement
-  for (auto it = gridView.template begin<0>(); it!=gridView.template end<0>(); ++it)
-  {
-    // Bind the local FE basis view to the current element
-    localView.bind(*it);
-
-    // The general LocalFiniteElement unit test from dune/localfunctions/test/test-localfe.hh
-    const auto& lFE = localView.tree().finiteElement();
-//    testFE(lFE, disabledLocalTests);
-
-    if (lFE.size() != localView.size())
-      DUNE_THROW(Exception, "Size of leaf node and finite element do not coincide");
-  }
-
   /////////////////////////////////////////////////////////////////////////
   //  Make sure the basis is a partition of unity
   /////////////////////////////////////////////////////////////////////////
@@ -88,42 +74,6 @@ void testScalarBasisConst(const Basis& feBasis,
       }
     }
   }
-
-  ////////////////////////////////////////////////////////////////////////////
-  //  Make sure the basis does not give out constant zero shape functions
-  ////////////////////////////////////////////////////////////////////////////
-  for(const auto& e : elements(gridView))
-  {
-    // Bind the local FE basis view to the current element
-    localView.bind(e);
-
-    const auto& lFE = localView.tree().finiteElement();
-
-    const QuadratureRule<double,dim>& quad = QuadratureRules<double,dim>::rule(e.type(), 3);
-    std::vector<FieldVector<double,1> > values;
-    std::vector<double> sumOfAbsValues(lFE.size());
-    std::fill(sumOfAbsValues.begin(), sumOfAbsValues.end(), 0.0);
-    for (size_t i=0; i<quad.size(); i++)
-    {
-      lFE.localBasis().evaluateFunction(quad[i].position(), values);
-      // Sum the absolute values for each quadrature point
-      for (size_t j=0; j<values.size(); j++)
-        sumOfAbsValues[j] += std::fabs(values[j][0]);
-    }
-
-    for (size_t i=0; i<values.size(); i++)
-      if ( sumOfAbsValues[i] <= 1e-5)
-        DUNE_THROW(Exception, "Basis gives out a constant-zero shape function!");
-  }
-
-
-
-
-  // Check whether the basis exports a type 'MultiIndex'
-  typedef typename Basis::MultiIndex MultiIndex;
-
-  // And this type must be indexable
-  static_assert(IsIndexable<MultiIndex>(), "MultiIndex must support operator[]");
 
   ///////////////////////////////////////////////////////////////////////////////////
   //  Check whether the global indices are in the correct range,
