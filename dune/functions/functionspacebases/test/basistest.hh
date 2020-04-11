@@ -307,7 +307,7 @@ struct EnableContinuityCheck
   template<class JumpEvaluator>
   auto localJumpContinuityCheck(const JumpEvaluator& jumpEvaluator, std::size_t order, double tol) const
   {
-    return [=](const auto& intersection, const auto& insideNode, const auto& outsideNode, const auto& insideToOutside) {
+    return [=](const auto& intersection, const auto& treePath, const auto& insideNode, const auto& outsideNode, const auto& insideToOutside) {
       using Intersection = std::decay_t<decltype(intersection)>;
       using Node = std::decay_t<decltype(insideNode)>;
 
@@ -378,9 +378,9 @@ struct EnableNormalContinuityCheck : public EnableContinuityCheck
 struct EnableCenterContinuityCheck : public EnableContinuityCheck
 {
   template<class JumpEvaluator>
-  auto localJumpContinuityCheck(const JumpEvaluator& jumpEvaluator, double tol) const
+  auto localJumpCenterContinuityCheck(const JumpEvaluator& jumpEvaluator, double tol) const
   {
-    return [=](const auto& intersection, const auto& insideNode, const auto& outsideNode, const auto& insideToOutside) {
+    return [=](const auto& intersection, const auto& treePath, const auto& insideNode, const auto& outsideNode, const auto& insideToOutside) {
       using Intersection = std::decay_t<decltype(intersection)>;
       using Node = std::decay_t<decltype(insideNode)>;
       using Range = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
@@ -410,7 +410,7 @@ struct EnableCenterContinuityCheck : public EnableContinuityCheck
     auto jumpNorm = [](auto&&jump, auto&& intersection, auto&& x) -> double {
       return jump.infinity_norm();
     };
-    return localJumpContinuityCheck(jumpNorm, tol_);
+    return localJumpCenterContinuityCheck(jumpNorm, tol_);
   }
 };
 
@@ -467,7 +467,7 @@ Dune::TestSuite checkBasisContinuity(const Basis& basis, const LocalCheck& local
           }
 
           // Apply continuity check on given intersection with given inside/outside DOF node pair.
-          auto isContinuous = localCheck(intersection, insideNode, outsideNode, insideToOutside);
+          auto isContinuous = localCheck(intersection, treePath, insideNode, outsideNode, insideToOutside);
 
           for(std::size_t i=0; i<insideNode.size(); ++i)
           {
