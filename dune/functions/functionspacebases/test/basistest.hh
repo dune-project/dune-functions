@@ -469,7 +469,6 @@ Dune::TestSuite checkBasisContinuity(const Basis& basis, const LocalCheck& local
               << " is discontinuous across intersection of elements "
               << elementStr(localView.element(), basis.gridView())
               << " and " << elementStr(neighborLocalView.element(), basis.gridView());
-              // << " since maximal jump to zero " << maxJump << " exceeds tolerance";
           }
         });
       }
