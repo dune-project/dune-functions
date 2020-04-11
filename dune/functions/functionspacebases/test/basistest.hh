@@ -511,6 +511,4 @@ Dune::TestSuite checkBasis(const Basis& basis, Flags... flags)
   return test;
 }
 
-
-
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_TEST_BASISTEST_HH
