@@ -84,7 +84,6 @@ public:
     prefixPath_()
   {
     static_assert(models<Concept::PreBasis<GridView>, PreBasis>(), "Type passed to DefaultGlobalBasis does not model the PreBasis concept.");
-    preBasis_.initializeIndices();
   }
 
   //! Obtain the grid view that the basis is defined on
@@ -114,7 +113,6 @@ public:
   void update(const GridView & gv)
   {
     preBasis_.update(gv);
-    preBasis_.initializeIndices();
   }
 
   //! Get the total dimension of the space spanned by this basis

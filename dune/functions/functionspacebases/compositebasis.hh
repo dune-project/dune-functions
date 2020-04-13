@@ -130,14 +130,6 @@ public:
     });
   }
 
-  //! Initialize the global indices
-  void initializeIndices()
-  {
-    Hybrid::forEach(ChildIndices(), [&](auto i) {
-      this->subPreBasis(i).initializeIndices();
-    });
-  }
-
   //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {

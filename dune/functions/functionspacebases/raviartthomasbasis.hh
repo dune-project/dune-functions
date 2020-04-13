@@ -251,12 +251,8 @@ public:
     constexpr int dofsPerFace    = (dim == 2) ? k+1 : 3*k+1;
 
     dofsPerCodim_ = {{dofsPerElement, dofsPerFace}};
-  }
 
-  void initializeIndices()
-  {
-    codimOffset_[0] = 0;
-    codimOffset_[1] = codimOffset_[0] + dofsPerCodim_[0] * gridView_.size(0);
+    initializeIndices();
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -270,6 +266,7 @@ public:
   void update (const GridView& gv)
   {
     gridView_ = gv;
+    initializeIndices();
   }
 
   /**
@@ -321,6 +318,14 @@ public:
     }
 
     return result;
+  }
+
+protected:
+
+  void initializeIndices()
+  {
+    codimOffset_[0] = 0;
+    codimOffset_[1] = codimOffset_[0] + dofsPerCodim_[0] * gridView_.size(0);
   }
 
 protected:

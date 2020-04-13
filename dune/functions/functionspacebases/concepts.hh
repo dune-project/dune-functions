@@ -151,7 +151,6 @@ struct PreBasis
     requireType<typename PB::Node>(),
     requireType<typename PB::IndexSet>(),
     requireSameType<typename PB::GridView, GridView>(),
-    const_cast<PB&>(preBasis).initializeIndices(),
     requireConvertible<typename PB::GridView>(preBasis.gridView()),
     requireConvertible<typename PB::Node>(preBasis.makeNode()),
     requireConvertible<typename PB::IndexSet>(preBasis.makeIndexSet()),

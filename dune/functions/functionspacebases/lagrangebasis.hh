@@ -108,30 +108,8 @@ public:
     }
     dofsPerPrism_ = computeDofsPerPrism();
     dofsPerPyramid_ = computeDofsPerPyramid();
-  }
 
-  //! Initialize the global indices
-  void initializeIndices()
-  {
-    vertexOffset_        = 0;
-    edgeOffset_            = vertexOffset_          + dofsPerCube(0) * ((size_type)gridView_.size(dim));
-
-    if (dim>=2)
-    {
-      triangleOffset_      = edgeOffset_            + dofsPerCube(1) * ((size_type) gridView_.size(dim-1));
-
-      quadrilateralOffset_ = triangleOffset_        + dofsPerSimplex(2) * ((size_type)gridView_.size(Dune::GeometryTypes::triangle));
-    }
-
-    if (dim==3) {
-      tetrahedronOffset_   = quadrilateralOffset_ + dofsPerCube(2) * ((size_type)gridView_.size(Dune::GeometryTypes::quadrilateral));
-
-      prismOffset_         = tetrahedronOffset_   +   dofsPerSimplex(3) * ((size_type)gridView_.size(Dune::GeometryTypes::tetrahedron));
-
-      hexahedronOffset_    = prismOffset_         +   dofsPerPrism() * ((size_type)gridView_.size(Dune::GeometryTypes::prism));
-
-      pyramidOffset_       = hexahedronOffset_    +   dofsPerCube(3) * ((size_type)gridView_.size(Dune::GeometryTypes::hexahedron));
-    }
+    initializeIndices();
   }
 
   //! Obtain the grid view that the basis is defined on
@@ -144,6 +122,7 @@ public:
   void update (const GridView& gv)
   {
     gridView_ = gv;
+    initializeIndices();
   }
 
   /**
@@ -217,15 +196,35 @@ public:
   }
 
 protected:
-  GridView gridView_;
 
   unsigned int order() const
   {
     return (useDynamicOrder) ? order_ : k;
   }
 
-  // Run-time order, only valid if k<0
-  const unsigned int order_;
+  // Initialize the global indices
+  void initializeIndices()
+  {
+    vertexOffset_        = 0;
+    edgeOffset_            = vertexOffset_          + dofsPerCube(0) * ((size_type)gridView_.size(dim));
+
+    if (dim>=2)
+    {
+      triangleOffset_      = edgeOffset_            + dofsPerCube(1) * ((size_type) gridView_.size(dim-1));
+
+      quadrilateralOffset_ = triangleOffset_        + dofsPerSimplex(2) * ((size_type)gridView_.size(Dune::GeometryTypes::triangle));
+    }
+
+    if (dim==3) {
+      tetrahedronOffset_   = quadrilateralOffset_ + dofsPerCube(2) * ((size_type)gridView_.size(Dune::GeometryTypes::quadrilateral));
+
+      prismOffset_         = tetrahedronOffset_   +   dofsPerSimplex(3) * ((size_type)gridView_.size(Dune::GeometryTypes::tetrahedron));
+
+      hexahedronOffset_    = prismOffset_         +   dofsPerPrism() * ((size_type)gridView_.size(Dune::GeometryTypes::prism));
+
+      pyramidOffset_       = hexahedronOffset_    +   dofsPerCube(3) * ((size_type)gridView_.size(Dune::GeometryTypes::hexahedron));
+    }
+  }
 
   //! Number of degrees of freedom assigned to a simplex (without the ones assigned to its faces!)
   size_type dofsPerSimplex(std::size_t simplexDim) const
@@ -270,6 +269,13 @@ protected:
   {
     return order() == 0 ? (dim == 3 ? 1 : 0) : (order()-2)*(order()-1)*(2*order()-3)/6;
   }
+
+protected:
+
+  GridView gridView_;
+
+  // Run-time order, only valid if k<0
+  const unsigned int order_;
 
   // When the order is given at run-time, the following numbers are pre-computed:
   std::array<size_type,dim+1> dofsPerSimplex_;

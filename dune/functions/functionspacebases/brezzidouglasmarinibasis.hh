@@ -184,13 +184,8 @@ public:
     // element types.  Somebody simply has to sit down and implement the missing bits.
     if (gv.indexSet().types(0).size() > 1)
       DUNE_THROW(Dune::NotImplemented, "Brezzi-Douglas-Marini basis is only implemented for grids with a single element type");
-  }
 
-  void initializeIndices()
-  {
-    codimOffset_[0] = 0;
-    codimOffset_[1] = codimOffset_[0] + dofsPerCodim_[0] * gridView_.size(0);
-    //if (dim==3) codimOffset_[2] = codimOffset_[1] + dofsPerCodim[1] * gridView_.size(1);
+    initializeIndices();
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -204,6 +199,7 @@ public:
   void update (const GridView& gv)
   {
     gridView_ = gv;
+    initializeIndices();
   }
 
   /**
@@ -250,6 +246,15 @@ public:
     GeometryType elementType = *(gridView_.indexSet().types(0).begin());
     size_t numFaces = ReferenceElements<double,dim>::general(elementType).size(1);
     return dofsPerCodim_[0] + dofsPerCodim_[1] * numFaces;
+  }
+
+protected:
+
+  void initializeIndices()
+  {
+    codimOffset_[0] = 0;
+    codimOffset_[1] = codimOffset_[0] + dofsPerCodim_[0] * gridView_.size(0);
+    //if (dim==3) codimOffset_[2] = codimOffset_[1] + dofsPerCodim[1] * gridView_.size(1);
   }
 
 protected:
