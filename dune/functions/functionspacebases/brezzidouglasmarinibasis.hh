@@ -16,6 +16,7 @@
 #include <dune/localfunctions/brezzidouglasmarini/brezzidouglasmarini2cube2d.hh>
 #include <dune/localfunctions/brezzidouglasmarini/brezzidouglasmarini2simplex2d.hh>
 
+#include <dune/functions/functionspacebases/globalvaluedlocalfiniteelement.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -273,10 +274,11 @@ public:
   using size_type = std::size_t;
   using Element = typename GV::template Codim<0>::Entity;
   using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, double, k>;
-  using FiniteElement = typename FiniteElementMap::FiniteElement;
+  using FiniteElement = Impl::GlobalValuedLocalFiniteElement<Impl::ContravariantPiolaTransformator,
+                                                             typename FiniteElementMap::FiniteElement,
+                                                             Element>;
 
   BrezziDouglasMariniNode(const FiniteElementMap* finiteElementMap) :
-    finiteElement_(nullptr),
     element_(nullptr),
     finiteElementMap_(finiteElementMap)
   {}
@@ -293,20 +295,20 @@ public:
    */
   const FiniteElement& finiteElement() const
   {
-    return *finiteElement_;
+    return finiteElement_;
   }
 
   //! Bind to element.
   void bind(const Element& e)
   {
     element_ = &e;
-    finiteElement_ = &(finiteElementMap_->find(*element_));
-    this->setSize(finiteElement_->size());
+    finiteElement_.bind((finiteElementMap_->find(*element_)), e);
+    this->setSize(finiteElement_.size());
   }
 
 protected:
 
-  const FiniteElement* finiteElement_;
+  FiniteElement finiteElement_;
   const Element* element_;
   const FiniteElementMap* finiteElementMap_;
 };
