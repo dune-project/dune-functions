@@ -67,7 +67,7 @@ public:
   LagrangeDGPreBasis (const GridView& gv, Args&&... args)
     : gridView_(gv)
     , lfeCache_(std::forward<Args>(args)...)
-    , order_(lfeCache_.get(GeometryTypes::simplex(dim)).localBasis().order())
+    , order_(LagrangePreBasis<GV,LFECache,MI>::computeOrder(lfeCache_))
   {}
 
   void initializeIndices ()

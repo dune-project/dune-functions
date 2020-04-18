@@ -108,7 +108,8 @@ namespace Impl {
     using type = FixedGeometryTypeLagrangeLFECache<id<GV>, typename GV::ctype, Range, GV::dimension, k>;
   };
 
-  //! Select the static LFECache if k > 0, else the dynamic LFECache
+  //! Select the static LFECache if k >= 0, else the dynamic LFECache
+  //! In case the grid supports a single GeometryType only, use a fixed-type cache.
   template <class GV, int k, class Range>
   using LFECacheSelector = std::conditional_t<(k >= 0),
     std::conditional_t<Dune::Capabilities::hasSingleGeometryType<typename GV::Grid>::v,
@@ -176,6 +177,9 @@ private:
   template <class, class, class>
   friend class LagrangeNodeIndexSet;
 
+  template <class, class, class>
+  friend class LagrangeDGPreBasis;
+
 public:
 
   //! Template mapping root tree path to type of created tree node
@@ -197,7 +201,7 @@ public:
   LagrangePreBasis (const GridView& gv, Args&&... args)
     : gridView_(gv)
     , lfeCache_(std::forward<Args>(args)...)
-    , order_(lfeCache_.get(GeometryTypes::simplex(dim)).localBasis().order())
+    , order_(computeOrder(lfeCache_))
   {
     for (int i=0; i<=dim; i++)
     {
@@ -362,6 +366,16 @@ protected:
   size_type computeDofsPerPyramid () const
   {
     return order() == 0 ? (dim == 3 ? 1 : 0) : (order()-2)*(order()-1)*(2*order()-3)/6;
+  }
+
+protected:
+  static unsigned int computeOrder (LFECache& cache)
+  {
+    using singleGeometryType = Dune::Capabilities::hasSingleGeometryType<typename GV::Grid>;
+    if constexpr (singleGeometryType::v)
+      return cache.get(GeometryType(singleGeometryType::topologyId, GV::dimension)).localBasis().order();
+    else
+      return cache.get(GeometryTypes::simplex(dim)).localBasis().order();
   }
 
 protected:
