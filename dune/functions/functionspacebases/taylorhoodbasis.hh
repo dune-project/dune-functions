@@ -94,10 +94,9 @@ public:
   using SizePrefix = Dune::ReservedVector<size_type, 2>;
 
 private:
-
   using PQMultiIndex = std::array<size_type, 1>;
-  using PQ1PreBasis = LagrangePreBasis<GV,1,PQMultiIndex>;
-  using PQ2PreBasis = LagrangePreBasis<GV,2,PQMultiIndex>;
+  using PQ1PreBasis = StaticLagrangePreBasis<GV,1,PQMultiIndex>;
+  using PQ2PreBasis = StaticLagrangePreBasis<GV,2,PQMultiIndex>;
 
 public:
 
@@ -227,9 +226,9 @@ protected:
 
 template<typename GV>
 class TaylorHoodVelocityTree :
-    public PowerBasisNode<LagrangeNode<GV,2>, GV::dimension>
+    public PowerBasisNode<StaticLagrangeNode<GV,2>, GV::dimension>
 {
-  using PQ2Node = LagrangeNode<GV,2>;
+  using PQ2Node = StaticLagrangeNode<GV,2>;
   using Base = PowerBasisNode<PQ2Node, GV::dimension>;
 
 public:
@@ -244,11 +243,11 @@ template<typename GV>
 class TaylorHoodBasisTree :
     public CompositeBasisNode<
       TaylorHoodVelocityTree<GV>,
-      LagrangeNode<GV,1>
+      StaticLagrangeNode<GV,1>
     >
 {
   using VelocityNode=TaylorHoodVelocityTree<GV>;
-  using PressureNode=LagrangeNode<GV,1>;
+  using PressureNode=StaticLagrangeNode<GV,1>;
 
   using Base=CompositeBasisNode<VelocityNode, PressureNode>;
 
