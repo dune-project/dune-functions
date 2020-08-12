@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_COMMON_POLYMORPHICSMALLOBJECT_HH
 
 #include <utility>
+#include <type_traits>
 
 namespace Dune {
 namespace Functions {
@@ -30,11 +31,11 @@ namespace Functions {
  * that Base has a virtual destructor.
  *
  * In order to make the copy constructor work for polymorphic types,
- * Base must provide virtual methods clone() and clone(void*). The former should return
- * a pointer to a dynamically allocated clone, while the latter
- * should call the appropriate placement-new with the passed pointer.
+ * Base must provide virtual methods `Base* clone()` and `Base* clone(void*)`.
+ * The former should return a pointer to a dynamically allocated clone, while
+ * the latter should call the appropriate placement-new with the passed pointer.
  *
- * Similarly the polymorphic type has to implement a virtual move(void*)
+ * Similarly the polymorphic type has to implement a virtual `Base* move(void*)`
  * method.
  * This should call placement-new and can std::move all the
  * data but leave the object in a valid and probably unusable state.
@@ -52,13 +53,15 @@ public:
   /**
    * \brief Construct from object
    *
-   * \tparam Derived Type of object to be stored, should be derived from Base
+   * \tparam Derived Type of object to be stored, must be derived from Base
    * \param derived Object to be stored
    */
-  template<class Derived>
+  template<class Derived,
+        typename std::enable_if<std::is_base_of<Base, std::remove_cv_t<
+          std::remove_reference_t<Derived>>>::value, int>::type = 0>
   PolymorphicSmallObject(Derived&& derived)
   {
-    constexpr bool useBuffer = sizeof(Derived)<bufferSize;
+    constexpr bool useBuffer = sizeof(Derived) <= bufferSize;
     if constexpr (useBuffer) {
       p_ = new (buffer_) Derived(std::forward<Derived>(derived));
     } else {
@@ -87,7 +90,8 @@ public:
   //! Copy assignment from other PolymorphicSmallObject
   PolymorphicSmallObject& operator=(const PolymorphicSmallObject& other)
   {
-    destroyWrappedObject();
+    if (&other!=this)
+      destroyWrappedObject();
     copyToWrappedObject(other);
     return *this;
   }
