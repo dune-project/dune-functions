@@ -78,7 +78,8 @@ public:
   //! Copy constructor from other PolymorphicSmallObject
   PolymorphicSmallObject(const PolymorphicSmallObject& other)
   {
-    copyToWrappedObject(other);
+    if (&other!=this)
+      copyToWrappedObject(other);
   }
 
   //! Destructor
@@ -91,8 +92,10 @@ public:
   PolymorphicSmallObject& operator=(const PolymorphicSmallObject& other)
   {
     if (&other!=this)
+    {
       destroyWrappedObject();
-    copyToWrappedObject(other);
+      copyToWrappedObject(other);
+    }
     return *this;
   }
 
@@ -149,7 +152,7 @@ private:
     {
       // We don't need to check for &other_!=this, because you can't
       // have an rvalue to *this and call it's assignment/constructor
-      // at the same time. (Despite trying to shot yourself in the foot
+      // at the same time. (Despite trying to shoot yourself in the foot
       // with std::move explicitly.)
 
       // Take ownership of allocated object
@@ -162,13 +165,10 @@ private:
 
   void copyToWrappedObject(const PolymorphicSmallObject& other)
   {
-    if (&other!=this)
-    {
-      if (other.bufferUsed())
-        p_ = other.p_->clone(buffer_);
-      else
-        p_ = other.p_->clone();
-    }
+    if (other.bufferUsed())
+      p_ = other.p_->clone(buffer_);
+    else
+      p_ = other.p_->clone();
   }
 
   alignas(Base) char buffer_[bufferSize];
