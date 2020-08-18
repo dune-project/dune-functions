@@ -78,8 +78,7 @@ public:
   //! Copy constructor from other PolymorphicSmallObject
   PolymorphicSmallObject(const PolymorphicSmallObject& other)
   {
-    if (&other!=this)
-      copyToWrappedObject(other);
+    copyToWrappedObject(other);
   }
 
   //! Destructor
