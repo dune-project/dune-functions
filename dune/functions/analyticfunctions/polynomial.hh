@@ -35,6 +35,12 @@ public:
   //! Move constructor
   Polynomial(Polynomial&& other) = default;
 
+  //! Copy-assignment operator
+  Polynomial& operator=(const Polynomial& other) = default;
+
+  //! Move-assignment operator
+  Polynomial& operator=(Polynomial&& other) = default;
+
   /**
    * \brief Create from list of coefficients
    *
