@@ -41,7 +41,7 @@ public:
    * Coefficients are ordered in accordance with
    * the corresponding monomial order
    */
-  Polynomial(std::initializer_list<double> coefficients) :
+  Polynomial(std::initializer_list<K> coefficients) :
     coefficients_(coefficients)
   {}
 
