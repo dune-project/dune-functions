@@ -6,6 +6,7 @@
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/functions/common/polymorphicsmallobject.hh>
 
+#include <array>
 #include <iostream>
 #include <string>
 #include <utility>
@@ -18,11 +19,13 @@ public:
   virtual Base* clone(void*) = 0;
   virtual Base* move(void*) = 0;
   virtual int foo() = 0;
+  virtual bool checkMemberAlignment() = 0;
 };
 
 class Derived
     : public virtual Base
 {
+  long double dummy_;
   int i_;
 public:
   virtual ~Derived() = default;
@@ -31,6 +34,9 @@ public:
   Base* clone(void* ptr) final { return new (ptr) Derived{this->i_}; }
   Base* move(void* ptr) final { return new (ptr) Derived{std::move(this->i_)}; }
   int foo() final { return i_; }
+  bool checkMemberAlignment() final {
+    return (reinterpret_cast<std::uintptr_t>(&dummy_) % alignof(long double)) == 0;
+  }
 };
 
 bool checkTrue(bool value, std::string error)
@@ -44,6 +50,10 @@ template <class Obj>
 bool test()
 {
   bool success = true;
+
+  std::array<Obj,2> v{Derived{2}, Derived{2}};
+  success &= checkTrue(v[0].get().checkMemberAlignment(), "Invalid alignment of member!");
+  success &= checkTrue(v[1].get().checkMemberAlignment(), "Invalid alignment of member!");
 
   Obj obj(Derived{2});
   success &= checkTrue(obj.get().foo() == 2, "Invalid state using constructor with Derived argument!");
@@ -63,7 +73,7 @@ bool test()
   obj = obj;
   success &= checkTrue(obj.get().foo() == 2, "Invalid state using self assignment!");
 
-  return true;
+  return success;
 }
 
 int main ( int argc, char **argv )
