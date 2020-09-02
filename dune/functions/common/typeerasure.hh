@@ -187,7 +187,7 @@ public:
   }
 
   //! Get type of stored object
-  virtual const std::type_info& target_type() const
+  const std::type_info& target_type() const
   {
     return wrapped_.get().target_type();
   }
