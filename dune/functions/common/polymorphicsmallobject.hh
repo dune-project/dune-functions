@@ -67,7 +67,7 @@ public:
     using namespace Dune::Hybrid;
     auto useBuffer = Dune::Std::bool_constant<(sizeof(Derived) <= bufferSize)>();
     ifElse(useBuffer, [&](auto id) {
-      p_ = new (buffer_) Derived(std::forward<Derived>(derived));
+      p_ = new (&buffer_) Derived(std::forward<Derived>(derived));
     }, [&](auto id) {
       p_ = new Derived(std::forward<Derived>(derived));
     });
@@ -150,7 +150,7 @@ private:
   void moveToWrappedObject(PolymorphicSmallObject&& other)
   {
     if (other.bufferUsed())
-      p_ = other.p_->move(buffer_);
+      p_ = other.p_->move(&buffer_);
     else
     {
       // We don't need to check for &other_!=this, because you can't
@@ -169,12 +169,12 @@ private:
   void copyToWrappedObject(const PolymorphicSmallObject& other)
   {
     if (other.bufferUsed())
-      p_ = other.p_->clone(buffer_);
+      p_ = other.p_->clone(&buffer_);
     else
       p_ = other.p_->clone();
   }
 
-  alignas(Base) char buffer_[bufferSize];
+  std::aligned_storage_t<bufferSize> buffer_;
   Base* p_;
 };
 
