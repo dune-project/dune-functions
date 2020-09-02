@@ -63,7 +63,7 @@ bool test()
   obj = obj;
   success &= checkTrue(obj.get().foo() == 2, "Invalid state using self assignment!");
 
-  return true;
+  return success;
 }
 
 int main ( int argc, char **argv )
