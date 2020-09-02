@@ -51,6 +51,9 @@ bool test()
 {
   bool success = true;
 
+  static_assert(std::is_nothrow_move_constructible<Obj>::value);
+  static_assert(std::is_nothrow_move_assignable<Obj>::value);
+
   std::array<Obj,2> v{Derived{2}, Derived{2}};
   success &= checkTrue(v[0].get().checkMemberAlignment(), "Invalid alignment of member!");
   success &= checkTrue(v[1].get().checkMemberAlignment(), "Invalid alignment of member!");

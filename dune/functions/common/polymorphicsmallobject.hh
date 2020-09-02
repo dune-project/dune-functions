@@ -70,7 +70,7 @@ public:
   }
 
   //! Move constructor from other PolymorphicSmallObject
-  PolymorphicSmallObject(PolymorphicSmallObject&& other)
+  PolymorphicSmallObject(PolymorphicSmallObject&& other) noexcept
   {
     moveToWrappedObject(std::move(other));
   }
@@ -99,7 +99,7 @@ public:
   }
 
   //! Move assignment from other PolymorphicSmallObject
-  PolymorphicSmallObject& operator=(PolymorphicSmallObject&& other)
+  PolymorphicSmallObject& operator=(PolymorphicSmallObject&& other) noexcept
   {
     destroyWrappedObject();
     moveToWrappedObject(std::move(other));
@@ -132,7 +132,7 @@ public:
 
 private:
 
-  void destroyWrappedObject()
+  void destroyWrappedObject() noexcept
   {
     if (operator bool())
     {
@@ -143,7 +143,7 @@ private:
     }
   }
 
-  void moveToWrappedObject(PolymorphicSmallObject&& other)
+  void moveToWrappedObject(PolymorphicSmallObject&& other) noexcept
   {
     if (other.bufferUsed())
       p_ = other.p_->move(&buffer_);
