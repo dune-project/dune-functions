@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_COMMON_POLYMORPHICSMALLOBJECT_HH
 
 #include <utility>
+#include <type_traits>
 
 #include <dune/common/std/type_traits.hh>
 #include <dune/common/hybridutilities.hh>
@@ -33,11 +34,11 @@ namespace Functions {
  * that Base has a virtual destructor.
  *
  * In order to make the copy constructor work for polymorphic types,
- * Base must provide virtual methods clone() and clone(void*). The former should return
- * a pointer to a dynamically allocated clone, while the latter
- * should call the appropriate placement-new with the passed pointer.
+ * Base must provide virtual methods `Base* clone()` and `Base* clone(void*)`.
+ * The former should return a pointer to a dynamically allocated clone, while
+ * the latter should call the appropriate placement-new with the passed pointer.
  *
- * Similarly the polymorphic type has to implement a virtual move(void*)
+ * Similarly the polymorphic type has to implement a virtual `Base* move(void*)`
  * method.
  * This should call placement-new and can std::move all the
  * data but leave the object in a valid and probably unusable state.
@@ -55,16 +56,18 @@ public:
   /**
    * \brief Construct from object
    *
-   * \tparam Derived Type of object to be stored, should be derived from Base
+   * \tparam Derived Type of object to be stored, must be derived from Base
    * \param derived Object to be stored
    */
-  template<class Derived>
+  template<class Derived,
+        typename std::enable_if<std::is_base_of<Base, std::remove_cv_t<
+          std::remove_reference_t<Derived>>>::value, int>::type = 0>
   PolymorphicSmallObject(Derived&& derived)
   {
     using namespace Dune::Hybrid;
-    auto useBuffer = Dune::Std::bool_constant<(sizeof(Derived)<bufferSize)>();
+    auto useBuffer = Dune::Std::bool_constant<(sizeof(Derived) <= bufferSize)>();
     ifElse(useBuffer, [&](auto id) {
-      p_ = new (buffer_) Derived(std::forward<Derived>(derived));
+      p_ = new (&buffer_) Derived(std::forward<Derived>(derived));
     }, [&](auto id) {
       p_ = new Derived(std::forward<Derived>(derived));
     });
@@ -91,8 +94,11 @@ public:
   //! Copy assignment from other PolymorphicSmallObject
   PolymorphicSmallObject& operator=(const PolymorphicSmallObject& other)
   {
-    destroyWrappedObject();
-    copyToWrappedObject(other);
+    if (&other!=this)
+    {
+      destroyWrappedObject();
+      copyToWrappedObject(other);
+    }
     return *this;
   }
 
@@ -144,12 +150,12 @@ private:
   void moveToWrappedObject(PolymorphicSmallObject&& other)
   {
     if (other.bufferUsed())
-      p_ = other.p_->move(buffer_);
+      p_ = other.p_->move(&buffer_);
     else
     {
       // We don't need to check for &other_!=this, because you can't
       // have an rvalue to *this and call it's assignment/constructor
-      // at the same time. (Despite trying to shot yourself in the foot
+      // at the same time. (Despite trying to shoot yourself in the foot
       // with std::move explicitly.)
 
       // Take ownership of allocated object
@@ -162,16 +168,13 @@ private:
 
   void copyToWrappedObject(const PolymorphicSmallObject& other)
   {
-    if (&other!=this)
-    {
-      if (other.bufferUsed())
-        p_ = other.p_->clone(buffer_);
-      else
-        p_ = other.p_->clone();
-    }
+    if (other.bufferUsed())
+      p_ = other.p_->clone(&buffer_);
+    else
+      p_ = other.p_->clone();
   }
 
-  alignas(Base) char buffer_[bufferSize];
+  std::aligned_storage_t<bufferSize> buffer_;
   Base* p_;
 };
 
