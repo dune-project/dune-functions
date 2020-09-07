@@ -45,7 +45,7 @@ class CompositeNodeIndexSet;
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
- * This pre-basis represente a composition of several given pre-bases.
+ * This pre-basis represents a composition of several given pre-bases.
  * Its node type is a CompositeBasisNodes for the given subnodes.
  *
  * \tparam MI  Type to be used for global multi-indices
