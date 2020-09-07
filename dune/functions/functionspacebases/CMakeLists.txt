@@ -18,6 +18,7 @@ install(FILES
         lagrangebasis.hh
         lagrangedgbasis.hh
         nedelecbasis.hh
+        periodicbasis.hh
         powerbasis.hh
         rannacherturekbasis.hh
         nodes.hh
