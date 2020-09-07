@@ -17,6 +17,8 @@ dune_add_test(SOURCES lagrangedgbasistest.cc)
 
 dune_add_test(SOURCES nedelecbasistest.cc)
 
+dune_add_test(SOURCES periodicbasistest.cc)
+
 dune_add_test(SOURCES taylorhoodbasistest.cc)
 
 dune_add_test(SOURCES rannacherturekbasistest.cc)
