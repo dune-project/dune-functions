@@ -69,6 +69,31 @@ int main (int argc, char *argv[]) try
     test.subTest(checkBasis(basis, EnableContinuityCheck()));
   }
 
+  /////////////////////////////////////////////////////////
+  //   Test a PeriodicBasis in a power basis
+  /////////////////////////////////////////////////////////
+
+  {
+    auto periodicBasis = makeBasis(gridView, periodic());
+
+    // Don't do the following in real life: It has quadratic run-time in the number of vertices.
+    for (const auto& v1 : vertices(gridView))
+      for (const auto& v2 : vertices(gridView))
+        if (equivalent(v1.geometry().corner(0), v2.geometry().corner(0)))
+          periodicBasis.preBasis().unifyIndexPair({gridView.indexSet().index(v1)}, {gridView.indexSet().index(v2)});
+
+    periodicBasis.preBasis().initializeIndices();
+
+    // Check whether power<periodic> does at least compile
+    auto basis = makeBasis(
+      gridView,
+      power<dim>(
+        periodic(),
+        blockedInterleaved()
+    ));
+
+    std::cout << "power<periodic> basis has " << basis.size() << " degrees of freedom" << std::endl;
+  }
 }
 catch (Exception& e)
 {
