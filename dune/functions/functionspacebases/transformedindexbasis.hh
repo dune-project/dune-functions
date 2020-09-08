@@ -153,7 +153,7 @@ public:
   //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
-    return rawPreBasis_.dimension();
+    return transformation_.dimension(rawPreBasis_);
   }
 
   //! Get the maximal number of DOFs associated to node for any element
@@ -340,6 +340,12 @@ public:
   auto size(const Prefix& prefix, const PreBasis& preBasis) const
   {
     return sizeImplementation_(prefix, preBasis);
+  }
+
+  template<class PreBasis>
+  auto dimension(const PreBasis& preBasis) const
+  {
+    return preBasis.dimension();
   }
 
 private:
