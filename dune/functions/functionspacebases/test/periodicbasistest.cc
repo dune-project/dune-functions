@@ -53,20 +53,22 @@ int main (int argc, char *argv[]) try
   using namespace Functions::BasisFactory;
 
   {
-    using FEBasis = Functions::PeriodicBasis<GridView>;
-    FEBasis basis(gridView);
+    PeriodicIndexSet periodicIndices;
 
     // Don't do the following in real life: It has quadratic run-time in the number of vertices.
     for (const auto& v1 : vertices(gridView))
       for (const auto& v2 : vertices(gridView))
         if (equivalent(v1.geometry().corner(0), v2.geometry().corner(0)))
-          basis.preBasis().unifyIndexPair({gridView.indexSet().index(v1)}, {gridView.indexSet().index(v2)});
+          periodicIndices.unifyIndexPair({gridView.indexSet().index(v1)}, {gridView.indexSet().index(v2)});
 
-    basis.preBasis().initializeIndices();
+    auto basis = makeBasis(gridView, lagrange<1>());
+//    auto periodicBasis = makeBasis(gridView, periodic(lagrange<1>(), periodicIndices));
+//    auto periodicBasis = makeBasis(gridView, periodic(basis, periodicIndices));
+    auto periodicBasis = makeBasis(gridView, periodic(basis.preBasis(), periodicIndices));
 
-    std::cout << "Solitary periodic basis has " << basis.size() << " degrees of freedom." << std::endl;
+    std::cout << "Solitary periodic basis has " << periodicBasis.dimension() << " degrees of freedom." << std::endl;
 
-    test.subTest(checkBasis(basis, EnableContinuityCheck()));
+    test.subTest(checkBasis(periodicBasis, EnableContinuityCheck()));
   }
 
   /////////////////////////////////////////////////////////
@@ -74,25 +76,25 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   {
-    auto periodicBasis = makeBasis(gridView, periodic());
+    PeriodicIndexSet periodicIndices;
 
     // Don't do the following in real life: It has quadratic run-time in the number of vertices.
     for (const auto& v1 : vertices(gridView))
       for (const auto& v2 : vertices(gridView))
         if (equivalent(v1.geometry().corner(0), v2.geometry().corner(0)))
-          periodicBasis.preBasis().unifyIndexPair({gridView.indexSet().index(v1)}, {gridView.indexSet().index(v2)});
-
-    periodicBasis.preBasis().initializeIndices();
+          periodicIndices.unifyIndexPair({gridView.indexSet().index(v1)}, {gridView.indexSet().index(v2)});
 
     // Check whether power<periodic> does at least compile
-    auto basis = makeBasis(
+    auto periodicBasis = makeBasis(
       gridView,
       power<dim>(
-        periodic(),
+        periodic(lagrange<1>(), periodicIndices),
         blockedInterleaved()
     ));
 
-    std::cout << "power<periodic> basis has " << basis.size() << " degrees of freedom" << std::endl;
+    std::cout << "power<periodic> basis has " << periodicBasis.dimension() << " degrees of freedom" << std::endl;
+
+    test.subTest(checkBasis(periodicBasis, EnableContinuityCheck()));
   }
 }
 catch (Exception& e)
