@@ -15,6 +15,7 @@
 #include <dune/localfunctions/raviartthomas/raviartthomas0cube2d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas0cube3d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas02d.hh>
+#include <dune/localfunctions/raviartthomas/raviartthomas03d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas1cube2d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas1cube3d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas12d.hh>
@@ -48,6 +49,13 @@ namespace Impl {
   {
     using FiniteElement = RT12DLocalFiniteElement<D,R>;
     static const std::size_t Variants = 8;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasSimplexLocalInfo<3,D,R,0>
+  {
+    using FiniteElement = RT03DLocalFiniteElement<D,R>;
+    static const std::size_t Variants = 16;
   };
 
   template<int dim, typename D, typename R, std::size_t k>
@@ -248,8 +256,8 @@ public:
       DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas basis is only implemented for grids with a single element type");
 
     GeometryType type = gv.template begin<0>()->type();
-    const static int dofsPerElement = (dim == 2) ? (type.isCube() ? k*(k+1)*dim : k*dim) : k*(k+1)*(k+1)*dim;
-    constexpr int dofsPerFace    = (dim == 2) ? k+1 : 3*k+1;
+    const static int dofsPerElement = type.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;
+    const static int dofsPerFace    = (dim == 2) ? k+1 : (type.isCube() ? 3*k+1 : k+2 );
 
     dofsPerCodim_ = {{dofsPerElement, dofsPerFace}};
   }
@@ -316,9 +324,9 @@ public:
     for (auto&& type : gridView_.indexSet().types(0))
     {
       size_t numFaces = ReferenceElements<double,dim>::general(type).size(1);
-      const static int dofsPerCodim0 = (dim == 2) ? (type.isCube() ? k*(k+1)*dim : k*dim) : k*(k+1)*(k+1)*dim;
-      constexpr int dofsPerCodim1 = (dim == 2) ? k+1 : 3*k+1;
-      result = std::max(result, dofsPerCodim0 + dofsPerCodim1 * numFaces);
+      const static int dofsPerElement = type.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;
+      const static int dofsPerFace    = (dim == 2) ? k+1 : (type.isCube() ? 3*k+1 : k+2 );
+      result = std::max(result, dofsPerElement + dofsPerFace * numFaces);
     }
 
     return result;
