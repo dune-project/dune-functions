@@ -15,6 +15,7 @@ corresponding version of the Dune core modules.
   transformation.  Domain-space transformations still have to be done
   by the calling code. The `GlobalValuedLocalFiniteElement` still
   implements the `LocalFiniteElement` interface of `dune-localfunctions`.
+- The `RaviartThomasBasis` class supports 3D simplex grids for `order=0` now.
 
 ## Release 2.7
 
