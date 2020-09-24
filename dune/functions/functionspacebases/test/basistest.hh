@@ -381,7 +381,6 @@ struct EnableCenterContinuityCheck : public EnableContinuityCheck
   auto localJumpCenterContinuityCheck(const JumpEvaluator& jumpEvaluator, double tol) const
   {
     return [=](const auto& intersection, const auto& treePath, const auto& insideNode, const auto& outsideNode, const auto& insideToOutside) {
-      using Intersection = std::decay_t<decltype(intersection)>;
       using Node = std::decay_t<decltype(insideNode)>;
       using Range = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
 
