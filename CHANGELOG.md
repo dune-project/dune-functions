@@ -16,6 +16,12 @@ corresponding version of the Dune core modules.
   by the calling code. The `GlobalValuedLocalFiniteElement` still
   implements the `LocalFiniteElement` interface of `dune-localfunctions`.
 
+- The `dune-functions` module now contains an implementation of a
+  Nedelec basis (for problems posed in H(curl)).  While the interface
+  caters to different basis orders, grid dimensions and element types,
+  only the first-order basis called "of the first kind" is implemented,
+  and only for triangle grids.
+
 ## Release 2.7
 
 - The `LagrangeBasis` is extended by a template parameter to set the range type of

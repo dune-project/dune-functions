@@ -17,6 +17,7 @@ install(FILES
         interpolate.hh
         lagrangebasis.hh
         lagrangedgbasis.hh
+        nedelecbasis.hh
         powerbasis.hh
         rannacherturekbasis.hh
         nodes.hh

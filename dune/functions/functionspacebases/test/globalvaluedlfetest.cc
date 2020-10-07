@@ -14,6 +14,7 @@
 
 #include <dune/localfunctions/test/test-localfe.hh>
 
+#include <dune/functions/functionspacebases/nedelecbasis.hh>
 #include <dune/functions/functionspacebases/raviartthomasbasis.hh>
 
 
@@ -50,6 +51,24 @@ int main (int argc, char* argv[]) try
     localView.bind(element);
 
     testFE(localView.tree().finiteElement(), DisableNone, 1 /* diffOrder */);
+  }
+
+  ///////////////////////////////////////////////////////////////////////
+  //  Test GlobalValuedLocalFiniteElement for a H(curl)-conforming space
+  //  We use the Nedelec basis of the first kind.
+  ///////////////////////////////////////////////////////////////////////
+
+  using namespace Functions::BasisFactory;
+  {
+    auto nedelecBasis = makeBasis(gridView, nedelec<1,1,double>());
+
+    auto localView = nedelecBasis.localView();
+
+    for (const auto& element : elements(gridView))
+    {
+      localView.bind(element);
+      testFE(localView.tree().finiteElement(), DisableNone, 1 /* diffOrder */);
+    }
   }
 
 } catch (Exception &e)
