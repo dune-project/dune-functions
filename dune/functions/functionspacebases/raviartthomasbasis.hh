@@ -41,21 +41,18 @@ namespace Impl {
   struct RaviartThomasSimplexLocalInfo<2,D,R,0>
   {
     using FiniteElement = RT02DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 8;
   };
 
   template<typename D, typename R>
   struct RaviartThomasSimplexLocalInfo<2,D,R,1>
   {
     using FiniteElement = RT12DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 8;
   };
 
   template<typename D, typename R>
   struct RaviartThomasSimplexLocalInfo<3,D,R,0>
   {
     using FiniteElement = RT03DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 16;
   };
 
   template<int dim, typename D, typename R, std::size_t k>
@@ -68,35 +65,30 @@ namespace Impl {
   struct RaviartThomasCubeLocalInfo<2,D,R,0>
   {
     using FiniteElement = RT0Cube2DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
   struct RaviartThomasCubeLocalInfo<2,D,R,1>
   {
     using FiniteElement = RT1Cube2DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
   struct RaviartThomasCubeLocalInfo<2,D,R,2>
   {
     using FiniteElement = RT2Cube2DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
   struct RaviartThomasCubeLocalInfo<3,D,R,0>
   {
     using FiniteElement = RT0Cube3DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 64;
   };
 
   template<typename D, typename R>
   struct RaviartThomasCubeLocalInfo<3,D,R,1>
   {
     using FiniteElement = RT1Cube3DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 64;
   };
 
   template<typename GV, int dim, typename R, std::size_t k>
@@ -125,11 +117,19 @@ namespace Impl {
                                            typename std::conditional<type.isCube(),CubeFiniteElement,SimplexFiniteElement>::type,
                                            LocalFiniteElementVirtualInterface<T> >::type;
 
+    // Each element facet can have its orientation reversed, hence there are
+    // 2^#facets different variants.
+    static std::size_t numVariants(GeometryType type)
+    {
+      auto numFacets = referenceElement<D,dim>(type).size(1);
+      return power(2,numFacets);
+    }
+
     RaviartThomasLocalFiniteElementMap(const GV& gv)
       : is_(&(gv.indexSet())), orient_(gv.size(0))
     {
-      cubeVariant_.resize(RaviartThomasCubeLocalInfo<dim, D, R, k>::Variants);
-      simplexVariant_.resize(RaviartThomasSimplexLocalInfo<dim, D, R, k>::Variants);
+      cubeVariant_.resize(numVariants(GeometryTypes::cube(dim)));
+      simplexVariant_.resize(numVariants(GeometryTypes::simplex(dim)));
 
       // create all variants
       for (size_t i = 0; i < cubeVariant_.size(); i++)
