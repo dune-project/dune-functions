@@ -49,15 +49,13 @@ int main (int argc, char* argv[])
 
   testRaviartThomasBasis<0>(test, quadGridView);
   testRaviartThomasBasis<1>(test, quadGridView);
-  //can't be tested because there is no simplex RaviartThomas implementation for dim=2,k=2
-  //testRaviartThomasBasis<2>(test, quadGridView);
+  testRaviartThomasBasis<2>(test, quadGridView);
 
   std::cout<<"Testing RaviartThomasBasis in 3D with cube grids\n";
   YaspGrid<3> hexaGrid({1.0, 1.0, 1.0}, {4,4,4});
   auto hexaGridView = hexaGrid.leafGridView();
   testRaviartThomasBasis<0>(test, hexaGridView);
-  //can't be tested because there is no simplex RaviartThomas implementation for dim=3,k=1
-  //testRaviartThomasBasis<1>(test, hexaGridView);
+  testRaviartThomasBasis<1>(test, hexaGridView);
 
   // Test with pure simplex grid
   // (Unfortunately there is no grid implementation available that only supports simplices.)

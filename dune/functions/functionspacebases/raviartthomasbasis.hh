@@ -34,7 +34,8 @@ namespace Impl {
   template<int dim, typename D, typename R, std::size_t k>
   struct RaviartThomasSimplexLocalInfo
   {
-    static_assert((AlwaysFalse<D>::value),"The requested type of Raviart-Thomas element is not implemented, sorry!");
+    // Dummy type, must be something that we can have a std::unique_ptr to
+    using FiniteElement = void*;
   };
 
   template<typename D, typename R>
@@ -58,7 +59,8 @@ namespace Impl {
   template<int dim, typename D, typename R, std::size_t k>
   struct RaviartThomasCubeLocalInfo
   {
-    static_assert((AlwaysFalse<D>::value),"The requested type of Raviart-Thomas element is not implemented, sorry!");
+    // Dummy type, must be something that we can have a std::unique_ptr to
+    using FiniteElement = void*;
   };
 
   template<typename D, typename R>
@@ -117,6 +119,8 @@ namespace Impl {
                                            typename std::conditional<type.isCube(),CubeFiniteElement,SimplexFiniteElement>::type,
                                            LocalFiniteElementVirtualInterface<T> >::type;
 
+    static_assert(!std::is_same_v<FiniteElement,void*>,"The requested type of Raviart-Thomas element is not implemented, sorry!");
+
     // Each element facet can have its orientation reversed, hence there are
     // 2^#facets different variants.
     static std::size_t numVariants(GeometryType type)
@@ -131,12 +135,18 @@ namespace Impl {
       cubeVariant_.resize(numVariants(GeometryTypes::cube(dim)));
       simplexVariant_.resize(numVariants(GeometryTypes::simplex(dim)));
 
-      // create all variants
-      for (size_t i = 0; i < cubeVariant_.size(); i++)
-        cubeVariant_[i] = std::make_unique<CubeFiniteElementImp>(CubeFiniteElement(i));
+      // create all variants, if they exist
+      if constexpr (!std::is_same_v<CubeFiniteElement,void*>)
+      {
+        for (size_t i = 0; i < cubeVariant_.size(); i++)
+          cubeVariant_[i] = std::make_unique<CubeFiniteElementImp>(CubeFiniteElement(i));
+      }
 
+      if constexpr (!std::is_same_v<SimplexFiniteElement,void*>)
+      {
       for (size_t i = 0; i < simplexVariant_.size(); i++)
         simplexVariant_[i] = std::make_unique<SimplexFiniteElementImp>(SimplexFiniteElement(i));
+      }
 
       // compute orientation for all elements
       // loop once over the grid
