@@ -15,6 +15,8 @@ corresponding version of the Dune core modules.
   transformation.  Domain-space transformations still have to be done
   by the calling code. The `GlobalValuedLocalFiniteElement` still
   implements the `LocalFiniteElement` interface of `dune-localfunctions`.
+- The `RaviartThomasBasis` class now supports tetrahedral grids for `order=0`,
+  quadrilateral grids for `order=2`, and hexahedral grids for `order=1`.
 
 ## Release 2.7
 
