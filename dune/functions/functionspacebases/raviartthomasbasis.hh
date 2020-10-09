@@ -15,6 +15,7 @@
 #include <dune/localfunctions/raviartthomas/raviartthomas0cube2d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas0cube3d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas02d.hh>
+#include <dune/localfunctions/raviartthomas/raviartthomas03d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas1cube2d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas1cube3d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas12d.hh>
@@ -33,62 +34,63 @@ namespace Impl {
   template<int dim, typename D, typename R, std::size_t k>
   struct RaviartThomasSimplexLocalInfo
   {
-    static_assert((AlwaysFalse<D>::value),"The requested type of Raviart-Thomas element is not implemented, sorry!");
+    // Dummy type, must be something that we can have a std::unique_ptr to
+    using FiniteElement = void*;
   };
 
   template<typename D, typename R>
   struct RaviartThomasSimplexLocalInfo<2,D,R,0>
   {
     using FiniteElement = RT02DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 8;
   };
 
   template<typename D, typename R>
   struct RaviartThomasSimplexLocalInfo<2,D,R,1>
   {
     using FiniteElement = RT12DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 8;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasSimplexLocalInfo<3,D,R,0>
+  {
+    using FiniteElement = RT03DLocalFiniteElement<D,R>;
   };
 
   template<int dim, typename D, typename R, std::size_t k>
   struct RaviartThomasCubeLocalInfo
   {
-    static_assert((AlwaysFalse<D>::value),"The requested type of Raviart-Thomas element is not implemented, sorry!");
+    // Dummy type, must be something that we can have a std::unique_ptr to
+    using FiniteElement = void*;
   };
 
   template<typename D, typename R>
   struct RaviartThomasCubeLocalInfo<2,D,R,0>
   {
     using FiniteElement = RT0Cube2DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
   struct RaviartThomasCubeLocalInfo<2,D,R,1>
   {
     using FiniteElement = RT1Cube2DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
   struct RaviartThomasCubeLocalInfo<2,D,R,2>
   {
     using FiniteElement = RT2Cube2DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 16;
   };
 
   template<typename D, typename R>
   struct RaviartThomasCubeLocalInfo<3,D,R,0>
   {
     using FiniteElement = RT0Cube3DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 64;
   };
 
   template<typename D, typename R>
   struct RaviartThomasCubeLocalInfo<3,D,R,1>
   {
     using FiniteElement = RT1Cube3DLocalFiniteElement<D,R>;
-    static const std::size_t Variants = 64;
   };
 
   template<typename GV, int dim, typename R, std::size_t k>
@@ -117,18 +119,34 @@ namespace Impl {
                                            typename std::conditional<type.isCube(),CubeFiniteElement,SimplexFiniteElement>::type,
                                            LocalFiniteElementVirtualInterface<T> >::type;
 
+    static_assert(!std::is_same_v<FiniteElement,void*>,"The requested type of Raviart-Thomas element is not implemented, sorry!");
+
+    // Each element facet can have its orientation reversed, hence there are
+    // 2^#facets different variants.
+    static std::size_t numVariants(GeometryType type)
+    {
+      auto numFacets = referenceElement<D,dim>(type).size(1);
+      return power(2,numFacets);
+    }
+
     RaviartThomasLocalFiniteElementMap(const GV& gv)
       : is_(&(gv.indexSet())), orient_(gv.size(0))
     {
-      cubeVariant_.resize(RaviartThomasCubeLocalInfo<dim, D, R, k>::Variants);
-      simplexVariant_.resize(RaviartThomasSimplexLocalInfo<dim, D, R, k>::Variants);
+      cubeVariant_.resize(numVariants(GeometryTypes::cube(dim)));
+      simplexVariant_.resize(numVariants(GeometryTypes::simplex(dim)));
 
-      // create all variants
-      for (size_t i = 0; i < cubeVariant_.size(); i++)
-        cubeVariant_[i] = std::make_unique<CubeFiniteElementImp>(CubeFiniteElement(i));
+      // create all variants, if they exist
+      if constexpr (!std::is_same_v<CubeFiniteElement,void*>)
+      {
+        for (size_t i = 0; i < cubeVariant_.size(); i++)
+          cubeVariant_[i] = std::make_unique<CubeFiniteElementImp>(CubeFiniteElement(i));
+      }
 
+      if constexpr (!std::is_same_v<SimplexFiniteElement,void*>)
+      {
       for (size_t i = 0; i < simplexVariant_.size(); i++)
         simplexVariant_[i] = std::make_unique<SimplexFiniteElementImp>(SimplexFiniteElement(i));
+      }
 
       // compute orientation for all elements
       // loop once over the grid
@@ -248,8 +266,8 @@ public:
       DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas basis is only implemented for grids with a single element type");
 
     GeometryType type = gv.template begin<0>()->type();
-    const static int dofsPerElement = (dim == 2) ? (type.isCube() ? k*(k+1)*dim : k*dim) : k*(k+1)*(k+1)*dim;
-    constexpr int dofsPerFace    = (dim == 2) ? k+1 : 3*k+1;
+    const static int dofsPerElement = type.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;
+    const static int dofsPerFace    = type.isCube() ? (dim-2)*2*k+k+1 : (dim-1)*k+1 ;
 
     dofsPerCodim_ = {{dofsPerElement, dofsPerFace}};
   }
@@ -316,9 +334,9 @@ public:
     for (auto&& type : gridView_.indexSet().types(0))
     {
       size_t numFaces = ReferenceElements<double,dim>::general(type).size(1);
-      const static int dofsPerCodim0 = (dim == 2) ? (type.isCube() ? k*(k+1)*dim : k*dim) : k*(k+1)*(k+1)*dim;
-      constexpr int dofsPerCodim1 = (dim == 2) ? k+1 : 3*k+1;
-      result = std::max(result, dofsPerCodim0 + dofsPerCodim1 * numFaces);
+      const static int dofsPerElement = type.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;
+      const static int dofsPerFace    = type.isCube() ? (dim-2)*2*k+k+1 : (dim-1)*k+1 ;
+      result = std::max(result, dofsPerElement + dofsPerFace * numFaces);
     }
 
     return result;
