@@ -368,6 +368,24 @@ struct EnableNormalContinuityCheck : public EnableContinuityCheck
   }
 };
 
+// Flag to enable a local tangential-continuity check for checking continuity
+// of tangential parts of a vector-valued basis across an intersection
+// within checkBasisContinuity().
+//
+// For each inside basis function this will compute the tangential jump against
+// zero or the corresponding outside basis function. The jump is then
+// checked for being (up to a tolerance) zero on a set of quadrature points.
+struct EnableTangentialContinuityCheck : public EnableContinuityCheck
+{
+  auto localContinuityCheck() const {
+    auto tangentialJumpNorm = [](auto&&jump, auto&& intersection, auto&& x) -> double {
+      auto tangentialJump = jump - (jump * intersection.unitOuterNormal(x)) * intersection.unitOuterNormal(x);
+      return tangentialJump.two_norm();
+    };
+    return localJumpContinuityCheck(tangentialJumpNorm, order_, tol_);
+  }
+};
+
 // Flag to enable a center continuity check for checking continuity in the
 // center of an intersection within checkBasisContinuity().
 //

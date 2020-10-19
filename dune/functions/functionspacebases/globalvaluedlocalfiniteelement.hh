@@ -23,7 +23,12 @@ namespace Dune::Functions::Impl
   /** \brief Transforms shape function values and derivatives from reference element coordinates
    *   to world coordinates using the contravariant Piola transform
    *
-   * This transformation is required for H(div)-conforming finite elements
+   * This transformation preserves normal traces of vector fields.
+   * It is therefore the canonical transformation for H(div)-conforming finite elements.
+   *
+   * See for example:
+   *   M. Rognes, R. Kirby, A. Logg, "Efficient Assembly of H(div) and H(curl)
+   *   conforming finite elements", SIAM J. Sci. Comput., 2009
    *
    * \todo Currently each method computes jacobianTransposed and integrationElement again.
    *   Can we cache this somehow?
@@ -114,6 +119,105 @@ namespace Dune::Functions::Impl
         auto localValue = globalValue;
         jacobianInverseTransposed.mtv(globalValue, localValue);
         localValue *= integrationElement;
+
+        return localValue;
+      }
+    };
+  };
+
+  /** \brief Transforms shape function values and derivatives from reference element coordinates
+   *   to world coordinates using the covariant Piola transform
+   *
+   * This transformation preserves tangential traces of vector fields.
+   * It is therefore the canonical transformation for H(curl)-conforming finite elements.
+   *
+   * See for example:
+   *   M. Rognes, R. Kirby, A. Logg, "Efficient Assembly of H(div) and H(curl)
+   *   conforming finite elements", SIAM J. Sci. Comput., 2009
+   *
+   * \todo Currently each method computes jacobianTransposed and integrationElement again.
+   *   Can we cache this somehow?
+   */
+  struct CovariantPiolaTransformator
+  {
+    /** \brief Piola-transform a set of shape-function values
+     *
+     * \param[in,out] values The values to be Piola-transformed
+     */
+    template<typename Values, typename LocalCoordinate, typename Geometry>
+    static auto apply(Values& values,
+                      const LocalCoordinate& xi,
+                      const Geometry& geometry)
+    {
+      auto jacobianInverseTransposed = geometry.jacobianInverseTransposed(xi);
+
+      for (auto& value : values)
+      {
+        auto tmp = value;
+        jacobianInverseTransposed.mv(tmp, value);
+      }
+    }
+
+    /** \brief Piola-transform a set of shape-function derivatives
+     *
+     * \param[in,out] gradients The shape function derivatives to be Piola-transformed
+     *
+     * \bug The current implementation works only for affine geometries.
+     *   The Piola transformation for non-affine geometries requires
+     *   second derivatives of the geometry, which we don't get
+     *   from the dune-grid Geometry interface.
+     */
+    template<typename Gradients, typename LocalCoordinate, typename Geometry>
+    static auto applyJacobian(Gradients& gradients,
+                              const LocalCoordinate& xi,
+                              const Geometry& geometry)
+    {
+      auto jacobianInverseTransposed = geometry.jacobianInverseTransposed(xi);
+
+      for (auto& gradient : gradients)
+      {
+        auto tmp = gradient;
+
+        for (size_t j=0; j<gradient.N(); j++)
+          for (size_t k=0; k<gradient.M(); k++)
+          {
+            gradient[j][k] = 0;
+            for (size_t l=0; l<tmp.N(); l++)
+                gradient[j][k] += jacobianInverseTransposed[j][l] * tmp[l][k];
+          }
+
+      }
+    }
+
+    /** \brief Wrapper around a callable that applies the inverse Piola transform
+     *
+     * The LocalInterpolation implementations in dune-localfunctions expect local-valued
+     * functions, but the ones dune-functions expect global-valued ones.  Therefore,
+     * we need to stuff the inverse Piola transform between dune-functions and
+     * dune-localfunctions, and this is what this class does.
+     */
+    template<class Function, class LocalCoordinate, class Element>
+    class LocalValuedFunction
+    {
+      const Function& f_;
+      const Element& element_;
+
+    public:
+
+      LocalValuedFunction(const Function& f, const Element& element)
+      : f_(f), element_(element)
+      {}
+
+      auto operator()(const LocalCoordinate& xi) const
+      {
+        auto&& f = Dune::Impl::makeFunctionWithCallOperator<LocalCoordinate>(f_);
+        auto globalValue = f(xi);
+
+        // Apply the inverse Piola transform
+        auto jacobianTransposed = element_.geometry().jacobianTransposed(xi);
+
+        auto localValue = globalValue;
+        jacobianTransposed.mv(globalValue, localValue);
 
         return localValue;
       }
