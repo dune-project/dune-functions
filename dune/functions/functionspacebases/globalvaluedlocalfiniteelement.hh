@@ -81,7 +81,7 @@ namespace Dune::Functions::Impl
           {
             gradient[j][k] = 0;
             for (size_t l=0; l<tmp.N(); l++)
-                gradient[j][k] += jacobianTransposed[l][j] * tmp[l][k];
+                gradient[j][k] += jacobianTransposed[j][l] * tmp[l][k];
             gradient[j][k] /= integrationElement;
           }
 
