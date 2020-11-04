@@ -7,6 +7,7 @@
 
 #include <dune/common/bitsetvector.hh>
 #include <dune/common/indices.hh>
+#include <dune/common/transpose.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -78,20 +79,21 @@ void getLocalMatrix(const LocalView& localView,
     fluxLocalFiniteElement.localBasis().evaluateFunction(quadPos, fluxValues);
 
     // Gradients of the flux shape function gradients on the reference element
-    std::vector<FieldMatrix<double,dim,dim> > fluxReferenceGradients(fluxLocalFiniteElement.size());
-    fluxLocalFiniteElement.localBasis().evaluateJacobian(quadPos, fluxReferenceGradients);
+    std::vector<FieldMatrix<double,dim,dim> > fluxReferenceJacobians(fluxLocalFiniteElement.size());
+    fluxLocalFiniteElement.localBasis().evaluateJacobian(quadPos, fluxReferenceJacobians);
 
-    // Domain transformation to current element
+    // Helper function to compute the trace of a matrix
+    auto trace = [](const auto& matrix) {
+      double r=0;
+      for (size_t j=0; j<matrix.N(); j++)
+        r += matrix[j][j];
+      return r;
+    };
+
+    // Domain transformation of Jacobians and computation of div = trace(Jacobian)
     std::vector<double> fluxDivergence(fluxValues.size(), 0.0);
-    for (size_t i=0; i<fluxReferenceGradients.size(); i++)
-    {
-      FieldMatrix<double,dim,dim> fluxGradient;
-      jacInvTrans.mv(fluxReferenceGradients[i], fluxGradient);
-
-      // Compute divergence
-      for (size_t j=0; j<dim; j++)
-        fluxDivergence[i] += fluxGradient[j][j];
-    }
+    for (size_t i=0; i<fluxReferenceJacobians.size(); i++)
+      fluxDivergence[i] = trace(fluxReferenceJacobians[i] * transpose(jacInvTrans));
 
     ///////////////////////////////////////////////////////////////////////////
     // Shape functions - pressure
