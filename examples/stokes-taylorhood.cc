@@ -7,6 +7,7 @@
 
 #include <dune/common/bitsetvector.hh>
 #include <dune/common/indices.hh>
+#include <dune/common/transpose.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -97,15 +98,15 @@ void getLocalMatrix(
 
     // The gradients of the shape functions on the reference element
     // { velocity_gradients_begin }
-    std::vector<FieldMatrix<double,1,dim> > referenceGradients;
+    std::vector<FieldMatrix<double,1,dim> > referenceJacobians;
     velocityLocalFiniteElement.localBasis().evaluateJacobian(
             quadPoint.position(),
-            referenceGradients);
+            referenceJacobians);
 
     // Compute the shape function gradients on the grid element
-    std::vector<FieldVector<double,dim> > gradients(referenceGradients.size());
-    for (size_t i=0; i<gradients.size(); i++)
-      jacobianInverseTransposed.mv(referenceGradients[i][0], gradients[i]);
+    std::vector<FieldMatrix<double,1,dim> > jacobians(referenceJacobians.size());
+    for (size_t i=0; i<jacobians.size(); i++)
+      jacobians[i] = referenceJacobians[i] * transpose(jacobianInverseTransposed);
     // { velocity_gradients_end }
 
     // Compute the actual matrix entries
@@ -116,7 +117,7 @@ void getLocalMatrix(
         {
           size_t row = localView.tree().child(_0,k).localIndex(i);                    /*@\label{li:stokes_taylorhood_compute_vv_element_matrix_row}@*/
           size_t col = localView.tree().child(_0,k).localIndex(j);                    /*@\label{li:stokes_taylorhood_compute_vv_element_matrix_column}@*/
-          elementMatrix[row][col] += ( gradients[i] * gradients[j] )
+          elementMatrix[row][col] += (jacobians[i] * transpose(jacobians[j]))
                                      * quadPoint.weight() * integrationElement;  /*@\label{li:stokes_taylorhood_update_vv_element_matrix}@*/
         }
     // { velocity_velocity_coupling_end }
@@ -143,10 +144,10 @@ void getLocalMatrix(
           size_t pIndex = localView.tree().child(_1).localIndex(j);   /*@\label{li:stokes_taylorhood_compute_vp_element_matrix_column}@*/
 
           elementMatrix[vIndex][pIndex] +=                    /*@\label{li:stokes_taylorhood_update_vp_element_matrix_a}@*/
-                  gradients[i][k] * pressureValues[j]
+                  jacobians[i][0][k] * pressureValues[j]
                   * quadPoint.weight() * integrationElement;
           elementMatrix[pIndex][vIndex] +=
-                  gradients[i][k] * pressureValues[j]
+                  jacobians[i][0][k] * pressureValues[j]
                   * quadPoint.weight() * integrationElement;  /*@\label{li:stokes_taylorhood_update_vp_element_matrix_b}@*/
         }
     // { velocity_pressure_coupling_end }
