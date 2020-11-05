@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include <dune/common/bitsetvector.hh>
+#include <dune/common/transpose.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -61,7 +62,7 @@ void getLocalMatrix(const LocalView& localView,
   for (const auto& quadPoint : quad)
   {
     // The transposed inverse Jacobian of the map from the reference element to the element
-    const auto& jacobian = geometry.jacobianInverseTransposed(quadPoint.position());
+    const auto& jacobianInverseTransposed = geometry.jacobianInverseTransposed(quadPoint.position());
 
     // The multiplicative factor in the integral transformation formula
     const double integrationElement = geometry.integrationElement(quadPoint.position());
@@ -71,13 +72,13 @@ void getLocalMatrix(const LocalView& localView,
     localFiniteElement.localBasis().evaluateFunction(quadPoint.position(), values);
 
     // The gradients of the shape functions on the reference element
-    std::vector<FieldMatrix<double,1,dim> > referenceGradients;
-    localFiniteElement.localBasis().evaluateJacobian(quadPoint.position(), referenceGradients);
+    std::vector<FieldMatrix<double,1,dim> > referenceJacobians;
+    localFiniteElement.localBasis().evaluateJacobian(quadPoint.position(), referenceJacobians);
 
     // Compute the shape function gradients on the real element
-    std::vector<FieldVector<double,dim> > gradients(referenceGradients.size());
-    for (size_t i=0; i<gradients.size(); i++)
-      jacobian.mv(referenceGradients[i][0], gradients[i]);
+    std::vector<FieldMatrix<double,1,dim> > jacobians(referenceJacobians.size());
+    for (size_t i=0; i<jacobians.size(); i++)
+      jacobians[i] = referenceJacobians[i] * transpose(jacobianInverseTransposed);
 
     // Compute the actual matrix entries
     for (size_t i=0; i<elementMatrix.N(); i++)
@@ -86,7 +87,7 @@ void getLocalMatrix(const LocalView& localView,
         // First: the reaction part
         elementMatrix[i][j] += localReactionCoefficient(quadPoint.position()) * values[i] * values[j] * quadPoint.weight() * integrationElement;
 
-        elementMatrix[i][j] += ( localVelocityField(quadPoint.position()) * gradients[i] ) * values[j] * quadPoint.weight() * integrationElement;
+        elementMatrix[i][j] += ( localVelocityField(quadPoint.position()) * jacobians[i][0]) * values[j] * quadPoint.weight() * integrationElement;
       }
   }
 
