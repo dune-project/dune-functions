@@ -22,7 +22,7 @@ corresponding version of the Dune core modules.
   Nedelec basis (for problems posed in H(curl)).  While the interface
   caters to different basis orders, grid dimensions and element types,
   only the first-order basis called "of the first kind" is implemented,
-  and only for triangle grids.
+  and only for simplex grids in 2d and 3d.
 
 ## Release 2.7
 
