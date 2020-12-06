@@ -187,18 +187,21 @@ public:
     if (order>1)
       DUNE_THROW(NotImplemented, "Only first-order elements are implemented");
 
-    if (dim!=2)
-      DUNE_THROW(NotImplemented, "Only 2d Nedelec elements are implemented");
+    if (dim!=2 && dim!=3)
+      DUNE_THROW(NotImplemented, "Only 2d and 3d Nédélec elements are implemented");
 
-    //GeometryType type = gv.template begin<0>()->type();
+    std::fill(dofsPerCodim_.begin(), dofsPerCodim_.end(), 0);
+
     if (kind==1)
-      dofsPerCodim_ = {0,1,0};
+      dofsPerCodim_[dim-1] = 1;  // First-order: One dof per edge, and no others
   }
 
   void initializeIndices()
   {
     codimOffset_[0] = 0;
-    codimOffset_[1] = codimOffset_[0] + dofsPerCodim_[0] * gridView_.size(0);
+
+    for (std::size_t i=0; i<dim; i++)
+      codimOffset_[i+1] = codimOffset_[i] + dofsPerCodim_[i] * gridView_.size(i);
   }
 
   /** \brief Obtain the grid view that the basis is defined on
@@ -235,7 +238,10 @@ public:
 
   size_type size() const
   {
-    return dofsPerCodim_[0] * gridView_.size(0) + dofsPerCodim_[1] * gridView_.size(1);
+    size_type result = 0;
+    for (int i=0; i<=dim; i++)
+      result += dofsPerCodim_[i] * gridView_.size(i);
+    return result;
   }
 
   //! Return number possible values for next position in multi index
