@@ -23,7 +23,8 @@ void testNedelecBasis(TestSuite& test)
   {
     using Grid = UGGrid<dim>;
     const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
-    auto grid = GmshReader<Grid>::read(path + "curved2d.msh");
+    auto grid = (dim==2) ? GmshReader<Grid>::read(path + "curved2d.msh")
+                         : GmshReader<Grid>::read(path + "telescope1storder.msh");
 
     Functions::NedelecBasis<typename Grid::LeafGridView, kind, order, double> basis(grid->leafGridView());
     test.subTest(checkBasis(basis, EnableTangentialContinuityCheck()));
@@ -34,7 +35,8 @@ void testNedelecBasis(TestSuite& test)
   {
     using Grid = UGGrid<dim>;
     const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
-    auto grid = GmshReader<Grid>::read(path + "curved2d.msh");
+    auto grid = (dim==2) ? GmshReader<Grid>::read(path + "curved2d.msh")
+                         : GmshReader<Grid>::read(path + "telescope1storder.msh");
 
     using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid->leafGridView(), nedelec<kind,order, double>());
@@ -49,6 +51,7 @@ int main (int argc, char* argv[])
   TestSuite test;
 
   testNedelecBasis<2, 1, 1>(test);
+  testNedelecBasis<3, 1, 1>(test);
 
   return test.exit();
 }
