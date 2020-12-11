@@ -52,7 +52,72 @@ struct AllTrueBitSetVector
 
 };
 
+// Helper class which defines an evaluation operator essentially as copy of an input local function.
+// Meant for vector valued finite element ranges (with scalar coefficients).
+template<class FiniteElementRange, class Function, class Node, class TreePath, class NodeToRangeEntry>
+class Helper
+{
+public:
 
+  Helper (const Function& localF, int j, Node& node, TreePath& treePath, const NodeToRangeEntry& nodeToRangeEntry)
+    :
+      localF_(localF),
+      j_(j),
+      node_(node),
+      treePath_(treePath),
+      nodeToRangeEntry_(nodeToRangeEntry)
+  {}
+
+  template<class LocalDomain>
+  FiniteElementRange operator()(const LocalDomain& x)
+  {
+    return FiniteElementRange(localF_(x));
+  }
+
+private:
+  const Function& localF_;
+  int& j_;
+  Node& node_;
+  TreePath& treePath_;
+  const NodeToRangeEntry& nodeToRangeEntry_;
+};
+
+// Special case of the Helper class meant for scalar valued finite element ranges.
+template<class RT, class Function, class Node, class TreePath, class NodeToRangeEntry>
+class Helper<FieldVector<RT,1>, Function, Node, TreePath, NodeToRangeEntry>
+{
+  using FiniteElementRange = FieldVector<RT,1>;
+public:
+  Helper (const Function& localF, int j, Node& node, TreePath& treePath, const NodeToRangeEntry& nodeToRangeEntry)
+    :
+      localF_(localF),
+      j_(j),
+      node_(node),
+      treePath_(treePath),
+      nodeToRangeEntry_(nodeToRangeEntry)
+  {}
+
+  template<class LocalDomain>
+  FiniteElementRange operator()(const LocalDomain& x)
+  {
+    const auto& y = localF_(x);
+    return FiniteElementRange(flatVectorView(nodeToRangeEntry_(node_, treePath_, y))[j_]);
+  }
+
+private:
+  const Function& localF_;
+  int& j_;
+  Node& node_;
+  TreePath& treePath_;
+  const NodeToRangeEntry& nodeToRangeEntry_;
+};
+
+// Short make routine for objects of the Helper class
+template<class FiniteElementRange, class Function, class Node, class TreePath, class NodeToRangeEntry>
+Helper<FiniteElementRange, Function, Node, TreePath, NodeToRangeEntry> makeHelper(const Function& localF, int j, Node& node, TreePath& treePath, const NodeToRangeEntry& nodeToRangeEntry)
+{
+  return Helper<FiniteElementRange, Function, Node, TreePath, NodeToRangeEntry>{localF, j, node, treePath, nodeToRangeEntry};
+}
 
 template <class B, class T, class NTRE, class HV, class LF, class HBV>
 class LocalInterpolateVisitor
@@ -112,9 +177,9 @@ public:
     // should avoid this naughty statefull lambda hack in favor
     // of a separate helper class.
     std::size_t j=0;
+    auto helper = makeHelper<FiniteElementRange>(localF_, j, node, treePath, nodeToRangeEntry_);
     auto localFj = [&](const LocalDomain& x){
-      const auto& y = localF_(x);
-      return FiniteElementRange(flatVectorView(nodeToRangeEntry_(node, treePath, y))[j]);
+      return helper(x);
     };
 
     auto interpolationCoefficients = std::vector<FiniteElementRangeField>();
@@ -122,7 +187,7 @@ public:
     auto&& fe = node.finiteElement();
 
     // We loop over j defined above and thus over the components of the
-    // range type of localF_.
+    // range type of the weighting coefficient vector.
 
     auto blockSize = flatVectorView(vector_[localView_.index(0)]).size();
 
