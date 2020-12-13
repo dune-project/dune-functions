@@ -59,13 +59,15 @@ class Helper
 {
 public:
 
-  Helper (const Function& localF, int j, Node& node, TreePath& treePath, const NodeToRangeEntry& nodeToRangeEntry)
+  Helper (const Function& localF, Node& node, TreePath& treePath, const NodeToRangeEntry& nodeToRangeEntry)
     :
       localF_(localF),
-      j_(j),
       node_(node),
       treePath_(treePath),
       nodeToRangeEntry_(nodeToRangeEntry)
+  {}
+
+  void fixComponent(int j)
   {}
 
   template<class LocalDomain>
@@ -76,7 +78,6 @@ public:
 
 private:
   const Function& localF_;
-  int& j_;
   Node& node_;
   TreePath& treePath_;
   const NodeToRangeEntry& nodeToRangeEntry_;
@@ -88,14 +89,19 @@ class Helper<FieldVector<RT,1>, Function, Node, TreePath, NodeToRangeEntry>
 {
   using FiniteElementRange = FieldVector<RT,1>;
 public:
-  Helper (const Function& localF, int j, Node& node, TreePath& treePath, const NodeToRangeEntry& nodeToRangeEntry)
+  Helper (const Function& localF, Node& node, TreePath& treePath, const NodeToRangeEntry& nodeToRangeEntry)
     :
       localF_(localF),
-      j_(j),
+      j_(0),
       node_(node),
       treePath_(treePath),
       nodeToRangeEntry_(nodeToRangeEntry)
   {}
+
+  void fixComponent(int j)
+  {
+    j_ = j;
+  }
 
   template<class LocalDomain>
   FiniteElementRange operator()(const LocalDomain& x)
@@ -106,7 +112,7 @@ public:
 
 private:
   const Function& localF_;
-  int& j_;
+  int j_;
   Node& node_;
   TreePath& treePath_;
   const NodeToRangeEntry& nodeToRangeEntry_;
@@ -114,9 +120,9 @@ private:
 
 // Short make routine for objects of the Helper class
 template<class FiniteElementRange, class Function, class Node, class TreePath, class NodeToRangeEntry>
-Helper<FiniteElementRange, Function, Node, TreePath, NodeToRangeEntry> makeHelper(const Function& localF, int j, Node& node, TreePath& treePath, const NodeToRangeEntry& nodeToRangeEntry)
+Helper<FiniteElementRange, Function, Node, TreePath, NodeToRangeEntry> makeHelper(const Function& localF, Node& node, TreePath& treePath, const NodeToRangeEntry& nodeToRangeEntry)
 {
-  return Helper<FiniteElementRange, Function, Node, TreePath, NodeToRangeEntry>{localF, j, node, treePath, nodeToRangeEntry};
+  return Helper<FiniteElementRange, Function, Node, TreePath, NodeToRangeEntry>{localF, node, treePath, nodeToRangeEntry};
 }
 
 template <class B, class T, class NTRE, class HV, class LF, class HBV>
@@ -176,8 +182,7 @@ public:
     // the selected component later on by modifying j. Maybe we
     // should avoid this naughty statefull lambda hack in favor
     // of a separate helper class.
-    std::size_t j=0;
-    auto helper = makeHelper<FiniteElementRange>(localF_, j, node, treePath, nodeToRangeEntry_);
+    auto helper = makeHelper<FiniteElementRange>(localF_, node, treePath, nodeToRangeEntry_);
     auto localFj = [&](const LocalDomain& x){
       return helper(x);
     };
@@ -186,13 +191,13 @@ public:
 
     auto&& fe = node.finiteElement();
 
-    // We loop over j defined above and thus over the components of the
-    // range type of the weighting coefficient vector.
+    // We loop over the components of the range type of the weighting coefficient vector.
 
     auto blockSize = flatVectorView(vector_[localView_.index(0)]).size();
 
-    for(j=0; j<blockSize; ++j)
+    for(std::size_t j=0; j<blockSize; ++j)
     {
+      helper.fixComponent(j);
       fe.localInterpolation().interpolate(localFj, interpolationCoefficients);
       for (size_t i=0; i<fe.localBasis().size(); ++i)
       {
