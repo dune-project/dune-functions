@@ -29,7 +29,7 @@ dune_add_test(SOURCES compositebasistest.cc)
 
 dune_add_test(SOURCES makebasistest.cc)
 
-dune_add_test(SOURCES constantinterpolationtest.cc)
+dune_add_test(SOURCES consistencytest.cc)
 
 install(
   FILES
