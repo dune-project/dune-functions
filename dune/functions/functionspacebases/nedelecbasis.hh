@@ -85,8 +85,6 @@ namespace Impl
 
         for (std::size_t i=0; i<element.subEntities(dim-1); i++)
         {
-          auto&& edge = element.template subEntity<dim-1>(i);
-
           // Local vertex indices within the element
           auto localV0 = refElement.subEntity(i,dim-1, 0,dim);
           auto localV1 = refElement.subEntity(i,dim-1, 1,dim);
