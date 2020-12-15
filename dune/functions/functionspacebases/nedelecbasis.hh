@@ -85,8 +85,6 @@ namespace Impl
 
         for (std::size_t i=0; i<element.subEntities(dim-1); i++)
         {
-          auto&& edge = element.template subEntity<dim-1>(i);
-
           // Local vertex indices within the element
           auto localV0 = refElement.subEntity(i,dim-1, 0,dim);
           auto localV1 = refElement.subEntity(i,dim-1, 1,dim);
@@ -183,6 +181,9 @@ public:
     // element types.  Somebody simply has to sit down and implement the missing bits.
     if (gv.indexSet().types(0).size() > 1)
       DUNE_THROW(NotImplemented, "Nedelec basis is only implemented for grids with a single element type");
+
+    if (!gv.indexSet().types(0)[0].isSimplex())
+      DUNE_THROW(NotImplemented, "Nédélec basis is only implemented for grids with simplex elements.");
 
     if (order>1)
       DUNE_THROW(NotImplemented, "Only first-order elements are implemented");
