@@ -182,6 +182,9 @@ public:
     if (gv.indexSet().types(0).size() > 1)
       DUNE_THROW(NotImplemented, "Nedelec basis is only implemented for grids with a single element type");
 
+    if (!gv.indexSet().types(0)[0].isSimplex())
+      DUNE_THROW(NotImplemented, "Nédélec basis is only implemented for grids with simplex elements.");
+
     if (order>1)
       DUNE_THROW(NotImplemented, "Only first-order elements are implemented");
 
