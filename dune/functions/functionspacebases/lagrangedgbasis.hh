@@ -31,17 +31,20 @@ namespace Functions {
 // set and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k>
-using LagrangeDGNode = LagrangeNode<GV, k>;
+template <class GV, class LFECache>
+using LagrangeDGNode = LagrangeNode<GV, LFECache>;
 
-template<typename GV, int k, class MI>
+template <class GV, class LFECache, class MI>
 class LagrangeDGNodeIndexSet;
 
 
-template<typename GV, int k, class MI>
+template <class GV, class LFECache, class MI>
 class LagrangeDGPreBasis
 {
   static const int dim = GV::dimension;
+
+  template <class, class, class>
+  friend class LagrangeDGNodeIndexSet;
 
 public:
 
@@ -49,33 +52,25 @@ public:
   using GridView = GV;
   using size_type = std::size_t;
 
-
-  // Precompute the number of dofs per entity type
-  const static int dofsPerEdge        = k+1;
-  const static int dofsPerTriangle    = (k+1)*(k+2)/2;
-  const static int dofsPerQuad        = (k+1)*(k+1);
-  const static int dofsPerTetrahedron = (k+1)*(k+2)*(k+3)/6;
-  const static int dofsPerPrism       = (k+1)*(k+1)*(k+2)/2;
-  const static int dofsPerHexahedron  = (k+1)*(k+1)*(k+1);
-  const static int dofsPerPyramid     = (k+1)*(k+2)*(2*k+3)/6;
-
-
-  using Node = LagrangeDGNode<GV, k>;
-
-  using IndexSet = LagrangeDGNodeIndexSet<GV, k, MI>;
+  using Node = LagrangeDGNode<GV, LFECache>;
+  using IndexSet = LagrangeDGNodeIndexSet<GV, LFECache, MI>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
   using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
-  /** \brief Constructor for a given grid view object */
-  LagrangeDGPreBasis(const GridView& gv) :
-    gridView_(gv)
+  //! \brief Constructor for a given grid view object and additional argument to
+  //! construct the LFECache.
+  template <class... Args,
+    std::enable_if_t<std::is_constructible_v<LFECache, Args...>, int> = 0>
+  LagrangeDGPreBasis (const GridView& gv, Args&&... args)
+    : gridView_(gv)
+    , lfeCache_(std::forward<Args>(args)...)
+    , order_(LagrangePreBasis<GV,LFECache,MI>::computeOrder(lfeCache_))
   {}
 
-
-  void initializeIndices()
+  void initializeIndices ()
   {
     switch (dim)
     {
@@ -85,16 +80,16 @@ public:
       }
       case 2:
       {
-        quadrilateralOffset_ = dofsPerTriangle * gridView_.size(Dune::GeometryTypes::triangle);
+        quadrilateralOffset_ = dofsPerTriangle() * gridView_.size(Dune::GeometryTypes::triangle);
         break;
       }
       case 3:
       {
-        prismOffset_         = dofsPerTetrahedron * gridView_.size(Dune::GeometryTypes::tetrahedron);
+        prismOffset_         = dofsPerTetrahedron() * gridView_.size(Dune::GeometryTypes::tetrahedron);
 
-        hexahedronOffset_    = prismOffset_         +   dofsPerPrism * gridView_.size(Dune::GeometryTypes::prism);
+        hexahedronOffset_    = prismOffset_         +   dofsPerPrism() * gridView_.size(Dune::GeometryTypes::prism);
 
-        pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * gridView_.size(Dune::GeometryTypes::hexahedron);
+        pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron() * gridView_.size(Dune::GeometryTypes::hexahedron);
         break;
       }
     }
@@ -102,12 +97,12 @@ public:
 
   /** \brief Obtain the grid view that the basis is defined on
    */
-  const GridView& gridView() const
+  const GridView& gridView () const
   {
     return gridView_;
   }
 
-  void update(const GridView& gv)
+  void update (const GridView& gv)
   {
     gridView_ = gv;
   }
@@ -115,9 +110,9 @@ public:
   /**
    * \brief Create tree node
    */
-  Node makeNode() const
+  Node makeNode () const
   {
-    return Node{};
+    return Node{lfeCache_};
   }
 
   /**
@@ -126,52 +121,97 @@ public:
    * Create an index set suitable for the tree node obtained
    * by makeNode().
    */
-  IndexSet makeIndexSet() const
+  IndexSet makeIndexSet () const
   {
     return IndexSet{*this};
   }
 
-  size_type size() const
+  size_type size () const
   {
     switch (dim)
     {
       case 1:
-        return dofsPerEdge*gridView_.size(0);
+        return dofsPerEdge()*gridView_.size(0);
       case 2:
       {
-        return dofsPerTriangle*gridView_.size(Dune::GeometryTypes::triangle) + dofsPerQuad*gridView_.size(Dune::GeometryTypes::quadrilateral);
+        return dofsPerTriangle()*gridView_.size(Dune::GeometryTypes::triangle) + dofsPerQuad()*gridView_.size(Dune::GeometryTypes::quadrilateral);
       }
       case 3:
       {
-        return dofsPerTetrahedron*gridView_.size(Dune::GeometryTypes::tetrahedron)
-             + dofsPerPyramid*gridView_.size(Dune::GeometryTypes::pyramid)
-             + dofsPerPrism*gridView_.size(Dune::GeometryTypes::prism)
-             + dofsPerHexahedron*gridView_.size(Dune::GeometryTypes::hexahedron);
+        return dofsPerTetrahedron()*gridView_.size(Dune::GeometryTypes::tetrahedron)
+             + dofsPerPyramid()*gridView_.size(Dune::GeometryTypes::pyramid)
+             + dofsPerPrism()*gridView_.size(Dune::GeometryTypes::prism)
+             + dofsPerHexahedron()*gridView_.size(Dune::GeometryTypes::hexahedron);
       }
     }
     DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
   }
 
   //! Return number possible values for next position in multi index
-  size_type size(const SizePrefix prefix) const
+  size_type size (const SizePrefix prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
     return (prefix.size() == 0) ? size() : 0;
   }
 
   /** \todo This method has been added to the interface without prior discussion. */
-  size_type dimension() const
+  size_type dimension () const
   {
     return size();
   }
 
-  size_type maxNodeSize() const
+  size_type maxNodeSize () const
   {
-    return StaticPower<(k+1),GV::dimension>::power;
+    return Dune::power(order()+1, int(GV::dimension));
   }
 
-//protected:
+protected:
+  unsigned int order () const
+  {
+    return order_ ;
+  }
+
+  // The number of dofs per entity type
+
+  size_type dofsPerEdge () const
+  {
+    return (order()+1);
+  }
+
+  size_type dofsPerTriangle () const
+  {
+    return (order()+1)*(order()+2)/2;
+  }
+
+  size_type dofsPerQuad () const
+  {
+    return (order()+1)*(order()+1);
+  }
+
+  size_type dofsPerTetrahedron () const
+  {
+    return (order()+1)*(order()+2)*(order()+3)/6;
+  }
+
+  size_type dofsPerHexahedron () const
+  {
+    return (order()+1)*(order()+1)*(order()+1);
+  }
+
+  size_type dofsPerPrism () const
+  {
+    return (order()+1)*(order()+1)*(order()+2)/2;
+  }
+
+  size_type dofsPerPyramid () const
+  {
+    return (order()+1)*(order()+2)*(2*order()+3)/6;
+  }
+
+protected:
   GridView gridView_;
+  LFECache lfeCache_;
+  unsigned int order_;
 
   size_t quadrilateralOffset_;
   size_t pyramidOffset_;
@@ -181,7 +221,7 @@ public:
 
 
 
-template<typename GV, int k, class MI>
+template <class GV, class LFECache, class MI>
 class LagrangeDGNodeIndexSet
 {
   // Cannot be an enum -- otherwise the switch statement below produces compiler warnings
@@ -194,12 +234,12 @@ public:
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
 
-  using PreBasis = LagrangeDGPreBasis<GV, k, MI>;
+  using PreBasis = LagrangeDGPreBasis<GV, LFECache, MI>;
 
-  using Node = LagrangeDGNode<GV, k>;
+  using Node = LagrangeDGNode<GV, LFECache>;
 
-  LagrangeDGNodeIndexSet(const PreBasis& preBasis) :
-    preBasis_(&preBasis)
+  LagrangeDGNodeIndexSet (const PreBasis& preBasis)
+    : preBasis_(&preBasis)
   {}
 
   /** \brief Bind the view to a grid element
@@ -207,28 +247,28 @@ public:
    * Having to bind the view to an element before being able to actually access any of its data members
    * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
    */
-  void bind(const Node& node)
+  void bind (const Node& node)
   {
     node_ = &node;
   }
 
   /** \brief Unbind the view
    */
-  void unbind()
+  void unbind ()
   {
     node_ = nullptr;
   }
 
   /** \brief Size of subtree rooted in this node (element-local)
    */
-  size_type size() const
+  size_type size () const
   {
     return node_->finiteElement().size();
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  template<typename It>
-  It indices(It it) const
+  template <class It>
+  It indices (It it) const
   {
     const auto& gridIndexSet = preBasis_->gridView().indexSet();
     const auto& element = node_->element();
@@ -239,19 +279,19 @@ public:
           {
           case 1:
             {
-              *it = {preBasis_->dofsPerEdge*gridIndexSet.subIndex(element,0,0) + i};
+              *it = {preBasis_->dofsPerEdge()*gridIndexSet.subIndex(element,0,0) + i};
               continue;
             }
           case 2:
             {
               if (element.type().isTriangle())
                 {
-                  *it = {preBasis_->dofsPerTriangle*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = {preBasis_->dofsPerTriangle()*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isQuadrilateral())
                 {
-                  *it = { preBasis_->quadrilateralOffset_ + preBasis_->dofsPerQuad*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { preBasis_->quadrilateralOffset_ + preBasis_->dofsPerQuad()*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else
@@ -261,22 +301,22 @@ public:
             {
               if (element.type().isTetrahedron())
                 {
-                  *it = {preBasis_->dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = {preBasis_->dofsPerTetrahedron()*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isPrism())
                 {
-                  *it = { preBasis_->prismOffset_ + preBasis_->dofsPerPrism*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { preBasis_->prismOffset_ + preBasis_->dofsPerPrism()*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isHexahedron())
                 {
-                  *it = { preBasis_->hexahedronOffset_ + preBasis_->dofsPerHexahedron*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { preBasis_->hexahedronOffset_ + preBasis_->dofsPerHexahedron()*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isPyramid())
                 {
-                  *it = { preBasis_->pyramidOffset_ + preBasis_->dofsPerPyramid*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { preBasis_->pyramidOffset_ + preBasis_->dofsPerPyramid()*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else
@@ -290,7 +330,6 @@ public:
 
 protected:
   const PreBasis* preBasis_;
-
   const Node* node_;
 };
 
@@ -298,25 +337,40 @@ protected:
 
 
 namespace BasisFactory {
+namespace Impl {
 
-namespace Imp {
-
-template<std::size_t k>
+template <template <class> class LFECache, bool useDynamicOrder = false>
 class LagrangeDGPreBasisFactory
 {
 public:
   static const std::size_t requiredMultiIndexSize = 1;
 
-  template<class MultiIndex, class GridView>
-  auto makePreBasis(const GridView& gridView) const
+  // \brief Constructor for factory with compile-time order
+  LagrangeDGPreBasisFactory ()
+    : order_(0)
+  {}
+
+  // \brief Constructor for factory with run-time order (template argument k is disregarded)
+  LagrangeDGPreBasisFactory (unsigned int order)
+    : order_(order)
+  {}
+
+  template <class MultiIndex, class GridView>
+  auto makePreBasis (const GridView& gridView) const
   {
-    return LagrangeDGPreBasis<GridView, k, MultiIndex>(gridView);
+    using Cache = LFECache<GridView>;
+
+    if constexpr (useDynamicOrder)
+      return LagrangeDGPreBasis<GridView, Cache, MultiIndex>(gridView, order_);
+    else
+      return LagrangeDGPreBasis<GridView, Cache, MultiIndex>(gridView);
   }
 
+private:
+  unsigned int order_;
 };
 
-} // end namespace BasisFactory::Imp
-
+} // end namespace BasisFactory::Impl
 
 
 /**
@@ -325,11 +379,26 @@ public:
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam k   The polynomial order of the ansatz functions
+ * \tparam R   The range type of the local basis
  */
-template<std::size_t k>
-auto lagrangeDG()
+template <std::size_t k, class R = double>
+auto lagrangeDG ()
 {
-  return Imp::LagrangeDGPreBasisFactory<k>();
+  return Impl::LagrangeDGPreBasisFactory<Functions::Impl::StaticLagrangeLFECache<R,k>::template type>();
+}
+
+/**
+ * \brief Create a pre-basis factory that can create a  LagrangeDG pre-basis with a run-time order
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \param k    The polynomial order of the ansatz functions
+ * \tparam R   The range type of the local basis
+ */
+template <class R = double>
+auto lagrangeDG (int order)
+{
+  return Impl::LagrangeDGPreBasisFactory<Functions::Impl::DynamicLagrangeLFECache<R>::template type,true>(order);
 }
 
 } // end namespace BasisFactory
@@ -345,12 +414,12 @@ auto lagrangeDG()
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV The GridView that the space is defined on
- * \tparam k The order of the basis
+ * \tparam k The order of the basis; -1 means 'order determined at run-time'
+ * \tparam R The range type of the local basis
  */
-template<typename GV, int k>
-using LagrangeDGBasis = DefaultGlobalBasis<LagrangeDGPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
-
-
+template <class GV, int k = -1, class R = double>
+using LagrangeDGBasis
+  = DefaultGlobalBasis<LagrangeDGPreBasis<GV, Impl::LFECacheSelector<GV,k,R>, FlatMultiIndex<std::size_t>> >;
 
 } // end namespace Functions
 } // end namespace Dune
