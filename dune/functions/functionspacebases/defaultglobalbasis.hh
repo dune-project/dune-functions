@@ -194,6 +194,70 @@ namespace BasisBuilder {
 
 }
 
+namespace Impl {
+
+  /** \brief Transform values of affine families of finite elements.
+   *
+   * For affine families, the required transformation is the identity.
+   *
+   * \param valuesLocal The shape function values to transform
+   * \param local The position in the reference element where the shape functions have been evaluated
+   * \param geometry The grid elements in world coordinates where the values should be transformed to
+   */
+  struct EmptyTransformator
+  {
+    template<typename Values, typename LocalCoordinate, typename Geometry>
+    auto apply(Values&& valuesLocal,
+      const LocalCoordinate& xi,
+      const Geometry& geometry)
+    {
+      return std::move(valuesLocal);
+    }
+  };
+
+  /** \brief Transforms shape function values and derivatives from reference element coordinates
+   *   to world coordinates using the Piola transform
+   */
+  struct PiolaTransformator
+  {
+    template<typename Values, typename LocalCoordinate, typename Geometry>
+    auto apply(Values&& valuesLocal,
+      const LocalCoordinate& xi,
+      const Geometry& geometry)
+    {
+      auto jacobianTransposed = geometry.jacobianTransposed(xi);
+      auto integrationElement = geometry.integrationElement(xi);
+
+      for (auto& value : valuesLocal)
+      {
+        auto tmp = value;
+        jacobianTransposed.mtv(tmp, value);
+        value /= integrationElement;
+      }
+
+      return std::move(valuesLocal);
+    }
+  };
+
+/** \brief A class that transforms shape function values and derivatives
+ *   from reference element coordinates to world coordinates
+ *
+ * This default implementation contains the case of affine families of
+ * finite elements, where the shape function values do not need any transformation
+ * at all, and the derivates need to be multiplied from the left with the
+ * transposed inverse Jacobian.
+ *
+ * Function space basis implementations that require a different transformation
+ * need to specialize this class.
+ */
+template <class BasisTreeNode>
+auto getToGlobalTransformator(BasisTreeNode)
+{
+  return EmptyTransformator();
+}
+
+} // end namespace Impl
+
 
 } // end namespace Functions
 } // end namespace Dune

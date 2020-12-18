@@ -537,6 +537,17 @@ auto raviartThomas()
 template<typename GV, int k>
 using RaviartThomasBasis = DefaultGlobalBasis<RaviartThomasPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
 
+
+namespace Impl {
+
+  template <class GridView, int k>
+  auto getToGlobalTransformator(RaviartThomasNode<GridView,k>)
+  {
+    return PiolaTransformator();
+  }
+
+} // end namespace Impl
+
 } // end namespace Functions
 } // end namespace Dune
 
