@@ -214,7 +214,7 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bv, const NTRE
 
 
   // Make a grid function supporting local evaluation out of f
-  auto gf = makeGridViewFunction(f, gridView);
+  auto&& gf = makeGridViewFunction(f, gridView);
 
   // Obtain a local view of f
   auto localF = localFunction(gf);

@@ -64,7 +64,7 @@ public:
 template<class F, class GridView,
   typename std::enable_if<
     models< Imp::HasFreeLocalFunction, F>() , int>::type = 0>
-typename std::decay<F>::type
+  decltype(auto)
   makeGridViewFunction(F&& f, const GridView& gridView)
 {
   return std::forward<F>(f);
