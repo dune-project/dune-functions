@@ -11,7 +11,14 @@
 
 #include <dune/geometry/quadraturerules.hh>
 
-#include <dune/grid/yaspgrid.hh>
+#if HAVE_UG
+  #include <dune/grid/uggrid.hh>
+  #define CUBEGRID UGGrid
+#else
+  #include <dune/grid/yaspgrid.hh>
+  #define CUBEGRID YaspGrid
+#endif
+#include <dune/grid/utility/structuredgridfactory.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
 #include <dune/istl/matrix.hh>
@@ -329,14 +336,17 @@ int main (int argc, char *argv[])
 
 #ifdef DIM2
   const int dim = 2;
-  std::array<int,dim> elements = {{50, 50}};
+  std::array<unsigned int,dim> elements = {{50, 50}};
 #else
   const int dim = 3;
-  std::array<int,dim> elements = {{10, 10, 10}};
+  std::array<unsigned int,dim> elements = {{10, 10, 10}};
 #endif
-  typedef YaspGrid<dim> GridType;
-  FieldVector<double,dim> l(1);
-  GridType grid(l,elements);
+
+  using GridType = CUBEGRID<dim>;
+  auto lowerLeft = Dune::FieldVector<double,dim>(0);
+  auto upperRight = Dune::FieldVector<double,dim>(1);
+  auto gridPtr = Dune::StructuredGridFactory<GridType>::createCubeGrid(lowerLeft, upperRight, elements);
+  auto& grid = *gridPtr;
 
   typedef GridType::LeafGridView GridView;
   GridView gridView = grid.leafGridView();
@@ -399,23 +409,23 @@ int main (int argc, char *argv[])
   // which are linear (but non-constant) on edges.
 
   // Mark top boundary.
-  auto topBoundaryIndicator = [&l] (Domain x)
+  auto topBoundaryIndicator = [&upperRight] (Domain x)
   {
 #ifdef DIM2
-    double isBoundary = x[dim-1] > l[dim-1] - 1e-8 ? x[0]: 0.0;
+    double isBoundary = x[dim-1] > upperRight[dim-1] - 1e-8 ? x[0]: 0.0;
 #else
-    double isBoundary = x[dim-1] > l[dim-1] - 1e-8 ? x[0] * x[1]: 0.0;
+    double isBoundary = x[dim-1] > upperRight[dim-1] - 1e-8 ? x[0] * x[1]: 0.0;
 #endif
     return isBoundary;
   };
 
   // Mark lower boundary.
-  auto lowerBoundaryIndicator = [] (Domain x)
+  auto lowerBoundaryIndicator = [&lowerLeft] (Domain x)
   {
 #ifdef DIM2
-    double isBoundary = x[dim-1] < 1e-8 ? x[0]: 0.0;
+    double isBoundary = x[dim-1] < lowerLeft[dim-1] + 1e-8 ? x[0]: 0.0;
 #else
-    double isBoundary = x[dim-1] < 1e-8 ? x[0] * x[1]: 0.0;
+    double isBoundary = x[dim-1] < lowerLeft[dim-1] + 1e-8 ? x[0] * x[1]: 0.0;
 #endif
     return isBoundary;
   };

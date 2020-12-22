@@ -9,7 +9,14 @@
 
 #include <dune/geometry/quadraturerules.hh>
 
-#include <dune/grid/yaspgrid.hh>
+#if HAVE_UG
+  #include <dune/grid/uggrid.hh>
+  #define CUBEGRID UGGrid
+#else
+  #include <dune/grid/yaspgrid.hh>
+  #define CUBEGRID YaspGrid
+#endif
+#include <dune/grid/utility/structuredgridfactory.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
 #include <dune/istl/bvector.hh>
@@ -34,10 +41,16 @@ int main (int argc, char *argv[])
 
   // make grid
   const int dim = 2;
-  FieldVector<double,dim> L(1.0);
-  std::array<int,dim> N = {{1,1}};
-  YaspGrid<2> grid(L,N);
-  using GridView = YaspGrid<2>::LeafGridView;
+
+  using GridType = CUBEGRID<dim>;
+  auto lowerLeft = Dune::FieldVector<double,dim>(0);
+  auto upperRight = Dune::FieldVector<double,dim>(1);
+  auto elementsPerDirection = std::array<unsigned int,dim>();
+  elementsPerDirection.fill(1);
+  auto gridPtr = Dune::StructuredGridFactory<GridType>::createCubeGrid(lowerLeft, upperRight, elementsPerDirection);
+  auto& grid = *gridPtr;
+
+  using GridView = GridType::LeafGridView;
   GridView gridView = grid.leafGridView();
 
   // Create closed-form function to interpolate

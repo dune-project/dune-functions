@@ -10,8 +10,14 @@
 
 #include <dune/geometry/quadraturerules.hh>
 
-#include <dune/grid/yaspgrid.hh>
-#include <dune/grid/uggrid.hh>
+#if HAVE_UG
+  #include <dune/grid/uggrid.hh>
+  #define CUBEGRID UGGrid
+#else
+  #include <dune/grid/yaspgrid.hh>
+  #define CUBEGRID YaspGrid
+#endif
+#include <dune/grid/utility/structuredgridfactory.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
 #include <dune/istl/matrix.hh>
@@ -266,10 +272,12 @@ void boundaryTreatment (const FEBasis& feBasis, std::vector<char>& dirichletNode
 template<int dim>
 auto createUniformCubeGrid()
 {
-  using Grid = Dune::YaspGrid<dim>;
-  Dune::FieldVector<double,dim> l(1.0);
-  std::array<int,dim> elements = {{2, 2}};
-  return std::make_unique<Grid>(l, elements);
+  using GridType = CUBEGRID<dim>;
+  auto lowerLeft = Dune::FieldVector<double,dim>(0);
+  auto upperRight = Dune::FieldVector<double,dim>(1);
+  auto elementsPerDirection = std::array<unsigned int,dim>();
+  elementsPerDirection.fill(2);
+  return Dune::StructuredGridFactory<GridType>::createCubeGrid(lowerLeft, upperRight, elements);
 }
 
 #if HAVE_UG
