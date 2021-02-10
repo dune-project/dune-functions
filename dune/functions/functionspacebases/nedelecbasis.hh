@@ -9,8 +9,7 @@
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/mcmgmapper.hh>
 
-#include <dune/localfunctions/common/virtualinterface.hh>
-#include <dune/localfunctions/common/virtualwrappers.hh>
+#include <dune/localfunctions/common/localfiniteelementvariant.hh>
 #include <dune/localfunctions/nedelec.hh>
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
@@ -31,12 +30,6 @@ namespace Impl
 
     using CubeFiniteElement    = Nedelec1stKindCubeLocalFiniteElement<D,R,dim,order>;
     using SimplexFiniteElement = Nedelec1stKindSimplexLocalFiniteElement<D,R,dim,order>;
-    using CubeFiniteElementImp = typename std::conditional<hasFixedElementType,
-                                                           CubeFiniteElement,
-                                                           LocalFiniteElementVirtualImp<CubeFiniteElement> >::type;
-    using SimplexFiniteElementImp = typename std::conditional<hasFixedElementType,
-                                                              SimplexFiniteElement,
-                                                              LocalFiniteElementVirtualImp<SimplexFiniteElement> >::type;
 
   public:
 
@@ -45,9 +38,9 @@ namespace Impl
     constexpr static unsigned int  topologyId = Capabilities::hasSingleGeometryType<typename GV::Grid>::topologyId;  // meaningless if hasFixedElementType is false
     constexpr static GeometryType type = GeometryType(topologyId, GV::dimension);
 
-    using FiniteElement = typename std::conditional<hasFixedElementType,
-                                           typename std::conditional<type.isCube(),CubeFiniteElement,SimplexFiniteElement>::type,
-                                           LocalFiniteElementVirtualInterface<T> >::type;
+    using FiniteElement = std::conditional_t<hasFixedElementType,
+                                           std::conditional_t<type.isCube(),CubeFiniteElement,SimplexFiniteElement>,
+                                           LocalFiniteElementVariant<CubeFiniteElement, SimplexFiniteElement> >;
 
     static std::size_t numVariants(GeometryType type)
     {
@@ -62,15 +55,23 @@ namespace Impl
       : elementMapper_(gv, mcmgElementLayout()),
         orientation_(gv.size(0))
     {
-      cubeVariant_.resize(numVariants(GeometryTypes::cube(dim)));
-      simplexVariant_.resize(numVariants(GeometryTypes::simplex(dim)));
-
       // create all variants
-      for (size_t i = 0; i < cubeVariant_.size(); i++)
-        cubeVariant_[i] = std::make_unique<CubeFiniteElementImp>(CubeFiniteElement(i));
+      if constexpr (hasFixedElementType)
+      {
+        variants_.resize(numVariants(type));
+        for (size_t i = 0; i < numVariants(type); i++)
+          variants_[i] = FiniteElement(i);
+      }
+      else
+      {
+        // for mixed grids add offset for cubes
+        variants_.resize(numVariants(GeometryTypes::simplex(dim)) + numVariants(GeometryTypes::cube(dim)));
+        for (size_t i = 0; i < numVariants(GeometryTypes::simplex(dim)); i++)
+          variants_[i] = SimplexFiniteElement(i);
+        for (size_t i = 0; i < numVariants(GeometryTypes::cube(dim)); i++)
+          variants_[i + numVariants(GeometryTypes::simplex(dim))] = CubeFiniteElement(i);
+      }
 
-      for (size_t i = 0; i < simplexVariant_.size(); i++)
-        simplexVariant_[i] = std::make_unique<SimplexFiniteElementImp>(SimplexFiniteElement(i));
 
       // compute orientation for all elements
       const auto& indexSet = gv.indexSet();
@@ -94,29 +95,21 @@ namespace Impl
           if ( (localV0<localV1 && globalV0>globalV1) || (localV0>localV1 && globalV0<globalV1) )
             orientation_[elementIndex] |= (1 << i);
         }
+        // for mixed grids add offset for cubes
+        if constexpr (!hasFixedElementType)
+          if (element.type().isCube())
+            orientation_[elementIndex] += numVariants(GeometryTypes::simplex(dim));
       }
     }
 
     template<class Element>
     const auto& find(const Element& element) const
     {
-      if constexpr (!hasFixedElementType)
-      {
-        return (element.type().isCube()) ? static_cast<FiniteElement&>(*cubeVariant_[orientation_[elementMapper_.index(element)]])
-                                         : static_cast<FiniteElement&>(*simplexVariant_[orientation_[elementMapper_.index(element)]]);
-      }
-      else
-      {
-        if constexpr (type.isCube())
-          return *cubeVariant_[orientation_[elementMapper_.index(element)]];
-        else
-          return *simplexVariant_[orientation_[elementMapper_.index(element)]];
-      }
+      return variants_[orientation_[elementMapper_.index(element)]];
     }
 
     private:
-      std::vector<std::unique_ptr<CubeFiniteElementImp> > cubeVariant_;
-      std::vector<std::unique_ptr<SimplexFiniteElementImp> > simplexVariant_;
+      std::vector<FiniteElement> variants_;
       const Dune::MultipleCodimMultipleGeomTypeMapper<GV> elementMapper_;
       std::vector<unsigned short> orientation_;
   };
