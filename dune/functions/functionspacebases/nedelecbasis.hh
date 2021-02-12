@@ -29,9 +29,7 @@ namespace Impl
     using D = typename GV::ctype;
     constexpr static bool hasFixedElementType = Capabilities::hasSingleGeometryType<typename GV::Grid>::v;
 
-    // TODO: The cube code is an investment for the future.  We don't have local finite elements for cubes yet,
-    //       but let's have the infrastructure for them already.
-    using CubeFiniteElement    = Nedelec1stKindSimplexLocalFiniteElement<D,R,dim,order>;
+    using CubeFiniteElement    = Nedelec1stKindCubeLocalFiniteElement<D,R,dim,order>;
     using SimplexFiniteElement = Nedelec1stKindSimplexLocalFiniteElement<D,R,dim,order>;
     using CubeFiniteElementImp = typename std::conditional<hasFixedElementType,
                                                            CubeFiniteElement,
@@ -104,8 +102,8 @@ namespace Impl
     {
       if constexpr (!hasFixedElementType)
       {
-        return (element.type().isCube()) ? *cubeVariant_[orientation_[elementMapper_.index(element)]]
-                                         : *simplexVariant_[orientation_[elementMapper_.index(element)]];
+        return (element.type().isCube()) ? static_cast<FiniteElement&>(*cubeVariant_[orientation_[elementMapper_.index(element)]])
+                                         : static_cast<FiniteElement&>(*simplexVariant_[orientation_[elementMapper_.index(element)]]);
       }
       else
       {
@@ -120,7 +118,7 @@ namespace Impl
       std::vector<std::unique_ptr<CubeFiniteElementImp> > cubeVariant_;
       std::vector<std::unique_ptr<SimplexFiniteElementImp> > simplexVariant_;
       const Dune::MultipleCodimMultipleGeomTypeMapper<GV> elementMapper_;
-      std::vector<unsigned char> orientation_;
+      std::vector<unsigned short> orientation_;
   };
 
 
@@ -177,13 +175,16 @@ public:
     if (kind!=1)
       DUNE_THROW(NotImplemented, "Only Nedelec elements of the first kind are implemented!");
 
-    // There is no inherent reason why the basis shouldn't work for grids with more than one
+    // There is no inherent reason why the basis shouldn't work for grids with more than two
     // element types.  Somebody simply has to sit down and implement the missing bits.
-    if (gv.indexSet().types(0).size() > 1)
-      DUNE_THROW(NotImplemented, "Nedelec basis is only implemented for grids with a single element type");
+    if (gv.indexSet().types(0).size() > 2)
+      DUNE_THROW(NotImplemented, "Nédélec basis is only implemented for grids with simplex and cube elements");
 
-    if (!gv.indexSet().types(0)[0].isSimplex())
-      DUNE_THROW(NotImplemented, "Nédélec basis is only implemented for grids with simplex elements.");
+    bool isSimplexOrCube = true;
+    for(auto type : gv.indexSet().types(0))
+      isSimplexOrCube = isSimplexOrCube and (type.isSimplex() or type.isCube());
+    if (!isSimplexOrCube)
+      DUNE_THROW(NotImplemented, "Nédélec basis is only implemented for grids with simplex or cube elements.");
 
     if (order>1)
       DUNE_THROW(NotImplemented, "Only first-order elements are implemented");
