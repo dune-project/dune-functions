@@ -74,12 +74,11 @@ int main (int argc, char* argv[])
   testRaviartThomasBasis<0>(test, tetraGridView);
 
   // Test with mixed-element 2d grid
-  // The mixed-element case needs additional fixes in RaviartThomasBasis.
-//   std::cout<<"Testing RaviartThomasBasis in 2D with mixed-element grid\n";
-//   auto mixed2dGrid = GmshReader<Mixed2dGrid>::read(path + "hybrid-testgrid-2d.msh");
-//   auto mixed2dGridView = mixed2dGrid->leafGridView();
-//   testRaviartThomasBasis<0>(test, mixed2dGridView);
-//   testRaviartThomasBasis<1>(test, mixed2dGridView);
+  std::cout<<"Testing RaviartThomasBasis in 2D with mixed-element grid\n";
+  auto mixed2dGrid = GmshReader<Mixed2dGrid>::read(path + "hybrid-testgrid-2d.msh");
+  auto mixed2dGridView = mixed2dGrid->leafGridView();
+  testRaviartThomasBasis<0>(test, mixed2dGridView);
+  //testRaviartThomasBasis<1>(test, mixed2dGridView);
 
   return test.exit();
 }
