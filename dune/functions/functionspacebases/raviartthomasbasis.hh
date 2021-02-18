@@ -7,10 +7,9 @@
 #include <dune/common/exceptions.hh>
 
 #include <dune/grid/common/capabilities.hh>
+#include <dune/grid/common/mcmgmapper.hh>
 
-#include <dune/localfunctions/common/virtualinterface.hh>
-#include <dune/localfunctions/common/virtualwrappers.hh>
-
+#include <dune/localfunctions/common/localfiniteelementvariant.hh>
 #include <dune/localfunctions/raviartthomas.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas0cube2d.hh>
 #include <dune/localfunctions/raviartthomas/raviartthomas0cube3d.hh>
@@ -101,12 +100,6 @@ namespace Impl {
 
     using CubeFiniteElement    = typename RaviartThomasCubeLocalInfo<dim, D, R, k>::FiniteElement;
     using SimplexFiniteElement = typename RaviartThomasSimplexLocalInfo<dim, D, R, k>::FiniteElement;
-    using CubeFiniteElementImp = typename std::conditional<hasFixedElementType,
-                                                           CubeFiniteElement,
-                                                           LocalFiniteElementVirtualImp<CubeFiniteElement> >::type;
-    using SimplexFiniteElementImp = typename std::conditional<hasFixedElementType,
-                                                              SimplexFiniteElement,
-                                                              LocalFiniteElementVirtualImp<SimplexFiniteElement> >::type;
 
   public:
 
@@ -115,11 +108,9 @@ namespace Impl {
     constexpr static unsigned int  topologyId = Capabilities::hasSingleGeometryType<typename GV::Grid>::topologyId;  // meaningless if hasFixedElementType is false
     constexpr static GeometryType type = GeometryType(topologyId, GV::dimension);
 
-    using FiniteElement = typename std::conditional<hasFixedElementType,
-                                           typename std::conditional<type.isCube(),CubeFiniteElement,SimplexFiniteElement>::type,
-                                           LocalFiniteElementVirtualInterface<T> >::type;
-
-    static_assert(!std::is_same_v<FiniteElement,void*>,"The requested type of Raviart-Thomas element is not implemented, sorry!");
+    using FiniteElement = std::conditional_t<hasFixedElementType,
+                                           std::conditional_t<type.isCube(),CubeFiniteElement,SimplexFiniteElement>,
+                                           LocalFiniteElementVariant<CubeFiniteElement, SimplexFiniteElement> >;
 
     // Each element facet can have its orientation reversed, hence there are
     // 2^#facets different variants.
@@ -130,82 +121,52 @@ namespace Impl {
     }
 
     RaviartThomasLocalFiniteElementMap(const GV& gv)
-      : is_(&(gv.indexSet())), orient_(gv.size(0))
+      : elementMapper_(gv, mcmgElementLayout()),
+        orient_(gv.size(0))
     {
-      cubeVariant_.resize(numVariants(GeometryTypes::cube(dim)));
-      simplexVariant_.resize(numVariants(GeometryTypes::simplex(dim)));
-
-      // create all variants, if they exist
-      if constexpr (!std::is_same_v<CubeFiniteElement,void*>)
+      if constexpr (hasFixedElementType)
       {
-        for (size_t i = 0; i < cubeVariant_.size(); i++)
-          cubeVariant_[i] = std::make_unique<CubeFiniteElementImp>(CubeFiniteElement(i));
+        variants_.resize(numVariants(type));
+        for (size_t i = 0; i < numVariants(type); i++)
+          variants_[i] = FiniteElement(i);
+      }
+      else
+      {
+        // for mixed grids add offset for cubes
+        variants_.resize(numVariants(GeometryTypes::simplex(dim)) + numVariants(GeometryTypes::cube(dim)));
+        for (size_t i = 0; i < numVariants(GeometryTypes::simplex(dim)); i++)
+          variants_[i] = SimplexFiniteElement(i);
+        for (size_t i = 0; i < numVariants(GeometryTypes::cube(dim)); i++)
+          variants_[i + numVariants(GeometryTypes::simplex(dim))] = CubeFiniteElement(i);
       }
 
-      if constexpr (!std::is_same_v<SimplexFiniteElement,void*>)
-      {
-      for (size_t i = 0; i < simplexVariant_.size(); i++)
-        simplexVariant_[i] = std::make_unique<SimplexFiniteElementImp>(SimplexFiniteElement(i));
-      }
-
-      // compute orientation for all elements
-      // loop once over the grid
       for(const auto& cell : elements(gv))
       {
-        unsigned int myId = is_->index(cell);
+        unsigned int myId = elementMapper_.index(cell);
         orient_[myId] = 0;
 
         for (const auto& intersection : intersections(gv,cell))
         {
-          if (intersection.neighbor() && (is_->index(intersection.outside()) > myId))
+          if (intersection.neighbor() && (elementMapper_.index(intersection.outside()) > myId))
             orient_[myId] |= (1 << intersection.indexInInside());
         }
+
+        // for mixed grids add offset for cubes
+        if constexpr (!hasFixedElementType)
+          if (cell.type().isCube())
+            orient_[myId] += numVariants(GeometryTypes::simplex(dim));
       }
     }
 
-    /** \brief Get local basis functions for entity if the GeometryType is run-time information
-     *
-     * The AlwaysTrue class is needed because for SFINAE to work the SFINAE argument has to
-     * depend on the template argument.
-     */
-    template<class EntityType,
-             std::enable_if_t<!hasFixedElementType and AlwaysTrue<EntityType>::value,int> = 0>
+    template<class EntityType>
     const FiniteElement& find(const EntityType& e) const
     {
-      if (e.type().isCube())
-        return *cubeVariant_[orient_[is_->index(e)]];
-      else
-        return *simplexVariant_[orient_[is_->index(e)]];
-    }
-
-    /** \brief Get local basis functions for entity if the GeometryType is known to be a cube
-     *
-     * The AlwaysTrue class is needed because for SFINAE to work the SFINAE argument has to
-     * depend on the template argument.
-     */
-    template<class EntityType,
-             std::enable_if_t<hasFixedElementType and type.isCube() and AlwaysTrue<EntityType>::value,int> = 0>
-    const FiniteElement& find(const EntityType& e) const
-    {
-      return *cubeVariant_[orient_[is_->index(e)]];
-    }
-
-    /** \brief Get local basis functions for entity if the GeometryType is known to be a simplex
-     *
-     * The AlwaysTrue class is needed because for SFINAE to work the SFINAE argument has to
-     * depend on the template argument.
-     */
-    template<class EntityType,
-             std::enable_if_t<hasFixedElementType and type.isSimplex() and AlwaysTrue<EntityType>::value,int> = 0>
-    const FiniteElement& find(const EntityType& e) const
-    {
-      return *simplexVariant_[orient_[is_->index(e)]];
+      return variants_[orient_[elementMapper_.index(e)]];
     }
 
     private:
-      std::vector<std::unique_ptr<CubeFiniteElementImp> > cubeVariant_;
-      std::vector<std::unique_ptr<SimplexFiniteElementImp> > simplexVariant_;
-      const typename GV::IndexSet* is_;
+      std::vector<FiniteElement> variants_;
+      const Dune::MultipleCodimMultipleGeomTypeMapper<GV> elementMapper_;
       std::vector<unsigned char> orient_;
   };
 
@@ -260,10 +221,15 @@ public:
     gridView_(gv),
     finiteElementMap_(gv)
   {
-    // There is no inherent reason why the basis shouldn't work for grids with more than one
-    // element types.  Somebody simply has to sit down and implement the missing bits.
-    if (gv.indexSet().types(0).size() > 1)
-      DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas basis is only implemented for grids with a single element type");
+    // Currently there are some unresolved bugs with hybrid grids and higher order Raviart-Thomas elements
+    if (gv.indexSet().types(0).size() > 1 and k>0)
+      DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas basis with index k>0 is only implemented for grids with a single element type");
+
+    bool isSimplexOrCube = true;
+    for(auto type : gv.indexSet().types(0))
+      isSimplexOrCube = isSimplexOrCube and (type.isSimplex() or type.isCube());
+    if (!isSimplexOrCube)
+      DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas elements are only implemented for grids with simplex or cube elements.");
 
     GeometryType type = gv.template begin<0>()->type();
     const static int dofsPerElement = type.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;
