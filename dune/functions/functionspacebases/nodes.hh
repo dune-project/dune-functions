@@ -10,6 +10,7 @@
 
 #include <dune/typetree/leafnode.hh>
 #include <dune/typetree/powernode.hh>
+#include <dune/typetree/dynamicpowernode.hh>
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/traversal.hh>
 #include <dune/typetree/visitor.hh>
@@ -207,6 +208,34 @@ namespace Dune {
       const Element& element() const
       {
         return this->child(Dune::Indices::_0).element();
+      }
+
+    };
+
+
+    template<typename T>
+    class DynamicPowerBasisNode :
+      public BasisNodeMixin,
+      public TypeTree::DynamicPowerNode<T>
+    {
+
+      using Node = TypeTree::DynamicPowerNode<T>;
+
+    public:
+
+      using Element = typename T::Element;
+
+      DynamicPowerBasisNode (std::size_t children)
+        : Node(children)
+      {}
+
+      DynamicPowerBasisNode (typename Node::NodeStorage children)
+        : Node(std::move(children))
+      {}
+
+      const Element& element() const
+      {
+        return this->child(0).element();
       }
 
     };

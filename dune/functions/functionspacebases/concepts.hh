@@ -93,6 +93,16 @@ struct PowerBasisNode : Refines<BasisNode>
   );
 };
 
+// Concept for a DynamicPowerBasisNode in a local ansatz tree
+template<class GridView>
+struct DynamicPowerBasisNode : Refines<BasisNode>
+{
+  template<class N>
+  auto require(const N& node) -> decltype(
+    requireBaseOf<Dune::Functions::DynamicPowerBasisNode<typename N::ChildType>, N>(),
+    requireConcept<BasisTree<GridView>, typename N::ChildType>()
+  );
+};
 
 // Concept for a CompositeBasisNode in a local ansatz tree
 template<class GridView>
@@ -110,11 +120,14 @@ struct CompositeBasisNode : Refines<BasisNode>
 template<class GridView>
 struct BasisTree : Refines<BasisNode>
 {
-  template<class N>
+  template<class N, class NodeTag = typename N::NodeTag>
   auto require(const N& node) -> decltype(
-    requireConcept<std::conditional_t< N::isLeaf, LeafBasisNode<GridView>, BasisNode>, N>(),
-    requireConcept<std::conditional_t< N::isPower, PowerBasisNode<GridView>, BasisNode>, N>(),
-    requireConcept<std::conditional_t< N::isComposite, CompositeBasisNode<GridView>, BasisNode>, N>()
+    requireConcept<std::conditional_t<N::isLeaf, LeafBasisNode<GridView>, BasisNode>, N>(),
+    requireConcept<std::conditional_t<std::is_same_v<NodeTag, Dune::TypeTree::PowerNodeTag>,
+                                      PowerBasisNode<GridView>, BasisNode>, N>(),
+    requireConcept<std::conditional_t<std::is_same_v<NodeTag, Dune::TypeTree::DynamicPowerNodeTag>,
+                                      DynamicPowerBasisNode<GridView>, BasisNode>, N>(),
+    requireConcept<std::conditional_t<N::isComposite, CompositeBasisNode<GridView>, BasisNode>, N>()
   );
 };
 
