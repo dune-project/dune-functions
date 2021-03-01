@@ -49,6 +49,50 @@ It preBasisIndices(const PreBasis& preBasis, const Node& node, It multiIndices)
   }
 }
 
+// This class exists for backward compatibility only.
+// A PreBasis providing indices(node,iterator) can
+// simpe export a DefaultNodeIndexSet<PreBasis>
+// which will forward the old-style interface to the
+// new one.
+template<class PB>
+class DefaultNodeIndexSet
+{
+public:
+
+  using size_type = std::size_t;
+  using PreBasis = PB;
+  using MultiIndex = typename PreBasis::MultiIndex;
+  using Node = typename PreBasis::Node;
+
+  DefaultNodeIndexSet(const PreBasis& preBasis) :
+    preBasis_(&preBasis),
+    node_(nullptr)
+  {}
+
+  void bind(const Node& node) {
+    node_ = &node;
+  }
+
+  void unbind() {
+    node_ = nullptr;
+  }
+
+  size_type size() const {
+    assert(node_ != nullptr);
+    return node_->size();
+  }
+
+  template<typename It>
+  It indices(It it) const {
+    assert(node_ != nullptr);
+    return preBasis_->indices(*node_, it);
+  }
+
+protected:
+  const PreBasis* preBasis_;
+  const Node* node_;
+};
+
 }
 
 
