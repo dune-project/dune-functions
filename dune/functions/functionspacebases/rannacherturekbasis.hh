@@ -19,19 +19,15 @@ namespace Functions {
 // This is the reusable part of the basis. It contains
 //
 //   RannacherTurekPreBasis
-//   RannacherTurekNodeIndexSet
 //   RannacherTurekNode
 //
 // The pre-basis allows to create the others and is the owner of possible shared
-// state. These three components do _not_ depend on the global basis or index
-// set and can be used without a global basis.
+// state. These components do _not_ depend on the global basis and local view
+// and can be used without a global basis.
 // *****************************************************************************
 
 template<typename GV>
 class RannacherTurekNode;
-
-template<typename GV, class MI>
-class RannacherTurekNodeIndexSet;
 
 template<typename GV, class MI>
 class RannacherTurekPreBasis;
@@ -66,7 +62,7 @@ public:
   using Node = RannacherTurekNode<GV>;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = RannacherTurekNodeIndexSet<GV, MI>;
+  using IndexSet = Impl::DefaultNodeIndexSet<RannacherTurekPreBasis>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -139,6 +135,20 @@ public:
     return 2*GV::dimension;
   }
 
+  template<typename It>
+  It indices(const Node& node, It it) const
+  {
+    for (size_type i = 0, end = node.size() ; i < end ; ++i, ++it)
+      {
+        Dune::LocalKey localKey = node.finiteElement().localCoefficients().localKey(i);
+        const auto& gridIndexSet = gridView().indexSet();
+        const auto& element = node.element();
+
+        *it = {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),1)) }};
+      }
+    return it;
+  }
+
 protected:
   GridView gridView_;
 };
@@ -194,73 +204,6 @@ protected:
 
   const FiniteElement finiteElement_;
   const Element* element_;
-};
-
-
-
-template<typename GV, class MI>
-class RannacherTurekNodeIndexSet
-{
-  enum {dim = GV::dimension};
-
-public:
-
-  using size_type = std::size_t;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = RannacherTurekPreBasis<GV, MI>;
-
-  using Node = RannacherTurekNode<GV>;
-
-  RannacherTurekNodeIndexSet(const PreBasis& preBasis) :
-    preBasis_(&preBasis)
-  {}
-
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
-   */
-  void bind(const Node& node)
-  {
-    node_ = &node;
-  }
-
-  /** \brief Unbind the view
-   */
-  void unbind()
-  {
-    node_ = nullptr;
-  }
-
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const
-  {
-    return (size_type)(node_->finiteElement().size());
-  }
-
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  template<typename It>
-  It indices(It it) const
-  {
-    for (size_type i = 0, end = size() ; i < end ; ++i, ++it)
-      {
-        Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
-        const auto& gridIndexSet = preBasis_->gridView().indexSet();
-        const auto& element = node_->element();
-
-        *it = {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),1)) }};
-      }
-    return it;
-  }
-
-protected:
-  const PreBasis* preBasis_;
-
-  const Node* node_;
 };
 
 

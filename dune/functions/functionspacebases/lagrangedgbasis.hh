@@ -23,20 +23,15 @@ namespace Functions {
 // This is the reusable part of the basis. It contains
 //
 //   LagrangeDGPreBasis
-//   LagrangeDGNodeIndexSet
 //   LagrangeDGNode
 //
 // The pre-basis allows to create the others and is the owner of possible shared
-// state. These three components do _not_ depend on the global basis or index
-// set and can be used without a global basis.
+// state. These components do _not_ depend on the global basis and local view
+// and can be used without a global basis.
 // *****************************************************************************
 
 template<typename GV, int k>
 using LagrangeDGNode = LagrangeNode<GV, k>;
-
-template<typename GV, int k, class MI>
-class LagrangeDGNodeIndexSet;
-
 
 template<typename GV, int k, class MI>
 class LagrangeDGPreBasis
@@ -62,7 +57,7 @@ public:
 
   using Node = LagrangeDGNode<GV, k>;
 
-  using IndexSet = LagrangeDGNodeIndexSet<GV, k, MI>;
+  using IndexSet = Impl::DefaultNodeIndexSet<LagrangeDGPreBasis>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -170,88 +165,31 @@ public:
     return StaticPower<(k+1),GV::dimension>::power;
   }
 
-//protected:
-  GridView gridView_;
-
-  size_t quadrilateralOffset_;
-  size_t pyramidOffset_;
-  size_t prismOffset_;
-  size_t hexahedronOffset_;
-};
-
-
-
-template<typename GV, int k, class MI>
-class LagrangeDGNodeIndexSet
-{
-  // Cannot be an enum -- otherwise the switch statement below produces compiler warnings
-  static const int dim = GV::dimension;
-
-public:
-
-  using size_type = std::size_t;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = LagrangeDGPreBasis<GV, k, MI>;
-
-  using Node = LagrangeDGNode<GV, k>;
-
-  LagrangeDGNodeIndexSet(const PreBasis& preBasis) :
-    preBasis_(&preBasis)
-  {}
-
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
-   */
-  void bind(const Node& node)
-  {
-    node_ = &node;
-  }
-
-  /** \brief Unbind the view
-   */
-  void unbind()
-  {
-    node_ = nullptr;
-  }
-
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const
-  {
-    return node_->finiteElement().size();
-  }
-
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   template<typename It>
-  It indices(It it) const
+  It indices(const Node& node, It it) const
   {
-    const auto& gridIndexSet = preBasis_->gridView().indexSet();
-    const auto& element = node_->element();
+    const auto& gridIndexSet = gridView().indexSet();
+    const auto& element = node.element();
 
-    for (size_type i = 0, end = size() ; i < end ; ++i, ++it)
+    for (size_type i = 0, end = node.size() ; i < end ; ++i, ++it)
       {
         switch (dim)
           {
           case 1:
             {
-              *it = {preBasis_->dofsPerEdge*gridIndexSet.subIndex(element,0,0) + i};
+              *it = {dofsPerEdge*gridIndexSet.subIndex(element,0,0) + i};
               continue;
             }
           case 2:
             {
               if (element.type().isTriangle())
                 {
-                  *it = {preBasis_->dofsPerTriangle*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = {dofsPerTriangle*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isQuadrilateral())
                 {
-                  *it = { preBasis_->quadrilateralOffset_ + preBasis_->dofsPerQuad*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { quadrilateralOffset_ + dofsPerQuad*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else
@@ -261,22 +199,22 @@ public:
             {
               if (element.type().isTetrahedron())
                 {
-                  *it = {preBasis_->dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = {dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isPrism())
                 {
-                  *it = { preBasis_->prismOffset_ + preBasis_->dofsPerPrism*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { prismOffset_ + dofsPerPrism*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isHexahedron())
                 {
-                  *it = { preBasis_->hexahedronOffset_ + preBasis_->dofsPerHexahedron*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { hexahedronOffset_ + dofsPerHexahedron*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else if (element.type().isPyramid())
                 {
-                  *it = { preBasis_->pyramidOffset_ + preBasis_->dofsPerPyramid*gridIndexSet.subIndex(element,0,0) + i};
+                  *it = { pyramidOffset_ + dofsPerPyramid*gridIndexSet.subIndex(element,0,0) + i};
                   continue;
                 }
               else
@@ -288,12 +226,15 @@ public:
     return it;
   }
 
-protected:
-  const PreBasis* preBasis_;
 
-  const Node* node_;
+//protected:
+  GridView gridView_;
+
+  size_t quadrilateralOffset_;
+  size_t pyramidOffset_;
+  size_t prismOffset_;
+  size_t hexahedronOffset_;
 };
-
 
 
 

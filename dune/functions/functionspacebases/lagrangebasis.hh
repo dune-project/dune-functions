@@ -22,19 +22,15 @@ namespace Functions {
 // This is the reusable part of the LagrangeBasis. It contains
 //
 //   LagrangePreBasis
-//   LagrangeNodeIndexSet
 //   LagrangeNode
 //
 // The pre-basis allows to create the others and is the owner of possible shared
-// state. These three components do _not_ depend on the global basis or index
-// set and can be used without a global basis.
+// state. These components do _not_ depend on the global basis and local view
+// and can be used without a global basis.
 // *****************************************************************************
 
 template<typename GV, int k, typename R=double>
 class LagrangeNode;
-
-template<typename GV, int k, class MI, typename R=double>
-class LagrangeNodeIndexSet;
 
 template<typename GV, int k, class MI, typename R=double>
 class LagrangePreBasis;
@@ -70,18 +66,11 @@ public:
   //! Type used for indices and size information
   using size_type = std::size_t;
 
-private:
-
-  template<typename, int, class, typename>
-  friend class LagrangeNodeIndexSet;
-
-public:
-
   //! Template mapping root tree path to type of created tree node
   using Node = LagrangeNode<GV, k, R>;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = LagrangeNodeIndexSet<GV, k, MI, R>;
+  using IndexSet = Impl::DefaultNodeIndexSet<LagrangePreBasis>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -214,6 +203,124 @@ public:
     // That cast to unsigned int is necessary because GV::dimension is an enum,
     // which is not recognized by the power method as an integer type...
     return power(order()+1, (unsigned int)GV::dimension);
+  }
+
+  template<typename It>
+  It indices(const Node& node, It it) const
+  {
+    for (size_type i = 0, end = node.finiteElement().size() ; i < end ; ++it, ++i)
+    {
+      Dune::LocalKey localKey = node.finiteElement().localCoefficients().localKey(i);
+      const auto& gridIndexSet = gridView().indexSet();
+      const auto& element = node.element();
+
+      // The dimension of the entity that the current dof is related to
+      auto dofDim = dim - localKey.codim();
+
+      // Test for a vertex dof
+      // The test for k==1 is redundant, but having it here allows the compiler to conclude
+      // at compile-time that the dofDim==0 case is the only one that will ever happen.
+      // This leads to measurable speed-up: see
+      //   https://gitlab.dune-project.org/staging/dune-functions/issues/30
+      if (k==1 || dofDim==0) {
+        *it = {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
+        continue;
+      }
+
+      if (dofDim==1)
+        {  // edge dof
+          if (dim==1)  // element dof -- any local numbering is fine
+            {
+              *it = {{ edgeOffset_
+                       + dofsPerCube(1) * ((size_type)gridIndexSet.subIndex(element,0,0))
+                       + localKey.index() }};
+              continue;
+            }
+          else
+            {
+              const auto refElement
+                = Dune::referenceElement<double,dim>(element.type());
+
+              // we have to reverse the numbering if the local triangle edge is
+              // not aligned with the global edge
+              auto v0 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
+              auto v1 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
+              bool flip = (v0 > v1);
+              *it = {{ (flip)
+                       ? edgeOffset_
+                       + dofsPerCube(1)*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
+                       + (dofsPerCube(1)-1)-localKey.index()
+                       : edgeOffset_
+                       + dofsPerCube(1)*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
+                       + localKey.index() }};
+              continue;
+            }
+        }
+
+      if (dofDim==2)
+        {
+          if (dim==2)   // element dof -- any local numbering is fine
+            {
+              if (element.type().isTriangle())
+                {
+                  *it = {{ triangleOffset_ + dofsPerSimplex(2)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                  continue;
+                }
+              else if (element.type().isQuadrilateral())
+                {
+                  *it = {{ quadrilateralOffset_ + dofsPerCube(2)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                  continue;
+                }
+              else
+                DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
+            } else
+            {
+              const auto refElement
+                = Dune::referenceElement<double,dim>(element.type());
+
+              if (order()>3)
+                DUNE_THROW(Dune::NotImplemented, "LagrangeNodalBasis for 3D grids is only implemented if k<=3");
+
+              if (order()==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
+                DUNE_THROW(Dune::NotImplemented, "LagrangeNodalBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
+
+              *it = {{ triangleOffset_ + ((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())) }};
+              continue;
+            }
+        }
+
+      if (dofDim==3)
+        {
+          if (dim==3)   // element dof -- any local numbering is fine
+            {
+              if (element.type().isTetrahedron())
+                {
+                  *it = {{ tetrahedronOffset_ + dofsPerSimplex(3)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                  continue;
+                }
+              else if (element.type().isHexahedron())
+                {
+                  *it = {{ hexahedronOffset_ + dofsPerCube(3)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                  continue;
+                }
+              else if (element.type().isPrism())
+                {
+                  *it = {{ prismOffset_ + dofsPerPrism()*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                  continue;
+                }
+              else if (element.type().isPyramid())
+                {
+                  *it = {{ pyramidOffset_ + dofsPerPyramid()*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
+                  continue;
+                }
+              else
+                DUNE_THROW(Dune::NotImplemented, "3d elements have to be tetrahedra, hexahedra, prisms, or pyramids");
+            } else
+            DUNE_THROW(Dune::NotImplemented, "Grids of dimension larger than 3 are no supported");
+        }
+      DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the LagrangeNodalBasis");
+    }
+    return it;
   }
 
 protected:
@@ -380,187 +487,6 @@ protected:
   FiniteElementCache cache_;
   const FiniteElement* finiteElement_;
   const Element* element_;
-};
-
-
-
-template<typename GV, int k, class MI, typename R>
-class LagrangeNodeIndexSet
-{
-  enum {dim = GV::dimension};
-  static const bool useDynamicOrder = (k<0);
-
-public:
-
-  using size_type = std::size_t;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = LagrangePreBasis<GV, k, MI, R>;
-
-  using Node = LagrangeNode<GV, k, R>;
-
-  LagrangeNodeIndexSet(const PreBasis& preBasis) :
-    preBasis_(&preBasis),
-    node_(nullptr)
-  {}
-
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
-   */
-  void bind(const Node& node)
-  {
-    node_ = &node;
-  }
-
-  /** \brief Unbind the view
-   */
-  void unbind()
-  {
-    node_ = nullptr;
-  }
-
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const
-  {
-    assert(node_ != nullptr);
-    return node_->finiteElement().size();
-  }
-
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  template<typename It>
-  It indices(It it) const
-  {
-    assert(node_ != nullptr);
-    for (size_type i = 0, end = node_->finiteElement().size() ; i < end ; ++it, ++i)
-      {
-        Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
-        const auto& gridIndexSet = preBasis_->gridView().indexSet();
-        const auto& element = node_->element();
-
-        // The dimension of the entity that the current dof is related to
-        auto dofDim = dim - localKey.codim();
-
-        // Test for a vertex dof
-        // The test for k==1 is redundant, but having it here allows the compiler to conclude
-        // at compile-time that the dofDim==0 case is the only one that will ever happen.
-        // This leads to measurable speed-up: see
-        //   https://gitlab.dune-project.org/staging/dune-functions/issues/30
-        if (k==1 || dofDim==0) {
-          *it = {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
-          continue;
-        }
-
-        if (dofDim==1)
-          {  // edge dof
-            if (dim==1)  // element dof -- any local numbering is fine
-              {
-                *it = {{ preBasis_->edgeOffset_
-                         + preBasis_->dofsPerCube(1) * ((size_type)gridIndexSet.subIndex(element,0,0))
-                         + localKey.index() }};
-                continue;
-              }
-            else
-              {
-                const auto refElement
-                  = Dune::referenceElement<double,dim>(element.type());
-
-                // we have to reverse the numbering if the local triangle edge is
-                // not aligned with the global edge
-                auto v0 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
-                auto v1 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
-                bool flip = (v0 > v1);
-                *it = {{ (flip)
-                         ? preBasis_->edgeOffset_
-                         + preBasis_->dofsPerCube(1)*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
-                         + (preBasis_->dofsPerCube(1)-1)-localKey.index()
-                         : preBasis_->edgeOffset_
-                         + preBasis_->dofsPerCube(1)*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
-                         + localKey.index() }};
-                continue;
-              }
-          }
-
-        if (dofDim==2)
-          {
-            if (dim==2)   // element dof -- any local numbering is fine
-              {
-                if (element.type().isTriangle())
-                  {
-                    *it = {{ preBasis_->triangleOffset_ + preBasis_->dofsPerSimplex(2)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-                    continue;
-                  }
-                else if (element.type().isQuadrilateral())
-                  {
-                    *it = {{ preBasis_->quadrilateralOffset_ + preBasis_->dofsPerCube(2)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-                    continue;
-                  }
-                else
-                  DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
-              } else
-              {
-                const auto refElement
-                  = Dune::referenceElement<double,dim>(element.type());
-
-                if (order()>3)
-                  DUNE_THROW(Dune::NotImplemented, "LagrangeNodalBasis for 3D grids is only implemented if k<=3");
-
-                if (order()==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
-                  DUNE_THROW(Dune::NotImplemented, "LagrangeNodalBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
-
-                *it = {{ preBasis_->triangleOffset_ + ((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())) }};
-                continue;
-              }
-          }
-
-        if (dofDim==3)
-          {
-            if (dim==3)   // element dof -- any local numbering is fine
-              {
-                if (element.type().isTetrahedron())
-                  {
-                    *it = {{ preBasis_->tetrahedronOffset_ + preBasis_->dofsPerSimplex(3)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-                    continue;
-                  }
-                else if (element.type().isHexahedron())
-                  {
-                    *it = {{ preBasis_->hexahedronOffset_ + preBasis_->dofsPerCube(3)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-                    continue;
-                  }
-                else if (element.type().isPrism())
-                  {
-                    *it = {{ preBasis_->prismOffset_ + preBasis_->dofsPerPrism()*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-                    continue;
-                  }
-                else if (element.type().isPyramid())
-                  {
-                    *it = {{ preBasis_->pyramidOffset_ + preBasis_->dofsPerPyramid()*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-                    continue;
-                  }
-                else
-                  DUNE_THROW(Dune::NotImplemented, "3d elements have to be tetrahedra, hexahedra, prisms, or pyramids");
-              } else
-              DUNE_THROW(Dune::NotImplemented, "Grids of dimension larger than 3 are no supported");
-          }
-        DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the LagrangeNodalBasis");
-      }
-    return it;
-  }
-
-protected:
-
-  auto order() const
-  {
-    return (useDynamicOrder) ? preBasis_->order() : k;
-  }
-
-  const PreBasis* preBasis_;
-
-  const Node* node_;
 };
 
 

@@ -23,13 +23,12 @@ namespace Functions {
 // This is the reusable part of the basis. It contains
 //
 //   TaylorHoodPreBasis
-//   TaylorHoodNodeIndexSet
 //   TaylorHoodBasisTree
 //   TaylorHoodVelocityTree
 //
 // The pre-basis allows to create the others and is the owner of possible shared
-// state. These three components do _not_ depend on the global basis or index
-// set and can be used without a global basis.
+// state. These components do _not_ depend on the global basis and local view
+// and can be used without a global basis.
 // *****************************************************************************
 
 template<typename GV>
@@ -37,11 +36,6 @@ class TaylorHoodVelocityTree;
 
 template<typename GV>
 class TaylorHoodBasisTree;
-
-template<typename GV, class MI, bool HI>
-class TaylorHoodNodeIndexSet;
-
-
 
 /**
  * \brief Pre-basis for lowest order Taylor-Hood basis
@@ -70,9 +64,6 @@ class TaylorHoodPreBasis
 
   static const int dim = GV::dimension;
 
-  template<class, class, bool>
-  friend class TaylorHoodNodeIndexSet;
-
 public:
 
   //! The grid view that the FE basis is defined on
@@ -85,7 +76,7 @@ public:
   using Node = TaylorHoodBasisTree<GV>;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = TaylorHoodNodeIndexSet<GV, MI, HI>;
+  using IndexSet = Impl::DefaultNodeIndexSet<TaylorHoodPreBasis>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -216,7 +207,70 @@ public:
     return dim * pq2PreBasis_.maxNodeSize() + pq1PreBasis_.maxNodeSize();
   }
 
+  template<typename It>
+  It indices(const Node& node, It it) const
+  {
+    return indicesImp<useHybridIndices>(node, it);
+  }
+
 protected:
+
+  static const void multiIndexPushFront(MultiIndex& M, size_type M0)
+  {
+    M.resize(M.size()+1);
+    for(std::size_t i=M.size()-1; i>0; --i)
+      M[i] = M[i-1];
+    M[0] = M0;
+  }
+
+  template<bool hi, class It,
+    typename std::enable_if<not hi,int>::type = 0>
+  It indicesImp(const Node& node, It multiIndices) const
+  {
+    using namespace Dune::Indices;
+    for(std::size_t child=0; child<dim; ++child)
+    {
+      size_type subTreeSize = node.child(_0, 0).size();
+      pq2PreBasis_.indices(node.child(_0, 0), multiIndices);
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+      {
+        multiIndexPushFront(multiIndices[i], 0);
+        multiIndices[i][1] = multiIndices[i][1]*dim + child;
+      }
+      multiIndices += subTreeSize;
+    }
+    size_type subTreeSize = node.child(_1).size();
+    pq1PreBasis_.indices(node.child(_1), multiIndices);
+    for (std::size_t i = 0; i<subTreeSize; ++i)
+      multiIndexPushFront(multiIndices[i], 1);
+    multiIndices += subTreeSize;
+    return multiIndices;
+  }
+
+  template<bool hi, class It,
+    typename std::enable_if<hi,int>::type = 0>
+  It indicesImp(const Node& node, It multiIndices) const
+  {
+    using namespace Dune::Indices;
+    for(std::size_t child=0; child<dim; ++child)
+    {
+      size_type subTreeSize = node.child(_0, 0).size();
+      pq2PreBasis_.indices(node.child(_0, 0), multiIndices);
+      for (std::size_t i = 0; i<subTreeSize; ++i)
+      {
+        multiIndexPushFront(multiIndices[i], 0);
+        multiIndices[i].push_back(i);
+      }
+      multiIndices += subTreeSize;
+    }
+    size_type subTreeSize = node.child(_1).size();
+    pq1PreBasis_.indices(node.child(_1), multiIndices);
+    for (std::size_t i = 0; i<subTreeSize; ++i)
+      multiIndexPushFront(multiIndices[i], 1);
+    multiIndices += subTreeSize;
+    return multiIndices;
+  }
+
   GridView gridView_;
 
   PQ1PreBasis pq1PreBasis_;
@@ -258,123 +312,6 @@ public:
     this->template setChild<0>(std::make_shared<VelocityNode>());
     this->template setChild<1>(std::make_shared<PressureNode>());
   }
-};
-
-
-
-template<typename GV, class MI, bool HI>
-class TaylorHoodNodeIndexSet
-{
-  static const bool useHybridIndices = HI;
-
-  static const int dim = GV::dimension;
-
-public:
-
-  using size_type = std::size_t;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = TaylorHoodPreBasis<GV, MI, HI>;
-
-  using Node = TaylorHoodBasisTree<GV>;
-
-  using PQ1NodeIndexSet = typename PreBasis::PQ1PreBasis::IndexSet;
-  using PQ2NodeIndexSet = typename PreBasis::PQ2PreBasis::IndexSet;
-
-  TaylorHoodNodeIndexSet(const PreBasis & preBasis) :
-    preBasis_(&preBasis),
-    pq1NodeIndexSet_(preBasis_->pq1PreBasis_.makeIndexSet()),
-    pq2NodeIndexSet_(preBasis_->pq2PreBasis_.makeIndexSet())
-  {}
-
-  void bind(const Node& node)
-  {
-    using namespace Dune::Indices;
-    node_ = &node;
-    pq1NodeIndexSet_.bind(node.child(_1));
-    pq2NodeIndexSet_.bind(node.child(_0, 0));
-  }
-
-  void unbind()
-  {
-    node_ = nullptr;
-    pq1NodeIndexSet_.unbind();
-    pq2NodeIndexSet_.unbind();
-  }
-
-  size_type size() const
-  {
-    return node_->size();
-  }
-
-  template<typename It>
-  It indices(It multiIndices) const
-  {
-    return indicesImp<useHybridIndices>(multiIndices);
-  }
-
-  static const void multiIndexPushFront(MultiIndex& M, size_type M0)
-  {
-    M.resize(M.size()+1);
-    for(std::size_t i=M.size()-1; i>0; --i)
-      M[i] = M[i-1];
-    M[0] = M0;
-  }
-
-  template<bool hi, class It,
-    typename std::enable_if<not hi,int>::type = 0>
-  It indicesImp(It multiIndices) const
-  {
-    for(std::size_t child=0; child<dim; ++child)
-    {
-      size_type subTreeSize = pq2NodeIndexSet_.size();
-      pq2NodeIndexSet_.indices(multiIndices);
-      for (std::size_t i = 0; i<subTreeSize; ++i)
-      {
-        multiIndexPushFront(multiIndices[i], 0);
-        multiIndices[i][1] = multiIndices[i][1]*dim + child;
-      }
-      multiIndices += subTreeSize;
-    }
-    pq1NodeIndexSet_.indices(multiIndices);
-    size_type subTreeSize = pq1NodeIndexSet_.size();
-    for (std::size_t i = 0; i<subTreeSize; ++i)
-      multiIndexPushFront(multiIndices[i], 1);
-    multiIndices += subTreeSize;
-    return multiIndices;
-  }
-
-  template<bool hi, class It,
-    typename std::enable_if<hi,int>::type = 0>
-  It indicesImp(It multiIndices) const
-  {
-    for(std::size_t child=0; child<dim; ++child)
-    {
-      size_type subTreeSize = pq2NodeIndexSet_.size();
-      pq2NodeIndexSet_.indices(multiIndices);
-      for (std::size_t i = 0; i<subTreeSize; ++i)
-      {
-        multiIndexPushFront(multiIndices[i], 0);
-        multiIndices[i].push_back(i);
-      }
-      multiIndices += subTreeSize;
-    }
-    pq1NodeIndexSet_.indices(multiIndices);
-    size_type subTreeSize = pq1NodeIndexSet_.size();
-    for (std::size_t i = 0; i<subTreeSize; ++i)
-      multiIndexPushFront(multiIndices[i], 1);
-    multiIndices += subTreeSize;
-    return multiIndices;
-  }
-
-private:
-  const PreBasis* preBasis_;
-  PQ1NodeIndexSet pq1NodeIndexSet_;
-  PQ2NodeIndexSet pq2NodeIndexSet_;
-
-  const Node* node_;
 };
 
 
