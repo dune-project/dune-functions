@@ -20,6 +20,7 @@
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 
 namespace Dune {
@@ -29,16 +30,12 @@ namespace Functions {
 // This is the reusable part of the composite bases. It contains
 //
 //   CompositePreBasis
-//   CompositeNodeIndexSet
 //
 // The pre-basis allows to create the others and is the owner of possible shared
-// state. These components do _not_ depend on the global basis or index
-// set and can be used without a global basis.
+// state. These components do _not_ depend on the global basis and local view
+// and can be used without a global basis.
 // *****************************************************************************
 
-
-template<class PB, class IMS>
-class CompositeNodeIndexSet;
 
 /**
  * \brief A pre-basis for composite bases
@@ -76,37 +73,15 @@ public:
 protected:
   static const std::size_t children = sizeof...(SPB);
 
-  template<class, class>
-  friend class CompositeNodeIndexSet;
-
   using ChildIndices = std::make_index_sequence<children>;
-
-  template<class Indices>
-  struct Types;
-
-  template<std::size_t... indices>
-  struct Types<std::index_sequence<indices...>>
-  {
-    template<std::size_t i>
-    using SubNode = typename std::tuple_element_t<i, SubPreBases>::Node;
-
-    template<std::size_t i>
-    using SubIndexSet = typename std::tuple_element_t<i, SubPreBases>::IndexSet;
-
-    using SubIndexSets = std::tuple<SubIndexSet<indices>...>;
-
-    using Node = CompositeBasisNode<SubNode<indices>...>;
-  };
-
-  using SubIndexSets = typename Types<ChildIndices>::SubIndexSets;
 
 public:
 
   //! Template mapping root tree path to type of created tree node
-  using Node = typename Types<ChildIndices>::Node;
+  using Node = CompositeBasisNode<typename SPB::Node...>;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = CompositeNodeIndexSet<CompositePreBasis, IMS>;
+  using IndexSet = Impl::DefaultNodeIndexSet<CompositePreBasis>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -272,81 +247,30 @@ public:
     return std::get<i>(subPreBases_);
   }
 
-private:
-  std::tuple<SPB...> subPreBases_;
-};
-
-
-
-template<class PB, class IMS>
-class CompositeNodeIndexSet
-{
-public:
-
-  using size_type = std::size_t;
-  using PreBasis = PB;
-  using MultiIndex = typename PreBasis::MultiIndex;
-  using Node = typename PreBasis::Node;
-
-protected:
-
-  using IndexMergingStrategy = IMS;
-  using SubIndexSets = typename PreBasis::SubIndexSets;
-  using ChildIndices = typename PreBasis::ChildIndices;
-
-public:
-
-  CompositeNodeIndexSet(const PreBasis & preBasis, SubIndexSets&& subNodeIndexSets) :
-    preBasis_(&preBasis),
-    subNodeIndexSetTuple_(std::move(subNodeIndexSets)),
-    node_(nullptr)
-  {}
-
-  void bind(const Node& node)
-  {
-    node_ = &node;
-    Hybrid::forEach(ChildIndices(), [&](auto i) {
-      Hybrid::elementAt(subNodeIndexSetTuple_, i).bind(node.child(i));
-    });
-  }
-
-  void unbind()
-  {
-    node_ = nullptr;
-    Hybrid::forEach(ChildIndices(), [&](auto i) {
-      Hybrid::elementAt(subNodeIndexSetTuple_, i).unbind();
-    });
-  }
-
-  size_type size() const
-  {
-    return node_->size();
-  }
-
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   template<typename It>
-  It indices(It it) const
+  It indices(const Node& node, It it) const
   {
-    return indices(it, IndexMergingStrategy{});
+    return indices(node, it, IndexMergingStrategy{});
   }
 
+private:
+
   template<typename It>
-  It indices(It multiIndices, BasisFactory::FlatLexicographic) const
+  It indices(const Node& node, It multiIndices, BasisFactory::FlatLexicographic) const
   {
     size_type firstComponentOffset = 0;
     // Loop over all children
     Hybrid::forEach(ChildIndices(), [&](auto child){
-      const auto& subNodeIndexSet = Hybrid::elementAt(subNodeIndexSetTuple_, child);
-      const auto& subPreBasis = preBasis_->subPreBasis(child);
-      size_type subTreeSize = subNodeIndexSet.size();
+      size_type subTreeSize = node.child(child).size();
       // Fill indices for current child into index buffer starting from current
       // buffer position and shift first index component of any index for current
       // child by suitable offset to get lexicographic indices.
-      subNodeIndexSet.indices(multiIndices);
+      Impl::preBasisIndices(subPreBasis(child), node.child(child), multiIndices);
       for (std::size_t i = 0; i<subTreeSize; ++i)
         multiIndices[i][0] += firstComponentOffset;
       // Increment offset by the size for first index component of the current child
-      firstComponentOffset += subPreBasis.size({});
+      firstComponentOffset += subPreBasis(child).size({});
       // Increment buffer iterator by the number of indices processed for current child
       multiIndices += subTreeSize;
     });
@@ -362,14 +286,13 @@ public:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisFactory::BlockedLexicographic) const
+  It indices(const Node& node, It multiIndices, BasisFactory::BlockedLexicographic) const
   {
     // Loop over all children
     Hybrid::forEach(ChildIndices(), [&](auto child){
-      const auto& subNodeIndexSet = Hybrid::elementAt(subNodeIndexSetTuple_, child);
-      size_type subTreeSize = subNodeIndexSet.size();
+      size_type subTreeSize = node.child(child).size();
       // Fill indices for current child into index buffer starting from current position
-      subNodeIndexSet.indices(multiIndices);
+      Impl::preBasisIndices(subPreBasis(child), node.child(child), multiIndices);
       // Insert child index before first component of all indices of current child.
       for (std::size_t i = 0; i<subTreeSize; ++i)
         this->multiIndexPushFront(multiIndices[i], child);
@@ -379,10 +302,7 @@ public:
     return multiIndices;
   }
 
-private:
-  const PreBasis* preBasis_;
-  SubIndexSets subNodeIndexSetTuple_;
-  const Node* node_;
+  std::tuple<SPB...> subPreBases_;
 };
 
 
