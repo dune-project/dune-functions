@@ -2,13 +2,15 @@
 // vi: set et ts=4 sw=2 sts=2:
 #include <config.h>
 
-#include <dune/common/unused.hh>
 #include <dune/common/bitsetvector.hh>
+#include <dune/common/test/testsuite.hh>
 
 #include <dune/grid/yaspgrid.hh>
 
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
+
+#include <dune/functions/functionspacebases/test/basistest.hh>
 
 using namespace Dune;
 
@@ -16,6 +18,8 @@ int main (int argc, char *argv[]) try
 {
   // Set up MPI, if available
   MPIHelper::instance(argc, argv);
+
+  Dune::TestSuite test;
 
   ///////////////////////////////////
   //   Generate the grid
@@ -36,7 +40,7 @@ int main (int argc, char *argv[]) try
 
   using namespace Functions::BasisFactory;
 
-  auto basis DUNE_UNUSED = makeBasis(
+  auto basis = makeBasis(
     gridView,
     composite(
       lagrange<1>(),
@@ -44,6 +48,9 @@ int main (int argc, char *argv[]) try
       lagrange<1>()
     ));
 
+  test.subTest(checkBasis(basis, EnableContinuityCheck()));
+
+  return test.exit();
 }
 // Error handling
 catch (Exception& e)

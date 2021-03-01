@@ -20,6 +20,7 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 
+#include <dune/functions/functionspacebases/test/basistest.hh>
 
 int main (int argc, char* argv[])
 {
@@ -50,6 +51,8 @@ int main (int argc, char* argv[])
           flatLexicographic()),
         blockedInterleaved())
       );
+
+  test.subTest(checkBasis(basis, EnableContinuityCheck()));
 
   {
     DUNE_UNUSED auto& firstLagrangeFactor = basis.preBasis().subPreBasis().subPreBasis().subPreBasis(Dune::Indices::_0);
