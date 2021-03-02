@@ -21,6 +21,7 @@
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 
 namespace Dune {
@@ -29,9 +30,6 @@ namespace Experimental {
 
 // *****************************************************************************
 // *****************************************************************************
-
-template<class TPB>
-class TransformedIndexNodeIndexSet;
 
 /**
  * \brief A pre-basis transforming multi-indices
@@ -71,7 +69,7 @@ public:
   using Node = typename RawPreBasis::Node;
 
   //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = TransformedIndexNodeIndexSet<This>;
+  using IndexSet = Impl::DefaultNodeIndexSet<TransformedIndexPreBasis>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -176,65 +174,24 @@ public:
     transformation_.transformIndex(multiIndex, rawPreBasis_);
   }
 
+  template<typename It>
+  It indices(const Node& node, It it) const
+  {
+    Impl::preBasisIndices(rawPreBasis(), node, it);
+    for(std::size_t i=0; i<size(); ++i)
+    {
+      transformIndex(*it);
+      ++it;
+    }
+    return it;
+  }
+
 protected:
   RawPreBasis rawPreBasis_;
   Transformation transformation_;
 };
 
 
-
-template<class TPB>
-class TransformedIndexNodeIndexSet
-{
-public:
-  using size_type = std::size_t;
-
-  using PreBasis = TPB;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = typename PreBasis::MultiIndex;
-
-  using Node = typename PreBasis::Node;
-
-  using RawNodeIndexSet = typename PreBasis::RawPreBasis::IndexSet;
-
-  TransformedIndexNodeIndexSet(const PreBasis& preBasis) :
-    preBasis_(&preBasis),
-    rawNodeIndexSet_(preBasis_->rawPreBasis().makeIndexSet())
-  {}
-
-  void bind(const Node& node)
-  {
-    rawNodeIndexSet_.bind(node);
-  }
-
-  void unbind()
-  {
-    rawNodeIndexSet_.unbind();
-  }
-
-  size_type size() const
-  {
-    return rawNodeIndexSet_.size();
-  }
-
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  template<typename It>
-  It indices(It it) const
-  {
-    rawNodeIndexSet_.indices(it);
-    for(std::size_t i=0; i<size(); ++i)
-    {
-      preBasis_->transformIndex(*it);
-      ++it;
-    }
-    return it;
-  }
-
-private:
-  const PreBasis* preBasis_;
-  RawNodeIndexSet rawNodeIndexSet_;
-};
 
 } // end namespace Experimental
 
@@ -298,7 +255,7 @@ auto transformIndices(
 
 
 /**
- * \brief A generic implementation of a transformation for TransformedIndexNodeIndexSet
+ * \brief A generic implementation of a transformation
  *
  * \warning This is experimental and may be removed or
  * modified in a non-compatible way. When using this
@@ -355,7 +312,7 @@ private:
 
 
 /**
- * \brief A generic implementation of a transformation for TransformedIndexNodeIndexSet
+ * \brief A generic implementation of a transformation
  *
  * \warning This is experimental and may be removed or
  * modified in a non-compatible way. When using this
