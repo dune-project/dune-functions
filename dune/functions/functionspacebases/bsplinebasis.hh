@@ -565,6 +565,7 @@ public:
 
   using Node = BSplineNode<GV, MI>;
 
+  //! Type of created tree node index set. \deprecated
   using IndexSet = Impl::DefaultNodeIndexSet<BSplinePreBasis>;
 
   /** \brief Type used for global numbering of the basis vectors */
@@ -707,7 +708,10 @@ public:
    *
    * Create an index set suitable for the tree node obtained
    * by makeNode().
+   * \deprecated
    */
+  [[deprecated("Warning: The IndexSet typedef and the makeIndexSet method are deprecated.\
+                As a replacement the indices() method of the PreBasis directly.")]]
   IndexSet makeIndexSet() const
   {
     return IndexSet{*this};

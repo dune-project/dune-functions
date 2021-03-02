@@ -20,10 +20,14 @@ namespace Functions {
 namespace Impl {
 
 // Concept for a PreBasis implementing the indices() method.
+//
+// This concept is deprecated.
 template<typename PreBasis>
 using PreBasisHasIndicesConcept = decltype(std::declval<PreBasis>().indices(std::declval<typename PreBasis::Node>(), std::declval<std::vector<typename PreBasis::MultiIndex>>().begin()), true);
 
 // Concept checking if a PreBasis implements the indices() method.
+//
+// This check is deprecated.
 template<typename PreBasis>
 using preBasisHasIndices = Std::is_detected<PreBasisHasIndicesConcept, PreBasis>;
 
@@ -54,6 +58,8 @@ It preBasisIndices(const PreBasis& preBasis, const Node& node, It multiIndices)
 // simpe export a DefaultNodeIndexSet<PreBasis>
 // which will forward the old-style interface to the
 // new one.
+//
+// This class is deprecated.
 template<class PB>
 class DefaultNodeIndexSet
 {
