@@ -119,6 +119,7 @@ struct BasisTree : Refines<BasisNode>
 
 
 // Concept for a NodeIndexSet
+// This concept is deprecated and will be removed.
 template<class PreBasis>
 struct NodeIndexSet
 {
@@ -137,6 +138,33 @@ struct NodeIndexSet
   );
 };
 
+// Concept mixin for old PreBasis interface with NodeIndexSet
+// This concept is deprecated.
+template<class GridView>
+struct PreBasisWithNodeIndexSet
+{
+  template<class PB>
+  auto require(const PB& preBasis) -> decltype(
+    requireType<typename PB::IndexSet>(),
+    requireConvertible<typename PB::IndexSet>(preBasis.makeIndexSet()),
+    requireConcept<NodeIndexSet<PB>>(preBasis.makeIndexSet())
+  );
+};
+
+// Concept mixin for new PreBasis interface with indices method
+// This concept will be incorporated into the PreBasis concept
+// once PreBasisWithNodeIndexSet was removed.
+template<class GridView>
+struct PreBasisWithIndices
+{
+  template<class PB>
+  auto require(const PB& preBasis) -> decltype(
+    requireConvertible<typename std::vector<typename PB::MultiIndex>::iterator>(
+      preBasis.indices(
+        preBasis.makeNode(),
+        std::declval<typename std::vector<typename PB::MultiIndex>::iterator>()))
+  );
+};
 
 // Concept for a PreBasis
 template<class GridView>
@@ -149,19 +177,23 @@ struct PreBasis
     requireType<typename PB::MultiIndex>(),
     requireType<typename PB::SizePrefix>(),
     requireType<typename PB::Node>(),
-    requireType<typename PB::IndexSet>(),
     requireSameType<typename PB::GridView, GridView>(),
     const_cast<PB&>(preBasis).initializeIndices(),
     requireConvertible<typename PB::GridView>(preBasis.gridView()),
     requireConvertible<typename PB::Node>(preBasis.makeNode()),
-    requireConvertible<typename PB::IndexSet>(preBasis.makeIndexSet()),
     requireConvertible<typename PB::size_type>(preBasis.size()),
     requireConvertible<typename PB::size_type>(preBasis.size(std::declval<typename PB::SizePrefix>())),
     requireConvertible<typename PB::size_type>(preBasis.dimension()),
     requireConvertible<typename PB::size_type>(preBasis.maxNodeSize()),
     requireSameType<decltype(const_cast<PB&>(preBasis).update(preBasis.gridView())),void>(),
     requireConcept<BasisTree<typename PB::GridView>>(preBasis.makeNode()),
-    requireConcept<NodeIndexSet<PB>>(preBasis.makeIndexSet())
+    requireTrue<models<PreBasisWithNodeIndexSet<GridView>, PB>() or models<PreBasisWithIndices<GridView>, PB>()>()
+    // The previous line should be replaced by the following
+    // once PreBasisWithNodeIndexSet was removed:
+    // requireConvertible<typename std::vector<typename PB::MultiIndex>::iterator>(
+    //   preBasis.indices(
+    //     preBasis.makeNode(),
+    //     std::declval<typename std::vector<typename PB::MultiIndex>::iterator>()))
   );
 };
 
