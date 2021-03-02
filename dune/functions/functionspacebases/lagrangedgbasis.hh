@@ -231,7 +231,7 @@ public:
   }
 
 
-//protected:
+protected:
   GridView gridView_;
 
   size_t quadrilateralOffset_;
