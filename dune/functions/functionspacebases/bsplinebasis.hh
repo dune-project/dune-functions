@@ -487,9 +487,6 @@ public:
 template<typename GV, typename MI>
 class BSplineNode;
 
-template<typename GV, class MI>
-class BSplineNodeIndexSet;
-
 /** \brief Pre-basis for B-spline basis
  *
  * \ingroup FunctionSpaceBasesImplementations
@@ -568,7 +565,8 @@ public:
 
   using Node = BSplineNode<GV, MI>;
 
-  using IndexSet = BSplineNodeIndexSet<GV, MI>;
+  //! Type of created tree node index set. \deprecated
+  using IndexSet = Impl::DefaultNodeIndexSet<BSplinePreBasis>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -710,7 +708,10 @@ public:
    *
    * Create an index set suitable for the tree node obtained
    * by makeNode().
+   * \deprecated
    */
+  [[deprecated("Warning: The IndexSet typedef and the makeIndexSet method are deprecated.\
+                As a replacement the indices() method of the PreBasis directly.")]]
   IndexSet makeIndexSet() const
   {
     return IndexSet{*this};
@@ -736,6 +737,37 @@ public:
     for (int i=0; i<dim; i++)
       result *= order_[i]+1;
     return result;
+  }
+
+  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+  template<typename It>
+  It indices(const Node& node, It it) const
+  {
+    // Local degrees of freedom are arranged in a lattice.
+    // We need the lattice dimensions to be able to compute lattice coordinates from a local index
+    std::array<unsigned int, dim> localSizes;
+    for (int i=0; i<dim; i++)
+      localSizes[i] = node.finiteElement().size(i);
+    for (size_type i = 0, end = node.size() ; i < end ; ++i, ++it)
+      {
+        std::array<unsigned int,dim> localIJK = getIJK(i, localSizes);
+
+        const auto currentKnotSpan = node.finiteElement().currentKnotSpan_;
+        const auto order = order_;
+
+        std::array<unsigned int,dim> globalIJK;
+        for (int i=0; i<dim; i++)
+          globalIJK[i] = std::max((int)currentKnotSpan[i] - (int)order[i], 0) + localIJK[i];  // needs to be a signed type!
+
+        // Make one global flat index from the globalIJK tuple
+        size_type globalIdx = globalIJK[dim-1];
+
+        for (int i=dim-2; i>=0; i--)
+          globalIdx = globalIdx * size(i) + globalIJK[i];
+
+        *it = {{globalIdx}};
+      }
+    return it;
   }
 
   //! \brief Total number of B-spline basis functions
@@ -1268,90 +1300,6 @@ protected:
 
   FiniteElement finiteElement_;
   Element element_;
-};
-
-
-
-template<typename GV, class MI>
-class BSplineNodeIndexSet
-{
-  enum {dim = GV::dimension};
-
-public:
-
-  using size_type = std::size_t;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = BSplinePreBasis<GV, MI>;
-
-  using Node = BSplineNode<GV,MI>;
-
-  BSplineNodeIndexSet(const PreBasis& preBasis) :
-    preBasis_(&preBasis)
-  {}
-
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
-   */
-  void bind(const Node& node)
-  {
-    node_ = &node;
-    // Local degrees of freedom are arranged in a lattice.
-    // We need the lattice dimensions to be able to compute lattice coordinates from a local index
-    for (int i=0; i<dim; i++)
-      localSizes_[i] = node_->finiteElement().size(i);
-  }
-
-  /** \brief Unbind the view
-   */
-  void unbind()
-  {
-    node_ = nullptr;
-  }
-
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const
-  {
-    return node_->finiteElement().size();
-  }
-
-  //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  template<typename It>
-  It indices(It it) const
-  {
-    for (size_type i = 0, end = size() ; i < end ; ++i, ++it)
-      {
-        std::array<unsigned int,dim> localIJK = preBasis_->getIJK(i, localSizes_);
-
-        const auto currentKnotSpan = node_->finiteElement().currentKnotSpan_;
-        const auto order = preBasis_->order_;
-
-        std::array<unsigned int,dim> globalIJK;
-        for (int i=0; i<dim; i++)
-          globalIJK[i] = std::max((int)currentKnotSpan[i] - (int)order[i], 0) + localIJK[i];  // needs to be a signed type!
-
-        // Make one global flat index from the globalIJK tuple
-        size_type globalIdx = globalIJK[dim-1];
-
-        for (int i=dim-2; i>=0; i--)
-          globalIdx = globalIdx * preBasis_->size(i) + globalIJK[i];
-
-        *it = {{globalIdx}};
-      }
-    return it;
-  }
-
-protected:
-  const PreBasis* preBasis_;
-
-  const Node* node_;
-
-  std::array<unsigned int, dim> localSizes_;
 };
 
 

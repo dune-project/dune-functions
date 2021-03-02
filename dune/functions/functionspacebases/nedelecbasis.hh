@@ -122,19 +122,15 @@ namespace Impl
 // This is the reusable part of the basis. It contains
 //
 //   NedelecPreBasis
-//   NedelecNodeIndexSet
 //   NedelecNode
 //
 // The pre-basis allows to create the others and is the owner of possible shared
-// state. These three components do _not_ depend on the global basis or index
-// set and can be used without a global basis.
+// state. These components do _not_ depend on the global basis and local view
+// and can be used without a global basis.
 // *****************************************************************************
 
 template<typename GV, typename Range, std::size_t kind, int order>
 class NedelecNode;
-
-template<typename GV, typename Range, std::size_t kind, int order, class MI>
-class NedelecNodeIndexSet;
 
 template<typename GV, typename Range, std::size_t kind, int order, class MI>
 class NedelecPreBasis
@@ -142,8 +138,6 @@ class NedelecPreBasis
   static const int dim = GV::dimension;
   static_assert(kind==1, "Only the Nedelec basis of the first kind is currently implemented!");
   using FiniteElementMap = typename Impl::Nedelec1stKindLocalFiniteElementMap<GV, dim, Range, order>;
-
-  friend class NedelecNodeIndexSet<GV,Range,kind,order,MI>;
 
 public:
 
@@ -153,7 +147,8 @@ public:
 
   using Node = NedelecNode<GV, Range, kind, order>;
 
-  using IndexSet = NedelecNodeIndexSet<GV, Range, kind, order, MI>;
+  //! Type of created tree node index set. \deprecated
+  using IndexSet = Impl::DefaultNodeIndexSet<NedelecPreBasis>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -225,7 +220,10 @@ public:
    *
    * Create an index set suitable for the tree node obtained
    * by makeNode().
+   * \deprecated
    */
+  [[deprecated("Warning: The IndexSet typedef and the makeIndexSet method are deprecated.\
+                As a replacement the indices() method of the PreBasis directly.")]]
   IndexSet makeIndexSet() const
   {
     return IndexSet{*this};
@@ -261,6 +259,34 @@ public:
     }
 
     return result;
+  }
+
+  /**
+   * \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+   */
+  template<typename It>
+  It indices(const Node& node, It it) const
+  {
+    const auto& gridIndexSet = gridView().indexSet();
+    const auto& element = node.element();
+
+    // throw if Element is not of predefined type
+    if (not(element.type().isCube()) and not(element.type().isSimplex()))
+      DUNE_THROW(NotImplemented, "NedelecBasis only implemented for cube and simplex elements.");
+
+    for(std::size_t i=0, end=node.size(); i<end; ++i, ++it)
+    {
+      Dune::LocalKey localKey = node.finiteElement().localCoefficients().localKey(i);
+
+      // The dimension of the entity that the current dof is related to
+      size_t subentity = localKey.subEntity();
+      size_t codim = localKey.codim();
+
+      *it = { codimOffset_[codim] +
+        dofsPerCodim_[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
+    }
+
+    return it;
   }
 
 protected:
@@ -322,83 +348,6 @@ protected:
   FiniteElement finiteElement_;
   const Element* element_;
   const FiniteElementMap* finiteElementMap_;
-};
-
-template<typename GV, typename Range, std::size_t kind, int order, class MI>
-class NedelecNodeIndexSet
-{
-  enum {dim = GV::dimension};
-
-public:
-
-  using size_type = std::size_t;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = NedelecPreBasis<GV, Range, kind, order, MI>;
-
-  using Node = NedelecNode<GV, Range, kind, order>;
-
-  NedelecNodeIndexSet(const PreBasis& preBasis) :
-    preBasis_(&preBasis)
-  {}
-
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
-   */
-  void bind(const Node& node)
-  {
-    node_ = &node;
-  }
-
-  /** \brief Unbind the view
-   */
-  void unbind()
-  {
-    node_ = nullptr;
-  }
-
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const
-  {
-    return node_->finiteElement().size();
-  }
-
-  /**
-   * \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-   */
-  template<typename It>
-  It indices(It it) const
-  {
-    const auto& gridIndexSet = preBasis_->gridView().indexSet();
-    const auto& element = node_->element();
-
-    // throw if Element is not of predefined type
-    if (not(element.type().isCube()) and not(element.type().isSimplex()))
-      DUNE_THROW(NotImplemented, "NedelecBasis only implemented for cube and simplex elements.");
-
-    for(std::size_t i=0, end=size(); i<end; ++i, ++it)
-    {
-      Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
-
-      // The dimension of the entity that the current dof is related to
-      size_t subentity = localKey.subEntity();
-      size_t codim = localKey.codim();
-
-      *it = { preBasis_->codimOffset_[codim] +
-        preBasis_->dofsPerCodim_[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
-    }
-
-    return it;
-  }
-
-protected:
-  const PreBasis* preBasis_;
-  const Node* node_;
 };
 
 

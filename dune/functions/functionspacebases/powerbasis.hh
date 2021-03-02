@@ -12,6 +12,7 @@
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 
 
@@ -23,17 +24,11 @@ namespace Functions {
 // This is the reusable part of the power bases. It contains
 //
 //   PowerPreBasis
-//   PowerNodeIndexSet
 //
 // The pre-basis allows to create the others and is the owner of possible shared
-// state. These components do _not_ depend on the global basis or index
-// set and can be used without a global basis.
+// state. These components do _not_ depend on the global basis and local view
+// and can be used without a global basis.
 // *****************************************************************************
-
-template<class PB, class IMS>
-class PowerNodeIndexSet;
-
-
 
 /**
  * \brief A pre-basis for power bases
@@ -51,9 +46,6 @@ class PowerPreBasis
 {
   static const std::size_t children = C;
 
-  template<class, class>
-  friend class PowerNodeIndexSet;
-
 public:
 
   //! The child pre-basis
@@ -70,13 +62,11 @@ public:
 
   using SubNode = typename SubPreBasis::Node;
 
-  using SubIndexSet = typename SubPreBasis::IndexSet;
-
   //! Template mapping root tree path to type of created tree node
   using Node = PowerBasisNode<SubNode, children>;
 
-  //! Template mapping root tree path to type of created tree node index set
-  using IndexSet = PowerNodeIndexSet<PowerPreBasis, IMS>;
+  //! Type of created tree node index set. \deprecated
+  using IndexSet = Impl::DefaultNodeIndexSet<PowerPreBasis>;
 
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
@@ -138,7 +128,10 @@ public:
    *
    * Create an index set suitable for the tree node obtained
    * by makeNode().
+   * \deprecated
    */
+  [[deprecated("Warning: The IndexSet typedef and the makeIndexSet method are deprecated.\
+                As a replacement the indices() method of the PreBasis directly.")]]
   IndexSet makeIndexSet() const
   {
     return IndexSet{*this};
@@ -253,69 +246,22 @@ public:
     return subPreBasis_;
   }
 
-private:
-  SubPreBasis subPreBasis_;
-};
-
-
-
-template<class PB, class IMS>
-class PowerNodeIndexSet
-{
-public:
-
-  using size_type = std::size_t;
-  using PreBasis = PB;
-  using MultiIndex = typename PreBasis::MultiIndex;
-  using Node = typename PreBasis::Node;
-
-protected:
-
-  using IndexMergingStrategy = IMS;
-  using SubIndexSet = typename PreBasis::SubPreBasis::IndexSet;
-  static const std::size_t children = PreBasis::children;
-
-public:
-
-  PowerNodeIndexSet(const PreBasis & preBasis) :
-    preBasis_(&preBasis),
-    subNodeIndexSet_(preBasis_->subPreBasis().makeIndexSet())
-  {}
-
-  void bind(const Node& node)
-  {
-    using namespace Indices;
-    node_ = &node;
-    subNodeIndexSet_.bind(node.child(_0));
-  }
-
-  void unbind()
-  {
-    node_ = nullptr;
-    subNodeIndexSet_.unbind();
-  }
-
-  size_type size() const
-  {
-    return node_->size();
-  }
-
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   template<typename It>
-  It indices(It it) const
+  It indices(const Node& node, It it) const
   {
-    return indices(it, IndexMergingStrategy{});
+    return indices(node, it, IndexMergingStrategy{});
   }
 
 private:
 
   template<typename It>
-  It indices(It multiIndices, BasisFactory::FlatInterleaved) const
+  It indices(const Node& node, It multiIndices, BasisFactory::FlatInterleaved) const
   {
     using namespace Dune::Indices;
-    size_type subTreeSize = node_->child(_0).size();
+    size_type subTreeSize = node.child(_0).size();
     // Fill indices for first child at the beginning.
-    auto next = subNodeIndexSet_.indices(multiIndices);
+    auto next = Impl::preBasisIndices(subPreBasis(), node.child(_0), multiIndices);
     // Multiply first component of all indices for first child by
     // number of children to strech the index range for interleaving.
     for (std::size_t i = 0; i<subTreeSize; ++i)
@@ -337,13 +283,13 @@ private:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisFactory::FlatLexicographic) const
+  It indices(const Node& node, It multiIndices, BasisFactory::FlatLexicographic) const
   {
     using namespace Dune::Indices;
-    size_type subTreeSize = node_->child(_0).size();
-    size_type firstIndexEntrySize = preBasis_->subPreBasis().size({});
+    size_type subTreeSize = node.child(_0).size();
+    size_type firstIndexEntrySize = subPreBasis().size({});
     // Fill indices for first child at the beginning.
-    auto next = subNodeIndexSet_.indices(multiIndices);
+    auto next = Impl::preBasisIndices(subPreBasis(), node.child(_0), multiIndices);
     for (std::size_t child = 1; child<children; ++child)
     {
       for (std::size_t i = 0; i<subTreeSize; ++i)
@@ -369,12 +315,12 @@ private:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisFactory::BlockedLexicographic) const
+  It indices(const Node& node, It multiIndices, BasisFactory::BlockedLexicographic) const
   {
     using namespace Dune::Indices;
-    size_type subTreeSize = node_->child(_0).size();
+    size_type subTreeSize = node.child(_0).size();
     // Fill indices for first child at the beginning.
-    auto next = subNodeIndexSet_.indices(multiIndices);
+    auto next = Impl::preBasisIndices(subPreBasis(), node.child(_0), multiIndices);
     // Insert 0 before first component of all indices for first child.
     for (std::size_t i = 0; i<subTreeSize; ++i)
       multiIndexPushFront(multiIndices[i], 0);
@@ -395,12 +341,12 @@ private:
   }
 
   template<typename It>
-  It indices(It multiIndices, BasisFactory::BlockedInterleaved) const
+  It indices(const Node& node, It multiIndices, BasisFactory::BlockedInterleaved) const
   {
     using namespace Dune::Indices;
-    size_type subTreeSize = node_->child(_0).size();
+    size_type subTreeSize = node.child(_0).size();
     // Fill indices for first child at the beginning.
-    auto next = subNodeIndexSet_.indices(multiIndices);
+    auto next = Impl::preBasisIndices(subPreBasis(), node.child(_0), multiIndices);
     // Append 0 after last component of all indices for first child.
     for (std::size_t i = 0; i<subTreeSize; ++i)
       multiIndices[i].push_back(0);
@@ -418,9 +364,7 @@ private:
     return next;
   }
 
-  const PreBasis* preBasis_;
-  SubIndexSet subNodeIndexSet_;
-  const Node* node_;
+  SubPreBasis subPreBasis_;
 };
 
 

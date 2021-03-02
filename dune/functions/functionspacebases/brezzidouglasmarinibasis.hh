@@ -138,28 +138,21 @@ namespace Impl {
 // This is the reusable part of the basis. It contains
 //
 //   BrezziDouglasMariniPreBasis
-//   BrezziDouglasMariniNodeIndexSet
 //   BrezziDouglasMariniNode
 //
 // The pre-basis allows to create the others and is the owner of possible shared
-// state. These three components do _not_ depend on the global basis or index
-// set and can be used without a global basis.
+// state. These components do _not_ depend on the global basis and local view
+// and can be used without a global basis.
 // *****************************************************************************
 
 template<typename GV, int k>
 class BrezziDouglasMariniNode;
 
 template<typename GV, int k, class MI>
-class BrezziDouglasMariniNodeIndexSet;
-
-template<typename GV, int k, class MI>
 class BrezziDouglasMariniPreBasis
 {
   static const int dim = GV::dimension;
   using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, double, k>;
-
-  template<typename, int, class>
-  friend class BrezziDouglasMariniNodeIndexSet;
 
 public:
 
@@ -169,7 +162,8 @@ public:
 
   using Node = BrezziDouglasMariniNode<GV, k>;
 
-  using IndexSet = BrezziDouglasMariniNodeIndexSet<GV, k, MI>;
+  //! Type of created tree node index set. \deprecated
+  using IndexSet = Impl::DefaultNodeIndexSet<BrezziDouglasMariniPreBasis>;
 
   /** \brief Type used for global numbering of the basis vectors */
   using MultiIndex = MI;
@@ -220,7 +214,10 @@ public:
    *
    * Create an index set suitable for the tree node obtained
    * by makeNode().
+   * \deprecated
    */
+  [[deprecated("Warning: The IndexSet typedef and the makeIndexSet method are deprecated.\
+                As a replacement the indices() method of the PreBasis directly.")]]
   IndexSet makeIndexSet() const
   {
     return IndexSet{*this};
@@ -251,6 +248,36 @@ public:
     GeometryType elementType = *(gridView_.indexSet().types(0).begin());
     size_t numFaces = ReferenceElements<double,dim>::general(elementType).size(1);
     return dofsPerCodim_[0] + dofsPerCodim_[1] * numFaces;
+  }
+
+  /**
+   * \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+   *
+   * This assume dim \in \lbrace 2, 3 \rbrace.
+   */
+  template<typename It>
+  It indices(const Node& node, It it) const
+  {
+    const auto& gridIndexSet = gridView().indexSet();
+    const auto& element = node.element();
+
+    // throw if element is not of predefined type
+    if (not(element.type().isCube()) and not(element.type().isSimplex()))
+      DUNE_THROW(Dune::NotImplemented, "BrezziDouglasMariniBasis only implemented for cube and simplex elements.");
+
+    for(std::size_t i=0, end=node.size(); i<end; ++i, ++it)
+    {
+      Dune::LocalKey localKey = node.finiteElement().localCoefficients().localKey(i);
+
+      // The dimension of the entity that the current dof is related to
+      size_t subentity = localKey.subEntity();
+      size_t codim = localKey.codim();
+
+      *it = { codimOffset_[codim] +
+             dofsPerCodim_[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
+    }
+
+    return it;
   }
 
 protected:
@@ -311,87 +338,6 @@ protected:
   FiniteElement finiteElement_;
   const Element* element_;
   const FiniteElementMap* finiteElementMap_;
-};
-
-
-
-template<typename GV, int k, class MI>
-class BrezziDouglasMariniNodeIndexSet
-{
-  enum {dim = GV::dimension};
-
-public:
-
-  using size_type = std::size_t;
-
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using PreBasis = BrezziDouglasMariniPreBasis<GV, k, MI>;
-
-  using Node = BrezziDouglasMariniNode<GV, k>;
-
-  BrezziDouglasMariniNodeIndexSet(const PreBasis& preBasis) :
-    preBasis_(&preBasis)
-  {}
-
-  /** \brief Bind the view to a grid element
-   *
-   * Having to bind the view to an element before being able to actually access any of its data members
-   * offers to centralize some expensive setup code in the 'bind' method, which can save a lot of run-time.
-   */
-  void bind(const Node& node)
-  {
-    node_ = &node;
-  }
-
-  /** \brief Unbind the view
-   */
-  void unbind()
-  {
-    node_ = nullptr;
-  }
-
-  /** \brief Size of subtree rooted in this node (element-local)
-   */
-  size_type size() const
-  {
-    return node_->finiteElement().size();
-  }
-
-  /**
-   * \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-   *
-   * This assume dim \in \lbrace 2, 3 \rbrace.
-   */
-  template<typename It>
-  It indices(It it) const
-  {
-    const auto& gridIndexSet = preBasis_->gridView().indexSet();
-    const auto& element = node_->element();
-
-    // throw if element is not of predefined type
-    if (not(element.type().isCube()) and not(element.type().isSimplex()))
-      DUNE_THROW(Dune::NotImplemented, "BrezziDouglasMariniBasis only implemented for cube and simplex elements.");
-
-    for(std::size_t i=0, end=size(); i<end; ++i, ++it)
-    {
-      Dune::LocalKey localKey = node_->finiteElement().localCoefficients().localKey(i);
-
-      // The dimension of the entity that the current dof is related to
-      size_t subentity = localKey.subEntity();
-      size_t codim = localKey.codim();
-
-      *it = { preBasis_->codimOffset_[codim] +
-             preBasis_->dofsPerCodim_[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
-    }
-
-    return it;
-  }
-
-protected:
-  const PreBasis* preBasis_;
-  const Node* node_;
 };
 
 
