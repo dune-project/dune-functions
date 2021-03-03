@@ -150,10 +150,7 @@ public:
                 As a replacement the indices() method of the PreBasis directly.")]]
   IndexSet makeIndexSet() const
   {
-    return IndexSet{*this,
-      unpackIntegerSequence([&](auto... i) {
-        return std::make_tuple(this->subPreBasis(i).makeIndexSet()...);
-      }, ChildIndices())};
+    return IndexSet{*this};
   }
 
   //! Same as size(prefix) with empty prefix
