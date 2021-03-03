@@ -106,8 +106,8 @@ public:
    * by makeNode().
    * \deprecated
    */
-  [[deprecated("Warning: The IndexSet typedef and the makeIndexSet method are deprecated.\
-                As a replacement the indices() method of the PreBasis directly.")]]
+  [[deprecated("Warning: The IndexSet typedef and the makeIndexSet method are deprecated. "\
+               "As a replacement use the indices() method of the PreBasis directly.")]]
   IndexSet makeIndexSet() const
   {
     return IndexSet{*this};
