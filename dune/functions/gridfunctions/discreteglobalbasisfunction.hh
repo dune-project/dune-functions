@@ -108,12 +108,14 @@ public:
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
       : globalFunction_(&globalFunction)
       , localView_(globalFunction.basis().localView())
+      , evaluationBuffer_(localView_.tree())
       , bound_(false)
     {}
 
     LocalFunction(const LocalFunction& other)
       : globalFunction_(other.globalFunction_)
       , localView_(other.localView_)
+      , evaluationBuffer_(localView_.tree())
       , bound_(other.bound_)
     {}
 
