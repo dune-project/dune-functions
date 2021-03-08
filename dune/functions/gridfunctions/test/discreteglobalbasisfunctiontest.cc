@@ -19,6 +19,21 @@ using namespace Dune;
 using namespace Dune::Functions;
 using namespace Dune::Functions::Test;
 
+template<class T, int k>
+double infinityDiff(const Dune::FieldVector<T,k>& x, const Dune::FieldVector<T,k>& y)
+{
+  return (x-y).infinity_norm();
+}
+
+double infinityDiff(const double& x, const double& y)
+{
+  return std::fabs(x-y);
+}
+
+double infinityDiff(const bool& x, const bool& y)
+{
+  return std::fabs(x-y);
+}
 
 template<class B, class C>
 bool checkInterpolationConsistency(B&& basis, C&& x)
@@ -33,9 +48,7 @@ bool checkInterpolationConsistency(B&& basis, C&& x)
   interpolate(basis, y, f);
   for (typename std::decay_t<C>::size_type i=0; i<x.size(); ++i)
   {
-    auto diff = x[i];
-    diff -= y[i];
-    if (diff.infinity_norm()> 1e-10)
+    if (infinityDiff(x[i],y[i]) > 1e-10)
     {
       std::cout << "Interpolation of DiscreteGlobalBasisFunction differs from original coefficient vector" << std::endl;
       return false;
@@ -76,6 +89,15 @@ int main (int argc, char* argv[]) try
     };
 
     std::vector<Range> x;
+    interpolate(feBasis, x, f);
+    passed = passed and checkInterpolationConsistency(feBasis, x);
+  }
+
+  {
+    auto f = [](const Domain& x){
+      return (x.two_norm()<0.5);
+    };
+    std::vector<bool> x;
     interpolate(feBasis, x, f);
     passed = passed and checkInterpolationConsistency(feBasis, x);
   }

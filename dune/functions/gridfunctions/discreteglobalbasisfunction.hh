@@ -5,6 +5,8 @@
 
 #include <memory>
 
+#include <dune/common/typetraits.hh>
+
 #include <dune/typetree/treecontainer.hh>
 
 #include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
@@ -70,7 +72,9 @@ public:
   using Basis = B;
   using Vector = V;
 
-  using Coefficient = std::decay_t<decltype(std::declval<Vector>()[std::declval<typename Basis::MultiIndex>()])>;
+  // In order to make the cache work for proxy-references
+  // we have to use AutonomousValue<T> instead of std::decay_t<T>
+  using Coefficient = Dune::AutonomousValue<decltype(std::declval<Vector>()[std::declval<typename Basis::MultiIndex>()])>;
 
   using GridView = typename Basis::GridView;
   using EntitySet = GridViewEntitySet<GridView, 0>;
@@ -110,20 +114,28 @@ public:
       , localView_(globalFunction.basis().localView())
       , evaluationBuffer_(localView_.tree())
       , bound_(false)
-    {}
+    {
+      localDoFs_.reserve(localView_.maxSize());
+    }
 
     LocalFunction(const LocalFunction& other)
       : globalFunction_(other.globalFunction_)
       , localView_(other.localView_)
       , evaluationBuffer_(localView_.tree())
       , bound_(other.bound_)
-    {}
+    {
+      localDoFs_.reserve(localView_.maxSize());
+      if (bound())
+        localDoFs_ = other.localDoFs_;
+    }
 
     LocalFunction& operator=(const LocalFunction& other)
     {
       globalFunction_ = other.globalFunction_;
       localView_ = other.localView_;
       bound_ = other.bound_;
+      if (bound())
+        localDoFs_ = other.localDoFs_;
       return *this;
     }
 
@@ -137,6 +149,9 @@ public:
     {
       localView_.bind(element);
       bound_ = true;
+      localDoFs_.resize(localView_.tree().size());
+      for (size_type i = 0; i < localView_.tree().size(); ++i)
+        localDoFs_[i] = globalFunction_->dofs()[localView_.index(i)];
     }
 
     void unbind()
@@ -166,7 +181,6 @@ public:
       auto y = Range(0);
 
       TypeTree::forEachLeafNode(localView_.tree(), [&](auto&& node, auto&& treePath) {
-        const auto& dofs = globalFunction_->dofs();
         const auto& nodeToRangeEntry = globalFunction_->nodeToRangeEntry();
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
@@ -179,10 +193,8 @@ public:
 
         for (size_type i = 0; i < localBasis.size(); ++i)
         {
-          const auto& multiIndex = localView_.index(node.localIndex(i));
-
           // Get coefficient associated to i-th shape function
-          auto c = flatVectorView(dofs[multiIndex]);
+          auto c = flatVectorView(localDoFs_[node.localIndex(i)]);
 
           // Get value of i-th shape function
           auto v = flatVectorView(shapeFunctionValues[i]);
@@ -222,6 +234,7 @@ public:
     LocalView localView_;
     mutable PerNodeEvaluationBuffer evaluationBuffer_;
     bool bound_ = false;
+    std::vector<Coefficient> localDoFs_;
   };
 
   template<class B_T, class V_T, class NTRE_T>
