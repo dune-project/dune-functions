@@ -139,6 +139,7 @@ class NedelecPreBasis
   static_assert(kind==1, "Only the Nedelec basis of the first kind is currently implemented!");
   using FiniteElementMap = typename Impl::Nedelec1stKindLocalFiniteElementMap<GV, dim, Range, order>;
 
+  using Mapper = Dune::MultipleCodimMultipleGeomTypeMapper<GV>;
 public:
 
   /** \brief The grid view that the FE space is defined on */
@@ -158,7 +159,8 @@ public:
   /** \brief Constructor for a given grid view object */
   NedelecPreBasis(const GridView& gv) :
     gridView_(gv),
-    finiteElementMap_(gv)
+    finiteElementMap_(gv),
+    mapper_(gridView_, mcmgLayout(Dim<1>{}))
   {
     if (kind!=1)
       DUNE_THROW(NotImplemented, "Only Nedelec elements of the first kind are implemented!");
@@ -179,20 +181,10 @@ public:
 
     if (dim!=2 && dim!=3)
       DUNE_THROW(NotImplemented, "Only 2d and 3d Nédélec elements are implemented");
-
-    std::fill(dofsPerCodim_.begin(), dofsPerCodim_.end(), 0);
-
-    if (kind==1)
-      dofsPerCodim_[dim-1] = 1;  // First-order: One dof per edge, and no others
   }
 
   void initializeIndices()
-  {
-    codimOffset_[0] = 0;
-
-    for (std::size_t i=0; i<dim; i++)
-      codimOffset_[i+1] = codimOffset_[i] + dofsPerCodim_[i] * gridView_.size(i);
-  }
+  {}
 
   /** \brief Obtain the grid view that the basis is defined on
    */
@@ -205,6 +197,7 @@ public:
   void update (const GridView& gv)
   {
     gridView_ = gv;
+    mapper_ = Mapper(gridView_, mapper_.layout());
   }
 
   /**
@@ -231,10 +224,7 @@ public:
 
   size_type size() const
   {
-    size_type result = 0;
-    for (int i=0; i<=dim; i++)
-      result += dofsPerCodim_[i] * gridView_.size(i);
-    return result;
+    return mapper_.size();
   }
 
   //! Return number possible values for next position in multi index
@@ -267,7 +257,6 @@ public:
   template<typename It>
   It indices(const Node& node, It it) const
   {
-    const auto& gridIndexSet = gridView().indexSet();
     const auto& element = node.element();
 
     // throw if Element is not of predefined type
@@ -277,13 +266,7 @@ public:
     for(std::size_t i=0, end=node.size(); i<end; ++i, ++it)
     {
       Dune::LocalKey localKey = node.finiteElement().localCoefficients().localKey(i);
-
-      // The dimension of the entity that the current dof is related to
-      size_t subentity = localKey.subEntity();
-      size_t codim = localKey.codim();
-
-      *it = { codimOffset_[codim] +
-        dofsPerCodim_[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
+      *it = { mapper_.subIndex(element, localKey.subEntity(), localKey.codim()) + localKey.index() };
     }
 
     return it;
@@ -291,10 +274,8 @@ public:
 
 protected:
   const GridView gridView_;
-  std::array<size_t,dim+1> codimOffset_;
   FiniteElementMap finiteElementMap_;
-  // Number of dofs per entity type depending on the entity's codimension and type
-  std::array<int,dim+1> dofsPerCodim_;
+  Mapper mapper_;
 };
 
 
