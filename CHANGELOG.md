@@ -17,6 +17,8 @@ corresponding version of the Dune core modules.
   implements the `LocalFiniteElement` interface of `dune-localfunctions`.
 - The `RaviartThomasBasis` class now supports tetrahedral grids for `order=0`,
   quadrilateral grids for `order=2`, and hexahedral grids for `order=1`.
+- The `RannacherTurekBasis` class now supports Crouzeix-Raviart elements.
+  Grids containing simplices, cubes or both in 2d and 3d are supported now.
 
 - The `dune-functions` module now contains an implementation of a
   Nedelec basis (for problems posed in H(curl)).  While the interface

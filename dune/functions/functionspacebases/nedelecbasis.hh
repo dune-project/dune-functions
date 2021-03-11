@@ -168,11 +168,9 @@ public:
     if (gv.indexSet().types(0).size() > 2)
       DUNE_THROW(NotImplemented, "Nédélec basis is only implemented for grids with simplex and cube elements");
 
-    bool isSimplexOrCube = true;
     for(auto type : gv.indexSet().types(0))
-      isSimplexOrCube = isSimplexOrCube and (type.isSimplex() or type.isCube());
-    if (!isSimplexOrCube)
-      DUNE_THROW(NotImplemented, "Nédélec basis is only implemented for grids with simplex or cube elements.");
+      if (!type.isSimplex() && !type.isCube())
+        DUNE_THROW(NotImplemented, "Nédélec basis is only implemented for grids with simplex or cube elements.");
 
     if (order>1)
       DUNE_THROW(NotImplemented, "Only first-order elements are implemented");
