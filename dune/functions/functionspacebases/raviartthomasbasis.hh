@@ -219,11 +219,9 @@ public:
     if (gv.indexSet().types(0).size() > 1 and k>0)
       DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas basis with index k>0 is only implemented for grids with a single element type");
 
-    bool isSimplexOrCube = true;
     for(auto type : gv.indexSet().types(0))
-      isSimplexOrCube = isSimplexOrCube and (type.isSimplex() or type.isCube());
-    if (!isSimplexOrCube)
-      DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas elements are only implemented for grids with simplex or cube elements.");
+      if (!type.isSimplex() && !type.isCube())
+        DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas elements are only implemented for grids with simplex or cube elements.");
 
     GeometryType type = gv.template begin<0>()->type();
     const static int dofsPerElement = type.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;

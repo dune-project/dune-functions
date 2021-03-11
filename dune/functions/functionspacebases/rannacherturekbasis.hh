@@ -5,7 +5,11 @@
 
 #include <dune/common/exceptions.hh>
 
+#include <dune/grid/common/capabilities.hh>
+
+#include <dune/localfunctions/common/localfiniteelementvariant.hh>
 #include <dune/localfunctions/rannacherturek.hh>
+#include <dune/localfunctions/crouzeixraviart.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
@@ -73,7 +77,11 @@ public:
   //! Constructor for a given grid view object
   RannacherTurekPreBasis(const GridView& gv) :
     gridView_(gv)
-  {}
+  {
+    for(auto type : gv.indexSet().types(0))
+      if (!type.isSimplex() && !type.isCube())
+        DUNE_THROW(Dune::NotImplemented, "Rannacher-Turek or Crouzeix-Raviart elements are only implemented for grids with simplex or cube elements.");
+  }
 
   //! Initialize the global indices
   void initializeIndices()
@@ -165,11 +173,21 @@ class RannacherTurekNode :
   static const int dim = GV::dimension;
   static const int maxSize = 2*dim;
 
+  constexpr static bool hasFixedElementType = Capabilities::hasSingleGeometryType<typename GV::Grid>::v;
+
+  using CubeFiniteElement    = RannacherTurekLocalFiniteElement<typename GV::ctype,double,dim>;
+  using SimplexFiniteElement = CrouzeixRaviartLocalFiniteElement<typename GV::ctype,double,dim>;
+
+  constexpr static unsigned int  topologyId = Capabilities::hasSingleGeometryType<typename GV::Grid>::topologyId;  // meaningless if hasFixedElementType is false
+  constexpr static GeometryType type = GeometryType(topologyId, GV::dimension);
+
 public:
 
   using size_type = std::size_t;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElement = RannacherTurekLocalFiniteElement<typename GV::ctype, double, dim>;
+  using FiniteElement = std::conditional_t<hasFixedElementType,
+                                         std::conditional_t<type.isCube(),CubeFiniteElement,SimplexFiniteElement>,
+                                         LocalFiniteElementVariant<CubeFiniteElement, SimplexFiniteElement> >;
 
   RannacherTurekNode() :
     finiteElement_(),
@@ -195,17 +213,15 @@ public:
   void bind(const Element& e)
   {
     element_ = &e;
-#ifndef NDEBUG
-    if (e.type() != finiteElement_.type())
-      DUNE_THROW(Dune::Exception,
-                 "Rannacher-Turek elements do not exist for elements of type " << e.type());
-#endif
+    if constexpr (!hasFixedElementType)
+      finiteElement_ = e.type().isCube() ? static_cast<FiniteElement>(CubeFiniteElement())
+                                         : static_cast<FiniteElement>(SimplexFiniteElement()) ;
     this->setSize(finiteElement_.size());
   }
 
 protected:
 
-  const FiniteElement finiteElement_;
+  FiniteElement finiteElement_;
   const Element* element_;
 };
 
