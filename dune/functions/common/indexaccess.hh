@@ -283,7 +283,7 @@ namespace Imp {
       assert(multiIndex.size() == 0);
       return c.forward();
     }, [&](auto id) -> decltype(auto) {
-      auto hasDynamicAccess = callableCheck([](auto&& cc) -> void_t<decltype(cc[0])> {});
+      auto hasDynamicAccess = callableCheck([](auto&& cc) -> std::void_t<decltype(cc[0])> {});
 
       // Split multiIndex into first entry and remaining ones.
       auto i = multiIndex[0];
@@ -375,7 +375,7 @@ constexpr decltype(auto) resolveDynamicMultiIndex(C&& c, const MultiIndex& multi
 template<class C, class MultiIndex>
 constexpr decltype(auto) resolveDynamicMultiIndex(C&& c, const MultiIndex& multiIndex)
 {
-  auto hasNoIndexAccess = negatePredicate(callableCheck([](auto&& cc) -> void_t<decltype(cc[Dune::Indices::_0])> {}));
+  auto hasNoIndexAccess = negatePredicate(callableCheck([](auto&& cc) -> std::void_t<decltype(cc[Dune::Indices::_0])> {}));
   return Imp::resolveDynamicMultiIndex(std::forward<C>(c), Imp::shiftedDynamicMultiIndex<0>(multiIndex), hasNoIndexAccess);
 }
 
