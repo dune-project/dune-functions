@@ -266,7 +266,7 @@ struct RotateTuple
  * expression x(a,b) is valid for some a and b use:
  *
  \code{.cpp}
- auto xIsValid = callableCheck([](auto&& a, auto&& b) -> void_t<decltype(x(a,b))> {});
+ auto xIsValid = callableCheck([](auto&& a, auto&& b) -> std::void_t<decltype(x(a,b))> {});
  if (xIsValid(a,b))
    ...
  \endcode
