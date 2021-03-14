@@ -10,7 +10,6 @@
 
 #include <dune/grid/yaspgrid.hh>
 
-#include <dune/common/unused.hh>
 #include <dune/functions/common/localfunction.hh>
 #include <dune/common/parallel/mpihelper.hh>
 
@@ -44,7 +43,7 @@ int main (int argc, char* argv[]) try
   using EntitySet = GridViewEntitySet<GridView, 0>;
 
 
-  auto entitySet DUNE_UNUSED = EntitySet(grid.leafGridView());
+  [[maybe_unused]] auto entitySet = EntitySet(grid.leafGridView());
 
 
   auto p = Polynomial<double>({0, 1, 2});
