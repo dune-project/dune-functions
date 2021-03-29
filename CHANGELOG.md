@@ -26,6 +26,9 @@ corresponding version of the Dune core modules.
   only the first-order basis called "of the first kind" is implemented,
   and only for grids containing simplices, cubes or both in 2d and 3d.
 
+- The `dune-functions` module now contains an implementation of a Hierarchical Lagrange
+  basis for second order on simplex grids
+
 ## Release 2.7
 
 - The `LagrangeBasis` is extended by a template parameter to set the range type of
