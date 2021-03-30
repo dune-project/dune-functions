@@ -12,6 +12,7 @@ install(FILES
         defaultnodetorangemap.hh
         flatmultiindex.hh
         flatvectorview.hh
+        hierarchicallagrangebasis.hh
         hierarchicnodetorangemap.hh
         hierarchicvectorwrapper.hh
         interpolate.hh
