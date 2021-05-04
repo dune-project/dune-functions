@@ -29,6 +29,9 @@ corresponding version of the Dune core modules.
 - The `dune-functions` module now contains an implementation of a Hierarchical Lagrange
   basis for second order on simplex grids
 
+- Imported the Python bindings from the 2.7 branch of dune-python and fixed remaining issues.
+  Added a CI test that builds various global bases in 2d and 3d  and verifies the correct number of dofs.
+
 ## Release 2.7
 
 - The `LagrangeBasis` is extended by a template parameter to set the range type of
