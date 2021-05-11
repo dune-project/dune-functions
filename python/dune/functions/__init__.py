@@ -2,11 +2,6 @@ from dune.generator.generator import SimpleGenerator
 from dune.common.hashit import hashIt
 from dune.common.checkconfiguration import assertHave, ConfigurationError
 
-try:
-    assertHave("HAVE_DUNE_FUNCTIONS")
-except ConfigurationError:
-    raise ImportError("dune module dune-functions was not found")
-
 from .globalbasis import defaultGlobalBasis
 from .tree import *
 
