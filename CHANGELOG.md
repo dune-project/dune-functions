@@ -33,6 +33,10 @@ corresponding version of the Dune core modules.
   `power(<sub-basis>, k)` or `power(<sub-basis>, k, <index-merging>)`.
 - Add mixin class `LFEPreBasisMixin` to create leaf pre-bases based on a local finite-element and a layout.
 
+### Python
+
+- The Nédélec function space basis is now accessible via the Python interface.
+
 Deprecations and removals
 
 - The `BasisBuilder` namespace is deprecated and will be removed
