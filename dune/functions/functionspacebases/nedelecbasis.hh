@@ -195,7 +195,7 @@ public:
   void update (const GridView& gv)
   {
     gridView_ = gv;
-    mapper_ = Mapper(gridView_, mapper_.layout());
+    mapper_.update(gridView_);
   }
 
   /**
@@ -271,7 +271,7 @@ public:
   }
 
 protected:
-  const GridView gridView_;
+  GridView gridView_;
   FiniteElementMap finiteElementMap_;
   Mapper mapper_;
 };

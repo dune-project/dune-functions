@@ -502,9 +502,9 @@ Dune::TestSuite checkBasisContinuity(const Basis& basis, const LocalCheck& local
 }
 
 template<class Basis, class... Flags>
-Dune::TestSuite checkBasis(const Basis& basis, Flags... flags)
+Dune::TestSuite checkConstBasis(const Basis& basis, Flags... flags)
 {
-  Dune::TestSuite test("basis check");
+  Dune::TestSuite test("const basis check");
 
   using GridView = typename Basis::GridView;
 
@@ -534,5 +534,24 @@ Dune::TestSuite checkBasis(const Basis& basis, Flags... flags)
 
   return test;
 }
+
+
+template<class Basis, class... Flags>
+Dune::TestSuite checkBasis(Basis& basis, Flags... flags)
+{
+  Dune::TestSuite test("basis check");
+
+  // Perform tests for a constant basis
+  test.subTest(checkConstBasis(basis,flags...));
+
+  // Check update of gridView
+  auto gridView = basis.gridView();
+  basis.update(gridView);
+
+  return test;
+}
+
+
+
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_TEST_BASISTEST_HH

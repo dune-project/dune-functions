@@ -281,7 +281,7 @@ public:
   }
 
 protected:
-  const GridView gridView_;
+  GridView gridView_;
   std::array<size_t,dim+1> codimOffset_;
   FiniteElementMap finiteElementMap_;
   // Number of dofs per entity type depending on the entity's codimension and type
