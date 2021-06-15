@@ -183,11 +183,11 @@ void testScalarBasisConst(const Basis& feBasis,
     DUNE_THROW(Dune::Exception, "Error: integral value is wrong!");
 
 
-  auto checkResult = checkBasis(feBasis);
+  auto checkResult = checkConstBasis(feBasis);
   if (not checkResult)
   {
     checkResult.report();
-    DUNE_THROW(Dune::Exception, "checkBasis() failed");
+    DUNE_THROW(Dune::Exception, "checkConstBasis() failed");
   }
 }
 
