@@ -17,8 +17,8 @@ before_script:
   - duneci-install-module https://gitlab.dune-project.org/core/dune-istl.git
   - duneci-install-module https://gitlab.dune-project.org/staging/dune-typetree.git
 
-debian-11-gcc-9-17-python:
-  image: registry.dune-project.org/docker/ci/debian:11
+ubuntu-20.04-gcc-9-17-python:
+  image: registry.dune-project.org/docker/ci/ubuntu:20.04
   script: duneci-standard-test
   variables:
     DUNECI_TOOLCHAIN:   gcc-9-17
