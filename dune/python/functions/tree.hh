@@ -20,13 +20,13 @@ namespace Functions {
 namespace detail {
 
 template<typename Tree, std::enable_if_t< Tree::isComposite, int > = 0>
-pybind11::class_<Tree> registerTree_(pybind11::handle scope, const char* name = "Tree");
+void registerTree_(pybind11::handle scope, const char* name = "Tree");
 
 template<typename Tree, std::enable_if_t< Tree::isLeaf, int > = 0>
-pybind11::class_<Tree> registerTree_(pybind11::handle scope, const char* name = "Tree");
+void registerTree_(pybind11::handle scope, const char* name = "Tree");
 
 template<typename Tree, std::enable_if_t< Tree::isPower, int > = 0>
-pybind11::class_<Tree> registerTree_(pybind11::handle scope, const char* name = "Tree");
+void registerTree_(pybind11::handle scope, const char* name = "Tree");
 
 template<typename Tree>
 void registerTreeCommon(pybind11::class_<Tree>& cls)
@@ -55,30 +55,33 @@ childAccessors(std::index_sequence<I...>)
 }
 
 template<typename Tree>
-DUNE_EXPORT void registerTreeChildAccessor(pybind11::class_<Tree>& cls)
+void registerTreeChildAccessor(pybind11::class_<Tree>& cls)
 {
-  static const auto accessors = childAccessors<Tree>(std::make_index_sequence<Tree::degree()>{});
+  const auto accessors = childAccessors<Tree>(std::make_index_sequence<Tree::degree()>{});
   cls.def(
     "__getitem__",
-    [](Tree& tree, std::size_t i) { return accessors.at(i)(tree); },
+    [&accessors](Tree& tree, std::size_t i) { return accessors.at(i)(tree); },
     pybind11::arg("i"));
 }
 
 template<typename Tree, std::enable_if_t< Tree::isComposite, int > >
-DUNE_EXPORT pybind11::class_<Tree> registerTree_(pybind11::handle scope, const char* name)
+void registerTree_(pybind11::handle scope, const char* name)
 {
-  static pybind11::class_<Tree> cls(scope, name);
-  registerTreeCommon(cls);
+  if( !pybind11::already_registered< Tree >() )
+  {
+    pybind11::class_<Tree> cls(scope, name);
+    registerTreeCommon(cls);
 
-  Hybrid::forEach(std::make_index_sequence<Tree::degree()>{}, [&cls](auto i) {
-      using SubTree = typename Tree::template Child<i>::Type;
-      std::string subName = std::string("Tree") + std::to_string(i);
-      if( !pybind11::already_registered< SubTree >() )
-        registerTree_<SubTree>(cls, subName.c_str());
-    });
-  registerTreeChildAccessor(cls);
-
-  return cls;
+    // static variable cls is captured automatically - explicit caputre fails with clang:
+    //    fatal error: 'cls' cannot be captured because it does not have automatic storage duration
+    Hybrid::forEach(std::make_index_sequence<Tree::degree()>{}, [&cls](auto i) {
+        using SubTree = typename Tree::template Child<i>::Type;
+        std::string subName = std::string("Tree") + std::to_string(i);
+        if( !pybind11::already_registered< SubTree >() )
+          registerTree_<SubTree>(cls, subName.c_str());
+      });
+    registerTreeChildAccessor(cls);
+  }
 }
 
 template<typename Tree, typename = void_t<>>
@@ -100,7 +103,9 @@ void registerFiniteElementProperty(pybind11::class_< Tree >&)
 template< typename Tree, std::enable_if_t< hasFiniteElement<Tree>::value, int > = 0>
 void registerFiniteElementProperty(pybind11::class_< Tree >& cls)
 {
-  registerLocalFiniteElement<typename Tree::FiniteElement>(cls);
+  // this should probably be fixed in dune-localfunctions
+  if (!pybind11::already_registered< typename Tree::FiniteElement >())
+    registerLocalFiniteElement<typename Tree::FiniteElement>(cls);
   cls.def_property_readonly(
     "finiteElement",
     [](const Tree& tree) { return &tree.finiteElement(); },
@@ -108,40 +113,41 @@ void registerFiniteElementProperty(pybind11::class_< Tree >& cls)
     );
 }
 
-template<typename Tree, std::enable_if_t< Tree::isLeaf, int > = 0>
-DUNE_EXPORT pybind11::class_<Tree> registerTree_(pybind11::handle scope, const char* name)
+// fatal error: template parameter redefines default argument (clang)
+// using static to avoid double registration doesn't work with clang
+// because statics remain local to module and are not made unique between modules
+// If the class is needed use the TypeRegistry to make this work smoothly
+template<typename Tree, std::enable_if_t< Tree::isLeaf, int >>
+void registerTree_(pybind11::handle scope, const char* name)
 {
-  static pybind11::class_< Tree > cls(scope, name);
   if( !pybind11::already_registered< Tree >() )
+  {
+    pybind11::class_< Tree > cls(scope, name);
     registerTreeCommon(cls);
-
-  registerFiniteElementProperty(cls);
-
-  // register localIndex
-  cls.def("localIndex", [](Tree& tree, unsigned int index) { return tree.localIndex(index); });
-  return cls;
+    registerFiniteElementProperty(cls);
+    // register localIndex
+    cls.def("localIndex", [](Tree& tree, unsigned int index) { return tree.localIndex(index); });
+  }
 }
 
-template<typename Tree, std::enable_if_t< Tree::isPower, int > = 0>
-DUNE_EXPORT pybind11::class_<Tree> registerTree_(pybind11::handle scope, const char* name)
+template<typename Tree, std::enable_if_t< Tree::isPower, int >>
+void registerTree_(pybind11::handle scope, const char* name)
 {
-  static pybind11::class_< Tree > cls(scope, name);
-  registerTreeCommon(cls);
-
-  if( !pybind11::already_registered< typename Tree::ChildType >() )
+  if( !pybind11::already_registered< Tree >() )
+  {
+    pybind11::class_< Tree > cls(scope, name);
+    registerTreeCommon(cls);
     registerTree_<typename Tree::ChildType>(cls);
-  registerTreeChildAccessor(cls);
-
-  return cls;
+    registerTreeChildAccessor(cls);
+  }
 }
 
 } /* namespace detail */
 
 template<typename Tree>
-DUNE_EXPORT pybind11::class_<Tree> registerTree(pybind11::handle scope, const char* name = "Tree")
+void registerTree(pybind11::handle scope, const char* name = "Tree")
 {
-  static auto cls = detail::registerTree_<Tree>(scope, name);
-  return cls;
+  detail::registerTree_<Tree>(scope, name);
 }
 
 } /* namespace Functions */
