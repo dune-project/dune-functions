@@ -178,7 +178,7 @@ public:
   It indices(const Node& node, It it) const
   {
     Impl::preBasisIndices(rawPreBasis(), node, it);
-    for(std::size_t i=0; i<size(); ++i)
+    for(std::size_t i=0; i<node.size(); ++i)
     {
       transformIndex(*it);
       ++it;
