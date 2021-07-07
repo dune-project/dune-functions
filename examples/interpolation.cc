@@ -104,7 +104,7 @@ int main (int argc, char *argv[])
   // { setup_mask_end }
 
   // { masked_interpolation_begin }
-  interpolate(subspaceBasis(taylorHoodBasis, _1), x2, f2, isBoundary);
+  interpolate(subspaceBasis(taylorHoodBasis, _0), x2, f2, isBoundary);
   // { masked_interpolation_end }
 
   // Test whether I can use std::vector<bool> as an argument to 'interpolate'
