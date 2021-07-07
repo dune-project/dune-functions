@@ -77,9 +77,10 @@ int main (int argc, char* argv[]) try
 
   const auto& gridView = grid.leafGridView();
 
+  // scalar Lagrange basis with vector valued coefficients
   {
     using Range = FieldVector<double,5>;
-    auto f = [](const Domain& x){
+    auto f = [](const auto& x){
       Range y;
       for (typename Range::size_type i=0; i<y.size(); ++i)
         y[i] = x[0]+i;
@@ -87,8 +88,11 @@ int main (int argc, char* argv[]) try
     };
 
     std::vector<Range> x;
+    auto feBasis = makeBasis(gridView,lagrange<1>());
     interpolate(feBasis, x, f);
-    passed = passed and checkInterpolationConsistency(feBasis, x);
+    auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
+    std::cout << "checkInterpolationConsistency for scalar Lagrange basis with vector-valued coefficients " << (passedThisTest? " " : " NOT  ") << "successful." << std::endl;
+    passed = passed and passedThisTest;
   }
 
   // scalar Lagrange Basis
@@ -102,7 +106,7 @@ int main (int argc, char* argv[]) try
     interpolate(feBasis, x, f);
     using Range = bool;
     auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
-    std::cout << "checkInterpolationConsistency for scalar Lagrange basis" << (passedThisTest? "" : "NOT ") << "successful." << std::endl;
+    std::cout << "checkInterpolationConsistency for scalar Lagrange basis" << (passedThisTest? " " : " NOT ") << "successful." << std::endl;
     passed = passed and passedThisTest;
   }
 
@@ -118,7 +122,7 @@ int main (int argc, char* argv[]) try
     std::vector<Range> x;
     interpolate(feBasis, x, f);
     auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
-    std::cout << "checkInterpolationConsistency for power Lagrange basis" << (passedThisTest? "" : "NOT ") << "successful." << std::endl;
+    std::cout << "checkInterpolationConsistency for power Lagrange basis" << (passedThisTest? " " : " NOT  ") << "successful." << std::endl;
     passed = passed and passedThisTest;
   }
 
@@ -136,7 +140,7 @@ int main (int argc, char* argv[]) try
     std::vector<Coeff> x;
     interpolate(feBasis, x, f);
     auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
-    std::cout << "checkInterpolationConsistency for Raviart-Thomas basis" << (passedThisTest? "" : "NOT ") << "successful." << std::endl;
+    std::cout << "checkInterpolationConsistency for Raviart-Thomas basis " << (passedThisTest? " " : " NOT  ") << "successful." << std::endl;
     passed = passed and passedThisTest;
   }
 
@@ -153,7 +157,7 @@ int main (int argc, char* argv[]) try
     std::vector<Coeff> x;
     interpolate(feBasis, x, f);
     auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
-    std::cout << "checkInterpolationConsistency for Nédélec basis" << (passedThisTest? "" : "NOT ") << "successful." << std::endl;
+    std::cout << "checkInterpolationConsistency for Nédélec basis " << (passedThisTest? " " : " NOT ") << "successful." << std::endl;
     passed = passed and passedThisTest;
   }
 
