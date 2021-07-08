@@ -36,6 +36,8 @@ dune_add_test(SOURCES makebasistest.cc LABELS quick)
 
 dune_add_test(SOURCES hierarchicallagrangebasistest.cc LABELS quick)
 
+dune_add_test(SOURCES refinedlagrangebasistest.cc)
+
 install(
   FILES
   basistest.hh
