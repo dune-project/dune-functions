@@ -11,6 +11,9 @@
 
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
+#include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/nedelecbasis.hh>
+#include <dune/functions/functionspacebases/raviartthomasbasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
 #include <dune/functions/gridfunctions/test/gridfunctiontest.hh>
@@ -35,11 +38,11 @@ double infinityDiff(const bool& x, const bool& y)
   return std::fabs(x-y);
 }
 
-template<class B, class C>
+template<class R, class B, class C>
 bool checkInterpolationConsistency(B&& basis, C&& x)
 {
   using Coeff = typename std::decay<C>::type;
-  using Range = typename Coeff::value_type;
+  using Range = R;
 
   // generate a discrete function
   auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<Range>(basis, x);
@@ -70,14 +73,9 @@ int main (int argc, char* argv[]) try
   std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
-  // Test whether LagrangeBasis can be instantiated on the leaf view
-  typedef GridType::LeafGridView GridView;
-  typedef LagrangeBasis<GridView,2> Basis;
+  using namespace Functions::BasisBuilder;
 
-  const GridView& gridView = grid.leafGridView();
-  Basis feBasis(gridView);
-
-  using Domain = GridView::template Codim<0>::Geometry::GlobalCoordinate;
+  const auto& gridView = grid.leafGridView();
 
   {
     using Range = FieldVector<double,5>;
@@ -93,13 +91,70 @@ int main (int argc, char* argv[]) try
     passed = passed and checkInterpolationConsistency(feBasis, x);
   }
 
+  // scalar Lagrange Basis
   {
-    auto f = [](const Domain& x){
+    auto feBasis = makeBasis(gridView,lagrange<1>());
+
+    auto f = [](const auto& x){
       return (x.two_norm()<0.5);
     };
     std::vector<bool> x;
     interpolate(feBasis, x, f);
-    passed = passed and checkInterpolationConsistency(feBasis, x);
+    using Range = bool;
+    auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
+    std::cout << "checkInterpolationConsistency for scalar Lagrange basis" << (passedThisTest? "" : "NOT ") << "successful." << std::endl;
+    passed = passed and passedThisTest;
+  }
+
+  // power Lagrange basis
+  {
+    auto feBasis = makeBasis(gridView,power<2>(lagrange<2>()));
+    using Range = FieldVector<double,2>;
+
+    // f(x,y) = (y,x)
+    auto f = [](const auto& x){
+      return Range{ x[1], x[0] };
+    };
+    std::vector<Range> x;
+    interpolate(feBasis, x, f);
+    auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
+    std::cout << "checkInterpolationConsistency for power Lagrange basis" << (passedThisTest? "" : "NOT ") << "successful." << std::endl;
+    passed = passed and passedThisTest;
+  }
+
+  // Raviart-Thomas basis
+  {
+    auto feBasis = makeBasis(gridView, raviartThomas<0>());
+    // coefficients and range of the FE are different here!
+    using Coeff = FieldVector<double,1>;
+    using Range = FieldVector<double,2>;
+
+    // f(x,y) = (y,x)
+    auto f = [](const auto& x){
+      return Range{ x[1], x[0] };
+    };
+    std::vector<Coeff> x;
+    interpolate(feBasis, x, f);
+    auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
+    std::cout << "checkInterpolationConsistency for Raviart-Thomas basis" << (passedThisTest? "" : "NOT ") << "successful." << std::endl;
+    passed = passed and passedThisTest;
+  }
+
+  // Nédélec basis
+  {
+    auto feBasis = makeBasis(gridView, nedelec<1,1>());
+    // coefficients and range of the FE are different here!
+    using Coeff = FieldVector<double,1>;
+    using Range = FieldVector<double,2>;
+    // f(x,y) = (y,x)
+    auto f = [](const auto& x){
+      return Range{ x[1], x[0] };
+    };
+    std::vector<Coeff> x;
+    interpolate(feBasis, x, f);
+    auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
+    std::cout << "checkInterpolationConsistency for Nédélec basis" << (passedThisTest? "" : "NOT ") << "successful." << std::endl;
+    passed = passed and passedThisTest;
   }
 
 
@@ -107,11 +162,13 @@ int main (int argc, char* argv[]) try
   // If we use that as the coefficients of a finite element function,
   // we know its integral and can check whether quadrature returns
   // the correct result. Notice that resizing is done by the interpolate method.
+  auto feBasis = makeBasis(gridView,lagrange<1>());
   std::vector<FieldVector<double,1> > x;
-  auto fAnalytic = [](const Domain& x){ return x[0];};
+  auto fAnalytic = [](const auto& x){ return x[0];};
   interpolate(feBasis, x, fAnalytic);
+  using Range = FieldVector<double,1>;
 
-  passed = passed and checkInterpolationConsistency(feBasis, x);
+  passed = passed and checkInterpolationConsistency<Range>(feBasis, x);
 
   // generate a discrete function to evaluate the integral
   auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(feBasis, x);
