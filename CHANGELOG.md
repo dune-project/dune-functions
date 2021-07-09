@@ -15,8 +15,10 @@ corresponding version of the Dune core modules.
   transformation.  Domain-space transformations still have to be done
   by the calling code. The `GlobalValuedLocalFiniteElement` still
   implements the `LocalFiniteElement` interface of `dune-localfunctions`.
+
 - The `RaviartThomasBasis` class now supports tetrahedral grids for `order=0`,
   quadrilateral grids for `order=2`, and hexahedral grids for `order=1`.
+
 - The `RannacherTurekBasis` class now supports Crouzeix-Raviart elements.
   Grids containing simplices, cubes or both in 2d and 3d are supported now.
 
@@ -28,6 +30,18 @@ corresponding version of the Dune core modules.
 
 - The `dune-functions` module now contains an implementation of a Hierarchical Lagrange
   basis for second order on simplex grids
+
+- There is now an experimental implementation of a periodic basis in form
+  of a class `PeriodicBasis`.  It is a meta basis, i.e., a basis that is
+  parametrized with another basis (the host basis).  In a `PeriodicBasis`,
+  global degrees of freedom of the host basis can be grouped into
+  equivalence classes, which are then treated as single global degrees
+  of freedom.  This allows, in particular, to implement periodic
+  boundary conditions for discretizations without intersection integrals.
+
+  The `PeriodicBasis` class is in the namespace `Dune::Functions::Experimental`,
+  and can change at any moment without much advance notice.  Use it at your
+  own risk, and give us feedback!
 
 - Imported the Python bindings from the 2.7 branch of dune-python and fixed remaining issues.
   Added a CI test that builds various global bases in 2d and 3d  and verifies the correct number of dofs.
