@@ -32,6 +32,9 @@ corresponding version of the Dune core modules.
 - Imported the Python bindings from the 2.7 branch of dune-python and fixed remaining issues.
   Added a CI test that builds various global bases in 2d and 3d  and verifies the correct number of dofs.
 
+- `interpolate` is now capable of interpolating vector-valued finite element functions correctly.
+  The method of using scalar basis functions combined with vector-valued coefficients to mock a power basis is still supported.
+
 ## Release 2.7
 
 - The `LagrangeBasis` is extended by a template parameter to set the range type of
