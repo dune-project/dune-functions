@@ -107,36 +107,59 @@ public:
     using FiniteElementRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
     using FiniteElementRangeField = typename FiniteElement::Traits::LocalBasisType::Traits::RangeFieldType;
 
-    // Note that we capture j by reference. Hence we can switch
-    // the selected component later on by modifying j. Maybe we
-    // should avoid this naughty statefull lambda hack in favor
-    // of a separate helper class.
-    std::size_t j=0;
-    auto localFj = [&](const LocalDomain& x){
-      const auto& y = localF_(x);
-      return FiniteElementRange(flatVectorView(nodeToRangeEntry_(node, treePath, y))[j]);
-    };
-
     auto interpolationCoefficients = std::vector<FiniteElementRangeField>();
-
     auto&& fe = node.finiteElement();
 
-    // We loop over j defined above and thus over the components of the
-    // range type of localF_.
-
-    auto blockSize = flatVectorView(vector_[localView_.index(0)]).size();
-
-    for(j=0; j<blockSize; ++j)
+    // backward compatibility: for scalar basis functions and possibly vector valued coefficients
+    //                         (like used in dune-fufem for power bases) loop over the components
+    //                         of the coefficients
+    if constexpr ( FiniteElement::Traits::LocalBasisType::Traits::dimRange == 1 )
     {
-      fe.localInterpolation().interpolate(localFj, interpolationCoefficients);
+      // Note that we capture j by reference. Hence we can switch
+      // the selected component later on by modifying j. Maybe we
+      // should avoid this naughty statefull lambda hack in favor
+      // of a separate helper class.
+      std::size_t j=0;
+      auto localFj = [&](const LocalDomain& x){
+        const auto& y = localF_(x);
+        return FiniteElementRange(flatVectorView(nodeToRangeEntry_(node, treePath, y))[j]);
+      };
+
+      // We loop over j defined above and thus over the components of the
+      // range type of localF_.
+
+      auto blockSize = flatVectorView(vector_[localView_.index(0)]).size();
+
+      for(j=0; j<blockSize; ++j)
+      {
+        fe.localInterpolation().interpolate(localFj, interpolationCoefficients);
+        for (size_t i=0; i<fe.localBasis().size(); ++i)
+        {
+          auto multiIndex = localView_.index(node.localIndex(i));
+          auto bitVectorBlock = flatVectorView(bitVector_[multiIndex]);
+          if (bitVectorBlock[j])
+          {
+            auto vectorBlock = flatVectorView(vector_[multiIndex]);
+            vectorBlock[j] = interpolationCoefficients[i];
+          }
+        }
+      }
+    }
+    else // ( FiniteElement::Traits::LocalBasisType::Traits::dimRange != 1 )
+    {
+      // for all other finite elements: use the FiniteElementRange directly for the interpolation
+      auto localF = [&](const LocalDomain& x){
+        const auto& y = localF_(x);
+        return FiniteElementRange(nodeToRangeEntry_(node, treePath, y));
+      };
+
+      fe.localInterpolation().interpolate(localF, interpolationCoefficients);
       for (size_t i=0; i<fe.localBasis().size(); ++i)
       {
         auto multiIndex = localView_.index(node.localIndex(i));
-        auto bitVectorBlock = flatVectorView(bitVector_[multiIndex]);
-        if (bitVectorBlock[j])
+        if ( bitVector_[multiIndex] )
         {
-          auto vectorBlock = flatVectorView(vector_[multiIndex]);
-          vectorBlock[j] = interpolationCoefficients[i];
+          vector_[multiIndex] = interpolationCoefficients[i];
         }
       }
     }
