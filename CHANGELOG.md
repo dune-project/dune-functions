@@ -39,8 +39,9 @@ corresponding version of the Dune core modules.
   of freedom.  This allows, in particular, to implement periodic
   boundary conditions for discretizations without intersection integrals.
 
-  The `PeriodicBasis` class is in the namespace `Dune::Functions::Experimental`,
-  and can change at any moment without much advance notice.  Use it at your
+  The `PeriodicBasis` class can only be constructed by using the `periodic`
+  method from the namespace `Dune::Functions::BasisFactory::Experimental`.
+  It can change at any moment without much advance notice.  Use it at your
   own risk, and give us feedback!
 
 - Imported the Python bindings from the 2.7 branch of dune-python and fixed remaining issues.

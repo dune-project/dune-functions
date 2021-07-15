@@ -13,13 +13,15 @@
 #include <dune/functions/functionspacebases/transformedindexbasis.hh>
 
 
-// The PeriodicBasis class is in the Experimental namespace because we are
-// not completely sure yet whether we like it.  We reserve the right to
-// modify it without advance warning.  Use at your own risk!
-namespace Dune::Functions::Experimental {
+namespace Dune::Functions {
 
 namespace BasisFactory {
 
+// The PeriodicBasis class is in the Experimental namespace because we are
+// not completely sure yet whether we like it.  We reserve the right to
+// modify it without advance warning.  Use at your own risk!
+
+namespace Experimental {
 
 
 /**
@@ -200,8 +202,10 @@ auto periodic(
         std::forward<PIS>(periodicIndexSet));
 }
 
+} // end namespace Experimental
+
 } // end namespace BasisFactory
 
-} // end namespace Dune::Functions::Experimental
+} // end namespace Dune::Functions
 
 #endif // DUNE_FUFEM_PERIODICBASIS_HH
