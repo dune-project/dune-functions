@@ -51,7 +51,7 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   using namespace Functions::BasisFactory;
-  using namespace Functions::Experimental::BasisFactory;
+  using namespace Functions::BasisFactory::Experimental;
 
   {
     PeriodicIndexSet periodicIndices;
