@@ -96,6 +96,19 @@ namespace Impl {
     using FiniteElement = RT1Cube3DLocalFiniteElement<D,R>;
   };
 
+  template<int dim, typename D, typename R, std::size_t k>
+  struct RaviartThomasPyramidLocalInfo
+  {
+    // Dummy type, must be something that we can have a std::unique_ptr to
+    using FiniteElement = void*;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasPyramidLocalInfo<3,D,R,0>
+  {
+    using FiniteElement = RT0PyramidLocalFiniteElement<D,R>;
+  };
+
   template<typename GV, int dim, typename R, std::size_t k>
   class RaviartThomasLocalFiniteElementMap
   {
@@ -104,6 +117,7 @@ namespace Impl {
 
     using CubeFiniteElement    = typename RaviartThomasCubeLocalInfo<dim, D, R, k>::FiniteElement;
     using SimplexFiniteElement = typename RaviartThomasSimplexLocalInfo<dim, D, R, k>::FiniteElement;
+    using PyramidFiniteElement = typename RaviartThomasPyramidLocalInfo<dim, D, R, k>::FiniteElement;
 
   public:
 
@@ -113,8 +127,10 @@ namespace Impl {
     constexpr static GeometryType type = GeometryType(topologyId, GV::dimension);
 
     using FiniteElement = std::conditional_t<hasFixedElementType,
-                                           std::conditional_t<type.isCube(),CubeFiniteElement,SimplexFiniteElement>,
-                                           LocalFiniteElementVariant<CubeFiniteElement, SimplexFiniteElement> >;
+                                           std::conditional_t<type.isCube(), CubeFiniteElement, SimplexFiniteElement>,
+                              std::conditional_t<dim == 3,
+                                           LocalFiniteElementVariant<CubeFiniteElement, SimplexFiniteElement, PyramidFiniteElement>,
+                                           LocalFiniteElementVariant<CubeFiniteElement, SimplexFiniteElement> > >;
 
     // Each element facet can have its orientation reversed, hence there are
     // 2^#facets different variants.
@@ -137,11 +153,20 @@ namespace Impl {
       else
       {
         // for mixed grids add offset for cubes
-        variants_.resize(numVariants(GeometryTypes::simplex(dim)) + numVariants(GeometryTypes::cube(dim)));
-        for (size_t i = 0; i < numVariants(GeometryTypes::simplex(dim)); i++)
+        size_t numVariantsSimplex = numVariants(GeometryTypes::simplex(dim));
+        size_t numVariantsCube = numVariants(GeometryTypes::cube(dim));
+        size_t numVariantsPyramid = 0;
+        if constexpr (dim == 3)
+          numVariantsPyramid = numVariants(GeometryTypes::pyramid);
+
+        variants_.resize(numVariantsSimplex + numVariantsCube + numVariantsPyramid);
+        for (size_t i = 0; i < numVariantsSimplex; i++)
           variants_[i] = SimplexFiniteElement(i);
-        for (size_t i = 0; i < numVariants(GeometryTypes::cube(dim)); i++)
-          variants_[i + numVariants(GeometryTypes::simplex(dim))] = CubeFiniteElement(i);
+        for (size_t i = 0; i < numVariantsCube; i++)
+          variants_[i + numVariantsSimplex] = CubeFiniteElement(i);
+        if constexpr (dim == 3)
+          for (size_t i = 0; i < numVariantsPyramid; i++)
+            variants_[i + numVariantsSimplex + numVariantsCube] = PyramidFiniteElement(i);
       }
 
       for(const auto& cell : elements(gv))
@@ -155,10 +180,18 @@ namespace Impl {
             orient_[myId] |= (1 << intersection.indexInInside());
         }
 
-        // for mixed grids add offset for cubes
+        // for mixed grids add offset for cubes and pyramids
         if constexpr (!hasFixedElementType)
+        {
+          size_t numVariantsSimplex = numVariants(GeometryTypes::simplex(dim));
+          size_t numVariantsCube = numVariants(GeometryTypes::cube(dim));
+
           if (cell.type().isCube())
-            orient_[myId] += numVariants(GeometryTypes::simplex(dim));
+            orient_[myId] += numVariantsSimplex;
+          if constexpr (dim == 3)
+            if (cell.type().isPyramid())
+              orient_[myId] += numVariantsSimplex + numVariantsCube;
+        }
       }
     }
 
@@ -217,8 +250,8 @@ public:
       DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas basis with index k>0 is only implemented for grids with a single element type");
 
     for(auto type : gv.indexSet().types(0))
-      if (!type.isSimplex() && !type.isCube())
-        DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas elements are only implemented for grids with simplex or cube elements.");
+      if (!type.isSimplex() && !type.isCube() && !type.isPyramid())
+        DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas elements are only implemented for grids with simplex, cube or pyramid elements.");
 
     GeometryType type = gv.template begin<0>()->type();
     const static int dofsPerElement = type.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;
@@ -285,8 +318,8 @@ public:
     const auto& element = node.element();
 
     // throw if Element is not of predefined type
-    if (not(element.type().isCube()) and not(element.type().isSimplex()))
-      DUNE_THROW(Dune::NotImplemented, "RaviartThomasBasis only implemented for cube and simplex elements.");
+    if (not(element.type().isCube()) and not(element.type().isSimplex()) and not(element.type().isPyramid()))
+      DUNE_THROW(Dune::NotImplemented, "RaviartThomasBasis only implemented for cube, simplex and pyramid elements.");
 
     for(std::size_t i=0, end=node.size(); i<end; ++i, ++it)
     {
