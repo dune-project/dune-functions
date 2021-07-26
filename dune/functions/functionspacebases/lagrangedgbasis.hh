@@ -230,6 +230,11 @@ public:
     return it;
   }
 
+  //! Polynomial order used in the local Lagrange finite-elements
+  unsigned int order() const
+  {
+    return k;
+  }
 
 protected:
   GridView gridView_;
