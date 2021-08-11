@@ -138,6 +138,12 @@ struct NodeIndexSet
   );
 };
 
+// within the concept check ignore deprecation warnings
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 // Concept mixin for old PreBasis interface with NodeIndexSet
 // This concept is deprecated.
 template<class GridView>
@@ -150,6 +156,10 @@ struct PreBasisWithNodeIndexSet
     requireConcept<NodeIndexSet<PB>>(preBasis.makeIndexSet())
   );
 };
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 // Concept mixin for new PreBasis interface with indices method
 // This concept will be incorporated into the PreBasis concept
