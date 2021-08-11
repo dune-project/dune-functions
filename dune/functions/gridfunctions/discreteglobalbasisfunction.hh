@@ -149,9 +149,26 @@ public:
     {
       localView_.bind(element);
       bound_ = true;
-      localDoFs_.resize(localView_.tree().size());
+      // Use cache of full local view size. For a subspace basis,
+      // this may be larger than the number of local DOFs in the
+      // tree. In this case only cache entries associated to local
+      // DOFs in the subspace are filled. Cache entries associated
+      // to local DOFs which not contained in the subspace will not
+      // be touched.
+      //
+      // Alternatively one could use a cache that exactly fits
+      // the size of the tree. However, this would require to
+      // subtract an offset from localIndex(i) on each cache
+      // access in operator().
+      localDoFs_.resize(localView_.size());
       for (size_type i = 0; i < localView_.tree().size(); ++i)
-        localDoFs_[i] = globalFunction_->dofs()[localView_.index(i)];
+      {
+        // For a subspace basis the index-within-tree i
+        // is not the same as the localIndex withn the
+        // full local view.
+        size_t localIndex = localView_.tree().localIndex(i);
+        localDoFs_[localIndex] = globalFunction_->dofs()[localView_.index(localIndex)];
+      }
     }
 
     void unbind()
