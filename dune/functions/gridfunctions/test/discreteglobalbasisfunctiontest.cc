@@ -12,8 +12,10 @@
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/nedelecbasis.hh>
 #include <dune/functions/functionspacebases/raviartthomasbasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
 #include <dune/functions/gridfunctions/test/gridfunctiontest.hh>
@@ -124,6 +126,49 @@ int main (int argc, char* argv[]) try
     auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
     std::cout << "checkInterpolationConsistency for power Lagrange basis" << (passedThisTest? " " : " NOT  ") << "successful." << std::endl;
     passed = passed and passedThisTest;
+  }
+
+  // Taylor-Hood basis
+  {
+    auto taylorHoodBasis = makeBasis(
+        gridView,
+        composite(
+          power<dim>(
+            lagrange<2>(),
+            flatLexicographic()),
+          lagrange<1>(),
+          flatLexicographic()
+          ));
+    using namespace Dune::Indices;
+    // check with velocity and pressure subspace basis
+    {
+      auto feBasis = Dune::Functions::subspaceBasis(taylorHoodBasis, _0);
+
+      using Range = FieldVector<double,dim>;
+
+      auto f = [](const auto& x){
+        return Range{ x[1], x[0] };
+      };
+      std::vector<double> x;
+      interpolate(feBasis, x, f);
+      auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
+      std::cout << "checkInterpolationConsistency for velocity part of Taylor-Hood basis" << (passedThisTest? " " : " NOT  ") << "successful." << std::endl;
+      passed = passed and passedThisTest;
+    }
+    {
+      auto feBasis = Dune::Functions::subspaceBasis(taylorHoodBasis, _1);
+
+      using Range = double;
+
+      auto f = [](const auto& x){
+        return Range{ x[0] };
+      };
+      std::vector<double> x;
+      interpolate(feBasis, x, f);
+      auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
+      std::cout << "checkInterpolationConsistency for pressure part of Taylor-Hood basis" << (passedThisTest? " " : " NOT  ") << "successful." << std::endl;
+      passed = passed and passedThisTest;
+    }
   }
 
   // Raviart-Thomas basis
