@@ -3,7 +3,9 @@
 Any version of dune-functions is supposed to be compatible with the
 corresponding version of the Dune core modules.
 
-## Master (will become release 2.8)
+## Master (will become release 2.9)
+
+## Release 2.8
 
 - The `RaviartThomasBasis` and `BrezziDouglasMariniBasis` now return
   Piola-transformed shape functions.  This is implemented by changing
