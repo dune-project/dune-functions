@@ -326,13 +326,14 @@ public:
     return it;
   }
 
-protected:
-  GridView gridView_;
-
+  //! Polynomial order used in the local Lagrange finite-elements
   unsigned int order() const
   {
     return (useDynamicOrder) ? order_ : k;
   }
+
+protected:
+  GridView gridView_;
 
   // Run-time order, only valid if k<0
   const unsigned int order_;
