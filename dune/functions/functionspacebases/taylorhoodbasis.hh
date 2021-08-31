@@ -75,9 +75,6 @@ public:
   //! Template mapping root tree path to type of created tree node
   using Node = TaylorHoodBasisTree<GV>;
 
-  //! Type of created tree node index set. \deprecated
-  using IndexSet = Impl::DefaultNodeIndexSet<TaylorHoodPreBasis>;
-
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
@@ -125,20 +122,6 @@ public:
   Node makeNode() const
   {
     return Node{};
-  }
-
-  /**
-   * \brief Create tree node index set
-   *
-   * Create an index set suitable for the tree node obtained
-   * by makeNode().
-   * \deprecated
-   */
-  [[deprecated("Warning: The IndexSet typedef and the makeIndexSet method are deprecated. "\
-               "As a replacement use the indices() method of the PreBasis directly.")]]
-  IndexSet makeIndexSet() const
-  {
-    return IndexSet{*this};
   }
 
   //! Same as size(prefix) with empty prefix
