@@ -5,6 +5,9 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.9)
 
+- The header treedata.hh and the class `TreeData` are deprecated.
+  Please use `TreeContainer` from dune-typetree instead.
+
 ## Release 2.8
 
 - The `RaviartThomasBasis` and `BrezziDouglasMariniBasis` now return
