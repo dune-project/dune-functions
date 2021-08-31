@@ -3,7 +3,7 @@
 Any version of dune-functions is supposed to be compatible with the
 corresponding version of the Dune core modules.
 
-## Master (will become release 2.8)
+## Release 2.8
 
 - `PreBasis` implementations are now required to provide a method
   `PreBasis::indices(node,iterator)` that replaces binding a `NodeIndexSet`
