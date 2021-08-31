@@ -3,6 +3,9 @@
 #ifndef DUNE_FUNCTIONS_COMMON_TREEDATA_HH
 #define DUNE_FUNCTIONS_COMMON_TREEDATA_HH
 
+
+#warning This file is deprecated. Please use TreeContainer from dune-typetree instead.
+
 #include <memory>
 
 #include <dune/common/shared_ptr.hh>
@@ -18,6 +21,8 @@ namespace Functions {
 /**
  * \brief Mixin for visitors that should apply the same action on all nodes
  *
+ * \deprecated
+ *
  * \ingroup Utility
  *
  * By deriving from this you only have to implement apply(node,treepath)
@@ -27,7 +32,9 @@ namespace Functions {
  * \tparam leafOnly Flag to enable leaf only traversal
  */
 template<class SimpleNodeVisitorImp, bool leafOnly>
-struct UniformNodeVisitor :
+struct
+[[deprecated("This is an implementation detail of the deprecated class TreeDate and thus deprecated itself.")]]
+UniformNodeVisitor :
     public TypeTree::TreeVisitor,
     public TypeTree::DynamicTraversal
 {
@@ -58,6 +65,8 @@ struct UniformNodeVisitor :
 /**
  * \brief Container allowing to attach data to each node of a tree
  *
+ * \deprecated
+ *
  * \ingroup Utility
  *
  * This provides operator[](Node) for accessing the data attached to the node.
@@ -80,7 +89,9 @@ struct UniformNodeVisitor :
  * \tparam LO Set this flag if data should only be attached to leaf nodes.
  */
 template<class T, template<class> class ND, bool LO>
-class TreeData
+class
+[[deprecated("This class is deprecated. Please use TreeContainer from dune-typetree instead.")]]
+TreeData
 {
 
 public:
