@@ -5,6 +5,8 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.9)
 
+- Support for `PreBasis` implementations not providing `PreBasis::indices()`
+  has been removed.
 - The added `ComposedGridFunction` implements the composition of a
   lambda function with one or several grid functions while itself
   providing the grid function interface.
