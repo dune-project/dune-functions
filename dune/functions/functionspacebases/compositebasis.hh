@@ -249,7 +249,7 @@ private:
       // Fill indices for current child into index buffer starting from current
       // buffer position and shift first index component of any index for current
       // child by suitable offset to get lexicographic indices.
-      Impl::preBasisIndices(subPreBasis(child), node.child(child), multiIndices);
+      subPreBasis(child).indices(node.child(child), multiIndices);
       for (std::size_t i = 0; i<subTreeSize; ++i)
         multiIndices[i][0] += firstComponentOffset;
       // Increment offset by the size for first index component of the current child
@@ -275,7 +275,7 @@ private:
     Hybrid::forEach(ChildIndices(), [&](auto child){
       size_type subTreeSize = node.child(child).size();
       // Fill indices for current child into index buffer starting from current position
-      Impl::preBasisIndices(subPreBasis(child), node.child(child), multiIndices);
+      subPreBasis(child).indices(node.child(child), multiIndices);
       // Insert child index before first component of all indices of current child.
       for (std::size_t i = 0; i<subTreeSize; ++i)
         this->multiIndexPushFront(multiIndices[i], child);

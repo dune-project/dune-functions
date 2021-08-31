@@ -160,7 +160,7 @@ public:
   template<typename It>
   It indices(const Node& node, It it) const
   {
-    Impl::preBasisIndices(rawPreBasis(), node, it);
+    rawPreBasis().indices(node, it);
     for(std::size_t i=0; i<node.size(); ++i)
     {
       transformIndex(*it);
