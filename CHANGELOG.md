@@ -5,6 +5,12 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.8)
 
+- `PreBasis` implementations are now required to provide a method
+  `PreBasis::indices(node,iterator)` that replaces binding a `NodeIndexSet`
+  to `node` and then calling `NodeIndexSet::indices(iterator)`.
+  As a consequence `PreBasis::IndexSet` and `PreBasis::makeIndexSet`
+  are no longer needed.
+
 - The `RaviartThomasBasis` and `BrezziDouglasMariniBasis` now return
   Piola-transformed shape functions.  This is implemented by changing
   the return value of `tree().finiteElement()`: It is not an object
