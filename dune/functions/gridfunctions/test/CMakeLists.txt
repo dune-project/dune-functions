@@ -2,6 +2,8 @@
 
 dune_add_test(SOURCES analyticgridviewfunctiontest.cc)
 
+dune_add_test(SOURCES composedgridfunctiontest.cc)
+
 dune_add_test(SOURCES discreteglobalbasisfunctiontest.cc)
 
 dune_add_test(SOURCES gridfunctiontest.cc)
