@@ -5,6 +5,12 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.9)
 
+- The added `ComposedGridFunction` implements the composition of a
+  lambda function with one or several grid functions while itself
+  providing the grid function interface.
+- The new utility `resolveRef(t)` allows to seamlessly work with
+  `std::reference_wrapper` by returning either `t.get()` or `t`
+  depending on whether `t` is a  `std::reference_wrapper` or not.
 - The header treedata.hh and the class `TreeData` are deprecated.
   Please use `TreeContainer` from dune-typetree instead.
 
