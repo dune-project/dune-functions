@@ -14,6 +14,7 @@ install(FILES
         localfunction_imp.hh
         optional.hh
         polymorphicsmallobject.hh
+        referencehelper.hh
         reserveddeque.hh
         signature.hh
         staticforloop.hh
