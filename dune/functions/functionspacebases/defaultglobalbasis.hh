@@ -58,7 +58,10 @@ public:
   using GridView = typename PreBasis::GridView;
 
   //! Type used for global numbering of the basis vectors
-  using MultiIndex = typename PreBasis::MultiIndex;
+  using MultiIndex = std::conditional_t<
+      (PreBasis::multiIndexBufferSize == 1),
+      FlatMultiIndex<std::size_t>,
+      Dune::ReservedVector<std::size_t, PreBasis::multiIndexBufferSize>>;
 
   //! Type used for indices and size information
   using size_type = std::size_t;
@@ -67,7 +70,7 @@ public:
   using LocalView = DefaultLocalView<DefaultGlobalBasis<PreBasis>>;
 
   //! Type used for prefixes handed to the size() method
-  using SizePrefix = typename PreBasis::SizePrefix;
+  using SizePrefix = Dune::ReservedVector<std::size_t, PreBasis::multiIndexBufferSize>;
 
   /**
    * \brief Constructor
@@ -161,29 +164,16 @@ protected:
 
 
 
+template<class PB>
+DefaultGlobalBasis(PB&& pb) -> DefaultGlobalBasis<std::decay_t<PB>>;
+
+
 namespace BasisFactory {
 
 template<class GridView, class PreBasisFactory>
 auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory)
 {
-  using RawPreBasisFactory = std::decay_t<PreBasisFactory>;
-  using MultiIndex = std::conditional_t<
-    (RawPreBasisFactory::requiredMultiIndexSize == 1),
-    FlatMultiIndex<std::size_t>,
-    Dune::ReservedVector<std::size_t, RawPreBasisFactory::requiredMultiIndexSize>>;
-  auto preBasis = preBasisFactory.template makePreBasis<MultiIndex>(gridView);
-  using PreBasis = std::decay_t<decltype(preBasis)>;
-
-  return DefaultGlobalBasis<PreBasis>(std::move(preBasis));
-}
-
-template<class MultiIndex, class GridView, class PreBasisFactory>
-auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory)
-{
-  auto preBasis = preBasisFactory.template makePreBasis<MultiIndex>(gridView);
-  using PreBasis = std::decay_t<decltype(preBasis)>;
-
-  return DefaultGlobalBasis<PreBasis>(std::move(preBasis));
+  return DefaultGlobalBasis(preBasisFactory(gridView));
 }
 
 } // end namespace BasisFactory

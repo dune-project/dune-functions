@@ -41,7 +41,7 @@ public:
   using Tree = typename GlobalBasis::PreBasis::Node;
 
   /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = typename GlobalBasis::PreBasis::MultiIndex;
+  using MultiIndex = typename GlobalBasis::MultiIndex;
 
 public:
 

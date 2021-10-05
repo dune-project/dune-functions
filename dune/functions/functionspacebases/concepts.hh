@@ -143,27 +143,35 @@ struct NodeIndexSet
 template<class GridView>
 struct PreBasis
 {
+private:
+  template<class PB>
+  using MultiIndex = Dune::ReservedVector<typename PB::size_type, PB::multiIndexBufferSize>;
+
+public:
   template<class PB>
   auto require(const PB& preBasis) -> decltype(
     requireType<typename PB::GridView>(),
     requireType<typename PB::size_type>(),
-    requireType<typename PB::MultiIndex>(),
-    requireType<typename PB::SizePrefix>(),
     requireType<typename PB::Node>(),
+    requireConvertible<decltype(PB::maxMultiIndexSize), typename PB::size_type>(),
+    requireConvertible<decltype(PB::maxMultiIndexSize), typename PB::size_type>(),
+    requireConvertible<decltype(PB::multiIndexBufferSize), typename PB::size_type>(),
+    requireTrue<PB::minMultiIndexSize <= PB::maxMultiIndexSize>(),
+    requireTrue<PB::maxMultiIndexSize <= PB::multiIndexBufferSize>(),
     requireSameType<typename PB::GridView, GridView>(),
     const_cast<PB&>(preBasis).initializeIndices(),
     requireConvertible<typename PB::GridView>(preBasis.gridView()),
     requireConvertible<typename PB::Node>(preBasis.makeNode()),
     requireConvertible<typename PB::size_type>(preBasis.size()),
-    requireConvertible<typename PB::size_type>(preBasis.size(std::declval<typename PB::SizePrefix>())),
+    requireConvertible<typename PB::size_type>(preBasis.size(std::declval<MultiIndex<PB>>())),
     requireConvertible<typename PB::size_type>(preBasis.dimension()),
     requireConvertible<typename PB::size_type>(preBasis.maxNodeSize()),
     requireSameType<decltype(const_cast<PB&>(preBasis).update(preBasis.gridView())),void>(),
     requireConcept<BasisTree<typename PB::GridView>>(preBasis.makeNode()),
-    requireConvertible<typename std::vector<typename PB::MultiIndex>::iterator>(
+    requireConvertible<typename std::vector<MultiIndex<PB>>::iterator>(
       preBasis.indices(
         preBasis.makeNode(),
-        std::declval<typename std::vector<typename PB::MultiIndex>::iterator>()))
+        std::declval<typename std::vector<MultiIndex<PB>>::iterator>()))
   );
 };
 
