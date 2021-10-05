@@ -62,9 +62,6 @@ namespace Dune {
       //! Template mapping root tree path to type of created tree node
       using Node = HierarchicalLagrangeNode<GV, k, R>;
 
-      //! Type of created tree node index set
-      using IndexSet = Impl::DefaultNodeIndexSet<HierarchicalLagrangePreBasis>;
-
       //! Type used for global numbering of the basis vectors
       using MultiIndex = MI;
 
@@ -101,17 +98,6 @@ namespace Dune {
       Node makeNode() const
       {
         return Node{};
-      }
-
-      /**
-       * \brief Create tree node index set
-       *
-       * Create an index set suitable for the tree node obtained
-       * by makeNode().
-       */
-      IndexSet makeIndexSet() const
-      {
-        return IndexSet{*this};
       }
 
       //! Same as size(prefix) with empty prefix

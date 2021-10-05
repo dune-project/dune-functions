@@ -68,9 +68,6 @@ public:
   //! Template mapping root tree path to type of created tree node
   using Node = typename RawPreBasis::Node;
 
-  //! Type of created tree node index set. \deprecated
-  using IndexSet = Impl::DefaultNodeIndexSet<TransformedIndexPreBasis>;
-
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
@@ -121,20 +118,6 @@ public:
     return rawPreBasis_.makeNode();
   }
 
-  /**
-   * \brief Create tree node index set
-   *
-   * Create an index set suitable for the tree node obtained
-   * by makeNode().
-   * \deprecated
-   */
-  [[deprecated("Warning: The IndexSet typedef and the makeIndexSet method are deprecated. "\
-               "As a replacement use the indices() method of the PreBasis directly.")]]
-  IndexSet makeIndexSet() const
-  {
-    return IndexSet{*this};
-  }
-
   //! Same as size(prefix) with empty prefix
   size_type size() const
   {
@@ -177,7 +160,7 @@ public:
   template<typename It>
   It indices(const Node& node, It it) const
   {
-    Impl::preBasisIndices(rawPreBasis(), node, it);
+    rawPreBasis().indices(node, it);
     for(std::size_t i=0; i<node.size(); ++i)
     {
       transformIndex(*it);

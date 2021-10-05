@@ -138,43 +138,6 @@ struct NodeIndexSet
   );
 };
 
-// within the concept check ignore deprecation warnings
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
-// Concept mixin for old PreBasis interface with NodeIndexSet
-// This concept is deprecated.
-template<class GridView>
-struct PreBasisWithNodeIndexSet
-{
-  template<class PB>
-  auto require(const PB& preBasis) -> decltype(
-    requireType<typename PB::IndexSet>(),
-    requireConvertible<typename PB::IndexSet>(preBasis.makeIndexSet()),
-    requireConcept<NodeIndexSet<PB>>(preBasis.makeIndexSet())
-  );
-};
-
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
-
-// Concept mixin for new PreBasis interface with indices method
-// This concept will be incorporated into the PreBasis concept
-// once PreBasisWithNodeIndexSet was removed.
-template<class GridView>
-struct PreBasisWithIndices
-{
-  template<class PB>
-  auto require(const PB& preBasis) -> decltype(
-    requireConvertible<typename std::vector<typename PB::MultiIndex>::iterator>(
-      preBasis.indices(
-        preBasis.makeNode(),
-        std::declval<typename std::vector<typename PB::MultiIndex>::iterator>()))
-  );
-};
 
 // Concept for a PreBasis
 template<class GridView>
@@ -197,13 +160,10 @@ struct PreBasis
     requireConvertible<typename PB::size_type>(preBasis.maxNodeSize()),
     requireSameType<decltype(const_cast<PB&>(preBasis).update(preBasis.gridView())),void>(),
     requireConcept<BasisTree<typename PB::GridView>>(preBasis.makeNode()),
-    requireTrue<models<PreBasisWithNodeIndexSet<GridView>, PB>() or models<PreBasisWithIndices<GridView>, PB>()>()
-    // The previous line should be replaced by the following
-    // once PreBasisWithNodeIndexSet was removed:
-    // requireConvertible<typename std::vector<typename PB::MultiIndex>::iterator>(
-    //   preBasis.indices(
-    //     preBasis.makeNode(),
-    //     std::declval<typename std::vector<typename PB::MultiIndex>::iterator>()))
+    requireConvertible<typename std::vector<typename PB::MultiIndex>::iterator>(
+      preBasis.indices(
+        preBasis.makeNode(),
+        std::declval<typename std::vector<typename PB::MultiIndex>::iterator>()))
   );
 };
 

@@ -65,9 +65,6 @@ public:
   //! Template mapping root tree path to type of created tree node
   using Node = PowerBasisNode<SubNode, children>;
 
-  //! Type of created tree node index set. \deprecated
-  using IndexSet = Impl::DefaultNodeIndexSet<PowerPreBasis>;
-
   //! Type used for global numbering of the basis vectors
   using MultiIndex = MI;
 
@@ -121,20 +118,6 @@ public:
     for (std::size_t i=0; i<children; ++i)
       node.setChild(i, subPreBasis_.makeNode());
     return node;
-  }
-
-  /**
-   * \brief Create tree node index set
-   *
-   * Create an index set suitable for the tree node obtained
-   * by makeNode().
-   * \deprecated
-   */
-  [[deprecated("Warning: The IndexSet typedef and the makeIndexSet method are deprecated. "\
-               "As a replacement use the indices() method of the PreBasis directly.")]]
-  IndexSet makeIndexSet() const
-  {
-    return IndexSet{*this};
   }
 
   //! Same as size(prefix) with empty prefix
@@ -261,7 +244,7 @@ private:
     using namespace Dune::Indices;
     size_type subTreeSize = node.child(_0).size();
     // Fill indices for first child at the beginning.
-    auto next = Impl::preBasisIndices(subPreBasis(), node.child(_0), multiIndices);
+    auto next = subPreBasis().indices(node.child(_0), multiIndices);
     // Multiply first component of all indices for first child by
     // number of children to strech the index range for interleaving.
     for (std::size_t i = 0; i<subTreeSize; ++i)
@@ -289,7 +272,7 @@ private:
     size_type subTreeSize = node.child(_0).size();
     size_type firstIndexEntrySize = subPreBasis().size({});
     // Fill indices for first child at the beginning.
-    auto next = Impl::preBasisIndices(subPreBasis(), node.child(_0), multiIndices);
+    auto next = subPreBasis().indices(node.child(_0), multiIndices);
     for (std::size_t child = 1; child<children; ++child)
     {
       for (std::size_t i = 0; i<subTreeSize; ++i)
@@ -320,7 +303,7 @@ private:
     using namespace Dune::Indices;
     size_type subTreeSize = node.child(_0).size();
     // Fill indices for first child at the beginning.
-    auto next = Impl::preBasisIndices(subPreBasis(), node.child(_0), multiIndices);
+    auto next = subPreBasis().indices(node.child(_0), multiIndices);
     // Insert 0 before first component of all indices for first child.
     for (std::size_t i = 0; i<subTreeSize; ++i)
       multiIndexPushFront(multiIndices[i], 0);
@@ -346,7 +329,7 @@ private:
     using namespace Dune::Indices;
     size_type subTreeSize = node.child(_0).size();
     // Fill indices for first child at the beginning.
-    auto next = Impl::preBasisIndices(subPreBasis(), node.child(_0), multiIndices);
+    auto next = subPreBasis().indices(node.child(_0), multiIndices);
     // Append 0 after last component of all indices for first child.
     for (std::size_t i = 0; i<subTreeSize; ++i)
       multiIndices[i].push_back(0);

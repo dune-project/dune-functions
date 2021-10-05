@@ -46,9 +46,6 @@ template<class PB>
 class DefaultGlobalBasis
 {
 
-  [[deprecated("Warning: Using a PreBasis that does not provide an indices(node, iterator) method but only a NodeIndexSet is deprecated!")]]
-  static auto indicesInterfaceDeprecationWarning() {}
-
 public:
 
   //! Pre-basis providing the implementation details
@@ -87,8 +84,6 @@ public:
     preBasis_(std::forward<T>(t)...),
     prefixPath_()
   {
-    if constexpr (not Impl::preBasisHasIndices<PreBasis>{})
-      indicesInterfaceDeprecationWarning();
     static_assert(models<Concept::PreBasis<GridView>, PreBasis>(), "Type passed to DefaultGlobalBasis does not model the PreBasis concept.");
     preBasis_.initializeIndices();
   }
