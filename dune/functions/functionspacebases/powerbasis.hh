@@ -36,15 +36,15 @@ namespace Functions {
  * This pre-basis represents a power of a given pre-basis.
  * Its node type is a PowerBasisNodes for the given subnode.
  *
- * \tparam MI  Type to be used for multi-indices
  * \tparam IMS An IndexMergingStrategy used to merge the global indices of the child factories
  * \tparam SPB  The child pre-basis
  * \tparam C   The exponent of the power node
  */
-template<class MI, class IMS, class SPB, std::size_t C>
+template<class IMS, class SPB, std::size_t C>
 class PowerPreBasis
 {
   static const std::size_t children = C;
+  static const bool isBlocked = std::is_same_v<IMS,BasisFactory::BlockedLexicographic> or std::is_same_v<IMS,BasisFactory::BlockedInterleaved>;
 
 public:
 
@@ -65,17 +65,9 @@ public:
   //! Template mapping root tree path to type of created tree node
   using Node = PowerBasisNode<SubNode, children>;
 
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = MI;
-
-  //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, MultiIndex::max_size()>;
-
-private:
-
-  using SubMultiIndex = MI;
-
-public:
+  static constexpr size_type maxMultiIndexSize = SubPreBasis::maxMultiIndexSize + isBlocked;
+  static constexpr size_type minMultiIndexSize = SubPreBasis::minMultiIndexSize + isBlocked;
+  static constexpr size_type multiIndexBufferSize = SubPreBasis::multiIndexBufferSize + isBlocked;
 
   /**
    * \brief Constructor for given child pre-basis objects
@@ -123,10 +115,12 @@ public:
   //! Same as size(prefix) with empty prefix
   size_type size() const
   {
-    return size({});
+    return size(Dune::ReservedVector<size_type, multiIndexBufferSize>{});
   }
 
   //! Return number of possible values for next position in multi index
+
+  template<class SizePrefix>
   size_type size(const SizePrefix& prefix) const
   {
     return size(prefix, IndexMergingStrategy{});
@@ -134,62 +128,66 @@ public:
 
 private:
 
+  template<class SizePrefix>
   size_type size(const SizePrefix& prefix, BasisFactory::FlatInterleaved) const
   {
     // The root index size is the root index size of a single subnode
     // multiplied by the number of subnodes because we enumerate all
     // child indices in a row.
     if (prefix.size() == 0)
-      return children*subPreBasis_.size({});
+      return children*subPreBasis_.size();
 
     // The first prefix entry refers to one of the (root index size)
     // subindex trees. Hence we have to first compute the corresponding
     // prefix entry for a single subnode subnode. The we can append
     // the other prefix entries unmodified, because the index tree
     // looks the same after the first level.
-    typename SubPreBasis::SizePrefix subPrefix;
+    SizePrefix subPrefix;
     subPrefix.push_back(prefix[0] / children);
     for(std::size_t i=1; i<prefix.size(); ++i)
       subPrefix.push_back(prefix[i]);
     return subPreBasis_.size(subPrefix);
   }
 
+  template<class SizePrefix>
   size_type size(const SizePrefix& prefix, BasisFactory::FlatLexicographic) const
   {
     // The size at the index tree root is the size of at the index tree
     // root of a single subnode multiplied by the number of subnodes
     // because we enumerate all child indices in a row.
     if (prefix.size() == 0)
-      return children*subPreBasis_.size({});
+      return children*subPreBasis_.size();
 
     // The first prefix entry refers to one of the (root index size)
     // subindex trees. Hence we have to first compute the corresponding
     // prefix entry for a single subnode subnode. The we can append
     // the other prefix entries unmodified, because the index tree
     // looks the same after the first level.
-    typename SubPreBasis::SizePrefix subPrefix;
+    SizePrefix subPrefix;
     subPrefix.push_back(prefix[0] % children);
     for(std::size_t i=1; i<prefix.size(); ++i)
       subPrefix.push_back(prefix[i]);
     return subPreBasis_.size(subPrefix);
   }
 
+  template<class SizePrefix>
   size_type size(const SizePrefix& prefix, BasisFactory::BlockedLexicographic) const
   {
     if (prefix.size() == 0)
       return children;
-    typename SubPreBasis::SizePrefix subPrefix;
+    SizePrefix subPrefix;
     for(std::size_t i=1; i<prefix.size(); ++i)
       subPrefix.push_back(prefix[i]);
     return subPreBasis_.size(subPrefix);
   }
 
+  template<class SizePrefix>
   size_type size(const SizePrefix& prefix, BasisFactory::BlockedInterleaved) const
   {
     if (prefix.size() == 0)
       return subPreBasis_.size();
 
-    typename SubPreBasis::SizePrefix subPrefix;
+    SizePrefix subPrefix;
     for(std::size_t i=0; i<prefix.size()-1; ++i)
       subPrefix.push_back(prefix[i]);
 
@@ -270,7 +268,7 @@ private:
   {
     using namespace Dune::Indices;
     size_type subTreeSize = node.child(_0).size();
-    size_type firstIndexEntrySize = subPreBasis().size({});
+    size_type firstIndexEntrySize = subPreBasis().size();
     // Fill indices for first child at the beginning.
     auto next = subPreBasis().indices(node.child(_0), multiIndices);
     for (std::size_t child = 1; child<children; ++child)
@@ -289,6 +287,7 @@ private:
     return next;
   }
 
+  template<class MultiIndex>
   static void multiIndexPushFront(MultiIndex& M, size_type M0)
   {
     M.resize(M.size()+1);
@@ -354,44 +353,6 @@ private:
 
 namespace BasisFactory {
 
-namespace Imp {
-
-template<std::size_t k, class IndexMergingStrategy, class ChildPreBasisFactory>
-class PowerPreBasisFactory
-{
-  static const bool isBlocked = std::is_same<IndexMergingStrategy,BlockedLexicographic>::value or std::is_same<IndexMergingStrategy,BlockedInterleaved>::value;
-
-  static const std::size_t maxChildIndexSize = ChildPreBasisFactory::requiredMultiIndexSize;
-
-public:
-
-  static const std::size_t requiredMultiIndexSize = isBlocked ? (maxChildIndexSize+1) : maxChildIndexSize;
-
-  PowerPreBasisFactory(const ChildPreBasisFactory& childPreBasisFactory) :
-    childPreBasisFactory_(childPreBasisFactory)
-  {}
-
-  PowerPreBasisFactory(ChildPreBasisFactory&& childPreBasisFactory) :
-    childPreBasisFactory_(std::move(childPreBasisFactory))
-  {}
-
-  template<class MultiIndex, class GridView>
-  auto makePreBasis(const GridView& gridView) const
-  {
-    auto childPreBasis = childPreBasisFactory_.template makePreBasis<MultiIndex>(gridView);
-    using ChildPreBasis = decltype(childPreBasis);
-
-    return PowerPreBasis<MultiIndex,  IndexMergingStrategy, ChildPreBasis, k>(std::move(childPreBasis));
-  }
-
-private:
-  ChildPreBasisFactory childPreBasisFactory_;
-};
-
-} // end namespace BasisFactory::Imp
-
-
-
 /**
  * \brief Create a pre-basis factory that can build a PowerPreBasis
  *
@@ -407,7 +368,10 @@ private:
 template<std::size_t k, class ChildPreBasisFactory, class IndexMergingStrategy>
 auto power(ChildPreBasisFactory&& childPreBasisFactory, const IndexMergingStrategy& ims)
 {
-  return Imp::PowerPreBasisFactory<k, IndexMergingStrategy, ChildPreBasisFactory>(std::forward<ChildPreBasisFactory>(childPreBasisFactory));
+  return [childPreBasisFactory](const auto& gridView) {
+    auto childPreBasis = childPreBasisFactory(gridView);
+    return PowerPreBasis<IndexMergingStrategy, decltype(childPreBasis), k>(std::move(childPreBasis));
+  };
 }
 
 /**
@@ -423,7 +387,10 @@ auto power(ChildPreBasisFactory&& childPreBasisFactory, const IndexMergingStrate
 template<std::size_t k, class ChildPreBasisFactory>
 auto power(ChildPreBasisFactory&& childPreBasisFactory)
 {
-  return Imp::PowerPreBasisFactory<k, BlockedInterleaved, ChildPreBasisFactory>(std::forward<ChildPreBasisFactory>(childPreBasisFactory));
+  return [childPreBasisFactory](const auto& gridView) {
+    auto childPreBasis = childPreBasisFactory(gridView);
+    return PowerPreBasis<BlockedInterleaved, decltype(childPreBasis), k>(std::move(childPreBasis));
+  };
 }
 
 } // end namespace BasisFactory

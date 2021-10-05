@@ -11,7 +11,6 @@
 #include <dune/localfunctions/lagrange/pqkfactory.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 
@@ -32,7 +31,7 @@ namespace Functions {
 template<typename GV, int k, typename R=double>
 class LagrangeNode;
 
-template<typename GV, int k, class MI, typename R=double>
+template<typename GV, int k, typename R=double>
 class LagrangePreBasis;
 
 
@@ -44,7 +43,6 @@ class LagrangePreBasis;
  *
  * \tparam GV  The grid view that the FE basis is defined on
  * \tparam k   The polynomial order of ansatz functions; -1 means 'order determined at run-time'
- * \tparam MI  Type to be used for multi-indices
  * \tparam R   Range type used for shape function values
  *
  * \note This only works for certain grids.  The following restrictions hold
@@ -52,7 +50,7 @@ class LagrangePreBasis;
  * - If k is larger than 3 then the grid must be two-dimensional
  * - If k is 3, then the grid can be 3d *if* it is a simplex grid
  */
-template<typename GV, int k, class MI, typename R>
+template<typename GV, int k, typename R>
 class LagrangePreBasis
 {
   static const int dim = GV::dimension;
@@ -69,11 +67,9 @@ public:
   //! Template mapping root tree path to type of created tree node
   using Node = LagrangeNode<GV, k, R>;
 
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = MI;
-
-  //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, 1>;
+  static constexpr size_type maxMultiIndexSize = 1;
+  static constexpr size_type minMultiIndexSize = 1;
+  static constexpr size_type multiIndexBufferSize = 1;
 
   //! Constructor for a given grid view object with compile-time order
   LagrangePreBasis(const GridView& gv)
@@ -171,7 +167,8 @@ public:
   }
 
   //! Return number of possible values for next position in multi index
-  size_type size(const SizePrefix prefix) const
+  template<class SizePrefix>
+  size_type size(const SizePrefix& prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
     return (prefix.size() == 0) ? size() : 0;
@@ -480,40 +477,6 @@ protected:
 
 namespace BasisFactory {
 
-namespace Imp {
-
-template<int k, typename R=double>
-class LagrangePreBasisFactory
-{
-  static const bool useDynamicOrder = (k<0);
-public:
-  static const std::size_t requiredMultiIndexSize = 1;
-
-  // \brief Constructor for factory with compile-time order
-  LagrangePreBasisFactory() : order_(0)
-  {}
-
-  // \brief Constructor for factory with run-time order (template argument k is disregarded)
-  LagrangePreBasisFactory(unsigned int order)
-  : order_(order)
-  {}
-
-  template<class MultiIndex, class GridView>
-  auto makePreBasis(const GridView& gridView) const
-  {
-    return (useDynamicOrder)
-      ? LagrangePreBasis<GridView, k, MultiIndex, R>(gridView, order_)
-      : LagrangePreBasis<GridView, k, MultiIndex, R>(gridView);
-  }
-
-private:
-  unsigned int order_;
-};
-
-} // end namespace BasisFactory::Imp
-
-
-
 /**
  * \brief Create a pre-basis factory that can create a  Lagrange pre-basis
  *
@@ -525,7 +488,9 @@ private:
 template<std::size_t k, typename R=double>
 auto lagrange()
 {
-  return Imp::LagrangePreBasisFactory<k,R>();
+  return [](const auto& gridView) {
+    return LagrangePreBasis<std::decay_t<decltype(gridView)>, k, R>(gridView);
+  };
 }
 
 /**
@@ -538,7 +503,9 @@ auto lagrange()
 template<typename R=double>
 auto lagrange(int order)
 {
-  return Imp::LagrangePreBasisFactory<-1,R>(order);
+  return [=](const auto& gridView) {
+    return LagrangePreBasis<std::decay_t<decltype(gridView)>, -1, R>(gridView, order);
+  };
 }
 
 } // end namespace BasisFactory
@@ -569,7 +536,7 @@ auto lagrange(int order)
  * \tparam R The range type of the local basis
  */
 template<typename GV, int k=-1, typename R=double>
-using LagrangeBasis = DefaultGlobalBasis<LagrangePreBasis<GV, k, FlatMultiIndex<std::size_t>, R> >;
+using LagrangeBasis = DefaultGlobalBasis<LagrangePreBasis<GV, k, R> >;
 
 
 

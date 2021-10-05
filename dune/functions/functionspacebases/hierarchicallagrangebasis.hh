@@ -7,7 +7,6 @@
 #include <dune/localfunctions/hierarchical/hierarchicalp2.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/grid/common/mcmgmapper.hh>
 
@@ -33,7 +32,7 @@ namespace Dune {
     template<typename GV, int k, typename R=double>
     class HierarchicalLagrangeNode;
 
-    template<typename GV, int k, class MI, typename R=double>
+    template<typename GV, int k, typename R=double>
     class HierarchicalLagrangePreBasis;
 
     /**
@@ -43,10 +42,9 @@ namespace Dune {
      *
      * \tparam GV  The grid view that the FE basis is defined on
      * \tparam k   The polynomial order of ansatz functions (limited to second order till now)
-     * \tparam MI  Type to be used for multi-indices
      * \tparam R   Range type used for shape function values
      */
-    template<typename GV, int k, class MI, typename R>
+    template<typename GV, int k, typename R>
     class HierarchicalLagrangePreBasis
     {
       static const int dim = GV::dimension;
@@ -62,11 +60,9 @@ namespace Dune {
       //! Template mapping root tree path to type of created tree node
       using Node = HierarchicalLagrangeNode<GV, k, R>;
 
-      //! Type used for global numbering of the basis vectors
-      using MultiIndex = MI;
-
-      //! Type used for prefixes handed to the size() method
-      using SizePrefix = Dune::ReservedVector<size_type, 1>;
+      static constexpr size_type maxMultiIndexSize = 1;
+      static constexpr size_type minMultiIndexSize = 1;
+      static constexpr size_type multiIndexBufferSize = 1;
 
       /** \brief Constructor for a given grid view object with layout for second order
        *
@@ -107,6 +103,7 @@ namespace Dune {
       }
 
       //! Return number of possible values for next position in multi index
+      template<class SizePrefix>
       size_type size(const SizePrefix prefix) const
       {
         assert(prefix.size() == 0 || prefix.size() == 1);
@@ -234,25 +231,6 @@ namespace Dune {
 
     namespace BasisFactory {
 
-      namespace Impl {
-
-        template<int k, typename R=double>
-        class HierarchicalLagrangePreBasisFactory
-        {
-
-        public:
-          static const std::size_t requiredMultiIndexSize = 1;
-
-          template<class MultiIndex, class GridView>
-          auto makePreBasis(const GridView& gridView) const
-          {
-            return HierarchicalLagrangePreBasis<GridView, k, MultiIndex, R>(gridView);
-          }
-
-        };
-      } // end namespace BasisFactory::Impl
-
-
       /**
        * \brief Create a pre-basis factory that can create a HierarchicalLagrange pre-basis
        *
@@ -264,7 +242,9 @@ namespace Dune {
       template<std::size_t k, typename R=double>
       auto hierarchicalLagrange()
       {
-        return Impl::HierarchicalLagrangePreBasisFactory<k,R>();
+        return [](const auto& gridView) {
+          return HierarchicalLagrangePreBasis<std::decay_t<decltype(gridView)>, k, R>(gridView);
+        };
       }
 
     } // end namespace BasisFactory
@@ -280,7 +260,7 @@ namespace Dune {
      *  -- currently only supports simplex grids --
      */
     template<typename GV, int k, typename R=double>
-    using HierarchicalLagrangeBasis = DefaultGlobalBasis<HierarchicalLagrangePreBasis<GV, k, FlatMultiIndex<std::size_t>, R> >;
+    using HierarchicalLagrangeBasis = DefaultGlobalBasis<HierarchicalLagrangePreBasis<GV, k, R> >;
 
   } // end namespace Functions
 } // end namespace Dune

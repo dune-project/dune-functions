@@ -19,7 +19,6 @@
 #include <dune/functions/functionspacebases/globalvaluedlocalfiniteelement.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 
 namespace Dune {
 namespace Functions {
@@ -148,7 +147,7 @@ namespace Impl {
 template<typename GV, int k>
 class BrezziDouglasMariniNode;
 
-template<typename GV, int k, class MI>
+template<typename GV, int k>
 class BrezziDouglasMariniPreBasis
 {
   static const int dim = GV::dimension;
@@ -162,10 +161,9 @@ public:
 
   using Node = BrezziDouglasMariniNode<GV, k>;
 
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using SizePrefix = Dune::ReservedVector<size_type, 1>;
+  static constexpr size_type maxMultiIndexSize = 1;
+  static constexpr size_type minMultiIndexSize = 1;
+  static constexpr size_type multiIndexBufferSize = 1;
 
   /** \brief Constructor for a given grid view object */
   BrezziDouglasMariniPreBasis(const GridView& gv) :
@@ -212,6 +210,7 @@ public:
   }
 
   //! Return number possible values for next position in multi index
+  template<class SizePrefix>
   size_type size(const SizePrefix prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
@@ -327,24 +326,6 @@ protected:
 
 namespace BasisFactory {
 
-namespace Imp {
-
-template<std::size_t k>
-class BrezziDouglasMariniPreBasisFactory
-{
-public:
-  static const std::size_t requiredMultiIndexSize=1;
-
-  template<class MultiIndex, class GridView>
-  auto makePreBasis(const GridView& gridView) const
-    -> BrezziDouglasMariniPreBasis<GridView, k, MultiIndex>
-  {
-    return {gridView};
-  }
-};
-
-} // end namespace BasisFactory::Imp
-
 /**
  * \brief Create a pre-basis factory that can create a Brezzi-Douglas-Marini pre-basis
  *
@@ -355,7 +336,9 @@ public:
 template<std::size_t k>
 auto brezziDouglasMarini()
 {
-  return Imp::BrezziDouglasMariniPreBasisFactory<k>();
+  return [](const auto& gridView) {
+    return BrezziDouglasMariniPreBasis<std::decay_t<decltype(gridView)>, k>(gridView);
+  };
 }
 
 } // end namespace BasisFactory
@@ -374,7 +357,7 @@ auto brezziDouglasMarini()
  * \tparam k The order of the basis
  */
 template<typename GV, int k>
-using BrezziDouglasMariniBasis = DefaultGlobalBasis<BrezziDouglasMariniPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
+using BrezziDouglasMariniBasis = DefaultGlobalBasis<BrezziDouglasMariniPreBasis<GV, k> >;
 
 } // end namespace Functions
 } // end namespace Dune
