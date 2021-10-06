@@ -5,6 +5,12 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.9)
 
+- The way multi index types are generated for global bases has been refactored.
+  This changes nothing for the user but gives more freedom in the construction
+  of global bases.
+  But it is a breaking change for the `PreBasis` and `PreBasisFactory` interface.
+  If you maintain your own prebasis implementions, they have to be adapted.
+  The necessary modifications are documented in detail here: https://gitlab.dune-project.org/staging/dune-functions/-/merge_requests/326.
 - Support for `PreBasis` implementations not providing `PreBasis::indices()`
   has been removed.
 - The added `ComposedGridFunction` implements the composition of a
