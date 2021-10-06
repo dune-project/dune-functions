@@ -91,6 +91,21 @@ public:
     preBasis_.initializeIndices();
   }
 
+  /**
+   * \brief Constructor from a PreBasis factory
+   *
+   * \param gridView  The GridView this basis is based on
+   * \param factory  A factory functor that gets the `gridView` and returns a `PreBasis`
+   */
+  template<class PreBasisFactory>
+  DefaultGlobalBasis(const GridView& gridView, PreBasisFactory&& factory) :
+    preBasis_(factory(gridView)),
+    prefixPath_()
+  {
+    static_assert(models<Concept::PreBasis<GridView>, PreBasis>(), "Type passed to DefaultGlobalBasis does not model the PreBasis concept.");
+    preBasis_.initializeIndices();
+  }
+
   //! Obtain the grid view that the basis is defined on
   const GridView& gridView() const
   {
@@ -164,8 +179,12 @@ protected:
 
 
 
-template<class PB>
-DefaultGlobalBasis(PB&& pb) -> DefaultGlobalBasis<std::decay_t<PB>>;
+template<class PreBasis>
+DefaultGlobalBasis(PreBasis&&) -> DefaultGlobalBasis<std::decay_t<PreBasis>>;
+
+template<class GridView, class PreBasisFactory>
+DefaultGlobalBasis(const GridView& gv, PreBasisFactory&& f) -> DefaultGlobalBasis<std::decay_t<decltype(f(gv))>>;
+
 
 
 namespace BasisFactory {

@@ -54,6 +54,18 @@ int main (int argc, char *argv[]) try
   }
 
   {
+    auto basis = Dune::Functions::DefaultGlobalBasis(
+      gridView,
+      composite(
+        lagrange<1>(),
+        lagrange<1>(),
+        lagrange<1>()
+      ));
+
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
+  }
+
+  {
     using namespace Functions;
     using PreBasis =
       PowerPreBasis<BlockedInterleaved,
