@@ -26,21 +26,6 @@ namespace Dune
   namespace Python
   {
 
-    template< class GridView, class PreBasisFactory_ >
-    using PreBasis = std::decay_t< decltype( std::declval<PreBasisFactory_>()( std::declval<GridView>() ) ) >;
-
-    template< class GridView, class PreBasisFactory >
-    struct DefaultGlobalBasis
-      : public Dune::Functions::DefaultGlobalBasis< PreBasis< GridView, PreBasisFactory > >
-    {
-      typedef Dune::Functions::DefaultGlobalBasis< PreBasis< GridView, PreBasisFactory > > Base;
-
-      explicit DefaultGlobalBasis ( const GridView &gridView )
-        : Base( gridView )
-      {}
-    };
-
-
     template <class Basis>
     struct LocalViewWrapper : public Basis::LocalView
     {
