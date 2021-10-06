@@ -100,6 +100,26 @@ public:
     });
   }
 
+  /**
+   * \brief Constructor for given GridView
+   *
+   * This constructor is only available if all child pre-bases are constructible
+   * from the grid view.
+   */
+  template<class GV,
+    std::enable_if_t<std::conjunction_v<
+      std::bool_constant<(children > 1)>,    // Avoid ambiguous constructor if there's only one child
+      std::is_same<GV, GridView>,
+      std::is_constructible<SPB, GridView>...
+    >, int> = 0>
+  CompositePreBasis(const GV& gv) :
+    subPreBases_(SPB(gv)...)
+  {
+    Hybrid::forEach(subPreBases_, [&](const auto& subPreBasis){
+      static_assert(models<Concept::PreBasis<GridView>, std::decay_t<decltype(subPreBasis)>>(), "Subprebases passed to CompositePreBasis does not model the PreBasis concept.");
+    });
+  }
+
   //! Initialize the global indices
   void initializeIndices()
   {
