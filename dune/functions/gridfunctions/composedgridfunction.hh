@@ -11,6 +11,7 @@
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/differentiablefunction.hh>
 #include <dune/functions/common/referencehelper.hh>
+#include <dune/functions/gridfunctions/gridfunction.hh>
 
 
 namespace Dune {
