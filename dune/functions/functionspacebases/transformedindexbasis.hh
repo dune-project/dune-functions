@@ -44,16 +44,15 @@ namespace Experimental {
  * This pre-basis wraps another pre-basis and transforms its global
  * multi-indices.
  *
- * \tparam MI  Type to be used for global multi-indices
  * \tparam RPB Raw PreBasis to be wrapped
  * \tparam T Class of the index transformation
  */
-template<class MI, class RPB, class T>
+template<class RPB, class T>
 class TransformedIndexPreBasis
 {
   using Transformation = T;
 
-  using This = TransformedIndexPreBasis<MI, RPB, T>;
+  using This = TransformedIndexPreBasis<RPB, T>;
 
 public:
 
@@ -68,11 +67,9 @@ public:
   //! Template mapping root tree path to type of created tree node
   using Node = typename RawPreBasis::Node;
 
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = MI;
-
-  //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, MultiIndex::max_size()+1>;
+  static constexpr size_type maxMultiIndexSize = Transformation::maxIndexSize;
+  static constexpr size_type minMultiIndexSize = Transformation::minIndexSize;
+  static constexpr size_type multiIndexBufferSize = std::max(RawPreBasis::multiIndexBufferSize, maxMultiIndexSize);
 
   /**
    * \brief Constructor for given child pre-basis objects
@@ -121,10 +118,11 @@ public:
   //! Same as size(prefix) with empty prefix
   size_type size() const
   {
-    return size({});
+    return size(Dune::ReservedVector<size_type, multiIndexBufferSize>{});
   }
 
   //! Return number of possible values for next position in multi index
+  template<class SizePrefix>
   size_type size(const SizePrefix& prefix) const
   {
     return transformation_.size(prefix, rawPreBasis_);
@@ -152,6 +150,7 @@ public:
     return rawPreBasis_;
   }
 
+  template<class MultiIndex>
   void transformIndex(MultiIndex& multiIndex) const
   {
     transformation_.transformIndex(multiIndex, rawPreBasis_);
@@ -174,6 +173,8 @@ protected:
   Transformation transformation_;
 };
 
+template<class RPB, class T>
+TransformedIndexPreBasis(RPB&&, T&&) -> TransformedIndexPreBasis<std::decay_t<RPB>, std::decay_t<T>>;
 
 
 } // end namespace Experimental
@@ -181,38 +182,6 @@ protected:
 
 namespace BasisFactory {
 namespace Experimental {
-
-namespace Imp {
-
-template<class RawPreBasisFactory, class Transformation>
-class TransformedIndexPreBasisFactory
-{
-public:
-
-  static const std::size_t requiredMultiIndexSize = Transformation::maxIndexSize;
-
-  template<class RPBF_R, class T_R>
-  TransformedIndexPreBasisFactory(RPBF_R&& rawPreBasisFactory, T_R&& transformation) :
-    rawPreBasisFactory_(std::forward<RPBF_R>(rawPreBasisFactory)),
-    transformation_(std::forward<T_R>(transformation))
-  {}
-
-  template<class MultiIndex, class GridView>
-  auto makePreBasis(const GridView& gridView) const
-  {
-    auto rawPreBasis = rawPreBasisFactory_.template makePreBasis<MultiIndex>(gridView);
-    using RawPreBasis = std::decay_t<decltype(rawPreBasis)>;
-    return Dune::Functions::Experimental::TransformedIndexPreBasis<MultiIndex, RawPreBasis, Transformation>(std::move(rawPreBasis), std::move(transformation_));
-  }
-
-private:
-  RawPreBasisFactory rawPreBasisFactory_;
-  Transformation transformation_;
-};
-
-} // end namespace BasisFactory::Experimental::Imp
-
-
 
 /**
  * \brief Create a TransformedIndexPreBasisFactory
@@ -230,9 +199,12 @@ auto transformIndices(
     RawPreBasisFactory&& preBasisFactory,
     Transformation&& transformation)
 {
-  return Imp::TransformedIndexPreBasisFactory<std::decay_t<RawPreBasisFactory>, std::decay_t<Transformation>>(
-        std::forward<RawPreBasisFactory>(preBasisFactory),
-        std::forward<Transformation>(transformation));
+  return [
+    preBasisFactory=std::forward<RawPreBasisFactory>(preBasisFactory),
+    transformation =std::forward<Transformation>(transformation)
+  ](const auto& gridView) {
+    return Dune::Functions::Experimental::TransformedIndexPreBasis(preBasisFactory(gridView), std::move(transformation));
+  };
 }
 
 

@@ -4,22 +4,29 @@ from .tree import Composite, DG, Lagrange, Power, Tree
 
 duneFunctionsLayouts = {"lexicographic": "Lexicographic", "interleaved": "Interleaved"}
 
-def basisBuilder(tree):
+def indexMergingStrategy(blocked, layout):
+    return "Dune::Functions::BasisBuilder::" + ("Blocked" if blocked else "Flat") + duneFunctionsLayouts[layout]
+
+
+def preBasisTypeName(tree, gridViewTypeName):
     assert isinstance(tree, Tree)
     if isinstance(tree, Lagrange):
-        scalarBasisBuilder = "Dune::Functions::BasisBuilder::lagrange< " + str(tree.order) + " >()"
+        scalarPreBasis = "Dune::Functions::LagrangePreBasis< " + gridViewTypeName + " , " + str(tree.order) + " >"
         if tree.dimRange != 1:
-            return "Dune::Functions::BasisBuilder::power< " + str(tree.dimRange) + " >( " + scalarBasisBuilder + ", Dune::Functions::BasisBuilder::flatInterleaved() )"
+            IMS = indexMergingStrategy(False, "interleaved")
+            return "Dune::Functions::PowerPreBasis< " + IMS + " , " + scalarPreBasis + " , " + str(tree.dimRange) + " >"
         else:
-            return scalarBasisBuilder
+            return scalarPreBasis
     elif isinstance(tree, DG):
         raise Exception(repr(tree) + " not supported by dune-functions.")
     elif isinstance(tree, Composite):
-        layout = "Dune::Functions::BasisBuilder::" + ("blocked" if tree.blocked else "flat") + duneFunctionsLayouts[tree.layout] + "()"
-        return "Dune::Functions::BasisBuilder::composite( " + ", ".join(basisBuilder(c) for c in tree.children) + ", " + layout + " )"
+        IMS = indexMergingStrategy(tree.blocked, tree.layout)
+        ChildPreBases = " , ".join(preBasisTypeName(c, gridViewTypeName) for c in tree.children)
+        return "Dune::Functions::CompositePreBasis< " + IMS + " , " + ChildPreBases + " >"
     elif isinstance(tree, Power):
-        layout = "Dune::Functions::BasisBuilder::" + ("blocked" if tree.blocked else "flat") + duneFunctionsLayouts[tree.layout] + "()"
-        return "Dune::Functions::BasisBuilder::power< " + str(tree.exponent) + " >( " + basisBuilder(tree.children[0]) + ", " + layout + " )"
+        IMS = indexMergingStrategy(tree.blocked, tree.layout)
+        ChildPreBasis = preBasisTypeName(tree.children[0], gridViewTypeName)
+        return "Dune::Functions::PowerPreBasis< " + IMS + " , " + ChildPreBasis + " , " + str(tree.exponent) + " >"
     else:
         raise Exception("Unknown type of tree: " + repr(tree))
 
@@ -33,7 +40,6 @@ def defaultGlobalBasis(gridView, tree):
     includes += list(gridView._includes)
     includes += ["dune/functions/functionspacebases/" + h + ".hh" for h in headers]
 
-    FactoryTag = "decltype( " + basisBuilder(tree) + " )"
-    typeName = "Dune::Python::DefaultGlobalBasis< " + gridView._typeName + ", " + FactoryTag + " >"
+    typeName = "Dune::Functions::DefaultGlobalBasis< " + preBasisTypeName(tree, gridView._typeName) + " >"
 
     return load(includes, typeName).GlobalBasis(gridView)

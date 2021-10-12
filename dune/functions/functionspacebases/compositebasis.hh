@@ -45,13 +45,13 @@ namespace Functions {
  * This pre-basis represents a composition of several given pre-bases.
  * Its node type is a CompositeBasisNodes for the given subnodes.
  *
- * \tparam MI  Type to be used for global multi-indices
  * \tparam IMS An IndexMergingStrategy used to merge the global indices of the child pre-bases
  * \tparam SPB  The child pre-bases
  */
-template<class MI, class IMS, class... SPB>
+template<class IMS, class... SPB>
 class CompositePreBasis
 {
+  static const bool isBlocked = std::is_same_v<IMS,BasisFactory::BlockedLexicographic> or std::is_same_v<IMS,BasisFactory::BlockedInterleaved>;
 public:
 
   //! Tuple of child pre-bases
@@ -80,11 +80,9 @@ public:
   //! Template mapping root tree path to type of created tree node
   using Node = CompositeBasisNode<typename SPB::Node...>;
 
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = MI;
-
-  //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, MultiIndex::max_size()>;
+  static constexpr size_type maxMultiIndexSize = std::max({SPB::maxMultiIndexSize...}) + isBlocked;
+  static constexpr size_type minMultiIndexSize = std::min({SPB::minMultiIndexSize...}) + isBlocked;
+  static constexpr size_type multiIndexBufferSize = std::max({SPB::multiIndexBufferSize...}) + isBlocked;
 
   /**
    * \brief Constructor for given child pre-basis objects
@@ -96,6 +94,26 @@ public:
     enableIfConstructible<std::tuple<SPB...>, SFArgs...> = 0>
   CompositePreBasis(SFArgs&&... sfArgs) :
     subPreBases_(std::forward<SFArgs>(sfArgs)...)
+  {
+    Hybrid::forEach(subPreBases_, [&](const auto& subPreBasis){
+      static_assert(models<Concept::PreBasis<GridView>, std::decay_t<decltype(subPreBasis)>>(), "Subprebases passed to CompositePreBasis does not model the PreBasis concept.");
+    });
+  }
+
+  /**
+   * \brief Constructor for given GridView
+   *
+   * This constructor is only available if all child pre-bases are constructible
+   * from the grid view.
+   */
+  template<class GV,
+    std::enable_if_t<std::conjunction_v<
+      std::bool_constant<(children > 1)>,    // Avoid ambiguous constructor if there's only one child
+      std::is_same<GV, GridView>,
+      std::is_constructible<SPB, GridView>...
+    >, int> = 0>
+  CompositePreBasis(const GV& gv) :
+    subPreBases_(SPB(gv)...)
   {
     Hybrid::forEach(subPreBases_, [&](const auto& subPreBasis){
       static_assert(models<Concept::PreBasis<GridView>, std::decay_t<decltype(subPreBasis)>>(), "Subprebases passed to CompositePreBasis does not model the PreBasis concept.");
@@ -139,10 +157,11 @@ public:
   //! Same as size(prefix) with empty prefix
   size_type size() const
   {
-    return size({});
+    return size(Dune::ReservedVector<size_type, multiIndexBufferSize>{});
   }
 
   //! Return number of possible values for next position in multi index
+  template<class SizePrefix>
   size_type size(const SizePrefix& prefix) const
   {
     return size(prefix, IndexMergingStrategy{});
@@ -150,13 +169,14 @@ public:
 
 private:
 
+  template<class SizePrefix>
   size_type size(const SizePrefix& prefix, BasisFactory::BlockedLexicographic) const
   {
     if (prefix.size() == 0)
       return children;
 
     return Hybrid::switchCases(ChildIndices(), prefix[0], [&] (auto i) {
-      typename SubPreBasis<i>::SizePrefix subPrefix;
+      SizePrefix subPrefix;
       for(std::size_t i=1; i<prefix.size(); ++i)
         subPrefix.push_back(prefix[i]);
       return this->subPreBasis(i).size(subPrefix);
@@ -165,6 +185,7 @@ private:
     });
   }
 
+  template<class SizePrefix>
   size_type size(const SizePrefix& prefix, BasisFactory::FlatLexicographic) const
   {
     size_type result = 0;
@@ -178,7 +199,7 @@ private:
           auto firstDigitSize = this->subPreBasis(i).size();
           if (shiftedFirstDigit < firstDigitSize)
           {
-            typename SubPreBasis<i>::SizePrefix subPrefix;
+            SizePrefix subPrefix;
             subPrefix.push_back(shiftedFirstDigit);
             for(std::size_t i=1; i<prefix.size(); ++i)
               subPrefix.push_back(prefix[i]);
@@ -253,13 +274,14 @@ private:
       for (std::size_t i = 0; i<subTreeSize; ++i)
         multiIndices[i][0] += firstComponentOffset;
       // Increment offset by the size for first index component of the current child
-      firstComponentOffset += subPreBasis(child).size({});
+      firstComponentOffset += subPreBasis(child).size();
       // Increment buffer iterator by the number of indices processed for current child
       multiIndices += subTreeSize;
     });
     return multiIndices;
   }
 
+  template<class MultiIndex>
   static void multiIndexPushFront(MultiIndex& M, size_type M0)
   {
     M.resize(M.size()+1);
@@ -294,34 +316,17 @@ namespace BasisFactory {
 
 namespace Imp {
 
-template<class ST0>
-constexpr std::size_t maxHelper(ST0&& i0)
-{
-  return i0;
-}
-
-template<class ST0, class... ST>
-constexpr std::size_t maxHelper(ST0&& i0, ST&&... i)
-{
-  return (i0 > maxHelper(i...)) ? i0 : maxHelper(i...);
-}
-
 template<class IndexMergingStrategy, class... ChildPreBasisFactory>
 class CompositePreBasisFactory
 {
-  static const bool isBlocked = std::is_same<IndexMergingStrategy,BlockedLexicographic>::value or std::is_same<IndexMergingStrategy,BlockedInterleaved>::value;
 
-  static const std::size_t maxChildIndexSize = maxHelper(ChildPreBasisFactory::requiredMultiIndexSize...);
-
-  template<class MultiIndex, class GridView, class... ChildPreBasis>
+  template<class GridView, class... ChildPreBasis>
   auto makePreBasisFromChildPreBases(const GridView&, ChildPreBasis&&... childPreBasis) const
   {
-    return CompositePreBasis<MultiIndex, IndexMergingStrategy, std::decay_t<ChildPreBasis>...>(std::forward<ChildPreBasis>(childPreBasis)...);
+    return CompositePreBasis<IndexMergingStrategy, std::decay_t<ChildPreBasis>...>(std::forward<ChildPreBasis>(childPreBasis)...);
   }
 
 public:
-
-  static const std::size_t requiredMultiIndexSize = isBlocked ? (maxChildIndexSize+1) : maxChildIndexSize;
 
   CompositePreBasisFactory(const ChildPreBasisFactory&... childPreBasisFactory) :
     childPreBasisFactories_(childPreBasisFactory...)
@@ -331,12 +336,12 @@ public:
     childPreBasisFactories_(std::move(childPreBasisFactory)...)
   {}
 
-  template<class MultiIndex, class GridView>
-  auto makePreBasis(const GridView& gridView) const
+  template<class GridView>
+  auto operator()(const GridView& gridView) const
   {
     // Use std::apply to unpack the tuple childPreBasisFactories_
     return std::apply([&](const auto&... childPreBasisFactory) {
-        return this->makePreBasisFromChildPreBases<MultiIndex>(gridView, childPreBasisFactory.template makePreBasis<MultiIndex>(gridView)...);
+        return this->makePreBasisFromChildPreBases(gridView, childPreBasisFactory(gridView)...);
       }, childPreBasisFactories_);
   }
 

@@ -79,6 +79,7 @@ public:
   template<class RawPreBasis, class IndexPairSet>
   PeriodicIndexingTransformation(const RawPreBasis& rawPreBasis, const IndexPairSet& indexPairSet)
   {
+    static_assert(RawPreBasis::maxMultiIndexSize==1, "PeriodicIndexingTransformation is only implemented for flat multi-indices");
     std::size_t invalid = {std::numeric_limits<std::size_t>::max()};
     mappedIdx_.resize(rawPreBasis.size(), invalid);
     numIndices_ = 0;
@@ -126,8 +127,6 @@ template<class RawPreBasisIndicator>
 class PeriodicPreBasisFactory
 {
 public:
-  static const std::size_t requiredMultiIndexSize = 1;
-
   PeriodicPreBasisFactory()
   {}
 
@@ -137,36 +136,33 @@ public:
     periodicIndexSet_(std::forward<PIS>(periodicIndexSet))
   {}
 
-  template<class MultiIndex, class GridView,
+  template<class GridView,
     std::enable_if_t<models<Concept::GlobalBasis<GridView>,RawPreBasisIndicator>(), int> = 0>
-  auto makePreBasis(const GridView& gridView) const
+  auto operator()(const GridView& gridView) const
   {
     const auto& rawPreBasis = rawPreBasisIndicator_.preBasis();
-    using RawPreBasis = std::decay_t<decltype(rawPreBasis)>;
-    PeriodicIndexingTransformation transformation(rawPreBasis, periodicIndexSet_.indexPairSet());
-    return Dune::Functions::Experimental::TransformedIndexPreBasis<MultiIndex, RawPreBasis, PeriodicIndexingTransformation>(std::move(rawPreBasis), std::move(transformation));
+    auto transformation = PeriodicIndexingTransformation(rawPreBasis, periodicIndexSet_.indexPairSet());
+    return Dune::Functions::Experimental::TransformedIndexPreBasis(std::move(rawPreBasis), std::move(transformation));
   }
 
-  template<class MultiIndex, class GridView,
+  template<class GridView,
     std::enable_if_t<models<Concept::PreBasis<GridView>,RawPreBasisIndicator>(), int> = 0>
-  auto makePreBasis(const GridView& gridView) const
+  auto operator()(const GridView& gridView) const
   {
     const auto& rawPreBasis = rawPreBasisIndicator_;
-    using RawPreBasis = std::decay_t<decltype(rawPreBasis)>;
-    PeriodicIndexingTransformation transformation(rawPreBasis, periodicIndexSet_.indexPairSet());
-    return Dune::Functions::Experimental::TransformedIndexPreBasis<MultiIndex, RawPreBasis, PeriodicIndexingTransformation>(std::move(rawPreBasis), std::move(transformation));
+    auto transformation = PeriodicIndexingTransformation(rawPreBasis, periodicIndexSet_.indexPairSet());
+    return Dune::Functions::Experimental::TransformedIndexPreBasis(std::move(rawPreBasis), std::move(transformation));
   }
 
-  template<class MultiIndex, class GridView,
+  template<class GridView,
     std::enable_if_t<not models<Concept::GlobalBasis<GridView>,RawPreBasisIndicator>(), int> = 0,
     std::enable_if_t<not models<Concept::PreBasis<GridView>,RawPreBasisIndicator>(), int> = 0>
-  auto makePreBasis(const GridView& gridView) const
+  auto operator()(const GridView& gridView) const
   {
-    auto rawPreBasis = rawPreBasisIndicator_.template makePreBasis<MultiIndex>(gridView);
+    auto rawPreBasis = rawPreBasisIndicator_(gridView);
     rawPreBasis.initializeIndices();
-    using RawPreBasis = std::decay_t<decltype(rawPreBasis)>;
-    PeriodicIndexingTransformation transformation(rawPreBasis, periodicIndexSet_.indexPairSet());
-    return Dune::Functions::Experimental::TransformedIndexPreBasis<MultiIndex, RawPreBasis, PeriodicIndexingTransformation>(std::move(rawPreBasis), std::move(transformation));
+    auto transformation = PeriodicIndexingTransformation(rawPreBasis, periodicIndexSet_.indexPairSet());
+    return Dune::Functions::Experimental::TransformedIndexPreBasis(std::move(rawPreBasis), std::move(transformation));
   }
 
 private:

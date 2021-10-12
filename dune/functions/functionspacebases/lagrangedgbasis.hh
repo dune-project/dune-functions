@@ -8,7 +8,6 @@
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 
 
@@ -33,7 +32,7 @@ namespace Functions {
 template<typename GV, int k>
 using LagrangeDGNode = LagrangeNode<GV, k>;
 
-template<typename GV, int k, class MI>
+template<typename GV, int k>
 class LagrangeDGPreBasis
 {
   static const int dim = GV::dimension;
@@ -57,10 +56,9 @@ public:
 
   using Node = LagrangeDGNode<GV, k>;
 
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = MI;
-
-  using SizePrefix = Dune::ReservedVector<size_type, 1>;
+  static constexpr size_type maxMultiIndexSize = 1;
+  static constexpr size_type minMultiIndexSize = 1;
+  static constexpr size_type multiIndexBufferSize = 1;
 
   /** \brief Constructor for a given grid view object */
   LagrangeDGPreBasis(const GridView& gv) :
@@ -135,7 +133,8 @@ public:
   }
 
   //! Return number possible values for next position in multi index
-  size_type size(const SizePrefix prefix) const
+  template<class SizePrefix>
+  size_type size(const SizePrefix& prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
     return (prefix.size() == 0) ? size() : 0;
@@ -232,26 +231,6 @@ protected:
 
 namespace BasisFactory {
 
-namespace Imp {
-
-template<std::size_t k>
-class LagrangeDGPreBasisFactory
-{
-public:
-  static const std::size_t requiredMultiIndexSize = 1;
-
-  template<class MultiIndex, class GridView>
-  auto makePreBasis(const GridView& gridView) const
-  {
-    return LagrangeDGPreBasis<GridView, k, MultiIndex>(gridView);
-  }
-
-};
-
-} // end namespace BasisFactory::Imp
-
-
-
 /**
  * \brief Create a pre-basis factory that can create a LagrangeDG pre-basis
  *
@@ -262,7 +241,9 @@ public:
 template<std::size_t k>
 auto lagrangeDG()
 {
-  return Imp::LagrangeDGPreBasisFactory<k>();
+  return [](const auto& gridView) {
+    return LagrangeDGPreBasis<std::decay_t<decltype(gridView)>, k>(gridView);
+  };
 }
 
 } // end namespace BasisFactory
@@ -281,7 +262,7 @@ auto lagrangeDG()
  * \tparam k The order of the basis
  */
 template<typename GV, int k>
-using LagrangeDGBasis = DefaultGlobalBasis<LagrangeDGPreBasis<GV, k, FlatMultiIndex<std::size_t>> >;
+using LagrangeDGBasis = DefaultGlobalBasis<LagrangeDGPreBasis<GV, k> >;
 
 
 

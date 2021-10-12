@@ -26,55 +26,6 @@ namespace Dune
   namespace Python
   {
 
-    template< class PreBasisFactory >
-    using MultiIndex = Dune::ReservedVector< std::size_t, PreBasisFactory::requiredMultiIndexSize >;
-
-    template< class GridView, class PreBasisFactory_ >
-    using PreBasis = std::decay_t< decltype( std::declval<PreBasisFactory_>().template makePreBasis< MultiIndex< PreBasisFactory_ > >( std::declval<GridView>() ) ) >;
-
-    template<class PBF> struct is_PowerPreBasisFactory : std::false_type{};
-    template<std::size_t k, class IndexMergingStrategy, class ChildPreBasisFactory>
-    struct is_PowerPreBasisFactory<
-      Dune::Functions::BasisFactory::Imp::PowerPreBasisFactory<
-        k, IndexMergingStrategy, ChildPreBasisFactory>>
-      : std::true_type{};
-
-    template<class PBF>
-    struct PreBasisFactoryFactory{
-      static PBF makePreBasisFactory()
-      {
-        return PBF();
-      }
-    };
-
-    template<std::size_t k, class IMS, class CPBF>
-    struct PreBasisFactoryFactory<Dune::Functions::BasisFactory::Imp::PowerPreBasisFactory<k, IMS, CPBF>>
-    {
-      static auto makePreBasisFactory(){
-        return Dune::Functions::BasisFactory::Imp::PowerPreBasisFactory<k, IMS, CPBF>(PreBasisFactoryFactory<CPBF>::makePreBasisFactory());
-      }
-    };
-
-    template<class IMS, class... CPBFs>
-    struct PreBasisFactoryFactory<Dune::Functions::BasisFactory::Imp::CompositePreBasisFactory<IMS, CPBFs...>>
-    {
-      static auto makePreBasisFactory(){
-        return Dune::Functions::BasisFactory::Imp::CompositePreBasisFactory<IMS, CPBFs...>(PreBasisFactoryFactory<CPBFs>::makePreBasisFactory()...);
-      }
-    };
-
-    template< class GridView, class PreBasisFactory >
-    struct DefaultGlobalBasis
-      : public Dune::Functions::DefaultGlobalBasis< PreBasis< GridView, PreBasisFactory > >
-    {
-      typedef Dune::Functions::DefaultGlobalBasis< PreBasis< GridView, PreBasisFactory > > Base;
-
-      explicit DefaultGlobalBasis ( const GridView &gridView )
-        : Base( PreBasisFactoryFactory<PreBasisFactory>::makePreBasisFactory().template makePreBasis< MultiIndex< PreBasisFactory > >( gridView ) )
-      {}
-    };
-
-
     template <class Basis>
     struct LocalViewWrapper : public Basis::LocalView
     {

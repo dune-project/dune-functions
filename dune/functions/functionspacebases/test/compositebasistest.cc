@@ -8,6 +8,7 @@
 #include <dune/grid/yaspgrid.hh>
 
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 
 #include <dune/functions/functionspacebases/test/basistest.hh>
@@ -40,15 +41,68 @@ int main (int argc, char *argv[]) try
 
   using namespace Functions::BasisFactory;
 
-  auto basis = makeBasis(
-    gridView,
-    composite(
-      lagrange<1>(),
-      lagrange<1>(),
-      lagrange<1>()
-    ));
+  {
+    auto basis = makeBasis(
+      gridView,
+      composite(
+        lagrange<1>(),
+        lagrange<1>(),
+        lagrange<1>()
+      ));
 
-  test.subTest(checkBasis(basis, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
+  }
+
+  {
+    auto basis = Dune::Functions::DefaultGlobalBasis(
+      gridView,
+      composite(
+        lagrange<1>(),
+        lagrange<1>(),
+        lagrange<1>()
+      ));
+
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
+  }
+
+  {
+    using namespace Functions;
+    using PreBasis =
+      PowerPreBasis<BlockedInterleaved,
+        CompositePreBasis<BlockedLexicographic,
+          PowerPreBasis<BlockedInterleaved,
+            LagrangePreBasis<GridView,1>,
+            2>,
+          PowerPreBasis<BlockedInterleaved,
+            LagrangePreBasis<GridView,2>,
+            2>
+        >,
+      2>;
+    auto basis = Dune::Functions::DefaultGlobalBasis<PreBasis>(grid.leafGridView());
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
+  }
+
+  {
+    using namespace Functions;
+    using PreBasis = CompositePreBasis<BlockedLexicographic, LagrangePreBasis<GridView,1>>;
+    auto basis = Dune::Functions::DefaultGlobalBasis<PreBasis>(grid.leafGridView());
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
+  }
+
+  {
+    using namespace Functions;
+    using PreBasis = CompositePreBasis<BlockedLexicographic, LagrangePreBasis<GridView,1>>;
+    const auto gridView = grid.leafGridView();
+    auto basis = Dune::Functions::DefaultGlobalBasis<PreBasis>(gridView);
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
+  }
+
+  {
+    using namespace Functions;
+    using PreBasis = CompositePreBasis<BlockedLexicographic, LagrangePreBasis<GridView,1>>;
+    auto basis = Dune::Functions::DefaultGlobalBasis<PreBasis>(gridView);
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
+  }
 
   return test.exit();
 }

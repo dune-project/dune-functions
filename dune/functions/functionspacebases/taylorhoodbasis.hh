@@ -43,21 +43,20 @@ class TaylorHoodBasisTree;
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV The grid view that the FE basis is defined on
- * \tparam MI Type to be used for multi-indices
  * \tparam HI Flag to select hybrid indices
  *
  * \note This mainly serves as an example, since you can construct a pre-basis with
  * the same functionality manually using
  * \code
  * static const int k = 1;
- * using VelocityPreBasis = PowerPreBasis<MI,IMS,LagrangePreBasis<GV,k+1,MI>,dim>;
- * using PressurePreBasis = LagrangePreBasis<GV,k,MI>;
- * using TaylorHoodKPreBasis = CompositePreBasis<MI, BlockedLexicographic, VelocityPreBasis, PressurePreBasis>;
+ * using VelocityPreBasis = PowerPreBasis<IMS,LagrangePreBasis<GV,k+1>,dim>;
+ * using PressurePreBasis = LagrangePreBasis<GV,k>;
+ * using TaylorHoodKPreBasis = CompositePreBasis<BlockedLexicographic, VelocityPreBasis, PressurePreBasis>;
  * \endcode
  * Where IMS is BlockedInterleaved if HI is set and
  * FlatInterleaved otherwise.
  */
-template<typename GV, class MI, bool HI=false>
+template<typename GV, bool HI=false>
 class TaylorHoodPreBasis
 {
   static const bool useHybridIndices = HI;
@@ -75,17 +74,14 @@ public:
   //! Template mapping root tree path to type of created tree node
   using Node = TaylorHoodBasisTree<GV>;
 
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = MI;
-
-  //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, 2>;
+  static constexpr size_type maxMultiIndexSize = useHybridIndices ? 3 : 2;
+  static constexpr size_type minMultiIndexSize = 2;
+  static constexpr size_type multiIndexBufferSize = maxMultiIndexSize;
 
 private:
 
-  using PQMultiIndex = std::array<size_type, 1>;
-  using PQ1PreBasis = LagrangePreBasis<GV,1,PQMultiIndex>;
-  using PQ2PreBasis = LagrangePreBasis<GV,2,PQMultiIndex>;
+  using PQ1PreBasis = LagrangePreBasis<GV,1>;
+  using PQ2PreBasis = LagrangePreBasis<GV,2>;
 
 public:
 
@@ -131,16 +127,17 @@ public:
   }
 
   //! Return number of possible values for next position in multi index
-  size_type size(const SizePrefix prefix) const
+  template<class SizePrefix>
+  size_type size(const SizePrefix& prefix) const
   {
     return sizeImp<useHybridIndices>(prefix);
   }
 
 private:
 
-  template<bool hi,
+  template<bool hi, class SizePrefix,
     typename std::enable_if<not hi,int>::type = 0>
-  size_type sizeImp(const SizePrefix prefix) const
+  size_type sizeImp(const SizePrefix& prefix) const
   {
     if (prefix.size() == 0)
       return 2;
@@ -155,9 +152,9 @@ private:
     return 0;
   }
 
-  template<bool hi,
+  template<bool hi, class SizePrefix,
     typename std::enable_if<hi,int>::type = 0>
-  size_type sizeImp(const SizePrefix prefix) const
+  size_type sizeImp(const SizePrefix& prefix) const
   {
     if (prefix.size() == 0)
       return 2;
@@ -201,6 +198,7 @@ public:
 
 protected:
 
+  template<class MultiIndex>
   static const void multiIndexPushFront(MultiIndex& M, size_type M0)
   {
     M.resize(M.size()+1);
@@ -304,23 +302,6 @@ public:
 
 namespace BasisFactory {
 
-namespace Imp {
-
-class TaylorHoodPreBasisFactory
-{
-public:
-  static const std::size_t requiredMultiIndexSize=2;
-
-  template<class MultiIndex, class GridView>
-  auto makePreBasis(const GridView& gridView) const
-  {
-    return TaylorHoodPreBasis<GridView, MultiIndex>(gridView);
-  }
-
-};
-
-} // end namespace BasisFactory::Imp
-
 /**
  * \brief Create a pre-basis factory that can create a Taylor-Hood pre-basis
  *
@@ -329,7 +310,9 @@ public:
  */
 auto taylorHood()
 {
-  return Imp::TaylorHoodPreBasisFactory();
+  return [](const auto& gridView) {
+    return TaylorHoodPreBasis<std::decay_t<decltype(gridView)>>(gridView);
+  };
 }
 
 } // end namespace BasisFactory
@@ -360,7 +343,7 @@ auto taylorHood()
  * \endcode
  */
 template<typename GV>
-using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodPreBasis<GV, Dune::ReservedVector<std::size_t, 2>> >;
+using TaylorHoodBasis = DefaultGlobalBasis<TaylorHoodPreBasis<GV> >;
 
 
 

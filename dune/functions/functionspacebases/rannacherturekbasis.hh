@@ -13,7 +13,6 @@
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 
 
 namespace Dune {
@@ -33,7 +32,7 @@ namespace Functions {
 template<typename GV>
 class RannacherTurekNode;
 
-template<typename GV, class MI>
+template<typename GV>
 class RannacherTurekPreBasis;
 
 /**
@@ -47,9 +46,8 @@ class RannacherTurekPreBasis;
  *  element. Numerical Methods for Partial Differential Equations, 8:97–111, 1992.
  *
  * \tparam GV  The grid view that the FE basis is defined on
- * \tparam MI  Type to be used for multi-indices
  */
-template<typename GV, class MI>
+template<typename GV>
 class RannacherTurekPreBasis
 {
   static const int dim = GV::dimension;
@@ -65,11 +63,9 @@ public:
   //! Template mapping root tree path to type of created tree node
   using Node = RannacherTurekNode<GV>;
 
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = MI;
-
-  //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, 1>;
+  static constexpr size_type maxMultiIndexSize = 1;
+  static constexpr size_type minMultiIndexSize = 1;
+  static constexpr size_type multiIndexBufferSize = 1;
 
   //! Constructor for a given grid view object
   RannacherTurekPreBasis(const GridView& gv) :
@@ -111,6 +107,7 @@ public:
   }
 
   //! Return number of possible values for next position in multi index
+  template<class SizePrefix>
   size_type size(const SizePrefix prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
@@ -212,26 +209,6 @@ protected:
 
 namespace BasisFactory {
 
-namespace Imp {
-
-template<class Dummy=void>
-class RannacherTurekPreBasisFactory
-{
-public:
-  static const std::size_t requiredMultiIndexSize = 1;
-
-  template<class MultiIndex, class GridView>
-  auto makePreBasis(const GridView& gridView) const
-  {
-    return RannacherTurekPreBasis<GridView, MultiIndex>(gridView);
-  }
-
-};
-
-} // end namespace BasisFactory::Imp
-
-
-
 /**
  * \brief Create a pre-basis factory that can create a Rannacher-Turek pre-basis
  *
@@ -240,7 +217,9 @@ public:
 template<class Dummy=void>
 auto rannacherTurek()
 {
-  return Imp::RannacherTurekPreBasisFactory<void>();
+  return [](const auto& gridView) {
+    return RannacherTurekPreBasis<std::decay_t<decltype(gridView)>>(gridView);
+  };
 }
 
 } // end namespace BasisFactory
@@ -260,7 +239,7 @@ auto rannacherTurek()
  * \tparam GV The GridView that the space is defined on
  */
 template<typename GV>
-using RannacherTurekBasis = DefaultGlobalBasis<RannacherTurekPreBasis<GV, FlatMultiIndex<std::size_t> > >;
+using RannacherTurekBasis = DefaultGlobalBasis<RannacherTurekPreBasis<GV> >;
 
 } // end namespace Functions
 } // end namespace Dune
