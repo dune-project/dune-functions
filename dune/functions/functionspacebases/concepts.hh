@@ -5,6 +5,7 @@
 
 
 #include <dune/common/concept.hh>
+#include <dune/common/reservedvector.hh>
 
 #include <dune/functions/common/utility.hh>
 
