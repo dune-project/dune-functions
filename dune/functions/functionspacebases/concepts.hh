@@ -88,7 +88,7 @@ struct PowerBasisNode : Refines<BasisNode>
 {
   template<class N>
   auto require(const N& node) -> decltype(
-    requireBaseOf<Dune::Functions::PowerBasisNode<typename N::ChildType, N::CHILDREN>, N>(),
+    requireBaseOf<Dune::Functions::PowerBasisNode<typename N::ChildType, N::degree()>, N>(),
     requireConcept<BasisTree<GridView>, typename N::ChildType>()
   );
 };
@@ -115,27 +115,6 @@ struct BasisTree : Refines<BasisNode>
     requireConcept<typename std::conditional< N::isLeaf, LeafBasisNode<GridView>, BasisNode>::type, N>(),
     requireConcept<typename std::conditional< N::isPower, PowerBasisNode<GridView>, BasisNode>::type, N>(),
     requireConcept<typename std::conditional< N::isComposite, CompositeBasisNode<GridView>, BasisNode>::type, N>()
-  );
-};
-
-
-// Concept for a NodeIndexSet
-// This concept is deprecated and will be removed.
-template<class PreBasis>
-struct NodeIndexSet
-{
-  template<class I>
-  auto require(const I& indexSet) -> decltype(
-    requireType<typename I::size_type>(),
-    requireType<typename I::MultiIndex>(),
-    requireType<typename I::PreBasis>(),
-    requireType<typename I::Node>(),
-    requireSameType<typename I::PreBasis, PreBasis>(),
-    const_cast<I&>(indexSet).bind(std::declval<typename I::Node>()),
-    const_cast<I&>(indexSet).unbind(),
-    requireConvertible<typename I::size_type>(indexSet.size()),
-    requireConvertible<typename std::vector<typename I::MultiIndex>::iterator>(
-      indexSet.indices(std::declval<typename std::vector<typename I::MultiIndex>::iterator>()))
   );
 };
 
