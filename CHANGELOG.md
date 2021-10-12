@@ -5,6 +5,9 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.9)
 
+- The template class `OverflowArray` was added. It mostly behaves like `Dune::ReservedVector`
+  but derives from a statically sized array base class. This allows to have temporary
+  dynamic size but cast to the result to the statically sized base class.
 - The new `FaceNormalGridFunction` implements the unit outer normal
   of the closest face within an element as a grid function.
 - SubspaceBases will no longer be nested. Instead,
