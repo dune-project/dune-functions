@@ -5,6 +5,10 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.9)
 
+- The template class `StaticMultiIndex` for a statically sized multiindex was added.
+  This essentially adds `operator<<` to `std::array` for writing to a stream
+  and a cast to the first entry for `size()==0`.
+  `FlatMultiIndex<T>` is now an alias for `StaticMultiIndex<T,1>`.
 - The template class `OverflowArray` was added. It mostly behaves like `Dune::ReservedVector`
   but derives from a statically sized array base class. This allows to have temporary
   dynamic size but cast to the result to the statically sized base class.

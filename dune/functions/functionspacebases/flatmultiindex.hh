@@ -5,7 +5,7 @@
 
 #include <array>
 
-#include <dune/common/hash.hh>
+#include <dune/functions/common/multiindex.hh>
 
 namespace Dune {
 namespace Functions {
@@ -28,64 +28,11 @@ namespace Functions {
  * classic indices.
  */
 template<class size_type>
-class FlatMultiIndex :
-  public std::array<size_type,1>
-{
-public:
-
-  constexpr FlatMultiIndex() = default;
-
-  /**
-   * \brief Construct from initializer_list
-   *
-   * This is needed because std::array does not have
-   * a constructor from initializer list. Instead
-   * the list initialization of an std::array is
-   * an aggregate initialization and hence not
-   * visible in the derived class.
-   */
-  FlatMultiIndex(std::initializer_list<size_type> const &l) :
-    std::array<size_type,1>{{*l.begin()}}
-  {}
-
-  /**
-   * \brief Const cast of multi-index to first entry
-   *
-   * \returns The first (and only) index of this multi-index
-   */
-  operator const size_type& () const
-  {
-    return this->operator[](0);
-  }
-
-  /**
-   * \brief Non-const cast of multi-index to first entry
-   *
-   * \returns The first (and only) index of this multi-index
-   */
-  operator size_type& ()
-  {
-    return this->operator[](0);
-  }
-
-  /**
-   * \brief Compute hash value for FlatMultiIndex
-   *
-   * \ingroup FunctionSpaceBasesUtilities
-   */
-  inline friend std::size_t hash_value(const FlatMultiIndex& arg) noexcept
-  {
-    return std::hash<size_type>()(arg);
-  }
-
-  static constexpr std::size_t max_size() { return 1; }
-};
+using FlatMultiIndex = StaticMultiIndex<size_type, 1>;
 
 
 
 } // end namespace Functions
 } // end namespace Dune
-
-DUNE_DEFINE_HASH(DUNE_HASH_TEMPLATE_ARGS(typename size_type),DUNE_HASH_TYPE(Dune::Functions::FlatMultiIndex<size_type>))
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_FLATMULTIINDEX_HH
