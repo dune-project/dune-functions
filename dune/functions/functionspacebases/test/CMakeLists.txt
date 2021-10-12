@@ -8,6 +8,7 @@ dune_add_test(SOURCES brezzidouglasmarinibasistest.cc)
 dune_add_test(SOURCES bsplinebasistest.cc)
 
 dune_add_test(SOURCES globalvaluedlfetest.cc)
+target_compile_definitions(globalvaluedlfetest PRIVATE -DDUNE_DEPRECATED_INTERPOLATE_CHECK=1)
 
 dune_add_test(SOURCES gridviewfunctionspacebasistest.cc)
 
