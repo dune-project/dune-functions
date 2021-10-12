@@ -14,7 +14,6 @@
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/defaultlocalview.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 
 
 
@@ -57,17 +56,14 @@ public:
   //! The grid view that the FE space is defined on
   using GridView = typename PreBasis::GridView;
 
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = std::conditional_t<
-      (PreBasis::multiIndexBufferSize == 1),
-      FlatMultiIndex<std::size_t>,
-      Dune::ReservedVector<std::size_t, PreBasis::multiIndexBufferSize>>;
-
   //! Type used for indices and size information
   using size_type = std::size_t;
 
   //! Type of the local view on the restriction of the basis to a single element
   using LocalView = DefaultLocalView<DefaultGlobalBasis<PreBasis>>;
+
+  //! Type used for global numbering of the basis vectors
+  using MultiIndex = typename LocalView::MultiIndex;
 
   //! Type used for prefixes handed to the size() method
   using SizePrefix = Dune::ReservedVector<std::size_t, PreBasis::multiIndexBufferSize>;

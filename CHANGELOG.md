@@ -5,6 +5,8 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.9)
 
+- The `MultiIndex` used by `DefaultGlobalBasis` is now a `StaticMultiIndex`
+  if it's size is known at compile time. Otherwise its a `ReservedVector`.
 - The template class `StaticMultiIndex` for a statically sized multiindex was added.
   This essentially adds `operator<<` to `std::array` for writing to a stream
   and a cast to the first entry for `size()==0`.
