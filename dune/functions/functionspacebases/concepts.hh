@@ -87,7 +87,7 @@ struct PowerBasisNode : Refines<BasisNode>
 {
   template<class N>
   auto require(const N& node) -> decltype(
-    requireBaseOf<Dune::Functions::PowerBasisNode<typename N::ChildType, N::CHILDREN>, N>(),
+    requireBaseOf<Dune::Functions::PowerBasisNode<typename N::ChildType, N::degree()>, N>(),
     requireConcept<BasisTree<GridView>, typename N::ChildType>()
   );
 };
