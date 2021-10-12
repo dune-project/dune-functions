@@ -233,9 +233,6 @@ template<class Matrix, class MultiIndex>
 decltype(auto) matrixEntry(Matrix& matrix, const MultiIndex& row, const MultiIndex& col)
 {
   return matrix[row[0]][col[0]][row[1]][col[1]];
-  using namespace Functions::BasisFactory;
-
-  static const std::size_t K = 1; // pressure order for Taylor-Hood
 }
 #endif
 
@@ -362,6 +359,10 @@ int main (int argc, char *argv[]) try
   using PressureVector = BlockVector<FieldVector<double,1>>;
   using VectorType = MultiTypeBlockVector<VelocityVector, PressureVector>;
 
+  using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
+  using PressureBitVector = BlockVector<FieldVector<char,1>>;
+  using BitVectorType = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
+
   using Matrix00 = BCRSMatrix<FieldMatrix<double,dim,dim>>;
   using Matrix01 = BCRSMatrix<FieldMatrix<double,dim,1>>;
   using Matrix10 = BCRSMatrix<FieldMatrix<double,1,dim>>;
@@ -400,10 +401,6 @@ int main (int argc, char *argv[]) try
   /////////////////////////////////////////////////////////
 
   // { initialize_boundary_dofs_vector_begin }
-  using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
-  using PressureBitVector = BlockVector<FieldVector<char,1>>;
-  using BitVectorType
-          = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
 
   BitVectorType isBoundary;
 
