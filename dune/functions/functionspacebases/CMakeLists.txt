@@ -20,6 +20,7 @@ install(FILES
         lagrangebasis.hh
         lagrangedgbasis.hh
         leafprebasismappermixin.hh
+        leafprebasismixin.hh
         nedelecbasis.hh
         periodicbasis.hh
         powerbasis.hh

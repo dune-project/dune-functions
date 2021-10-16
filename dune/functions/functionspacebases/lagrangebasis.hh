@@ -12,6 +12,7 @@
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+#include <dune/functions/functionspacebases/leafprebasismixin.hh>
 
 
 namespace Dune {
@@ -51,7 +52,8 @@ class LagrangePreBasis;
  * - If k is 3, then the grid can be 3d *if* it is a simplex grid
  */
 template<typename GV, int k, typename R>
-class LagrangePreBasis
+class LagrangePreBasis :
+  public LeafPreBasisMixin< LagrangePreBasis<GV,k,R> >
 {
   static const int dim = GV::dimension;
   static const bool useDynamicOrder = (k<0);
@@ -66,10 +68,6 @@ public:
 
   //! Template mapping root tree path to type of created tree node
   using Node = LagrangeNode<GV, k, R>;
-
-  static constexpr size_type maxMultiIndexSize = 1;
-  static constexpr size_type minMultiIndexSize = 1;
-  static constexpr size_type multiIndexBufferSize = 1;
 
   //! Constructor for a given grid view object with compile-time order
   LagrangePreBasis(const GridView& gv)
@@ -136,8 +134,8 @@ public:
     return Node{order_};
   }
 
-  //! Same as size(prefix) with empty prefix
-  size_type size() const
+  //! Get the total dimension of the space spanned by this basis
+  size_type dimension() const
   {
     switch (dim)
     {
@@ -164,20 +162,6 @@ public:
       }
     }
     DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
-  }
-
-  //! Return number of possible values for next position in multi index
-  template<class SizePrefix>
-  size_type size(const SizePrefix& prefix) const
-  {
-    assert(prefix.size() == 0 || prefix.size() == 1);
-    return (prefix.size() == 0) ? size() : 0;
-  }
-
-  //! Get the total dimension of the space spanned by this basis
-  size_type dimension() const
-  {
-    return size();
   }
 
   //! Get the maximal number of DOFs associated to node for any element

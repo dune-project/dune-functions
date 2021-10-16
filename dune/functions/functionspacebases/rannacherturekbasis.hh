@@ -13,6 +13,7 @@
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+#include <dune/functions/functionspacebases/leafprebasismixin.hh>
 
 
 namespace Dune {
@@ -48,7 +49,8 @@ class RannacherTurekPreBasis;
  * \tparam GV  The grid view that the FE basis is defined on
  */
 template<typename GV>
-class RannacherTurekPreBasis
+class RannacherTurekPreBasis :
+  public LeafPreBasisMixin< RannacherTurekPreBasis<GV> >
 {
   static const int dim = GV::dimension;
 
@@ -62,10 +64,6 @@ public:
 
   //! Template mapping root tree path to type of created tree node
   using Node = RannacherTurekNode<GV>;
-
-  static constexpr size_type maxMultiIndexSize = 1;
-  static constexpr size_type minMultiIndexSize = 1;
-  static constexpr size_type multiIndexBufferSize = 1;
 
   //! Constructor for a given grid view object
   RannacherTurekPreBasis(const GridView& gv) :
@@ -101,23 +99,9 @@ public:
   }
 
   //! Same as size(prefix) with empty prefix
-  size_type size() const
-  {
-    return (size_type)(gridView_.size(1));
-  }
-
-  //! Return number of possible values for next position in multi index
-  template<class SizePrefix>
-  size_type size(const SizePrefix prefix) const
-  {
-    assert(prefix.size() == 0 || prefix.size() == 1);
-    return (prefix.size() == 0) ? size() : 0;
-  }
-
-  //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
-    return size();
+    return (size_type)(gridView_.size(1));
   }
 
   //! Get the maximal number of DOFs associated to node for any element

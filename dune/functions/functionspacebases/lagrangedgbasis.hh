@@ -10,6 +10,7 @@
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/functions/functionspacebases/leafprebasismixin.hh>
 
 
 
@@ -34,7 +35,8 @@ template<typename GV, int k>
 using LagrangeDGNode = LagrangeNode<GV, k>;
 
 template<typename GV, int k>
-class LagrangeDGPreBasis
+class LagrangeDGPreBasis :
+  public LeafPreBasisMixin< LagrangeDGPreBasis<GV,k> >
 {
   static const int dim = GV::dimension;
 
@@ -56,10 +58,6 @@ public:
 
 
   using Node = LagrangeDGNode<GV, k>;
-
-  static constexpr size_type maxMultiIndexSize = 1;
-  static constexpr size_type minMultiIndexSize = 1;
-  static constexpr size_type multiIndexBufferSize = 1;
 
   /** \brief Constructor for a given grid view object */
   LagrangeDGPreBasis(const GridView& gv) :
@@ -112,7 +110,7 @@ public:
     return Node{};
   }
 
-  size_type size() const
+  size_type dimension() const
   {
     switch (dim)
     {
@@ -131,20 +129,6 @@ public:
       }
     }
     DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
-  }
-
-  //! Return number possible values for next position in multi index
-  template<class SizePrefix>
-  size_type size(const SizePrefix& prefix) const
-  {
-    assert(prefix.size() == 0 || prefix.size() == 1);
-    return (prefix.size() == 0) ? size() : 0;
-  }
-
-  /** \todo This method has been added to the interface without prior discussion. */
-  size_type dimension() const
-  {
-    return size();
   }
 
   size_type maxNodeSize() const

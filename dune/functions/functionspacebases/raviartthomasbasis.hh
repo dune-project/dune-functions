@@ -23,6 +23,7 @@
 #include <dune/functions/functionspacebases/globalvaluedlocalfiniteelement.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+#include <dune/functions/functionspacebases/leafprebasismixin.hh>
 
 namespace Dune {
 namespace Functions {
@@ -188,7 +189,8 @@ template<typename GV, int k>
 class RaviartThomasNode;
 
 template<typename GV, int k>
-class RaviartThomasPreBasis
+class RaviartThomasPreBasis :
+  public LeafPreBasisMixin< RaviartThomasPreBasis<GV,k> >
 {
   static const int dim = GV::dimension;
   using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, double, k>;
@@ -200,10 +202,6 @@ public:
   using size_type = std::size_t;
 
   using Node = RaviartThomasNode<GV, k>;
-
-  static constexpr size_type maxMultiIndexSize = 1;
-  static constexpr size_type minMultiIndexSize = 1;
-  static constexpr size_type multiIndexBufferSize = 1;
 
   /** \brief Constructor for a given grid view object */
   RaviartThomasPreBasis(const GridView& gv) :
@@ -252,23 +250,9 @@ public:
     return Node{&finiteElementMap_};
   }
 
-  size_type size() const
-  {
-    return dofsPerCodim_[0] * gridView_.size(0) + dofsPerCodim_[1] * gridView_.size(1);
-  }
-
-  //! Return number possible values for next position in multi index
-  template<class SizePrefix>
-  size_type size(const SizePrefix& prefix) const
-  {
-    assert(prefix.size() == 0 || prefix.size() == 1);
-    return (prefix.size() == 0) ? size() : 0;
-  }
-
-  /** \todo This method has been added to the interface without prior discussion. */
   size_type dimension() const
   {
-    return size();
+    return dofsPerCodim_[0] * gridView_.size(0) + dofsPerCodim_[1] * gridView_.size(1);
   }
 
   size_type maxNodeSize() const
