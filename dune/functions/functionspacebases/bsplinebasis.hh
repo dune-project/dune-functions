@@ -1303,9 +1303,9 @@ namespace BasisFactory {
  * \ingroup FunctionSpaceBasesImplementations
  *
  */
-auto bSpline(const std::vector<double>& knotVector,
-             unsigned int order,
-             bool makeOpen = true)
+inline auto bSpline(const std::vector<double>& knotVector,
+                    unsigned int order,
+                    bool makeOpen = true)
 {
   return [&knotVector, order, makeOpen](const auto& gridView) {
     return BSplinePreBasis<std::decay_t<decltype(gridView)>>(gridView, knotVector, order, makeOpen);
