@@ -308,7 +308,7 @@ namespace BasisFactory {
  * \ingroup FunctionSpaceBasesImplementations
  *
  */
-auto taylorHood()
+inline auto taylorHood()
 {
   return [](const auto& gridView) {
     return TaylorHoodPreBasis<std::decay_t<decltype(gridView)>>(gridView);
