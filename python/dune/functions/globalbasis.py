@@ -37,9 +37,9 @@ def defaultGlobalBasis(gridView, tree):
     headers = ["powerbasis", "compositebasis", "lagrangebasis", "subspacebasis", "defaultglobalbasis"]
 
     includes = []
-    includes += list(gridView._includes)
+    includes += list(gridView.cppIncludes)
     includes += ["dune/functions/functionspacebases/" + h + ".hh" for h in headers]
 
-    typeName = "Dune::Functions::DefaultGlobalBasis< " + preBasisTypeName(tree, gridView._typeName) + " >"
+    typeName = "Dune::Functions::DefaultGlobalBasis< " + preBasisTypeName(tree, gridView.cppTypeName) + " >"
 
     return load(includes, typeName).GlobalBasis(gridView)

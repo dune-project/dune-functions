@@ -26,7 +26,6 @@ add_subdirectory("examples")
 
 if( DUNE_ENABLE_PYTHONBINDINGS )
   add_subdirectory(python)
-  dune_python_install_package(PATH python)
 endif()
 
 
