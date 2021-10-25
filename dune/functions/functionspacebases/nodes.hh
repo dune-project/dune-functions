@@ -220,7 +220,7 @@ namespace Dune {
 
     public:
 
-      using Element = typename Node::template Child<0>::Type;
+      using Element = typename Node::template Child<0>::Type::Element;
 
       CompositeBasisNode() = default;
 
