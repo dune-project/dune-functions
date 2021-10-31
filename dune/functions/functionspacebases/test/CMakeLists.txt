@@ -28,6 +28,8 @@ dune_add_test(SOURCES raviartthomasbasistest.cc)
 
 dune_add_test(SOURCES hierarchicvectorwrappertest.cc)
 
+dune_add_test(SOURCES subspacebasistest.cc)
+
 dune_add_test(SOURCES compositebasistest.cc)
 
 dune_add_test(SOURCES makebasistest.cc)
