@@ -10,6 +10,7 @@
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/math.hh>
+#include <dune/common/rangeutilities.hh>
 
 #include <dune/geometry/referenceelements.hh>
 
@@ -71,20 +72,16 @@ namespace Dune::Functions::Impl
     {
       auto jacobianTransposed = geometry.jacobianTransposed(xi);
       auto integrationElement = geometry.integrationElement(xi);
-
       for (auto& gradient : gradients)
       {
         auto tmp = gradient;
-
-        for (size_t j=0; j<gradient.N(); j++)
-          for (size_t k=0; k<gradient.M(); k++)
-          {
-            gradient[j][k] = 0;
-            for (size_t l=0; l<tmp.N(); l++)
-                gradient[j][k] += jacobianTransposed[l][j] * tmp[l][k];
-            gradient[j][k] /= integrationElement;
-          }
-
+        gradient = 0;
+        for (size_t k=0; k<gradient.M(); k++)
+          for (size_t l=0; l<tmp.N(); l++)
+            // Use sparseRange because jacobianTransposed may be a sparse DiagonalMatrix
+            for(auto&& [jacobianTransposed_l_j, j] : sparseRange(jacobianTransposed[l]))
+              gradient[j][k] += jacobianTransposed_l_j * tmp[l][k];
+        gradient /= integrationElement;
       }
     }
 
@@ -177,15 +174,12 @@ namespace Dune::Functions::Impl
       for (auto& gradient : gradients)
       {
         auto tmp = gradient;
-
+        gradient = 0;
         for (size_t j=0; j<gradient.N(); j++)
           for (size_t k=0; k<gradient.M(); k++)
-          {
-            gradient[j][k] = 0;
-            for (size_t l=0; l<tmp.N(); l++)
-                gradient[j][k] += jacobianInverseTransposed[j][l] * tmp[l][k];
-          }
-
+            // Use sparseRange because jacobianTransposed may be a sparse DiagonalMatrix
+            for(auto&& [jacobianInverseTransposed_j_l, l] : sparseRange(jacobianInverseTransposed[j]))
+              gradient[j][k] += jacobianInverseTransposed_j_l * tmp[l][k];
       }
     }
 
