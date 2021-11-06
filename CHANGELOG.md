@@ -5,6 +5,12 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.9)
 
+- SubspaceBases will no longer be nested. Instead,
+  `SubspaceBasis(SubspaceBases(rootBasis,innerTP),outerTP)`
+  is resolved to a `SubspaceBases(rootBasis, tp)` where the tree path `tp`
+  is obainted by joining `innerTP` and `outerTP`.
+  This is implemented for the helper function `subspaceBasis()`
+  and the newly added class template argument deduction guides.
 - The way multi index types are generated for global bases has been refactored.
   This changes nothing for the user but gives more freedom in the construction
   of global bases.

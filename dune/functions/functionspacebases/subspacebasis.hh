@@ -18,6 +18,21 @@ namespace Functions {
 
 
 
+namespace Impl {
+
+  template<class... Inner, class... Outer>
+  auto joinTreePaths(const TypeTree::HybridTreePath<Inner...>& inner, const TypeTree::HybridTreePath<Outer...> outer)
+  {
+    return TypeTree::HybridTreePath<Inner..., Outer...>(std::tuple_cat(inner._data, outer._data));
+  }
+
+  template<class InnerTP, class OuterTP>
+  using JoinTreePath_t = std::decay_t<decltype(joinTreePaths(std::declval<InnerTP>(), std::declval<OuterTP>()))>;
+
+}
+
+
+
 template<class RB, class TP>
 class SubspaceBasis
 {
@@ -47,9 +62,18 @@ public:
   SubspaceBasis(const RootBasis& rootBasis, const PrefixPath& prefixPath) :
     rootBasis_(&rootBasis),
     prefixPath_(prefixPath)
-  {
-//    static_assert(models<Concept::NodeFactory<GridView>, NodeFactory>(), "Type passed to DefaultGlobalBasis does not model the NodeFactory concept.");
-  }
+  {}
+
+  /** \brief Constructor from another SubspaceBasis
+   *
+   * This will join the tree paths and use them relative to
+   * rootBasis.rootBasis().
+   */
+  template<class RootRootBasis, class InnerTP, class OuterTP>
+  SubspaceBasis(const SubspaceBasis<RootRootBasis, InnerTP>& rootBasis, const OuterTP& prefixPath) :
+    SubspaceBasis(rootBasis.rootBasis(), Impl::joinTreePaths(rootBasis.prefixPath(), prefixPath))
+  {}
+
 
   /** \brief Obtain the grid view that the basis is defined on
    */
@@ -102,11 +126,31 @@ protected:
 };
 
 
+// CTAD guide for a non-SubspaceBasis root basis
+template<class RB, class TP>
+SubspaceBasis(const RB&, const TP) -> SubspaceBasis<RB, TP>;
+
+// CTAD guide for a SubspaceBasis root basis
+template<class RootRootBasis, class InnerTP, class OuterTP>
+SubspaceBasis(const SubspaceBasis<RootRootBasis, InnerTP>& rootBasis, const OuterTP& prefixPath)
+  -> SubspaceBasis<std::decay_t<decltype(rootBasis.rootBasis())>, Impl::JoinTreePath_t<InnerTP, OuterTP>>;
+
+
+
+/**
+ * \brief Create SubspaceBasis from a root basis and a prefixPath
+ *
+ * This will not return a nested SubspaceBasis if rootBasis is already
+ * a SubspaceBasis. Instead it will join the tree paths and use them
+ * to construct a non-nested SubspaceBasis relative to rootBasis.rootBasis().
+ *
+ * \param rootBasis Create a subspace basis relative to this basis
+ * \param prefixPath A prefix path of the subspace within the root basis
+ */
 template<class RootBasis, class... PrefixTreeIndices>
 auto subspaceBasis(const RootBasis& rootBasis, const TypeTree::HybridTreePath<PrefixTreeIndices...>& prefixPath)
 {
-  using PrefixPath = TypeTree::HybridTreePath<PrefixTreeIndices...>;
-  return SubspaceBasis<RootBasis, PrefixPath>{rootBasis, prefixPath};
+  return SubspaceBasis(rootBasis, prefixPath);
 }
 
 template<class RootBasis, class... PrefixTreeIndices>
