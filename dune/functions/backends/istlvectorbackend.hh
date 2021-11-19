@@ -239,8 +239,9 @@ class ISTLVectorBackend
     std::enable_if_t<not std::is_assignable<C&,T>::value, int> = 0>
   void recursiveAssign(C& c, const T& t)
   {
-    for(auto&& ci: c)
+    Dune::Hybrid::forEach(c, [&](auto&& ci) {
       recursiveAssign(ci, t);
+    });
   }
 
 public:
