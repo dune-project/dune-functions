@@ -5,6 +5,8 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.9)
 
+- The new `FaceNormalGridFunction` implements the unit outer normal
+  of the closest face within an element as a grid function.
 - SubspaceBases will no longer be nested. Instead,
   `SubspaceBasis(SubspaceBases(rootBasis,innerTP),outerTP)`
   is resolved to a `SubspaceBases(rootBasis, tp)` where the tree path `tp`

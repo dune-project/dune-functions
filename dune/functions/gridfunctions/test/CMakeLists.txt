@@ -6,6 +6,8 @@ dune_add_test(SOURCES composedgridfunctiontest.cc)
 
 dune_add_test(SOURCES discreteglobalbasisfunctiontest.cc)
 
+dune_add_test(SOURCES facenormalgridfunctiontest.cc)
+
 dune_add_test(SOURCES gridfunctiontest.cc)
 
 dune_add_test(SOURCES localfunctioncopytest.cc)
