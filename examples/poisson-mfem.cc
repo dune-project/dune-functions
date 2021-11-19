@@ -23,11 +23,15 @@
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/raviartthomasbasis.hh>
+#include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
+#include <dune/functions/gridfunctions/facenormalgridfunction.hh>
+#include <dune/functions/gridfunctions/composedgridfunction.hh>
 
 #define DIM2 // Use a two-dimensional test, otherwise three-dimensional
 
@@ -55,7 +59,9 @@ void getLocalMatrix(const LocalView& localView,
   const auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();
 
   // Get a quadrature rule
-  int order = std::max(2*(dim*fluxLocalFiniteElement.localBasis().order()-1), 2*(dim*pressureLocalFiniteElement.localBasis().order()));
+  int fluxOrder = dim*fluxLocalFiniteElement.localBasis().order();
+  int pressureOrder = dim*pressureLocalFiniteElement.localBasis().order();
+  int order = std::max(2*fluxOrder, (fluxOrder-1)+pressureOrder);
   const auto& quad = QuadratureRules<double, dim>::rule(element.type(), order);
 
   // Loop over all quadrature points
@@ -161,7 +167,9 @@ void getVolumeTerm( const LocalView& localView,
   const auto& pressureLocalFiniteElement = localView.tree().child(_1).finiteElement();
 
   // A quadrature rule
-  int order = std::max(dim*fluxLocalFiniteElement.localBasis().order(), dim*pressureLocalFiniteElement.localBasis().order());
+  int fluxOrder = dim*fluxLocalFiniteElement.localBasis().order();
+  int pressureOrder = dim*pressureLocalFiniteElement.localBasis().order();
+  int order = std::max(2*fluxOrder, 2*pressureOrder);
   const auto& quad = QuadratureRules<double, dim>::rule(element.type(), order);
 
   // Loop over all quadrature points
@@ -230,8 +238,7 @@ void assembleMixedPoissonMatrix(const Basis& basis,
                                 MatrixType& matrix)
 {
   // Get the grid view from the finite element basis (use of test space arbitrary)
-  typedef typename Basis::GridView GridView;
-  GridView gridView = basis.gridView();
+  auto gridView = basis.gridView();
 
   // MatrixIndexSets store the occupation pattern of a sparse matrix.
   // They are not particularly efficient, but simple to use.
@@ -283,8 +290,7 @@ void assembleMixedPoissonRhs(const Basis& basis,
                              VolumeTerm&& volumeTerm)
 {
   // Get the grid view from the finite element basis (use of test space arbitrary)
-  typedef typename Basis::GridView GridView;
-  GridView gridView = basis.gridView();
+  auto gridView = basis.gridView();
 
   auto localVolumeTerm = localFunction(Functions::makeGridViewFunction(volumeTerm, gridView));
 
@@ -318,6 +324,23 @@ void assembleMixedPoissonRhs(const Basis& basis,
   }
 }
 
+
+
+// Mark all DOFs associated to entities for which
+// the boundary intersections center is marked
+// by the given indicator functions.
+template<class Basis, class Vector, class Indicator>
+void markBoundaryDOFsByIndicator(const Basis& basis, Vector& vector, const Indicator& indicator)
+{
+  auto vectorBackend = Dune::Functions::istlVectorBackend(vector);
+  Dune::Functions::forEachBoundaryDOF(basis, [&] (auto&& localIndex, const auto& localView, const auto& intersection) {
+    if (indicator(intersection.geometry().center())>1e-8)
+      vectorBackend[localView.index(localIndex)] = true;
+  });
+}
+
+
+
 int main (int argc, char *argv[])
 {
   // Set up MPI, if available
@@ -338,14 +361,14 @@ int main (int argc, char *argv[])
   FieldVector<double,dim> l(1);
   GridType grid(l,elements);
 
-  typedef GridType::LeafGridView GridView;
-  GridView gridView = grid.leafGridView();
+  auto gridView = grid.leafGridView();
 
   /////////////////////////////////////////////////////////
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
   using namespace Functions::BasisFactory;
+  using namespace Indices;
 
   const int k = 0;
 
@@ -356,7 +379,6 @@ int main (int argc, char *argv[])
       lagrange<k>()
     ));
 
-  using namespace Indices;
   auto fluxBasis = Functions::subspaceBasis(basis, _0);
   auto pressureBasis = Functions::subspaceBasis(basis, _1);
 
@@ -365,8 +387,9 @@ int main (int argc, char *argv[])
   //   Stiffness matrix and right hand side vector
   /////////////////////////////////////////////////////////
 
-  typedef Matrix<BCRSMatrix<FieldMatrix<double,1,1> > > MatrixType;
-  typedef BlockVector<BlockVector<FieldVector<double,1> > > VectorType;
+  using MatrixType = Matrix<BCRSMatrix<FieldMatrix<double,1,1> > >;
+  using VectorType = BlockVector<BlockVector<FieldVector<double,1> > >;
+  using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
 
   using Functions::istlVectorBackend;
 
@@ -382,62 +405,35 @@ int main (int argc, char *argv[])
   assembleMixedPoissonMatrix(basis, stiffnessMatrix);
 
   auto rightHandSide = [] (const Domain& x) { return 10; };
+
   assembleMixedPoissonRhs(basis, rhs, rightHandSide);
 
-  auto pi = std::acos(-1.0);
-  auto topFluxBC   = [&pi] (const Domain& x) { return -0.05 * (1. - x[0]) * std::sin(2.*pi*x[0]); };
-  auto lowerFluxBC = [&pi] (const Domain& x) { return  0.05 * (1. - x[0]) * std::sin(2.*pi*x[0]); };
-
-  using namespace Dune::Indices;
-  using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
-
-  BitVectorType isTopBoundary;
-  BitVectorType isLowerBoundary;
-
-  // Use a messy way of defining a boundary. Using the same way as for PQk elements, only the RT0 basis DOF are triggered,
-  // as they suffice to interpolate a constant function on an edge. In particular RT1, BDM1 DOF are not triggered,
-  // which are linear (but non-constant) on edges.
-
-  // Mark top boundary.
-  auto topBoundaryIndicator = [&l] (Domain x)
-  {
-#ifdef DIM2
-    double isBoundary = x[dim-1] > l[dim-1] - 1e-8 ? x[0]: 0.0;
-#else
-    double isBoundary = x[dim-1] > l[dim-1] - 1e-8 ? x[0] * x[1]: 0.0;
-#endif
-    return isBoundary;
+  // This marks the top and bottom boundary of the domain
+  auto fluxDirichletIndicator = [&l] (const auto& x) {
+    return ((x[dim-1] > l[dim-1] - 1e-8) or (x[dim-1] < 1e-8));
   };
 
-  // Mark lower boundary.
-  auto lowerBoundaryIndicator = [] (Domain x)
-  {
-#ifdef DIM2
-    double isBoundary = x[dim-1] < 1e-8 ? x[0]: 0.0;
-#else
-    double isBoundary = x[dim-1] < 1e-8 ? x[0] * x[1]: 0.0;
-#endif
-    return isBoundary;
-  };
+  auto coordinate = Dune::Functions::makeAnalyticGridViewFunction([](const auto& x) { return x; }, gridView);
+  auto normal = Dune::Functions::FaceNormalGridFunction(gridView);
+  auto fluxDirichletValues = Dune::Functions::makeComposedGridFunction(
+    [pi = std::acos(-1.0)](const auto& x, const auto& normal) {
+      return (-0.05 * (1. - x[0]) * std::sin(2.*pi*x[0])) * normal;
+    },
+    coordinate,
+    normal);
 
-  VectorType isTopBoundaryTmp, isLowerBoundaryTmp;
+  // Mark all DOFs located in a boundary intersection marked
+  // by the fluxDirichletIndicator function. If the flux
+  // ansatz space also contains tangential components, this
+  // approach will fail, because those are also marked.
+  // For Raviart-Thomas this does not happen.
+  auto isDirichlet = BitVectorType();
+  istlVectorBackend(isDirichlet).resize(basis);
+  isDirichlet = false;
+  markBoundaryDOFsByIndicator(fluxBasis, isDirichlet, fluxDirichletIndicator);
 
-  // Use double-valued interpolation and transfer to char-valued vectors.
-  interpolate(fluxBasis, istlVectorBackend(isTopBoundaryTmp),   topBoundaryIndicator);
-  interpolate(fluxBasis, istlVectorBackend(isLowerBoundaryTmp), lowerBoundaryIndicator);
-  istlVectorBackend(isTopBoundary).resize(basis);
-  istlVectorBackend(isLowerBoundary).resize(basis);
-  isTopBoundary = 0;
-  isLowerBoundary = 0;
-  for (size_t i=0; i<isTopBoundaryTmp[0].size(); i++)
-  {
-    isTopBoundary[  0][i] = isTopBoundaryTmp[  0][i]!=0 ? 1: 0;
-    isLowerBoundary[0][i] = isLowerBoundaryTmp[0][i]!=0 ? 1: 0;
-  }
-
-
-  interpolate(fluxBasis, istlVectorBackend(rhs), topFluxBC,   istlVectorBackend(isTopBoundary));
-  interpolate(fluxBasis,istlVectorBackend(rhs), lowerFluxBC, istlVectorBackend(isLowerBoundary));
+  // Interpolate flux Dirichlet values
+  interpolate(fluxBasis, rhs, fluxDirichletValues, isDirichlet);
 
   ////////////////////////////////////////////
   //   Modify Dirichlet rows
@@ -446,7 +442,7 @@ int main (int argc, char *argv[])
   // loop over the matrix rows
   for (size_t i=0; i<stiffnessMatrix[0][0].N(); i++)
   {
-    if (isTopBoundary[0][i] or isLowerBoundary[0][i])
+    if (isDirichlet[0][i])
     {
       // Lower right matrix block
       auto cIt    = stiffnessMatrix[0][0][i].begin();
@@ -459,7 +455,6 @@ int main (int argc, char *argv[])
       for (auto&& entry: stiffnessMatrix[0][1][i])
         entry = 0.0;
     }
-
   }
 
   ////////////////////////////
@@ -492,17 +487,14 @@ int main (int argc, char *argv[])
   using FluxRange = FieldVector<double,dim>;
   using PressureRange = double;
 
-  auto fluxFunction = Functions::makeDiscreteGlobalBasisFunction<FluxRange>(fluxBasis, istlVectorBackend(x));
-  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(pressureBasis, istlVectorBackend(x));
+  auto fluxFunction = Functions::makeDiscreteGlobalBasisFunction<FluxRange>(fluxBasis, x);
+  auto pressureFunction = Functions::makeDiscreteGlobalBasisFunction<PressureRange>(pressureBasis, x);
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //  Write result to VTK file
   //////////////////////////////////////////////////////////////////////////////////////////////
-  SubsamplingVTKWriter<GridView> vtkWriter(gridView, Dune::refinementLevels(0));
+  auto vtkWriter = SubsamplingVTKWriter(gridView, Dune::refinementLevels(0));
   vtkWriter.addVertexData(fluxFunction, VTK::FieldInfo("flux", VTK::FieldInfo::Type::vector, dim));
-  if (k==0)
-    vtkWriter.addCellData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
-  else
-    vtkWriter.addVertexData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
+  vtkWriter.addVertexData(pressureFunction, VTK::FieldInfo("pressure", VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.write("poisson-mfem-result");
 }
