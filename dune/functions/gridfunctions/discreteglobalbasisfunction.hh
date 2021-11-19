@@ -196,7 +196,7 @@ public:
     Range operator()(const Domain& x) const
     {
       Range y;
-      y = 0;
+      istlVectorBackend(y) = 0;
 
       TypeTree::forEachLeafNode(localView_.tree(), [&](auto&& node, auto&& treePath) {
         const auto& nodeToRangeEntry = globalFunction_->nodeToRangeEntry();
