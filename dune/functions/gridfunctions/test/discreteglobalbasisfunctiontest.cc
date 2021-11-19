@@ -206,6 +206,31 @@ int main (int argc, char* argv[]) try
     passed = passed and passedThisTest;
   }
 
+  // complex nested Lagrange basis
+  {
+    auto feBasis = makeBasis(gridView,
+        power<2>(
+          composite(
+            lagrange<2>(),
+            power<2>(
+              lagrange<1>(),
+              flatLexicographic()),
+            flatLexicographic()),
+          flatLexicographic()));
+    using Range = std::array<Dune::TupleVector<double, std::array<double,2>>,2>;
+    auto f = [](const auto& x) -> Range {
+      return std::array{
+          Dune::makeTupleVector(x[0]+x[1], std::array{x[0]+x[1]+1.0, x[0]+x[1]+2.0}),
+          Dune::makeTupleVector(x[0]+x[1]+3.0, std::array{x[0]+x[1]+4.0, x[0]+x[1]+5.0}),
+        };
+    };
+    std::vector<double> x;
+    interpolate(feBasis, x, f);
+    auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
+    std::cout << "checkInterpolationConsistency for complex nested Lagrange basis" << (passedThisTest? " " : " NOT  ") << "successful." << std::endl;
+    passed = passed and passedThisTest;
+  }
+
 
   // Sample the function f(x,y) = x on the grid vertices
   // If we use that as the coefficients of a finite element function,
