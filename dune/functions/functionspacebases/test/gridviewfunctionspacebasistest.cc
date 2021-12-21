@@ -282,7 +282,7 @@ void testOnStructuredGrid()
 template <int dim>
 void testOnHybridGrid()
 {
-#if ! HAVE_UG
+#if ! HAVE_DUNE_UGGRID
   std::cout << "   ---- Skipping test on hybrid " << dim << "d grid -- UGGrid is not installed ----" << std::endl;
 #else
   std::cout << "   +++++++++++  Testing on hybrid " << dim << "d grid  ++++++++++++" << std::endl;
