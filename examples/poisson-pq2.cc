@@ -272,7 +272,7 @@ auto createUniformCubeGrid()
   return std::make_unique<Grid>(l, elements);
 }
 
-#if HAVE_UG
+#if HAVE_DUNE_UGGRID
 auto createMixedGrid()
 {
   using Grid = Dune::UGGrid<2>;
@@ -298,7 +298,7 @@ int main (int argc, char *argv[]) try
   //   Generate the grid
   ///////////////////////////////////
 
-#if HAVE_UG
+#if HAVE_DUNE_UGGRID
   auto gridPtr = createMixedGrid();
 #else
   auto gridPtr = createUniformCubeGrid<2>();
