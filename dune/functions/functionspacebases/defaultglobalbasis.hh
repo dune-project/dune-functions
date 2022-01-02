@@ -97,7 +97,8 @@ public:
    * \param gridView  The GridView this basis is based on
    * \param factory  A factory functor that gets the `gridView` and returns a `PreBasis`
    */
-  template<class PreBasisFactory>
+  template<class PreBasisFactory,
+    std::enable_if_t<Dune::IsCallable<PreBasisFactory(GridView), PreBasis>::value, int> = 0>
   DefaultGlobalBasis(const GridView& gridView, PreBasisFactory&& factory) :
     preBasis_(factory(gridView)),
     prefixPath_()
