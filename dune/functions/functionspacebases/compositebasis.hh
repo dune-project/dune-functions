@@ -35,7 +35,7 @@ namespace Imp {
   {};
 
   template<typename... T>
-  using index_sequence_for = std::make_index_sequence<SizeOf<T...>{}>;
+  using index_sequence_for = std::make_index_sequence<SizeOf<T...>::value>;
 }
 
 // *****************************************************************************
