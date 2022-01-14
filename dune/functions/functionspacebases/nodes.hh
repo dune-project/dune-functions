@@ -3,6 +3,7 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NODES_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NODES_HH
 
+#include <cassert>
 #include <memory>
 
 #include <dune/common/indices.hh>
@@ -134,6 +135,7 @@ namespace Dune {
 
       size_type localIndex(size_type i) const
       {
+        assert(i < size_);
         return offset_ + i;
       }
 
