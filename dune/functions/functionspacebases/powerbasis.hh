@@ -366,7 +366,7 @@ namespace BasisFactory {
  * This overload can be used to explicitly supply an IndexMergingStrategy.
  */
 template<std::size_t k, class ChildPreBasisFactory, class IndexMergingStrategy>
-auto power(ChildPreBasisFactory&& childPreBasisFactory, const IndexMergingStrategy& ims)
+auto power(ChildPreBasisFactory&& childPreBasisFactory, const IndexMergingStrategy&)
 {
   return [childPreBasisFactory](const auto& gridView) {
     auto childPreBasis = childPreBasisFactory(gridView);

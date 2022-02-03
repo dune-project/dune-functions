@@ -55,19 +55,19 @@ namespace Dune {
       {
 
         template<typename Node, typename TreePath>
-        void pre(Node& node, TreePath treePath)
+        void pre(Node& node, TreePath)
         {
           node.setOffset(offset_);
         }
 
         template<typename Node, typename TreePath>
-        void post(Node& node, TreePath treePath)
+        void post(Node& node, TreePath)
         {
           node.setSize(offset_ - node.offset());
         }
 
         template<typename Node, typename TreePath>
-        void leaf(Node& node, TreePath treePath)
+        void leaf(Node& node, TreePath)
         {
           node.setOffset(offset_);
           node.bind(entity_);
@@ -90,14 +90,14 @@ namespace Dune {
         public TypeTree::DynamicTraversal
       {
         template<typename Node, typename TreePath>
-        void pre(Node& node, TreePath treePath)
+        void pre(Node& node, TreePath)
         {
           node.setTreeIndex(treeIndex_);
           ++treeIndex_;
         }
 
         template<typename Node, typename TreePath>
-        void leaf(Node& node, TreePath treePath)
+        void leaf(Node& node, TreePath)
         {
           node.setTreeIndex(treeIndex_);
           ++treeIndex_;

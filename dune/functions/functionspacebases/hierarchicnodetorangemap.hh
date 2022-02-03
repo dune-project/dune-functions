@@ -30,14 +30,14 @@ struct HierarchicNodeToRangeMap
 {
   template<class Node, class TreePath, class Range,
     std::enable_if_t< models<Concept::HasIndexAccess, Range, Dune::index_constant<0>>(), int> = 0>
-  decltype(auto) operator()(const Node& node, const TreePath& treePath, Range&& y) const
+  decltype(auto) operator()(const Node&, const TreePath& treePath, Range&& y) const
   {
     return resolveStaticMultiIndex(y, treePath);
   }
 
   template<class Node, class TreePath, class Range,
     std::enable_if_t<not models<Concept::HasIndexAccess, Range, Dune::index_constant<0>>(), int> = 0>
-  decltype(auto) operator()(const Node& node, const TreePath& treePath, Range&& y) const
+  decltype(auto) operator()(const Node&, const TreePath&, Range&& y) const
   {
     return std::forward<Range>(y);
   }

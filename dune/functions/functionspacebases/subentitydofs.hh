@@ -69,7 +69,7 @@ public:
 
     auto re = Dune::referenceElement<double,dim>(localView.element().type());
 
-    Dune::TypeTree::forEachLeafNode(localView.tree(), [&](auto&& node, auto&& treePath) {
+    Dune::TypeTree::forEachLeafNode(localView.tree(), [&](auto&& node, auto&& /*treePath*/) {
       const auto& localCoefficients = node.finiteElement().localCoefficients();
       std::size_t localSize = localCoefficients.size();
       for(std::size_t i=0; i<localSize; ++i)
@@ -157,7 +157,7 @@ private:
  * \param t A GlobalBasis or a LocalView
  */
 template<class T>
-auto subEntityDOFs(const T& t)
+auto subEntityDOFs(const T&)
 {
   return SubEntityDOFs<typename T::GridView>{};
 }
