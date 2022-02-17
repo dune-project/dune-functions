@@ -51,46 +51,47 @@ public:
     f_(std::forward<FT>(f))
   {}
 
+  // Constructor that copies the state of the passed element and geometry
+  template<class FT>
+  LocalAnalyticGridViewFunction(FT&& f, const Element& element, const std::optional<Geometry>& geometry) :
+    f_(std::forward<FT>(f)),
+    element_(element),
+    geometry_(geometry)
+  {}
+
 
   void bind(const Element& element)
   {
     element_ = element;
-
-    // We'd like to do
-    //
-    //   geometry_ = element_.geometry();
-    //
-    // But since Geometry is not assignable we
-    // have to reconstruct it - argh
-    geometry_.reset();
     geometry_.emplace(element_.geometry());
   }
 
   void unbind()
-  {}
+  {
+    geometry_.reset();
+  }
 
   Range operator()(const LocalDomain& x) const
   {
-    return f_(geometry_.value().global(x));
+    assert(!!geometry_);
+    return f_(geometry_->global(x));
   }
 
   const Element& localContext() const
   {
+    assert(!!geometry_);
     return element_;
   }
 
   friend LocalDerivative derivative(const LocalAnalyticGridViewFunction& t)
   {
-    return LocalDerivative(Imp::derivativeIfImplemented<DerivativeDummy, F>(t.f_));
+    return LocalDerivative(Imp::derivativeIfImplemented<DerivativeDummy, F>(t.f_), t.element_, t.geometry_);
   }
 
 private:
-
-  // Hack around the fact that Geometry is not default constructible.
-  std::optional<Geometry> geometry_;
-
-  Element element_;
   F f_;
+  Element element_;
+  std::optional<Geometry> geometry_ = std::nullopt;
 };
 
 } // end namespace Imp
