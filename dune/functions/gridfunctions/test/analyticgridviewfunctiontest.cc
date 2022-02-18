@@ -121,6 +121,16 @@ int main (int argc, char* argv[]) try
       passed = passed and _df({0.0,0.0}) == Domain(0.0);
       passed = passed and _ldf({0.0,0.0}) == Domain(0.0);
     }
+
+    {
+      std::cout << "Checking evaluation of local-function and local-derivative" << std::endl;
+      auto lf = localFunction(gf);
+      lf.bind(*ep);
+      auto dlf = derivative(lf);
+      passed = passed and gf({0.0,0.0}) == 1.0;
+      passed = passed and lf({0.0,0.0}) == 1.0;
+      passed = passed and dlf({0.0,0.0}) == Domain(0.0);
+    }
   }
 
   if (passed)
