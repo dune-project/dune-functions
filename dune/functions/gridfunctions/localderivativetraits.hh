@@ -12,12 +12,12 @@ namespace Functions {
 
 
 /**
- * \brief Derivative traits for local functions
+ * \brief Derivative traits for local functions.
  *
  * \ingroup FunctionUtility
  *
  * This provides derivative traits to be used by local functions with
- * given EntitySet and global DerivativeTraits.
+ * given `EntitySet` and global `DerivativeTraits`.
  *
  * The reason why this is needed is that local functions return
  * derivatives wrt to global coordinates although the arguments

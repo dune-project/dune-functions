@@ -22,7 +22,7 @@ namespace Functions {
 
 
 /**
- * \brief A grid function induced by a global basis and a coefficient vector
+ * \brief A grid function induced by a global basis and a coefficient vector.
  *
  * \ingroup FunctionImplementations
  *
@@ -109,6 +109,7 @@ public:
     using Range = GlobalFunction::Range;
     using Element = GlobalFunction::Element;
 
+    //! Create a local-function from the associated grid-function
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
       : globalFunction_(&globalFunction)
       , localView_(globalFunction.basis().localView())
@@ -118,6 +119,12 @@ public:
       localDoFs_.reserve(localView_.maxSize());
     }
 
+    /**
+     * \brief Copy-construct the local-function.
+     *
+     * This copy-constructor copies the cached local DOFs only
+     * if the `other` local-function is bound to an element.
+     **/
     LocalFunction(const LocalFunction& other)
       : globalFunction_(other.globalFunction_)
       , localView_(other.localView_)
@@ -129,6 +136,13 @@ public:
         localDoFs_ = other.localDoFs_;
     }
 
+    /**
+     * \brief Copy-assignment of the local-function.
+     *
+     * Assign all members from `other` to `this`, except the
+     * local DOFs. Those are copied only if the `other`
+     * local-function is bound to an element.
+     **/
     LocalFunction& operator=(const LocalFunction& other)
     {
       globalFunction_ = other.globalFunction_;
@@ -142,7 +156,7 @@ public:
     /**
      * \brief Bind LocalFunction to grid element.
      *
-     * You must call this method before operator()
+     * You must call this method before `operator()`
      * and after changes to the coefficient vector.
      */
     void bind(const Element& element)
@@ -153,8 +167,8 @@ public:
       // this may be larger than the number of local DOFs in the
       // tree. In this case only cache entries associated to local
       // DOFs in the subspace are filled. Cache entries associated
-      // to local DOFs which not contained in the subspace will not
-      // be touched.
+      // to local DOFs which are not contained in the subspace will
+      // not be touched.
       //
       // Alternatively one could use a cache that exactly fits
       // the size of the tree. However, this would require to
@@ -171,21 +185,21 @@ public:
       }
     }
 
+    //! Unbind the local-function.
     void unbind()
     {
       localView_.unbind();
       bound_ = false;
     }
 
-    /**
-     * \brief Check if LocalFunction is already bound to an element.
-     */
-    bool bound() const {
+    //! Check if LocalFunction is already bound to an element.
+    bool bound() const
+    {
       return bound_;
     }
 
     /**
-     * \brief Evaluate LocalFunction at bound element.
+     * \brief Evaluate this local-function in coordinates `x` in the bound element.
      *
      * The result of this method is undefined if you did
      * not call bind() beforehand or changed the coefficient
@@ -236,11 +250,13 @@ public:
       return y;
     }
 
+    //! Return the element the local-function is bound to.
     const Element& localContext() const
     {
       return localView_.element();
     }
 
+    //! Not implemented.
     friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction& t)
     {
       DUNE_THROW(NotImplemented,"not implemented");
@@ -255,6 +271,7 @@ public:
     std::vector<Coefficient> localDoFs_;
   };
 
+  //! Create a grid-function, by wrapping the arguments in `std::shared_ptr`.
   template<class B_T, class V_T, class NTRE_T>
   DiscreteGlobalBasisFunction(B_T && basis, V_T && coefficients, NTRE_T&& nodeToRangeEntry) :
     entitySet_(basis.gridView()),
@@ -263,6 +280,7 @@ public:
     nodeToRangeEntry_(wrap_or_move(std::forward<NTRE_T>(nodeToRangeEntry)))
   {}
 
+  //! Create a grid-function, by moving the arguments in `std::shared_ptr`.
   DiscreteGlobalBasisFunction(std::shared_ptr<const Basis> basis, std::shared_ptr<const V> coefficients, std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry) :
     entitySet_(basis->gridView()),
     basis_(basis),
@@ -270,45 +288,48 @@ public:
     nodeToRangeEntry_(nodeToRangeEntry)
   {}
 
+  //! Return a const reference to the stored basis.
   const Basis& basis() const
   {
     return *basis_;
   }
 
+  //! Return the coefficients of this discrete function by reference.
   const V& dofs() const
   {
     return *coefficients_;
   }
 
+  //! Return the stored node-to-range map.
   const NodeToRangeEntry& nodeToRangeEntry() const
   {
     return *nodeToRangeEntry_;
   }
 
-  // TODO: Implement this using hierarchic search
+  //! Not implemented.
   Range operator() (const Domain& x) const
   {
+    // TODO: Implement this using hierarchic search
     DUNE_THROW(NotImplemented,"not implemented");
   }
 
+  //! Not implemented.
   friend typename Traits::DerivativeInterface derivative(const DiscreteGlobalBasisFunction& t)
   {
     DUNE_THROW(NotImplemented,"not implemented");
   }
 
   /**
-   * \brief Construct local function from a DiscreteGlobalBasisFunction
+   * \brief Construct local function from a DiscreteGlobalBasisFunction.
    *
-   * \ingroup FunctionImplementations
-   *
-   * The obtained local function satisfies the concept
-   * `Dune::Functions::Concept::LocalFunction` and must be bound
+   * The obtained a local-function the satisfies the concept
+   * `Dune::Functions::Concept::LocalFunction`. It must be bound
    * to an entity from the entity set of the DiscreteGlobalBasisFunction
    * before it can be used.
    *
-   * Notice that the local function stores a reference to the
+   * Notice that the local-function stores a reference to the
    * global DiscreteGlobalBasisFunction. Hence calling any method
-   * of the local function after the DiscreteGlobalBasisFunction
+   * of the local-function after the DiscreteGlobalBasisFunction
    * exceeded its life time leads to undefined behavior.
    */
   friend LocalFunction localFunction(const DiscreteGlobalBasisFunction& t)
@@ -316,9 +337,7 @@ public:
     return LocalFunction(t);
   }
 
-  /**
-   * \brief Get associated EntitySet
-   */
+  //! Get associated set of entities the local-function can be bound to.
   const EntitySet& entitySet() const
   {
     return entitySet_;
@@ -335,20 +354,39 @@ private:
 
 
 /**
- * \brief Construction of local functions from a temporary DiscreteGlobalBasisFunction (forbidden)
+ * \brief Construction of local-functions from a temporary DiscreteGlobalBasisFunction (forbidden).
  *
  * Since a DiscreteGlobalBasisFunction::LocalFunction stores a reference
  * to the global DiscreteGlobalBasisFunction its life time is bound to
  * the latter. Hence construction from a temporary DiscreteGlobalBasisFunction
  * would lead to a dangling reference and is thus forbidden/deleted.
- *
- * \ingroup FunctionImplementations
  */
 template<typename... TT>
 void localFunction(DiscreteGlobalBasisFunction<TT...>&& t) = delete;
 
 
-
+/**
+ * \brief Generate a DiscreteGlobalBasisFunction.
+ *
+ * \ingroup FunctionImplementations
+ *
+ * Create a new DiscreteGlobalBasisFunction by wrapping the vector in a
+ * VectorBackend that allows the hierarchic resize and multi-index access in
+ * the DiscreteGlobalBasisFunction, if the vector does not yet fulfill the
+ * \ref ConstVectorBackend concept.
+ *
+ * \tparam R  The range type this grid-function should represent when seen as
+ *            a mapping `R(Domain)` with `Domain` the global coordinates of the
+ *            associated GridView. This must be compatible with the basis and
+ *            coefficients. See the documentation of \ref DiscreteGlobalBasisFunction
+ *            for more details.
+ *
+ * \param basis  The global basis or subspace basis associated with this
+ *               grid-function
+ * \param vector The coefficient vector to use in combination with the `basis`.
+ *
+ * \relatesalso DiscreteGlobalBasisFunction
+ **/
 template<typename R, typename B, typename V>
 auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
 {

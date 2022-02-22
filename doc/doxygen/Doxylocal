@@ -31,3 +31,5 @@ USE_MDFILE_AS_MAINPAGE = @top_srcdir@/doc/doxygen/mainpage.md
 
 # IMAGE_PATH            += @top_srcdir@/dune/functions/pics
 
+# Generate documentation for friend functions
+HIDE_FRIEND_COMPOUNDS = NO

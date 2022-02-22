@@ -24,7 +24,7 @@ class GridViewFunction
 
 
 /**
- * \brief Wrapper class for functions defined on a GridView
+ * \brief Wrapper class for functions defined on a GridView.
  *
  * \ingroup FunctionInterface
  *
@@ -51,10 +51,10 @@ public:
 
 
 /**
- * \brief Construct a function modeling GridViewFunction from function and grid view
+ * \brief Construct a function modeling GridViewFunction from function and grid view.
  *
- * This spezialization is used for functions that already
- * support localFunction(). It will simply return a copy of f.
+ * This specialization is used for functions that already
+ * support `localFunction()`. It will simply return a copy of `f`.
  *
  * \param f A function object supporting argument compatible with global coordinates
  * \param gridView The GridView the function should act on.
@@ -73,16 +73,14 @@ typename std::decay<F>::type
 
 
 /**
- * \brief Construct a function modeling GridViewFunction from function and grid view
+ * \brief Construct a function modeling GridViewFunction from function and grid view.
  *
- * This spezialization is used for functions that do not
- * support localFunction() themselves. It will forward
- * to makeAnalyticGridViewFunction.
+ * This specialization is used for functions that do not
+ * support `localFunction()` themselves. It will forward
+ * to `makeAnalyticGridViewFunction()`.
+ *
  * Notice that the returned function will store a copy of
- * the original function and a pointer to the GridView.
- * It can only be used as long as the latter exists.
- * Hence you must take care to store the GridView yourself.
- * \todo Should we store a copy of the GridView?
+ * the original function and the GridView.
  *
  * \param f A function object supporting argument compatible with global coordinates
  * \param gridView The GridView the function should act on.

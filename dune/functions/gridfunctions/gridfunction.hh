@@ -36,7 +36,7 @@ class GridFunction
 namespace Imp
 {
 
-  /// Traits class providing type information for DifferentiableFunction
+  //! Traits class providing type information for DifferentiableFunction
   template<class S, class ES, template<class> class DerivativeTraits, size_t bufferSize>
   struct GridFunctionTraits :
     DifferentiableFunctionTraits<S, DerivativeTraits, bufferSize>
@@ -45,34 +45,35 @@ namespace Imp
     using Base=DifferentiableFunctionTraits<S, DerivativeTraits, bufferSize>;
 
   public:
-    /// EntitySet the GridFunction lives on
+    //! EntitySet the GridFunction lives on
     using EntitySet = ES;
 
-    /// Element type of EntitySet
+    //! Element type of EntitySet
     using Element = typename EntitySet::Element;
 
-    /// Signature of the derivative
+    //! Signature of the derivative
     using DerivativeSignature = typename Base::DerivativeSignature;
 
-    /// Interface type of the derivative
+    //! Interface type of the derivative
     using DerivativeInterface = GridFunction<DerivativeSignature, ES, DerivativeTraits, bufferSize>;
 
-    /// Signature of the derivative
+    //! Signature of the derivative
     using LocalSignature = typename Base::Range(typename EntitySet::LocalCoordinate);
 
+    //! Traits for derivatives associated with this type
     template<class R>
     using LocalDerivativeTraits = typename Dune::Functions::LocalDerivativeTraits<EntitySet, DerivativeTraits>::template Traits<R>;
 
-    /// LocalFunctionTraits associated with this type
+    //! LocalFunctionTraits associated with this type
     using LocalFunctionTraits = typename Dune::Functions::Imp::LocalFunctionTraits<LocalSignature, Element, LocalDerivativeTraits, bufferSize>;
 
-    /// Interface type of the local function
+    //! Interface type of the local function
     using LocalFunctionInterface = LocalFunction<LocalSignature, Element, LocalDerivativeTraits, bufferSize>;
 
-    /// Internal concept type for type erasure
+    //! Internal concept type for type erasure
     using Concept = GridFunctionWrapperInterface<S, DerivativeInterface, LocalFunctionInterface, ES>;
 
-    /// Internal model template for type erasure
+    //! Internal model template for type erasure
     template<class B>
     using Model = GridFunctionWrapperImplementation<S, DerivativeInterface, LocalFunctionInterface, ES, B>;
   };
@@ -81,7 +82,7 @@ namespace Imp
 
 
 /**
- * \brief Wrapper class for functions defined on a Grid
+ * \brief Wrapper class for functions defined on a Grid.
  *
  * \ingroup FunctionInterface
  *
@@ -110,15 +111,15 @@ class GridFunction<Range(Domain), ES, DerivativeTraits, bufferSize> :
 public:
 
   /**
-   * \brief Construct from function
+   * \brief Construct from function.
    *
    * \tparam F Function type
    *
    * \param f Function of type F
    *
-   * Calling derivative(DifferentiableFunction) will result in an exception
-   * if the passed function does provide a free derivative() function
-   * found via ADL.
+   * \b Requirements:
+   * - The passed function `f` must be a module of the GridFunction concept,
+   *   see \ref Concept::GridFunction.
    */
   template<class F, disableCopyMove<GridFunction, F> = 0 >
   GridFunction(F&& f) :
@@ -130,7 +131,9 @@ public:
   GridFunction() = default;
 
   /**
-   * \brief Evaluation of wrapped function
+   * \brief Evaluation of wrapped function.
+   *
+   * Evaluate the wrapped function in global coordinates `x`.
    */
   Range operator() (const Domain& x) const
   {
@@ -138,7 +141,12 @@ public:
   }
 
   /**
-   * \copydoc DifferentiableFunction::derivative
+   * \brief Get derivative of wrapped function.
+   *
+   * This is a free function that will be found by ADL.
+   *
+   * The derivative is returned as GridFunction of a
+   * type specified in the `GridFunctionTraits`.
    */
   friend DerivativeInterface derivative(const GridFunction& t)
   {
@@ -146,7 +154,7 @@ public:
   }
 
   /**
-   * \brief Get local function of wrapped function
+   * \brief Get local function of wrapped function.
    *
    * This is free function will be found by ADL.
    *
@@ -160,9 +168,10 @@ public:
   }
 
   /**
-   * \brief Get associated EntitySet
+   * \brief Get associated EntitySet.
    *
-   * This is free function will be found by ADL.
+   * The `EntitySet` is a range of grid entities
+   * the associated `LocalFunction` can be bound to.
    */
   const EntitySet& entitySet() const
   {

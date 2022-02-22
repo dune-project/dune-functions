@@ -12,7 +12,7 @@ namespace Functions {
 
 
 /**
- * \brief An entity set for all entities of given codim in a grid view
+ * \brief An entity set for all entities of given codim in a grid view.
  *
  * \ingroup FunctionUtility
  *
@@ -43,38 +43,36 @@ public:
   //! Same as const_iterator
   typedef const_iterator iterator;
 
-  /**
-   * \brief Construct GridViewEntitySet for a GridView
-   *
-   */
+  //! Construct GridViewEntitySet for a GridView.
   GridViewEntitySet(const GridView& gv) :
     gv_(gv)
   {}
 
-  //! Returns true if e is contained in the EntitySet
+  //! Return true if `e` is contained in the EntitySet.
   bool contains(const Element& e) const
   {
     return gv_.contains(e);
   }
 
-  //! Number of Elements visited by an iterator
+  //! Return number of Elements visited by an iterator.
   size_t size() const
   {
     return gv_.size(codim);
   }
 
-  //! Create a begin iterator
+  //! Create a begin iterator.
   const_iterator begin() const
   {
     return gv_.template begin<codim>();
   }
 
-  //! Create an end iterator
+  //! Create an end iterator.
   const_iterator end() const
   {
     return gv_.template end<codim>();
   }
 
+  //! Return the associated GridView.
   const GridView& gridView() const
   {
     return gv_;
