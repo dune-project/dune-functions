@@ -29,6 +29,9 @@ corresponding version of the Dune core modules.
   depending on whether `t` is a  `std::reference_wrapper` or not.
 - The header treedata.hh and the class `TreeData` are deprecated.
   Please use `TreeContainer` from dune-typetree instead.
+- Function `derivative()` of `LocalAnalyticGridFunction` returns a bound
+  local-function if the underlying value-local-function was bound before, i.e.,
+  the bound-to element and geometry are passed to the derivative local-function.
 
 ## Release 2.8
 
@@ -156,6 +159,3 @@ corresponding version of the Dune core modules.
 ## Release 2.5
 
 TODO...
-
-
-
