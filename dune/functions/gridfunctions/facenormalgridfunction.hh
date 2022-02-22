@@ -50,14 +50,16 @@ auto closestFaceIndex(const ReferenceElement& re, const Coordinate& x)
 
 
 /**
- * \brief Grid function implementing the piecewise element normal
+ * \brief Grid function implementing the piecewise element face normal.
  *
- * This function computes implements the grid interface.
+ * \ingroup FunctionImplementations
+ *
+ * This function implements the grid interface.
  * When evaluated at a point x inside of an element, it computes
  * the unit outward normal vector of the face closest to this
  * point.
  *
- * \ingroup FunctionImplementations
+ * \tparam GV  The GridView associated to the grid-function
  */
 template<class GV>
 class FaceNormalGridFunction
@@ -81,6 +83,17 @@ private:
     static const int dimension = GV::dimension;
   public:
 
+    /**
+     * \brief Bind the local-function to the passed element.
+     *
+     * This function stores a copy of `element` and its geometry.
+     *
+     * \b Expects:
+     * - The `element` is in the entitySet of the grid-fuction.
+     *
+     * \b Ensures:
+     * - The local-function is bound the the `element`.
+     **/
     void bind(const Element& element)
     {
       element_ = element;
@@ -88,8 +101,19 @@ private:
     }
 
     void unbind()
-    {}
+    {
+      /* do nothing */
+    }
 
+    /**
+     * \brief Evaluate the local-function in local coordinates `x`.
+     *
+     * This function computes the unit outward normal vector of the
+     * face closest to the point `x` in the bound element.
+     *
+     * \b Expects:
+     * - The local-function is bound to an element.
+     **/
     Range operator()(const LocalDomain& x) const
     {
       auto&& re = Dune::referenceElement(*geometry_);
@@ -105,11 +129,13 @@ private:
       return normal;
     }
 
+    //! Return the bound element stored as copy in the \ref bind function.
     const Element& localContext() const
     {
       return element_;
     }
 
+    //! Not implemented.
     friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction& t)
     {
       DUNE_THROW(NotImplemented,"not implemented");
@@ -121,26 +147,30 @@ private:
   };
 
 public:
-
+  //! Construct the FaceNormalGridFunction.
   FaceNormalGridFunction(const GridView& gridView) :
     entitySet_(gridView)
   {}
 
+  //! Not implemented.
   Range operator()(const Domain& x) const
   {
     DUNE_THROW(NotImplemented,"not implemented");
   }
 
+  //! Not implemented.
   friend typename Traits::DerivativeInterface derivative(const FaceNormalGridFunction& t)
   {
     DUNE_THROW(NotImplemented,"not implemented");
   }
 
+  //! Return a local-function associated to FaceNormalGridFunction.
   friend LocalFunction localFunction(const FaceNormalGridFunction& t)
   {
     return LocalFunction{};
   }
 
+  //! Return the stored GridViewEntitySet.
   const EntitySet& entitySet() const
   {
     return entitySet_;

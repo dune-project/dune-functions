@@ -20,22 +20,22 @@ namespace Functions {
 
 
 /**
- * \brief Composition of grid functions with another function
+ * \brief Composition of grid functions with another function.
  *
  * \ingroup FunctionImplementations
  *
- * For given inner grid functions g0, ..., gn and an
- * outer function f this creates a grid function
- * representing f(g0(x), ..., gn(x)). The only assumption
+ * For given inner grid functions `g0, ..., gn` and an
+ * outer function `f` this creates a grid function
+ * representing `f(g0(x), ..., gn(x))`. The only assumption
  * made, is that the range types of the inner functions
  * can be passed to the outer ones, and that all grid
  * functions are defined on the same EntitySet.
  *
  * Notice that all functions are captured by value.
- * To store references you can pass use std::ref().
+ * To store references you can pass `std::ref()`.
  *
  * \tparam OF Type of outer function. std::reference_wrapper is supported.
- * \tparam IF Types of inner outer functions. std::reference_wrapper is supported.
+ * \tparam IF Types of inner outer functions. `std::reference_wrapper` is supported.
  */
 template<class OF, class... IF>
 class ComposedGridFunction
@@ -65,13 +65,26 @@ private:
   class LocalFunction
   {
   public:
-
+    /**
+     * \brief Construct the local-function.
+     *
+     * The local-functions is created from the outer-function of the
+     * grid-function and the local-functions of the stored inner-functions.
+     **/
     LocalFunction(const ComposedGridFunction& globalFunction) :
       globalFunction_(globalFunction),
       innerLocalFunctions_(globalFunction.innerLocalFunctions())
     {}
 
-
+    /**
+     * \brief Bind the inner local-functions to an `element`.
+     *
+     * \b Expects:
+     * - The `element` is in the entitySet of all inner local-functions.
+     *
+     * \b Ensures:
+     * - All inner local-functions are bound to the same `element`.
+     **/
     void bind(const Element& element)
     {
       std::apply([&](auto&... innerFunction) {
@@ -79,6 +92,7 @@ private:
       }, innerLocalFunctions_);
     }
 
+    //! \brief Unbind the inner local-functions.
     void unbind()
     {
       std::apply([&](auto&... innerFunction) {
@@ -86,6 +100,15 @@ private:
       }, innerLocalFunctions_);
     }
 
+    /**
+     * \brief Evaluation of the composed local-function.
+     *
+     * Returns the outer-function evaluated with the evaluated inner
+     * local-functions. The functions are evaluated in the local coordinates `x`.
+     *
+     * \b Expects:
+     * - All inner local-functions are bound to the same element.
+     **/
     Range operator()(const LocalDomain& x) const
     {
       return std::apply([&](const auto&... innerFunction) {
@@ -93,11 +116,21 @@ private:
       }, innerLocalFunctions_);
     }
 
+    /**
+     * \brief Return the local context all inner local-functions are bound to.
+     *
+     * Since all inner local-functions are bound to the same element, return
+     * the local context of either of the inner local-functions.
+     *
+     * \b Requirements:
+     * - Number of inner local-functions > 0
+     **/
     const Element& localContext() const
     {
       return std::get<0>(innerLocalFunctions_).localContext();
     }
 
+    //! Not implemented
     friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction& t)
     {
       DUNE_THROW(NotImplemented,"not implemented");
@@ -111,11 +144,10 @@ private:
 public:
 
   /**
-   * \brief Create ComposedGridFunction
-   *
+   * \brief Create ComposedGridFunction.
    *
    * Outer and inner functions will be captured by value.
-   * To store references you can pass use std::ref().
+   * To store references you can pass `std::ref()`.
    *
    * \param outerFunction The outer function to be composed with the grid functions.
    * \param innerFunctions The inner grid functions
@@ -127,21 +159,39 @@ public:
     innerFunctions_(std::forward<IFT>(innerFunctions)...)
   {}
 
+  //! Evaluation of the composed grid function in coordinates `x`
   Range operator()(const Domain& x) const
   {
     DUNE_THROW(NotImplemented,"not implemented");
   }
 
+  //! Not implemented.
   friend typename Traits::DerivativeInterface derivative(const ComposedGridFunction& t)
   {
     DUNE_THROW(NotImplemented,"not implemented");
   }
 
+  /**
+   * \brief Create a local-function of this composed grid-function.
+   *
+   * The LocalFunction is defined by composition of the outer-function with
+   * the corresponding local-functions of the inner-functions.
+   **/
   friend LocalFunction localFunction(const ComposedGridFunction& cgf)
   {
     return LocalFunction(cgf);
   }
 
+  /**
+   * \brief Return the EntitySet associated to this composed grid-function.
+   *
+   * It is implicitly assumed that all inner-functions can be bound to the
+   * same set of entities. Thus, the EntitySet is either of the EntitySets
+   * of the inner-function, e.g., the one from the first inner-function.
+   *
+   * \b Requirements:
+   * - Number of inner-functions > 0
+   **/
   const EntitySet& entitySet() const
   {
     return resolveRef(std::get<0>(innerFunctions_)).entitySet();
@@ -163,24 +213,26 @@ protected:
 
 
 /**
- * \brief Compose grid functions with another function
+ * \brief Create a ComposedGridFunction that composes grid-functions with another function.
  *
  * \ingroup FunctionImplementations
  *
- * For given inner grid functions g0, ..., gn and an
- * outer function f this creates a grid function
- * representing f(g0(x), ..., gn(x)). The only assumption
- * made, is that the range types of the inner functions
- * can be passed to the outer ones, and that all grid
- * functions are defined on the same EntitySet.
+ * For given inner grid-functions `g0, ..., gn` and an
+ * outer-function `f` this creates a grid-function
+ * representing `f(g0(x), ..., gn(x))`. The only assumption
+ * made, is that the range types of the inner-functions
+ * can be passed to the outer ones, and that all grid-functions
+ * are defined on the same `EntitySet`.
  *
  * Notice that all functions are captured by value.
- * To store references you can pass use std::ref().
+ * To store references you can pass `std::ref()`.
  *
- * \param outerFunction The outer function to be composed with the grid functions.
- * \param innerFunctions The inner grid functions
+ * \param outerFunction The outer-function to be composed with the grid-functions.
+ * \param innerFunctions The inner grid-functions
  *
- * \returns A grid function defined on the same EntitySet as the input functions.
+ * \returns A grid-function defined on the same `EntitySet` as the input-functions.
+ *
+ * \relatesalso ComposedGridFunction
  */
 template<class OF, class... IF>
 auto makeComposedGridFunction(OF&& outerFunction, IF&&... innerFunction)
