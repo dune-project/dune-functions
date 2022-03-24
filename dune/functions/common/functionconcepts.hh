@@ -54,7 +54,7 @@ static constexpr auto isCallable()
  * \ingroup Utility
  */
 template<class F, class... Args>
-static constexpr auto isCallable(F&& f, Args&&... args)
+static constexpr auto isCallable(F&&, Args&&...)
 {
   return models<Concept::Callable<Args&&...>, F>();
 }

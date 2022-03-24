@@ -56,7 +56,7 @@ public:
   using MultiIndex = typename RootLocalView::MultiIndex;
 
   /** \brief Construct local view for a given global finite element basis */
-  SubspaceLocalView(const GlobalBasis& globalBasis, const PrefixPath& prefixPath) :
+  SubspaceLocalView(const GlobalBasis& globalBasis, const PrefixPath& /*prefixPath*/) :
     globalBasis_(&globalBasis),
     rootLocalView_(globalBasis.rootBasis().localView())
   {

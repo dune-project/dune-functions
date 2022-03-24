@@ -23,7 +23,7 @@ namespace Impl {
 
 template<class V,
   std::enable_if_t<not Dune::models<Imp::Concept::HasStaticIndexAccess, V>() , int> = 0>
-auto fieldTypes(V&& v)
+auto fieldTypes(V&& /*v*/)
 {
   return TypeList<V>{};
 }
@@ -221,7 +221,7 @@ class ISTLVectorBackend
   template<class C, class SizeProvider,
     std::enable_if_t<not hasResizeMethod<C>::value, int> = 0,
     std::enable_if_t<isScalar<C>::value, int> = 0>
-  static void resize(C&& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
+  static void resize(C&&, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
     if (size != 0)

@@ -32,7 +32,7 @@ struct AllTrueBitSetVector
 {
   struct AllTrueBitSet
   {
-    bool test(int i) const { return true; }
+    bool test(int) const { return true; }
   } allTrue_;
 
   operator bool() const
@@ -82,7 +82,7 @@ public:
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
-  LocalInterpolateVisitor(const B& basis, HV& coeff, const HBV& bitVector, const LF& localF, const LocalView& localView, const NodeToRangeEntry& nodeToRangeEntry) :
+  LocalInterpolateVisitor(const B& /*basis*/, HV& coeff, const HBV& bitVector, const LF& localF, const LocalView& localView, const NodeToRangeEntry& nodeToRangeEntry) :
     vector_(coeff),
     localF_(localF),
     bitVector_(bitVector),
@@ -93,11 +93,11 @@ public:
   }
 
   template<typename Node, typename TreePath>
-  void pre(Node& node, TreePath treePath)
+  void pre(Node&, TreePath)
   {}
 
   template<typename Node, typename TreePath>
-  void post(Node& node, TreePath treePath)
+  void post(Node&, TreePath)
   {}
 
   template<typename Node, typename TreePath>

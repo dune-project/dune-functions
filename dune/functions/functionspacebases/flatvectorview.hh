@@ -31,7 +31,7 @@ struct FlatVectorBackend
 
   template<class VV, class Index,
     typename std::enable_if< not models<Concept::HasIndexAccess, VV, Index>(), int>::type = 0>
-  static auto getEntry(VV&& v, const Index& i)
+  static auto getEntry(VV&& v, const Index&)
     ->decltype(v)
   {
     return std::forward<VV>(v);
@@ -47,7 +47,7 @@ struct FlatVectorBackend
 
   template<class VV,
     typename std::enable_if< not models<Concept::HasSizeMethod, VV>(), int>::type = 0>
-  static std::size_t size(VV&& v)
+  static std::size_t size(VV&&)
   {
     return 1;
   }
