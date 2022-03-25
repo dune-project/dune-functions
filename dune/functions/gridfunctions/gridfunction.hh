@@ -156,7 +156,7 @@ public:
   /**
    * \brief Get local function of wrapped function.
    *
-   * This is free function will be found by ADL.
+   * This is a free function, to be found by ADL.
    *
    * Notice that the returned LocalFunction can
    * only be used after it has been bound to a

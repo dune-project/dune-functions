@@ -58,7 +58,7 @@ namespace Functions {
  *
  * Hence the range entry RE must have dim(RE) = dim(C)*dim(V).
  *
- * \tparam B Type of lobal basis
+ * \tparam B Type of global basis
  * \tparam V Type of coefficient vectors
  * \tparam NTRE Type of node-to-range-entry-map that associates each leaf node in the local ansatz subtree with an entry in the range type
  * \tparam R Range type of this function
