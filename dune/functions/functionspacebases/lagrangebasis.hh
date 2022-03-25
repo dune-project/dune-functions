@@ -224,8 +224,8 @@ public:
               const auto refElement
                 = Dune::referenceElement<double,dim>(element.type());
 
-              // we have to reverse the numbering if the local triangle edge is
-              // not aligned with the global edge
+              // We have to reverse the numbering if the local element edge is
+              // not aligned with the global edge.
               auto v0 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
               auto v1 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
               bool flip = (v0 > v1);
@@ -262,10 +262,10 @@ public:
                 = Dune::referenceElement<double,dim>(element.type());
 
               if (order()>3)
-                DUNE_THROW(Dune::NotImplemented, "LagrangeNodalBasis for 3D grids is only implemented if k<=3");
+                DUNE_THROW(Dune::NotImplemented, "LagrangeBasis for 3D grids is only implemented if k<=3");
 
               if (order()==3 and !refElement.type(localKey.subEntity(), localKey.codim()).isTriangle())
-                DUNE_THROW(Dune::NotImplemented, "LagrangeNodalBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
+                DUNE_THROW(Dune::NotImplemented, "LagrangeBasis for 3D grids with k==3 is only implemented if the grid is a simplex grid");
 
               *it = {{ triangleOffset_ + ((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())) }};
               continue;
@@ -301,7 +301,7 @@ public:
             } else
             DUNE_THROW(Dune::NotImplemented, "Grids of dimension larger than 3 are no supported");
         }
-      DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the LagrangeNodalBasis");
+      DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the LagrangeBasis");
     }
     return it;
   }
