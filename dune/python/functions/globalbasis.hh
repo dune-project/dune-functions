@@ -62,12 +62,17 @@ namespace Dune
     struct RangeType
     {
       using type = Dune::FieldVector< K, n >;
+      static void registerRange(pybind11::handle scope)
+      {
+        registerFieldVector<K,n>(scope);
+      }
     };
 
     template<typename K>
     struct RangeType<K,1>
     {
       using type = K;
+      static void registerRange(pybind11::handle scope) {} // nothing to register, as K is a basic type
     };
 
     template< class GlobalBasis, class... options >
@@ -109,7 +114,9 @@ namespace Dune
       cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, int> );
 
       using Range = typename RangeType< double, dimRange >::type;
+      RangeType< double, dimRange >::registerRange(module);
       using Domain = Dune::FieldVector< double, dimWorld >;
+      registerFieldVector<double,dimWorld>(module);
       using DiscreteFunction = Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, DefaultNodeToRangeMap< GlobalBasis, DefaultTreePath >, Range >;
       // register the HierarchicPythonVector
       Dune::Python::addToTypeRegistry<HierarchicPythonVector<double>>(
