@@ -62,7 +62,7 @@ namespace Dune
     struct RangeType
     {
       using type = Dune::FieldVector< K, n >;
-      static void registerRange(pybind11::handle scope)
+      static void registerRange(pybind11::module scope)
       {
         registerFieldVector<K,n>(scope);
       }
@@ -72,7 +72,7 @@ namespace Dune
     struct RangeType<K,1>
     {
       using type = K;
-      static void registerRange(pybind11::handle scope) {} // nothing to register, as K is a basic type
+      static void registerRange(pybind11::module scope) {} // nothing to register, as K is a basic type
     };
 
     template< class GlobalBasis, class... options >
@@ -134,7 +134,6 @@ namespace Dune
       // register the GridViewFunction and register the implicit conversion
       Dune::Python::addToTypeRegistry<Range(Domain)>(GenerateTypeName(className<Range(Domain)>()));
       using GridViewFunction = Dune::Functions::GridViewFunction<Range(Domain), GridView>;
-      std::cout << "REGISTER " << className<GridViewFunction>() << std::endl;
       auto clsGridViewFunction = insertClass< GridViewFunction >( module, "GridViewFunction",
         GenerateTypeName( "Dune::Functions::GridViewFunction",
           MetaType<Range(Domain)>(),
