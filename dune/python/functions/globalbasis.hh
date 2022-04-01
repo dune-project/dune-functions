@@ -110,11 +110,23 @@ namespace Dune
       using Range = typename RangeType< double, dimRange >::type;
       using Domain = Dune::FieldVector< double, 2 >;
       using DiscreteFunction = Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, DefaultNodeToRangeMap< GlobalBasis, DefaultTreePath >, Range >;
-      using GridViewFunction = Dune::Functions::GridViewFunction<Range(Domain), GridView>;
-      auto clsDiscreteFunction = insertClass< DiscreteFunction >( module, "DiscreteFunction", GenerateTypeName( cls, "DiscreteFunction" ), includes);
-
+      // register the HierarchicPythonVector
+      Dune::Python::addToTypeRegistry<HierarchicPythonVector<double>>(
+        GenerateTypeName("Dune::Python::HierarchicPythonVector", MetaType<double>()),
+        {"dune/python/functions/discretefunction.hh"}
+        );
+      // and add the DiscreteFunction to our module
+      auto clsDiscreteFunction = insertClass< DiscreteFunction >( module, "DiscreteFunction",
+        GenerateTypeName( "Dune::Functions::DiscreteGlobalBasisFunction",
+          MetaType<GlobalBasis>(),
+          MetaType<HierarchicPythonVector< double >>(),
+          "Dune::Python::DefaultNodeToRangeMap< " + Dune::Python::findInTypeRegistry<GlobalBasis>().first->second.name + ", Dune::TypeTree::HybridTreePath<> >",
+          MetaType<Range>()
+          ), includes);
+      // register the GridViewFunction and register the implicit conversion
       auto gridViewTypeInfo = Dune::Python::findInTypeRegistry<GridView>();
       std::string gridViewName = gridViewTypeInfo.first->second.name;
+      using GridViewFunction = Dune::Functions::GridViewFunction<Range(Domain), GridView>;
       std::string gridViewFunctionName = "GridViewFunction<" + gridViewName + ">";
       pybind11::class_<GridViewFunction>(module, gridViewFunctionName.c_str()).def(pybind11::init<DiscreteFunction>());
       pybind11::implicitly_convertible<DiscreteFunction, GridViewFunction>();
