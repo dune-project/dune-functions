@@ -22,7 +22,7 @@ code="""
 #include <dune/python/pybind11/stl.h>
 
 static const int dim = 2;
-using Grid = Dune::YaspGrid<dim>;
+using Grid = Dune::YaspGrid<dim, Dune::EquidistantOffsetCoordinates<double, dim>>;
 using GV = typename Grid::LeafGridView;
 using Signature = double(Dune::FieldVector<double,2>);
 using GridViewFunction = Dune::Functions::GridViewFunction<Signature,GV>;
@@ -63,32 +63,34 @@ grid = yaspGrid(domain, dimgrid=2)
 
 # create a nodal Lagrange FE basis of order 1 and order 2
 basis1 = dune.functions.defaultGlobalBasis(grid, dune.functions.Lagrange(order=1))
-# basis2 = dune.functions.defaultGlobalBasis(grid, dune.functions.Lagrange(order=2))
+basis2 = dune.functions.defaultGlobalBasis(grid, dune.functions.Lagrange(order=2))
 
 # create a DOF vectors
 N1 = len(basis1)
 x1 = np.ndarray(N1)
 
-# N2 = len(basis2)
-# x2 = np.ndarray(N2)
+N2 = len(basis2)
+x2 = np.ndarray(N2)
 
 # interpolate data
 basis1.interpolate(x1, lambda x : np.linalg.norm(x-np.array([0.5,0.5]))-0.3)
-# basis2.interpolate(x2, lambda x : np.linalg.norm(x-np.array([0.5,0.5]))-0.3)
+basis2.interpolate(x2, lambda x : np.linalg.norm(x-np.array([0.5,0.5]))-0.3)
 
 # create a grid function
 f1 = basis1.asFunction(x1)
-# f2 = basis2.asFunction(x2)
+f2 = basis2.asFunction(x2)
 
 # calling the concrete interface requires the lagrange basis header
 incLagrange = "#include <dune/functions/functionspacebases/lagrangebasis.hh>\n"
 callConcrete1 = algorithm.load('callScalar', io.StringIO(incLagrange + code), f1);
-# callConcrete2 = algorithm.load('callScalar', io.StringIO(incLagrange + code), f2);
+callConcrete2 = algorithm.load('callScalar', io.StringIO(incLagrange + code), f2);
 
 print ("Calling into C++")
 print ("Called as " + callConcrete1(f1))
+print ("Called as " + callConcrete2(f2))
+# try to call as GridViewFunction
 print ("Called as " + callScalar(f1))
-# print ("Called as " + callScalar(f2))
+print ("Called as " + callScalar(f2))
 print ("Called as " + callVector([f1,f1]))
-# print ("Called as " + callVector([f1,f2]))
-# print ("Called as " + callVector([f2,f2]))
+print ("Called as " + callVector([f1,f2]))
+print ("Called as " + callVector([f2,f2]))
