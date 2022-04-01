@@ -7,6 +7,8 @@
 #include <type_traits>
 #include <utility>
 
+#include <dune/common/classname.hh>
+
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 #include <dune/python/common/dimrange.hh>
@@ -18,7 +20,7 @@
 
 #include <dune/python/pybind11/complex.h>
 #include <dune/python/pybind11/pybind11.h>
-
+#include <dune/python/pybind11/stl.h>
 
 namespace Dune
 {
@@ -56,27 +58,46 @@ namespace Dune
       pybind11::object obj_;
     };
 
+    template<typename K, unsigned int n>
+    struct RangeType
+    {
+      using type = Dune::FieldVector< K, n >;
+      static void registerRange(pybind11::module scope)
+      {
+        registerFieldVector<K,n>(scope);
+      }
+    };
+
+    template<typename K>
+    struct RangeType<K,1>
+    {
+      using type = K;
+      static void registerRange(pybind11::module scope) {} // nothing to register, as K is a basic type
+    };
+
     template< class GlobalBasis, class... options >
     DUNE_EXPORT void registerGlobalBasis ( pybind11::module module, pybind11::class_< GlobalBasis, options... > &cls )
     {
       using pybind11::operator""_a;
-
-      typedef Dune::TypeTree::HybridTreePath<> DefaultTreePath;
+      using GridView = typename GlobalBasis::GridView;
+      using DefaultTreePath = Dune::TypeTree::HybridTreePath<>;
 
       const std::size_t dimRange = DimRange< typename GlobalBasis::PreBasis::Node >::value;
+      const std::size_t dimWorld = GridView::dimensionworld;
 
-      cls.def( pybind11::init( [] ( const typename GlobalBasis::GridView &gridView ) { return new GlobalBasis( gridView ); } ), pybind11::keep_alive< 1, 2 >() );
+      cls.def( pybind11::init( [] ( const GridView &gridView ) { return new GlobalBasis( gridView ); } ), pybind11::keep_alive< 1, 2 >() );
       cls.def( "__len__", [](const GlobalBasis& self) { return self.dimension(); } );
 
       cls.def_property_readonly( "dimRange", [] ( pybind11::handle self ) { return pybind11::int_( dimRange ); } );
       cls.def_property( "gridView",
                         [](const GlobalBasis& basis) { return basis.gridView(); },
-                        [](GlobalBasis& basis, const typename GlobalBasis::GridView& gridView) { basis.update(gridView); });
+                        [](GlobalBasis& basis, const GridView& gridView) { basis.update(gridView); });
 
       typedef LocalViewWrapper< GlobalBasis > LocalView;
+      auto includes = IncludeFiles{"dune/python/functions/globalbasis.hh"};
       auto lv = insertClass< LocalView >( module, "LocalView",
           GenerateTypeName("Dune::Python::LocalViewWrapper", MetaType<GlobalBasis>()),
-          IncludeFiles{"dune/python/functions/globalbasis.hh"}).first;
+          includes).first;
       lv.def( "bind", &LocalView::bind );
       lv.def( "unbind", &LocalView::unbind );
       lv.def( "index", [] ( const LocalView &localView, int index ) { return localView.index( index ); });
@@ -92,10 +113,36 @@ namespace Dune
       cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, bool> );
       cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, int> );
 
-      typedef Dune::FieldVector< double, dimRange > Range;
-      typedef Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, DefaultNodeToRangeMap< GlobalBasis, DefaultTreePath >, Range > DiscreteFunction;
-      auto clsDiscreteFunction = insertClass< DiscreteFunction >( module, "DiscreteFunction", GenerateTypeName( cls, "DiscreteFunction" ) );
-      registerDiscreteFunction( module, clsDiscreteFunction.first );
+      using Range = typename RangeType< double, dimRange >::type;
+      RangeType< double, dimRange >::registerRange(module);
+      using Domain = Dune::FieldVector< double, dimWorld >;
+      registerFieldVector<double,dimWorld>(module);
+      using DiscreteFunction = Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, DefaultNodeToRangeMap< GlobalBasis, DefaultTreePath >, Range >;
+      // register the HierarchicPythonVector
+      Dune::Python::addToTypeRegistry<HierarchicPythonVector<double>>(
+        GenerateTypeName("Dune::Python::HierarchicPythonVector", MetaType<double>()),
+        {"dune/python/functions/discretefunction.hh"}
+        );
+      // and add the DiscreteFunction to our module
+      auto clsDiscreteFunction = insertClass< DiscreteFunction >( module, "DiscreteFunction",
+        GenerateTypeName( "Dune::Functions::DiscreteGlobalBasisFunction",
+          MetaType<GlobalBasis>(),
+          MetaType<HierarchicPythonVector< double >>(),
+          "Dune::Python::DefaultNodeToRangeMap< " + Dune::Python::findInTypeRegistry<GlobalBasis>().first->second.name + ", Dune::TypeTree::HybridTreePath<> >",
+          MetaType<Range>()
+          ), includes);
+      // register the GridViewFunction and register the implicit conversion
+      Dune::Python::addToTypeRegistry<Range(Domain)>(GenerateTypeName(className<Range(Domain)>()));
+      using GridViewFunction = Dune::Functions::GridViewFunction<Range(Domain), GridView>;
+      auto clsGridViewFunction = insertClass< GridViewFunction >( module, "GridViewFunction",
+        GenerateTypeName( "Dune::Functions::GridViewFunction",
+          MetaType<Range(Domain)>(),
+          MetaType<GridView>()
+          ), includes);
+      clsGridViewFunction.first.def(pybind11::init<DiscreteFunction>());
+      pybind11::implicitly_convertible<DiscreteFunction, GridViewFunction>();
+
+      registerDiscreteFunction<GlobalBasis>( module, clsDiscreteFunction.first );
 
       cls.def("asFunction", [] ( GlobalBasis &self, pybind11::buffer dofVector ) {
           auto nodeToRangeMapPtr =
@@ -109,6 +156,7 @@ namespace Dune
                                        vectorPtr,
                                        nodeToRangeMapPtr);
         }, pybind11::keep_alive< 0, 1 >(), pybind11::keep_alive< 0, 2 >(), "dofVector"_a );
+
     }
 
   } // namespace Python
