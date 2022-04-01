@@ -124,11 +124,15 @@ namespace Dune
           MetaType<Range>()
           ), includes);
       // register the GridViewFunction and register the implicit conversion
-      auto gridViewTypeInfo = Dune::Python::findInTypeRegistry<GridView>();
-      std::string gridViewName = gridViewTypeInfo.first->second.name;
+      Dune::Python::addToTypeRegistry<Range(Domain)>(GenerateTypeName(className<Range(Domain)>()));
       using GridViewFunction = Dune::Functions::GridViewFunction<Range(Domain), GridView>;
-      std::string gridViewFunctionName = "GridViewFunction<" + gridViewName + ">";
-      pybind11::class_<GridViewFunction>(module, gridViewFunctionName.c_str()).def(pybind11::init<DiscreteFunction>());
+      std::cout << "REGISTER " << className<GridViewFunction>() << std::endl;
+      auto clsGridViewFunction = insertClass< GridViewFunction >( module, "GridViewFunction",
+        GenerateTypeName( "Dune::Functions::GridViewFunction",
+          MetaType<Range(Domain)>(),
+          MetaType<GridView>()
+          ), includes);
+      clsGridViewFunction.first.def(pybind11::init<DiscreteFunction>());
       pybind11::implicitly_convertible<DiscreteFunction, GridViewFunction>();
 
       registerDiscreteFunction<GlobalBasis>( module, clsDiscreteFunction.first );
