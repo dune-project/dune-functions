@@ -78,6 +78,7 @@ namespace Dune
       using DefaultTreePath = Dune::TypeTree::HybridTreePath<>;
 
       const std::size_t dimRange = DimRange< typename GlobalBasis::PreBasis::Node >::value;
+      const std::size_t dimWorld = GridView::dimensionworld;
 
       cls.def( pybind11::init( [] ( const GridView &gridView ) { return new GlobalBasis( gridView ); } ), pybind11::keep_alive< 1, 2 >() );
       cls.def( "__len__", [](const GlobalBasis& self) { return self.dimension(); } );
@@ -108,7 +109,7 @@ namespace Dune
       cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, int> );
 
       using Range = typename RangeType< double, dimRange >::type;
-      using Domain = Dune::FieldVector< double, 2 >;
+      using Domain = Dune::FieldVector< double, dimWorld >;
       using DiscreteFunction = Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, DefaultNodeToRangeMap< GlobalBasis, DefaultTreePath >, Range >;
       // register the HierarchicPythonVector
       Dune::Python::addToTypeRegistry<HierarchicPythonVector<double>>(
