@@ -155,6 +155,7 @@ struct LocalFunction<Range(Domain), LocalContext> :
   auto require(F&& f) -> decltype(
     f.bind(std::declval<LocalContext>()),
     f.unbind(),
+    requireConvertible<bool>(f.bound()),
     f.localContext(),
     requireConvertible<LocalContext>(f.localContext())
   );

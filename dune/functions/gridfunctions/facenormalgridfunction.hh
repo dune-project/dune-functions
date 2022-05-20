@@ -103,6 +103,12 @@ private:
     void unbind()
     {
       /* do nothing */
+
+    /** \brief Return if the local function is bound to a grid element
+     */
+    bool bound() const
+    {
+      return static_cast<bool>(geometry_);
     }
 
     /**

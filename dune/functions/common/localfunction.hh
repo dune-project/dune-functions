@@ -156,6 +156,13 @@ public:
     this->asInterface().unbind();
   }
 
+  /** \brief Return if the local function is bound to a grid element
+   */
+  bool bound() const
+  {
+    return this->asInterface().bound();
+  }
+
   /**
    * \brief Obtain local contex this LocalFunction is bound to
    */
