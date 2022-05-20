@@ -175,6 +175,7 @@ struct LocalView
     requireSameType<typename V::Element, typename GlobalBasis::GridView::template Codim<0>::Entity>(),
     const_cast<V&>(localView).bind(std::declval<typename V::Element>()),
     const_cast<V&>(localView).unbind(),
+    requireConvertible<bool>(localView.bound()),
     requireConvertible<typename V::Tree>(localView.tree()),
     requireConvertible<typename V::size_type>(localView.size()),
     requireConvertible<typename V::MultiIndex>(localView.index(std::declval<typename V::size_type>())),
