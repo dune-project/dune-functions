@@ -114,7 +114,6 @@ public:
       : globalFunction_(&globalFunction)
       , localView_(globalFunction.basis().localView())
       , evaluationBuffer_(localView_.tree())
-      , bound_(false)
     {
       localDoFs_.reserve(localView_.maxSize());
     }
@@ -129,7 +128,6 @@ public:
       : globalFunction_(other.globalFunction_)
       , localView_(other.localView_)
       , evaluationBuffer_(localView_.tree())
-      , bound_(other.bound_)
     {
       localDoFs_.reserve(localView_.maxSize());
       if (bound())
@@ -147,7 +145,6 @@ public:
     {
       globalFunction_ = other.globalFunction_;
       localView_ = other.localView_;
-      bound_ = other.bound_;
       if (bound())
         localDoFs_ = other.localDoFs_;
       return *this;
@@ -162,7 +159,6 @@ public:
     void bind(const Element& element)
     {
       localView_.bind(element);
-      bound_ = true;
       // Use cache of full local view size. For a subspace basis,
       // this may be larger than the number of local DOFs in the
       // tree. In this case only cache entries associated to local
@@ -189,13 +185,12 @@ public:
     void unbind()
     {
       localView_.unbind();
-      bound_ = false;
     }
 
     //! Check if LocalFunction is already bound to an element.
     bool bound() const
     {
-      return bound_;
+      return localView_.bound();
     }
 
     /**
@@ -267,7 +262,6 @@ public:
     const DiscreteGlobalBasisFunction* globalFunction_;
     LocalView localView_;
     mutable PerNodeEvaluationBuffer evaluationBuffer_;
-    bool bound_ = false;
     std::vector<Coefficient> localDoFs_;
   };
 
