@@ -102,7 +102,8 @@ private:
 
     void unbind()
     {
-      /* do nothing */
+      geometry_.reset();
+    }
 
     /** \brief Return if the local function is bound to a grid element
      */
