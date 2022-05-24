@@ -2,4 +2,3 @@
 
 dune_add_test(SOURCES differentiablefunctiontest.cc)
 dune_add_test(SOURCES polymorphicsmallobjecttest.cc)
-dune_add_test(SOURCES referencehelpertest.cc)
