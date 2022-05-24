@@ -42,6 +42,9 @@ double integrateGridViewFunction(const GridView& gridView, const F& f, unsigned 
 
     fLocal.bind(e);
 
+    if (not fLocal.bound())
+      DUNE_THROW(Exception, "Function is not bound after bind()");
+
     // A quadrature rule
     const auto& quad = QuadratureRules<double, dim>::rule(e.type(), quadOrder);
 

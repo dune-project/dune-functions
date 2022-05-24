@@ -25,6 +25,8 @@ public:
 
   virtual void unbind() = 0;
 
+  virtual bool bound() const = 0;
+
   virtual const LocalContext& localContext() const = 0;
 };
 
@@ -46,6 +48,11 @@ public:
   virtual void unbind()
   {
     this->get().unbind();
+  }
+
+  virtual bool bound() const
+  {
+    return this->get().bound();
   }
 
   virtual const LocalContext& localContext() const
