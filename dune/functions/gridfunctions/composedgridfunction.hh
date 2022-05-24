@@ -6,11 +6,11 @@
 #include <type_traits>
 #include <tuple>
 
+#include <dune/common/referencehelper.hh>
 #include <dune/common/typeutilities.hh>
 
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/differentiablefunction.hh>
-#include <dune/functions/common/referencehelper.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 
 
