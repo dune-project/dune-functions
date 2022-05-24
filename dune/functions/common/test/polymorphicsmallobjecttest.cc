@@ -29,7 +29,7 @@ class Derived
   int i_;
 public:
   virtual ~Derived() = default;
-  Derived(int i = 0) : i_(i) {}
+  Derived(int i = 0) : dummy_(0), i_(i) {}
   Base* clone() final { return new Derived{i_}; }
   Base* clone(void* ptr) final { return new (ptr) Derived{this->i_}; }
   Base* move(void* ptr) final { return new (ptr) Derived{std::move(this->i_)}; }
