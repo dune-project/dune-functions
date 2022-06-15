@@ -289,7 +289,7 @@ public:
   }
 
   //! Return the coefficients of this discrete function by reference.
-  const V& dofs() const
+  const Vector& dofs() const
   {
     return *coefficients_;
   }
