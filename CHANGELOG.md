@@ -32,6 +32,11 @@ corresponding version of the Dune core modules.
 - Function `derivative()` of `LocalAnalyticGridFunction` returns a bound
   local-function if the underlying value-local-function was bound before, i.e.,
   the bound-to element and geometry are passed to the derivative local-function.
+- The concepts for `LocalFunction` and `LocalView` were extended with
+  a `bound()` member function. It tells whether the object was already
+  bound with a call to the `bind()` method or not.  Implementations of
+  the two concepts outside dune-functions will have to implement this
+  additional method.
 
 ## Release 2.8
 

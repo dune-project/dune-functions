@@ -81,6 +81,13 @@ public:
     geometry_.reset();
   }
 
+  /** \brief Return if the local function is bound to a grid element
+   */
+  bool bound() const
+  {
+    return static_cast<bool>(geometry_);
+  }
+
   /**
    * \brief Evaluate the stored function `f` in global coordinates mapped by the geometry.
    *

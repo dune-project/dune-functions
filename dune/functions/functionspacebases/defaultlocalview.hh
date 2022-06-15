@@ -69,7 +69,15 @@ public:
 
   /** \brief Return if the view is bound to a grid element
    */
+  [[deprecated("Use the bound() method instead")]]
   bool isBound() const {
+    return static_cast<bool>(element_);
+  }
+
+  /** \brief Return if the view is bound to a grid element
+   */
+  bool bound() const
+  {
     return static_cast<bool>(element_);
   }
 

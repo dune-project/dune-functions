@@ -91,6 +91,13 @@ public:
     rootLocalView_.unbind();
   }
 
+  /** \brief Return if the view is bound to a grid element
+   */
+  bool bound() const
+  {
+    return rootLocalView_.bound();
+  }
+
   /** \brief Return the local ansatz tree associated to the bound entity
    *
    * \returns Tree // This is tree

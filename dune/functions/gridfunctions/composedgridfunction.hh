@@ -100,6 +100,15 @@ private:
       }, innerLocalFunctions_);
     }
 
+    /** \brief Return if the local function is bound to a grid element
+     */
+    bool bound() const
+    {
+      return std::apply([](const auto&... innerFunction) {
+        return (innerFunction.bound() && ...);
+      }, innerLocalFunctions_);
+    }
+
     /**
      * \brief Evaluation of the composed local-function.
      *
