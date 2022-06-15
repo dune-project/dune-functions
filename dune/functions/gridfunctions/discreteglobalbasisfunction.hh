@@ -35,6 +35,9 @@ struct DiscreteGlobalBasisFunctionData
 
 }
 
+template<typename DGBF>
+class DiscreteGlobalBasisFunctionDerivative;
+
 /**
  * \brief A grid function induced by a global basis and a coefficient vector.
  *
@@ -268,10 +271,13 @@ public:
       return localView_.element();
     }
 
-    //! Not implemented.
-    friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction& t)
+    //! Local function of the derivative
+    friend typename DiscreteGlobalBasisFunctionDerivative<DiscreteGlobalBasisFunction>::LocalFunction derivative(const LocalFunction& lf)
     {
-      DUNE_THROW(NotImplemented,"not implemented");
+      auto dlf = localFunction(DiscreteGlobalBasisFunctionDerivative<DiscreteGlobalBasisFunction>(lf.data_));
+      if (lf.bound())
+        dlf.bind(lf.localContext());
+      return dlf;
     }
 
   private:
@@ -318,10 +324,10 @@ public:
     DUNE_THROW(NotImplemented,"not implemented");
   }
 
-  //! Not implemented.
-  friend typename Traits::DerivativeInterface derivative(const DiscreteGlobalBasisFunction& t)
+  //! Derivative of the `DiscreteGlobalBasisFunction`
+  friend DiscreteGlobalBasisFunctionDerivative<DiscreteGlobalBasisFunction> derivative(const DiscreteGlobalBasisFunction& f)
   {
-    DUNE_THROW(NotImplemented,"not implemented");
+    return DiscreteGlobalBasisFunctionDerivative<DiscreteGlobalBasisFunction>(f.data_);
   }
 
   /**
@@ -344,7 +350,7 @@ public:
   }
 
 private:
-  std::shared_ptr<Data> data_;
+  std::shared_ptr<const Data> data_;
 };
 
 
@@ -393,6 +399,292 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
       HierarchicNodeToRangeMap());
 }
 
+
+/**
+ * \brief Derivative of a `DiscreteGlobalBasisFunction`
+ *
+ * Function returning the derivative of the given `DiscreteGlobalBasisFunction`
+ * with respect to global coordinates.
+ *
+ * The function handles the mapping of coefficient blocks and basis function values
+ * to range entries similar to the `DiscreteGlobalBasisFunction`. Given the
+ * flat index `l` as used in the `DiscreteGlobalBasisFunction` and dimension `d` of
+ * global coordinates, the derivative assumes that the flat indices `d*l`,
+ * `d*l + 1`, ..., `d*l + d - 1` are the flat indices for the partial derivatives.
+ *
+ * \ingroup FunctionImplementations
+ *
+ * \tparam DGBF instance of the `DiscreteGlobalBasisFunction` this is a derivative of
+ */
+template<typename DGBF>
+class DiscreteGlobalBasisFunctionDerivative
+{
+public:
+  using DiscreteGlobalBasisFunction = DGBF;
+  using Basis = typename DiscreteGlobalBasisFunction::Basis;
+  using Vector = typename DiscreteGlobalBasisFunction::Vector;
+
+  using Coefficient = typename DiscreteGlobalBasisFunction::Coefficient;
+
+  using GridView = typename Basis::GridView;
+  using EntitySet = GridViewEntitySet<GridView, 0>;
+  using Tree = typename Basis::LocalView::Tree;
+  using NodeToRangeEntry = typename DiscreteGlobalBasisFunction::NodeToRangeEntry;
+
+  using Domain = typename EntitySet::GlobalCoordinate;
+  using Range = typename SignatureTraits<typename DiscreteGlobalBasisFunction::Traits::DerivativeInterface>::Range;
+
+  using Traits = Imp::GridFunctionTraits<Range(Domain), EntitySet, DefaultDerivativeTraits, 16>;
+
+  using LocalDomain = typename EntitySet::LocalCoordinate;
+  using Element = typename EntitySet::Element;
+
+private:
+  using Data = typename DiscreteGlobalBasisFunction::Data;
+  using Field = field_t<Coefficient>;
+
+public:
+
+  /**
+   * \brief local function evaluating the derivative in reference coordinates
+   *
+   * Note that the function returns the derivative with respect to global
+   * coordinates even when the point is given in reference coordinates on
+   * an element.
+   */
+  class LocalFunction
+  {
+    using LocalView = typename Basis::LocalView;
+    using size_type = typename Tree::size_type;
+
+    template<class Node>
+    using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::JacobianType;
+
+    template<class Node>
+    using NodeData = typename std::vector< LocalBasisRange<Node> >;
+
+    using PerNodeEvaluationBuffer = typename TypeTree::TreeContainer<NodeData, Tree>;
+
+  public:
+    using GlobalFunction = DiscreteGlobalBasisFunctionDerivative;
+    using Domain = LocalDomain;
+    using Range = GlobalFunction::Range;
+    using Element = GlobalFunction::Element;
+    using Geometry = typename Element::Geometry;
+
+    //! Create a local function grom the associated grid function
+    LocalFunction(const GlobalFunction& globalFunction)
+      : data_(globalFunction.data_)
+      , localView_(globalFunction.basis().localView())
+      , evaluationBuffer_(localView_.tree())
+    {
+      localDoFs_.reserve(localView_.maxSize());
+    }
+
+    /**
+     * \brief Copy-construct the local-function.
+     *
+     * This copy-constructor copies the cached local DOFs only
+     * if the `other` local-function is bound to an element.
+     **/
+    LocalFunction(const LocalFunction& other)
+      : data_(other.data_)
+      , localView_(other.localView_)
+      , geometry_(other.geometry_)
+      , evaluationBuffer_(localView_.tree())
+    {
+      localDoFs_.reserve(localView_.maxSize());
+      if (bound())
+        localDoFs_ = other.localDoFs_;
+    }
+
+    /**
+     * \brief Copy-assignment of the local-function.
+     *
+     * Assign all members from `other` to `this`, except the
+     * local DOFs. Those are copied only if the `other`
+     * local-function is bound to an element.
+     **/
+    LocalFunction& operator=(const LocalFunction& other)
+    {
+      data_ = other.data_;
+      localView_ = other.localView_;
+      geometry_ = other.geometry_;
+      if (bound())
+        localDoFs_ = other.localDoFs_;
+      return *this;
+    }
+
+    /**
+     * \brief Bind LocalFunction to grid element.
+     *
+     * You must call this method before `operator()`
+     * and after changes to the coefficient vector.
+     */
+    void bind(const Element& element)
+    {
+      localView_.bind(element);
+      geometry_.emplace(element.geometry());
+      localDoFs_.resize(localView_.size());
+      const auto& dofs = *data_->coefficients;
+      for (size_type i = 0; i < localView_.tree().size(); ++i)
+      {
+        size_type localIndex = localView_.tree().localIndex(i);
+        localDoFs_[localIndex] = dofs[localView_.index(localIndex)];
+      }
+    }
+
+    //! Unbind the local-function.
+    void unbind()
+    {
+      geometry_.reset();
+      localView_.unbind();
+    }
+
+    //! Check if LocalFunction is already bound to an element.
+    bool bound() const
+    {
+      return localView_.bound();
+    }
+
+    /**
+     * \brief Evaluate this local-function in coordinates `x` in the bound element.
+     *
+     * The result of this method is undefined if you did
+     * not call bind() beforehand or changed the coefficient
+     * vector after the last call to bind(). In the latter case
+     * you have to call bind() again in order to make operator()
+     * usable.
+     *
+     * Note that the function returns the derivative with repsect to global
+     * coordinates even when the point is given in reference coordinates on
+     * an element.
+     */
+    Range operator()(const Domain& x) const
+    {
+      Range y;
+      istlVectorBackend(y) = 0;
+
+      const auto& jacobianInverse = geometry_->jacobianInverse(x);
+
+      TypeTree::forEachLeafNode(localView_.tree(), [&](auto&& node, auto&& treePath) {
+        const auto& nodeToRangeEntry = *data_->nodeToRangeEntry;
+        const auto& fe = node.finiteElement();
+        const auto& localBasis = fe.localBasis();
+        auto& shapeFunctionJacobians = evaluationBuffer_[treePath];
+
+        localBasis.evaluateJacobian(x, shapeFunctionJacobians);
+
+        // compute Jacobian wrt. reference coordinates
+
+        using RefJacobian = LocalBasisRange< std::decay_t<decltype(node)> >;
+        static constexpr auto coeffDim = decltype(flatVectorView(this->localDoFs_[node.localIndex(0)]).size())::value;
+        auto refJacobians = std::array<RefJacobian, coeffDim>{};
+        refJacobians.fill(RefJacobian(Field{0}));
+        for (std::size_t j = 0; j < coeffDim; ++j)
+        {
+          for (size_type i = 0; i < localBasis.size(); ++i)
+          {
+            auto c = flatVectorView(this->localDoFs_[node.localIndex(i)]);
+            refJacobians[j].axpy(c[j], shapeFunctionJacobians[i]);
+          }
+        }
+
+        // multiply with Jacobian of inverse coordinate map to get
+        // Jacobian wrt. world coordinates and update result
+
+        using Jacobian = decltype(refJacobians[0] * jacobianInverse);
+        auto jacobians = std::array<Jacobian, coeffDim>{};
+        std::transform(
+          refJacobians.begin(), refJacobians.end(), jacobians.begin(),
+          [&](const auto& refJacobian) { return refJacobian * jacobianInverse; });
+        auto flatJacobians = flatVectorView(jacobians);
+        auto flatY = flatVectorView(nodeToRangeEntry(node, treePath, y));
+        assert(flatJacobians.size() == flatY.size());
+        for (size_type i = 0; i < flatY.size(); ++i) {
+          flatY[i] += flatJacobians[i];
+        }
+      });
+
+      return y;
+    }
+
+    //! Return the element the local-function is bound to.
+    const Element& localContext() const
+    {
+      return localView_.element();
+    }
+
+    //! Not implemented
+    friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction&)
+    {
+      DUNE_THROW(NotImplemented, "derivative of derivative is not implemented");
+    }
+
+  private:
+    std::shared_ptr<const Data> data_;
+    LocalView localView_;
+    std::optional<Geometry> geometry_;
+    mutable PerNodeEvaluationBuffer evaluationBuffer_;
+    std::vector<Coefficient> localDoFs_;
+  };
+
+  /**
+   * \brief create object from `DiscreateGlobalBasisFunction` data
+   *
+   * Please call `derivative(discreteGlobalBasisFunction)` to create an instance
+   * of this class.
+   */
+  DiscreteGlobalBasisFunctionDerivative(std::shared_ptr<const Data> data)
+    : data_(std::move(data))
+  {
+  }
+
+  //! Return a const reference to the stored basis.
+  const Basis& basis() const
+  {
+    return *data_->basis;
+  }
+
+  //! Return the coefficients of this discrete function by reference.
+  const Vector& dofs() const
+  {
+    return *data_->coefficients;
+  }
+
+  //! Return the stored node-to-range map.
+  const NodeToRangeEntry& nodeToRangeEntry() const
+  {
+    return *data_->nodeToRangeEntry;
+  }
+
+  //! Not implemented.
+  Range operator()(const Domain& x) const
+  {
+    // TODO: Implement this using hierarchic search
+    DUNE_THROW(NotImplemented,"not implemented");
+  }
+
+  friend typename Traits::DerivativeInterface derivative(const DiscreteGlobalBasisFunctionDerivative& f)
+  {
+    DUNE_THROW(NotImplemented, "derivative of derivative is not implemented");
+  }
+
+  //! Construct local function from a `DiscreteGlobalBasisFunctionDerivative`
+  friend LocalFunction localFunction(const DiscreteGlobalBasisFunctionDerivative& f)
+  {
+    return LocalFunction(f);
+  }
+
+  //! Get associated set of entities the local-function can be bound to.
+  const EntitySet& entitySet() const
+  {
+    return data_->entitySet;
+  }
+
+private:
+  std::shared_ptr<const Data> data_;
+};
 
 
 } // namespace Functions
