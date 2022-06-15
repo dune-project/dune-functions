@@ -20,6 +20,20 @@ namespace Dune {
 namespace Functions {
 
 
+namespace Imp {
+
+
+template<typename EntitySet, typename Basis, typename Vector, typename NodeToRangeEntry>
+struct DiscreteGlobalBasisFunctionData
+{
+  EntitySet entitySet;
+  std::shared_ptr<const Basis> basis;
+  std::shared_ptr<const Vector> coefficients;
+  std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry;
+};
+
+
+}
 
 /**
  * \brief A grid function induced by a global basis and a coefficient vector.
@@ -89,6 +103,8 @@ public:
 
   using Traits = Imp::GridFunctionTraits<Range(Domain), EntitySet, DefaultDerivativeTraits, 16>;
 
+  using Data = Imp::DiscreteGlobalBasisFunctionData<EntitySet, Basis, Vector, NodeToRangeEntry>;
+
   class LocalFunction
   {
     using LocalView = typename Basis::LocalView;
@@ -111,7 +127,7 @@ public:
 
     //! Create a local-function from the associated grid-function
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
-      : globalFunction_(&globalFunction)
+      : data_(globalFunction.data_)
       , localView_(globalFunction.basis().localView())
       , evaluationBuffer_(localView_.tree())
     {
@@ -125,7 +141,7 @@ public:
      * if the `other` local-function is bound to an element.
      **/
     LocalFunction(const LocalFunction& other)
-      : globalFunction_(other.globalFunction_)
+      : data_(other.data_)
       , localView_(other.localView_)
       , evaluationBuffer_(localView_.tree())
     {
@@ -143,7 +159,7 @@ public:
      **/
     LocalFunction& operator=(const LocalFunction& other)
     {
-      globalFunction_ = other.globalFunction_;
+      data_ = other.data_;
       localView_ = other.localView_;
       if (bound())
         localDoFs_ = other.localDoFs_;
@@ -171,13 +187,14 @@ public:
       // subtract an offset from localIndex(i) on each cache
       // access in operator().
       localDoFs_.resize(localView_.size());
+      const auto& dofs = *data_->coefficients;
       for (size_type i = 0; i < localView_.tree().size(); ++i)
       {
         // For a subspace basis the index-within-tree i
         // is not the same as the localIndex withn the
         // full local view.
         size_t localIndex = localView_.tree().localIndex(i);
-        localDoFs_[localIndex] = globalFunction_->dofs()[localView_.index(localIndex)];
+        localDoFs_[localIndex] = dofs[localView_.index(localIndex)];
       }
     }
 
@@ -208,7 +225,7 @@ public:
       istlVectorBackend(y) = 0;
 
       TypeTree::forEachLeafNode(localView_.tree(), [&](auto&& node, auto&& treePath) {
-        const auto& nodeToRangeEntry = globalFunction_->nodeToRangeEntry();
+        const auto& nodeToRangeEntry = *data_->nodeToRangeEntry;
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
         auto& shapeFunctionValues = evaluationBuffer_[treePath];
@@ -259,7 +276,7 @@ public:
 
   private:
 
-    const DiscreteGlobalBasisFunction* globalFunction_;
+    std::shared_ptr<const Data> data_;
     LocalView localView_;
     mutable PerNodeEvaluationBuffer evaluationBuffer_;
     std::vector<Coefficient> localDoFs_;
@@ -268,36 +285,30 @@ public:
   //! Create a grid-function, by wrapping the arguments in `std::shared_ptr`.
   template<class B_T, class V_T, class NTRE_T>
   DiscreteGlobalBasisFunction(B_T && basis, V_T && coefficients, NTRE_T&& nodeToRangeEntry) :
-    entitySet_(basis.gridView()),
-    basis_(wrap_or_move(std::forward<B_T>(basis))),
-    coefficients_(wrap_or_move(std::forward<V_T>(coefficients))),
-    nodeToRangeEntry_(wrap_or_move(std::forward<NTRE_T>(nodeToRangeEntry)))
+    data_(std::make_shared<Data>(Data{{basis.gridView()}, wrap_or_move(std::forward<B_T>(basis)), wrap_or_move(std::forward<V_T>(coefficients)), wrap_or_move(std::forward<NTRE_T>(nodeToRangeEntry))}))
   {}
 
   //! Create a grid-function, by moving the arguments in `std::shared_ptr`.
   DiscreteGlobalBasisFunction(std::shared_ptr<const Basis> basis, std::shared_ptr<const V> coefficients, std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry) :
-    entitySet_(basis->gridView()),
-    basis_(basis),
-    coefficients_(coefficients),
-    nodeToRangeEntry_(nodeToRangeEntry)
+    data_(std::make_shared<Data>(Data{{basis->gridView()}, basis, coefficients, nodeToRangeEntry}))
   {}
 
   //! Return a const reference to the stored basis.
   const Basis& basis() const
   {
-    return *basis_;
+    return *data_->basis;
   }
 
   //! Return the coefficients of this discrete function by reference.
   const Vector& dofs() const
   {
-    return *coefficients_;
+    return *data_->coefficients;
   }
 
   //! Return the stored node-to-range map.
   const NodeToRangeEntry& nodeToRangeEntry() const
   {
-    return *nodeToRangeEntry_;
+    return *data_->nodeToRangeEntry;
   }
 
   //! Not implemented.
@@ -334,15 +345,11 @@ public:
   //! Get associated set of entities the local-function can be bound to.
   const EntitySet& entitySet() const
   {
-    return entitySet_;
+    return data_->entitySet;
   }
 
 private:
-
-  EntitySet entitySet_;
-  std::shared_ptr<const Basis> basis_;
-  std::shared_ptr<const V> coefficients_;
-  std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry_;
+  std::shared_ptr<Data> data_;
 };
 
 
