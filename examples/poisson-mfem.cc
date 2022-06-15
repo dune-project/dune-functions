@@ -7,7 +7,6 @@
 
 #include <dune/common/bitsetvector.hh>
 #include <dune/common/indices.hh>
-#include <dune/common/transpose.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -70,8 +69,8 @@ void getLocalMatrix(const LocalView& localView,
     // Position of the current quadrature point in the reference element
     const auto quadPos = quadPoint.position();
 
-    // The transposed inverse Jacobian of the map from the reference element to the element
-    const auto jacInvTrans = geometry.jacobianInverseTransposed(quadPos);
+    // The inverse Jacobian of the map from the reference element to the element
+    const auto jacobianInverse = geometry.jacobianInverse(quadPos);
 
     // The multiplicative factor in the integral transformation formula
     const auto integrationElement = geometry.integrationElement(quadPos);
@@ -99,7 +98,7 @@ void getLocalMatrix(const LocalView& localView,
     // Domain transformation of Jacobians and computation of div = trace(Jacobian)
     std::vector<double> fluxDivergence(fluxValues.size(), 0.0);
     for (size_t i=0; i<fluxReferenceJacobians.size(); i++)
-      fluxDivergence[i] = trace(fluxReferenceJacobians[i] * transpose(jacInvTrans));
+      fluxDivergence[i] = trace(fluxReferenceJacobians[i] * jacobianInverse);
 
     ///////////////////////////////////////////////////////////////////////////
     // Shape functions - pressure

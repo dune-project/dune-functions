@@ -6,7 +6,6 @@
 #include <cmath>
 
 #include <dune/common/bitsetvector.hh>
-#include <dune/common/transpose.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -56,8 +55,8 @@ void getLocalMatrix( const LocalView& localView, MatrixType& elementMatrix)
     // Position of the current quadrature point in the reference element
     const FieldVector<double,dim>& quadPos = quad[pt].position();
 
-    // The transposed inverse Jacobian of the map from the reference element to the element
-    const auto& jacobianInverseTransposed = geometry.jacobianInverseTransposed(quadPos);
+    // The inverse Jacobian of the map from the reference element to the element
+    const auto& jacobianInverse = geometry.jacobianInverse(quadPos);
 
     // The multiplicative factor in the integral transformation formula
     const double integrationElement = geometry.integrationElement(quadPos);
@@ -69,7 +68,7 @@ void getLocalMatrix( const LocalView& localView, MatrixType& elementMatrix)
     // Compute the shape function gradients on the real element
     std::vector<FieldMatrix<double,1,dim> > jacobians(referenceJacobians.size());
     for (size_t i=0; i<jacobians.size(); i++)
-      jacobians[i] = referenceJacobians[i] * transpose(jacobianInverseTransposed);
+      jacobians[i] = referenceJacobians[i] * jacobianInverse;
 
     // Compute the actual matrix entries
     for (size_t i=0; i<elementMatrix.N(); i++)
