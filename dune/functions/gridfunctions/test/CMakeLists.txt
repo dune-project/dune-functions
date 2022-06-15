@@ -6,6 +6,8 @@ dune_add_test(SOURCES composedgridfunctiontest.cc LABELS quick)
 
 dune_add_test(SOURCES discreteglobalbasisfunctiontest.cc LABELS quick)
 
+dune_add_test(SOURCES discreteglobalbasisfunctionderivativetest.cc LABELS quick)
+
 dune_add_test(SOURCES facenormalgridfunctiontest.cc LABELS quick)
 
 dune_add_test(SOURCES gridfunctiontest.cc LABELS quick)
