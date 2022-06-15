@@ -331,11 +331,6 @@ public:
    * `Dune::Functions::Concept::LocalFunction`. It must be bound
    * to an entity from the entity set of the DiscreteGlobalBasisFunction
    * before it can be used.
-   *
-   * Notice that the local-function stores a reference to the
-   * global DiscreteGlobalBasisFunction. Hence calling any method
-   * of the local-function after the DiscreteGlobalBasisFunction
-   * exceeded its life time leads to undefined behavior.
    */
   friend LocalFunction localFunction(const DiscreteGlobalBasisFunction& t)
   {
@@ -351,19 +346,6 @@ public:
 private:
   std::shared_ptr<Data> data_;
 };
-
-
-
-/**
- * \brief Construction of local-functions from a temporary DiscreteGlobalBasisFunction (forbidden).
- *
- * Since a DiscreteGlobalBasisFunction::LocalFunction stores a reference
- * to the global DiscreteGlobalBasisFunction its life time is bound to
- * the latter. Hence construction from a temporary DiscreteGlobalBasisFunction
- * would lead to a dangling reference and is thus forbidden/deleted.
- */
-template<typename... TT>
-void localFunction(DiscreteGlobalBasisFunction<TT...>&& t) = delete;
 
 
 /**
