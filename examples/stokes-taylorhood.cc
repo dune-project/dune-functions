@@ -82,10 +82,9 @@ void getLocalMatrix(
   {
     // { begin_quad_loop_end }
     // { quad_loop_preamble_begin }
-    // The transposed inverse Jacobian of the map from the
+    // The inverse Jacobian of the map from the
     // reference element to the element
-    const auto jacobianInverseTransposed
-            = geometry.jacobianInverseTransposed(quadPoint.position());
+    const auto jacobianInverse = geometry.jacobianInverse(quadPoint.position());
 
     // The multiplicative factor in the integral transformation formula
     const auto integrationElement
@@ -106,7 +105,7 @@ void getLocalMatrix(
     // Compute the shape function gradients on the grid element
     std::vector<FieldMatrix<double,1,dim> > jacobians(referenceJacobians.size());
     for (size_t i=0; i<jacobians.size(); i++)
-      jacobians[i] = referenceJacobians[i] * transpose(jacobianInverseTransposed);
+      jacobians[i] = referenceJacobians[i] * jacobianInverse;
     // { velocity_gradients_end }
 
     // Compute the actual matrix entries
