@@ -20,20 +20,185 @@ namespace Dune {
 namespace Functions {
 
 
-namespace Imp {
-
-
-template<typename EntitySet, typename Basis, typename Vector, typename NodeToRangeEntry>
-struct DiscreteGlobalBasisFunctionData
+template<typename B, typename V, typename NTRE>
+class DiscreteGlobalBasisFunctionBase
 {
-  EntitySet entitySet;
-  std::shared_ptr<const Basis> basis;
-  std::shared_ptr<const Vector> coefficients;
-  std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry;
+public:
+  using Basis = B;
+  using Vector = V;
+
+  // In order to make the cache work for proxy-references
+  // we have to use AutonomousValue<T> instead of std::decay_t<T>
+  using Coefficient = Dune::AutonomousValue<decltype(std::declval<Vector>()[std::declval<typename Basis::MultiIndex>()])>;
+
+  using GridView = typename Basis::GridView;
+  using EntitySet = GridViewEntitySet<GridView, 0>;
+  using Tree = typename Basis::LocalView::Tree;
+  using NodeToRangeEntry = NTRE;
+
+  using Domain = typename EntitySet::GlobalCoordinate;
+
+  using LocalDomain = typename EntitySet::LocalCoordinate;
+  using Element = typename EntitySet::Element;
+
+protected:
+  struct Data
+  {
+    EntitySet entitySet;
+    std::shared_ptr<const Basis> basis;
+    std::shared_ptr<const Vector> coefficients;
+    std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry;
+  };
+
+public:
+  template<typename PNEB>
+  class LocalFunctionBase
+  {
+    using LocalView = typename Basis::LocalView;
+    using size_type = typename Tree::size_type;
+
+    using PerNodeEvaluationBuffer = PNEB;
+
+  public:
+    using Domain = LocalDomain;
+    using Element = typename EntitySet::Element;
+
+  protected:
+    LocalFunctionBase(const std::shared_ptr<const Data>& data)
+      : data_(data)
+      , localView_(data_->basis->localView())
+      , evaluationBuffer_(this->localView_.tree())
+    {
+      localDoFs_.reserve(localView_.maxSize());
+    }
+
+    /**
+     * \brief Copy-construct the local-function.
+     *
+     * This copy-constructor copies the cached local DOFs only
+     * if the `other` local-function is bound to an element.
+     **/
+    LocalFunctionBase(const LocalFunctionBase& other)
+      : data_(other.data_)
+      , localView_(other.localView_)
+      , evaluationBuffer_(this->localView_.tree())
+    {
+      localDoFs_.reserve(localView_.maxSize());
+      if (bound())
+        localDoFs_ = other.localDoFs_;
+    }
+
+    /**
+     * \brief Copy-assignment of the local-function.
+     *
+     * Assign all members from `other` to `this`, except the
+     * local DOFs. Those are copied only if the `other`
+     * local-function is bound to an element.
+     **/
+    LocalFunctionBase& operator=(const LocalFunctionBase& other)
+    {
+      data_ = other.data_;
+      localView_ = other.localView_;
+      if (bound())
+        localDoFs_ = other.localDoFs_;
+      return *this;
+    }
+
+  public:
+    /**
+     * \brief Bind LocalFunction to grid element.
+     *
+     * You must call this method before `operator()`
+     * and after changes to the coefficient vector.
+     */
+    void bind(const Element& element)
+    {
+      localView_.bind(element);
+      // Use cache of full local view size. For a subspace basis,
+      // this may be larger than the number of local DOFs in the
+      // tree. In this case only cache entries associated to local
+      // DOFs in the subspace are filled. Cache entries associated
+      // to local DOFs which are not contained in the subspace will
+      // not be touched.
+      //
+      // Alternatively one could use a cache that exactly fits
+      // the size of the tree. However, this would require to
+      // subtract an offset from localIndex(i) on each cache
+      // access in operator().
+      localDoFs_.resize(localView_.size());
+      const auto& dofs = *data_->coefficients;
+      for (size_type i = 0; i < localView_.tree().size(); ++i)
+      {
+        // For a subspace basis the index-within-tree i
+        // is not the same as the localIndex withn the
+        // full local view.
+        size_t localIndex = localView_.tree().localIndex(i);
+        localDoFs_[localIndex] = dofs[localView_.index(localIndex)];
+      }
+    }
+
+    //! Unbind the local-function.
+    void unbind()
+    {
+      localView_.unbind();
+    }
+
+    //! Check if LocalFunction is already bound to an element.
+    bool bound() const
+    {
+      return localView_.bound();
+    }
+
+    //! Return the element the local-function is bound to.
+    const Element& localContext() const
+    {
+      return localView_.element();
+    }
+
+  protected:
+    std::shared_ptr<const Data> data_;
+    LocalView localView_;
+    std::vector<Coefficient> localDoFs_;
+    mutable PerNodeEvaluationBuffer evaluationBuffer_;
+  };
+
+protected:
+  DiscreteGlobalBasisFunctionBase(const std::shared_ptr<const Data>& data)
+    : data_(data)
+  {
+    /* Nothing. */
+  }
+
+public:
+
+  //! Return a const reference to the stored basis.
+  const Basis& basis() const
+  {
+    return *data_->basis;
+  }
+
+  //! Return the coefficients of this discrete function by reference.
+  const Vector& dofs() const
+  {
+    return *data_->coefficients;
+  }
+
+  //! Return the stored node-to-range map.
+  const NodeToRangeEntry& nodeToRangeEntry() const
+  {
+    return *data_->nodeToRangeEntry;
+  }
+
+  //! Get associated set of entities the local-function can be bound to.
+  const EntitySet& entitySet() const
+  {
+    return data_->entitySet;
+  }
+
+protected:
+  std::shared_ptr<const Data> data_;
 };
 
-
-}
 
 template<typename DGBF>
 class DiscreteGlobalBasisFunctionDerivative;
@@ -84,133 +249,46 @@ template<typename B, typename V,
   typename NTRE = HierarchicNodeToRangeMap,
   typename R = typename V::value_type>
 class DiscreteGlobalBasisFunction
+  : public DiscreteGlobalBasisFunctionBase<B, V, NTRE>
 {
+  using Base = DiscreteGlobalBasisFunctionBase<B, V, NTRE>;
+  using Data = typename Base::Data;
+
 public:
-  using Basis = B;
-  using Vector = V;
+  using Basis = typename Base::Basis;
+  using Vector = typename Base::Vector;
 
-  // In order to make the cache work for proxy-references
-  // we have to use AutonomousValue<T> instead of std::decay_t<T>
-  using Coefficient = Dune::AutonomousValue<decltype(std::declval<Vector>()[std::declval<typename Basis::MultiIndex>()])>;
-
-  using GridView = typename Basis::GridView;
-  using EntitySet = GridViewEntitySet<GridView, 0>;
-  using Tree = typename Basis::LocalView::Tree;
-  using NodeToRangeEntry = NTRE;
-
-  using Domain = typename EntitySet::GlobalCoordinate;
+  using Domain = typename Base::Domain;
   using Range = R;
 
-  using LocalDomain = typename EntitySet::LocalCoordinate;
-  using Element = typename EntitySet::Element;
+  using Traits = Imp::GridFunctionTraits<Range(Domain), typename Base::EntitySet, DefaultDerivativeTraits, 16>;
 
-  using Traits = Imp::GridFunctionTraits<Range(Domain), EntitySet, DefaultDerivativeTraits, 16>;
+private:
+  template<class Node>
+  using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+  template<class Node>
+  using NodeData = typename std::vector<LocalBasisRange<Node>>;
+  using PerNodeEvaluationBuffer = typename TypeTree::TreeContainer<NodeData, typename Base::Tree>;
 
-  using Data = Imp::DiscreteGlobalBasisFunctionData<EntitySet, Basis, Vector, NodeToRangeEntry>;
-
+public:
   class LocalFunction
+    : public Base::template LocalFunctionBase<PerNodeEvaluationBuffer>
   {
-    using LocalView = typename Basis::LocalView;
-    using size_type = typename Tree::size_type;
-
-    template<class Node>
-    using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
-
-    template<class Node>
-    using NodeData = typename std::vector<LocalBasisRange<Node>>;
-
-    using PerNodeEvaluationBuffer = typename TypeTree::TreeContainer<NodeData,Tree>;
+    using LocalBase = typename Base::template LocalFunctionBase<PerNodeEvaluationBuffer>;
+    using size_type = typename Base::Tree::size_type;
 
   public:
 
     using GlobalFunction = DiscreteGlobalBasisFunction;
-    using Domain = LocalDomain;
+    using Domain = typename LocalBase::Domain;
     using Range = GlobalFunction::Range;
-    using Element = GlobalFunction::Element;
+    using Element = typename LocalBase::Element;
 
     //! Create a local-function from the associated grid-function
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
-      : data_(globalFunction.data_)
-      , localView_(globalFunction.basis().localView())
-      , evaluationBuffer_(localView_.tree())
+      : LocalBase(globalFunction.data_)
     {
-      localDoFs_.reserve(localView_.maxSize());
-    }
-
-    /**
-     * \brief Copy-construct the local-function.
-     *
-     * This copy-constructor copies the cached local DOFs only
-     * if the `other` local-function is bound to an element.
-     **/
-    LocalFunction(const LocalFunction& other)
-      : data_(other.data_)
-      , localView_(other.localView_)
-      , evaluationBuffer_(localView_.tree())
-    {
-      localDoFs_.reserve(localView_.maxSize());
-      if (bound())
-        localDoFs_ = other.localDoFs_;
-    }
-
-    /**
-     * \brief Copy-assignment of the local-function.
-     *
-     * Assign all members from `other` to `this`, except the
-     * local DOFs. Those are copied only if the `other`
-     * local-function is bound to an element.
-     **/
-    LocalFunction& operator=(const LocalFunction& other)
-    {
-      data_ = other.data_;
-      localView_ = other.localView_;
-      if (bound())
-        localDoFs_ = other.localDoFs_;
-      return *this;
-    }
-
-    /**
-     * \brief Bind LocalFunction to grid element.
-     *
-     * You must call this method before `operator()`
-     * and after changes to the coefficient vector.
-     */
-    void bind(const Element& element)
-    {
-      localView_.bind(element);
-      // Use cache of full local view size. For a subspace basis,
-      // this may be larger than the number of local DOFs in the
-      // tree. In this case only cache entries associated to local
-      // DOFs in the subspace are filled. Cache entries associated
-      // to local DOFs which are not contained in the subspace will
-      // not be touched.
-      //
-      // Alternatively one could use a cache that exactly fits
-      // the size of the tree. However, this would require to
-      // subtract an offset from localIndex(i) on each cache
-      // access in operator().
-      localDoFs_.resize(localView_.size());
-      const auto& dofs = *data_->coefficients;
-      for (size_type i = 0; i < localView_.tree().size(); ++i)
-      {
-        // For a subspace basis the index-within-tree i
-        // is not the same as the localIndex withn the
-        // full local view.
-        size_t localIndex = localView_.tree().localIndex(i);
-        localDoFs_[localIndex] = dofs[localView_.index(localIndex)];
-      }
-    }
-
-    //! Unbind the local-function.
-    void unbind()
-    {
-      localView_.unbind();
-    }
-
-    //! Check if LocalFunction is already bound to an element.
-    bool bound() const
-    {
-      return localView_.bound();
+      /* Nothing. */
     }
 
     /**
@@ -227,11 +305,11 @@ public:
       Range y;
       istlVectorBackend(y) = 0;
 
-      TypeTree::forEachLeafNode(localView_.tree(), [&](auto&& node, auto&& treePath) {
-        const auto& nodeToRangeEntry = *data_->nodeToRangeEntry;
+      TypeTree::forEachLeafNode(this->localView_.tree(), [&](auto&& node, auto&& treePath) {
+        const auto& nodeToRangeEntry = *this->data_->nodeToRangeEntry;
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
-        auto& shapeFunctionValues = evaluationBuffer_[treePath];
+        auto& shapeFunctionValues = this->evaluationBuffer_[treePath];
 
         localBasis.evaluateFunction(x, shapeFunctionValues);
 
@@ -241,7 +319,7 @@ public:
         for (size_type i = 0; i < localBasis.size(); ++i)
         {
           // Get coefficient associated to i-th shape function
-          auto c = flatVectorView(localDoFs_[node.localIndex(i)]);
+          auto c = flatVectorView(this->localDoFs_[node.localIndex(i)]);
 
           // Get value of i-th shape function
           auto v = flatVectorView(shapeFunctionValues[i]);
@@ -265,12 +343,6 @@ public:
       return y;
     }
 
-    //! Return the element the local-function is bound to.
-    const Element& localContext() const
-    {
-      return localView_.element();
-    }
-
     //! Local function of the derivative
     friend typename DiscreteGlobalBasisFunctionDerivative<DiscreteGlobalBasisFunction>::LocalFunction derivative(const LocalFunction& lf)
     {
@@ -279,43 +351,18 @@ public:
         dlf.bind(lf.localContext());
       return dlf;
     }
-
-  private:
-
-    std::shared_ptr<const Data> data_;
-    LocalView localView_;
-    mutable PerNodeEvaluationBuffer evaluationBuffer_;
-    std::vector<Coefficient> localDoFs_;
   };
 
   //! Create a grid-function, by wrapping the arguments in `std::shared_ptr`.
   template<class B_T, class V_T, class NTRE_T>
-  DiscreteGlobalBasisFunction(B_T && basis, V_T && coefficients, NTRE_T&& nodeToRangeEntry) :
-    data_(std::make_shared<Data>(Data{{basis.gridView()}, wrap_or_move(std::forward<B_T>(basis)), wrap_or_move(std::forward<V_T>(coefficients)), wrap_or_move(std::forward<NTRE_T>(nodeToRangeEntry))}))
+  DiscreteGlobalBasisFunction(B_T && basis, V_T && coefficients, NTRE_T&& nodeToRangeEntry)
+    : Base(std::make_shared<Data>(Data{{basis.gridView()}, wrap_or_move(std::forward<B_T>(basis)), wrap_or_move(std::forward<V_T>(coefficients)), wrap_or_move(std::forward<NTRE_T>(nodeToRangeEntry))}))
   {}
 
   //! Create a grid-function, by moving the arguments in `std::shared_ptr`.
-  DiscreteGlobalBasisFunction(std::shared_ptr<const Basis> basis, std::shared_ptr<const V> coefficients, std::shared_ptr<const NodeToRangeEntry> nodeToRangeEntry) :
-    data_(std::make_shared<Data>(Data{{basis->gridView()}, basis, coefficients, nodeToRangeEntry}))
+  DiscreteGlobalBasisFunction(std::shared_ptr<const Basis> basis, std::shared_ptr<const V> coefficients, std::shared_ptr<const typename Base::NodeToRangeEntry> nodeToRangeEntry)
+    : Base(std::make_shared<Data>(Data{{basis->gridView()}, basis, coefficients, nodeToRangeEntry}))
   {}
-
-  //! Return a const reference to the stored basis.
-  const Basis& basis() const
-  {
-    return *data_->basis;
-  }
-
-  //! Return the coefficients of this discrete function by reference.
-  const Vector& dofs() const
-  {
-    return *data_->coefficients;
-  }
-
-  //! Return the stored node-to-range map.
-  const NodeToRangeEntry& nodeToRangeEntry() const
-  {
-    return *data_->nodeToRangeEntry;
-  }
 
   //! Not implemented.
   Range operator() (const Domain& x) const
@@ -342,15 +389,6 @@ public:
   {
     return LocalFunction(t);
   }
-
-  //! Get associated set of entities the local-function can be bound to.
-  const EntitySet& entitySet() const
-  {
-    return data_->entitySet;
-  }
-
-private:
-  std::shared_ptr<const Data> data_;
 };
 
 
@@ -418,30 +456,30 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
  */
 template<typename DGBF>
 class DiscreteGlobalBasisFunctionDerivative
+  : public DiscreteGlobalBasisFunctionBase<typename DGBF::Basis, typename DGBF::Vector, typename DGBF::NodeToRangeEntry>
 {
+  using Base = DiscreteGlobalBasisFunctionBase<typename DGBF::Basis, typename DGBF::Vector, typename DGBF::NodeToRangeEntry>;
+  using Data = typename Base::Data;
+
 public:
   using DiscreteGlobalBasisFunction = DGBF;
-  using Basis = typename DiscreteGlobalBasisFunction::Basis;
-  using Vector = typename DiscreteGlobalBasisFunction::Vector;
 
-  using Coefficient = typename DiscreteGlobalBasisFunction::Coefficient;
+  using Basis = typename Base::Basis;
+  using Vector = typename Base::Vector;
 
-  using GridView = typename Basis::GridView;
-  using EntitySet = GridViewEntitySet<GridView, 0>;
-  using Tree = typename Basis::LocalView::Tree;
-  using NodeToRangeEntry = typename DiscreteGlobalBasisFunction::NodeToRangeEntry;
-
-  using Domain = typename EntitySet::GlobalCoordinate;
+  using Domain = typename Base::Domain;
   using Range = typename SignatureTraits<typename DiscreteGlobalBasisFunction::Traits::DerivativeInterface>::Range;
 
-  using Traits = Imp::GridFunctionTraits<Range(Domain), EntitySet, DefaultDerivativeTraits, 16>;
-
-  using LocalDomain = typename EntitySet::LocalCoordinate;
-  using Element = typename EntitySet::Element;
+  using Traits = Imp::GridFunctionTraits<Range(Domain), typename Base::EntitySet, DefaultDerivativeTraits, 16>;
 
 private:
-  using Data = typename DiscreteGlobalBasisFunction::Data;
-  using Field = field_t<Coefficient>;
+  using Field = field_t<typename Base::Coefficient>;
+
+  template<class Node>
+  using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::JacobianType;
+  template<class Node>
+  using NodeData = typename std::vector< LocalBasisRange<Node> >;
+  using PerNodeEvaluationBuffer = typename TypeTree::TreeContainer<NodeData, typename Base::Tree>;
 
 public:
 
@@ -453,66 +491,22 @@ public:
    * an element.
    */
   class LocalFunction
+    : public Base::template LocalFunctionBase<PerNodeEvaluationBuffer>
   {
-    using LocalView = typename Basis::LocalView;
-    using size_type = typename Tree::size_type;
-
-    template<class Node>
-    using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::JacobianType;
-
-    template<class Node>
-    using NodeData = typename std::vector< LocalBasisRange<Node> >;
-
-    using PerNodeEvaluationBuffer = typename TypeTree::TreeContainer<NodeData, Tree>;
+    using LocalBase = typename Base::template LocalFunctionBase<PerNodeEvaluationBuffer>;
+    using size_type = typename Base::Tree::size_type;
 
   public:
     using GlobalFunction = DiscreteGlobalBasisFunctionDerivative;
-    using Domain = LocalDomain;
+    using Domain = typename LocalBase::Domain;
     using Range = GlobalFunction::Range;
-    using Element = GlobalFunction::Element;
-    using Geometry = typename Element::Geometry;
+    using Element = typename LocalBase::Element;
 
-    //! Create a local function grom the associated grid function
+    //! Create a local function from the associated grid function
     LocalFunction(const GlobalFunction& globalFunction)
-      : data_(globalFunction.data_)
-      , localView_(globalFunction.basis().localView())
-      , evaluationBuffer_(localView_.tree())
+      : LocalBase(globalFunction.data_)
     {
-      localDoFs_.reserve(localView_.maxSize());
-    }
-
-    /**
-     * \brief Copy-construct the local-function.
-     *
-     * This copy-constructor copies the cached local DOFs only
-     * if the `other` local-function is bound to an element.
-     **/
-    LocalFunction(const LocalFunction& other)
-      : data_(other.data_)
-      , localView_(other.localView_)
-      , geometry_(other.geometry_)
-      , evaluationBuffer_(localView_.tree())
-    {
-      localDoFs_.reserve(localView_.maxSize());
-      if (bound())
-        localDoFs_ = other.localDoFs_;
-    }
-
-    /**
-     * \brief Copy-assignment of the local-function.
-     *
-     * Assign all members from `other` to `this`, except the
-     * local DOFs. Those are copied only if the `other`
-     * local-function is bound to an element.
-     **/
-    LocalFunction& operator=(const LocalFunction& other)
-    {
-      data_ = other.data_;
-      localView_ = other.localView_;
-      geometry_ = other.geometry_;
-      if (bound())
-        localDoFs_ = other.localDoFs_;
-      return *this;
+      /* Nothing. */
     }
 
     /**
@@ -523,28 +517,15 @@ public:
      */
     void bind(const Element& element)
     {
-      localView_.bind(element);
+      LocalBase::bind(element);
       geometry_.emplace(element.geometry());
-      localDoFs_.resize(localView_.size());
-      const auto& dofs = *data_->coefficients;
-      for (size_type i = 0; i < localView_.tree().size(); ++i)
-      {
-        size_type localIndex = localView_.tree().localIndex(i);
-        localDoFs_[localIndex] = dofs[localView_.index(localIndex)];
-      }
     }
 
     //! Unbind the local-function.
     void unbind()
     {
       geometry_.reset();
-      localView_.unbind();
-    }
-
-    //! Check if LocalFunction is already bound to an element.
-    bool bound() const
-    {
-      return localView_.bound();
+      LocalBase::unbind();
     }
 
     /**
@@ -567,11 +548,11 @@ public:
 
       const auto& jacobianInverse = geometry_->jacobianInverse(x);
 
-      TypeTree::forEachLeafNode(localView_.tree(), [&](auto&& node, auto&& treePath) {
-        const auto& nodeToRangeEntry = *data_->nodeToRangeEntry;
+      TypeTree::forEachLeafNode(this->localView_.tree(), [&](auto&& node, auto&& treePath) {
+        const auto& nodeToRangeEntry = *this->data_->nodeToRangeEntry;
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
-        auto& shapeFunctionJacobians = evaluationBuffer_[treePath];
+        auto& shapeFunctionJacobians = this->evaluationBuffer_[treePath];
 
         localBasis.evaluateJacobian(x, shapeFunctionJacobians);
 
@@ -609,12 +590,6 @@ public:
       return y;
     }
 
-    //! Return the element the local-function is bound to.
-    const Element& localContext() const
-    {
-      return localView_.element();
-    }
-
     //! Not implemented
     friend typename Traits::LocalFunctionTraits::DerivativeInterface derivative(const LocalFunction&)
     {
@@ -622,11 +597,7 @@ public:
     }
 
   private:
-    std::shared_ptr<const Data> data_;
-    LocalView localView_;
-    std::optional<Geometry> geometry_;
-    mutable PerNodeEvaluationBuffer evaluationBuffer_;
-    std::vector<Coefficient> localDoFs_;
+    std::optional<typename Element::Geometry> geometry_;
   };
 
   /**
@@ -635,27 +606,10 @@ public:
    * Please call `derivative(discreteGlobalBasisFunction)` to create an instance
    * of this class.
    */
-  DiscreteGlobalBasisFunctionDerivative(std::shared_ptr<const Data> data)
-    : data_(std::move(data))
+  DiscreteGlobalBasisFunctionDerivative(const std::shared_ptr<const Data>& data)
+    : Base(data)
   {
-  }
-
-  //! Return a const reference to the stored basis.
-  const Basis& basis() const
-  {
-    return *data_->basis;
-  }
-
-  //! Return the coefficients of this discrete function by reference.
-  const Vector& dofs() const
-  {
-    return *data_->coefficients;
-  }
-
-  //! Return the stored node-to-range map.
-  const NodeToRangeEntry& nodeToRangeEntry() const
-  {
-    return *data_->nodeToRangeEntry;
+    /* Nothing. */
   }
 
   //! Not implemented.
@@ -675,15 +629,6 @@ public:
   {
     return LocalFunction(f);
   }
-
-  //! Get associated set of entities the local-function can be bound to.
-  const EntitySet& entitySet() const
-  {
-    return data_->entitySet;
-  }
-
-private:
-  std::shared_ptr<const Data> data_;
 };
 
 
