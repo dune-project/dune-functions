@@ -4,7 +4,11 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_FLATVECTORVIEW_HH
 
 
+#include <array>
+
 #include <dune/common/concept.hh>
+#include <dune/common/hybridutilities.hh>
+#include <dune/common/indices.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>
 
@@ -16,23 +20,20 @@ namespace Functions {
 namespace Impl {
 
 
-
 template<class V>
 struct FlatVectorBackend
 {
 
   template<class VV, class Index,
     typename std::enable_if< models<Concept::HasIndexAccess, VV, Index>(), int>::type = 0>
-  static auto getEntry(VV&& v, const Index& i)
-    ->decltype(v[i])
+  static decltype(auto) getEntry(VV&& v, const Index& i)
   {
     return v[i];
   }
 
   template<class VV, class Index,
     typename std::enable_if< not models<Concept::HasIndexAccess, VV, Index>(), int>::type = 0>
-  static auto getEntry(VV&& v, const Index&)
-    ->decltype(v)
+  static decltype(auto) getEntry(VV&& v, const Index&)
   {
     return std::forward<VV>(v);
   }
@@ -40,20 +41,17 @@ struct FlatVectorBackend
   template<class VV,
     typename std::enable_if< models<Concept::HasSizeMethod, VV>(), int>::type = 0>
   static auto size(VV&& v)
-    ->decltype(v.size())
   {
-    return v.size();
+    return Dune::Hybrid::size(v);
   }
 
   template<class VV,
     typename std::enable_if< not models<Concept::HasSizeMethod, VV>(), int>::type = 0>
-  static std::size_t size(VV&&)
+  static auto size(VV&&)
   {
-    return 1;
+    return Dune::index_constant<1>{};
   }
-
 };
-
 
 
 
@@ -63,16 +61,38 @@ struct FlatVectorBackend<typename Dune::FieldMatrix<K, n, m> >
 {
 
   template<class VV, class Index>
-  static auto getEntry(VV&& v, const Index& i) -> decltype(v[i/m][i%m])
+  static decltype(auto) getEntry(VV&& v, const Index& i)
   {
     return v[i/m][i%m];
   }
 
   template<class VV>
-  static int size(VV&& v)
+  static auto size(VV&& v)
   {
-    return n*m;
+    return Dune::index_constant<n*m>{};
   }
+};
+
+
+
+template<class K, std::size_t n>
+struct FlatVectorBackend< std::array<K, n> >
+{
+
+  template<class VV, class Index>
+  static decltype(auto) getEntry(VV&& v, const Index& i)
+  {
+    const auto innerSize = decltype(FlatVectorBackend<K>::size(v[0]))::value;
+    return FlatVectorBackend<K>::getEntry(v[i/innerSize], i%innerSize);
+  }
+
+  template<class VV>
+  static auto size(VV&& v)
+  {
+    const auto innerSize = decltype(FlatVectorBackend<K>::size(v[0]))::value;
+    return Dune::index_constant<n*innerSize>{};
+  }
+
 };
 
 
