@@ -5,6 +5,15 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.9)
 
+- The `MultiIndex` used by `DefaultGlobalBasis` is now a `StaticMultiIndex`
+  if it's size is known at compile time. Otherwise its a `ReservedVector`.
+- The template class `StaticMultiIndex` for a statically sized multiindex was added.
+  This essentially adds `operator<<` to `std::array` for writing to a stream
+  and a cast to the first entry for `size()==0`.
+  `FlatMultiIndex<T>` is now an alias for `StaticMultiIndex<T,1>`.
+- The template class `OverflowArray` was added. It mostly behaves like `Dune::ReservedVector`
+  but derives from a statically sized array base class. This allows to have temporary
+  dynamic size but cast to the result to the statically sized base class.
 - The new `FaceNormalGridFunction` implements the unit outer normal
   of the closest face within an element as a grid function.
 - SubspaceBases will no longer be nested. Instead,

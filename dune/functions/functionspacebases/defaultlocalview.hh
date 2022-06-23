@@ -9,7 +9,10 @@
 
 #include <dune/common/concept.hh>
 #include <dune/common/hybridutilities.hh>
+#include <dune/common/reservedvector.hh>
 
+#include <dune/functions/common/overflowarray.hh>
+#include <dune/functions/common/multiindex.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
 
@@ -40,10 +43,26 @@ public:
   //! Tree of local finite elements / local shape function sets
   using Tree = typename GlobalBasis::PreBasis::Node;
 
-  /** \brief Type used for global numbering of the basis vectors */
-  using MultiIndex = typename GlobalBasis::MultiIndex;
+protected:
+
+  using PreBasis = typename GlobalBasis::PreBasis;
+
+  // Type used to store the multi indices of the basis vectors.
+  // In contrast to MultiIndex this always has dynamic size.
+  // It's guaranteed, that you can always cast it to MultiIndex
+  using MultiIndexStorage =
+      std::conditional_t<(PreBasis::minMultiIndexSize == PreBasis::maxMultiIndexSize),
+        OverflowArray<StaticMultiIndex<size_type, PreBasis::maxMultiIndexSize>, PreBasis::multiIndexBufferSize>,
+        Dune::ReservedVector<size_type, PreBasis::multiIndexBufferSize>>;
 
 public:
+
+  /** \brief Type used for global numbering of the basis vectors */
+  using MultiIndex =
+      std::conditional_t<(PreBasis::minMultiIndexSize == PreBasis::maxMultiIndexSize),
+        StaticMultiIndex<size_type, PreBasis::maxMultiIndexSize>,
+        Dune::ReservedVector<size_type, PreBasis::multiIndexBufferSize>>;
+
 
   /** \brief Construct local view for a given global finite element basis */
   DefaultLocalView(const GlobalBasis& globalBasis) :
@@ -127,7 +146,7 @@ public:
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  MultiIndex index(size_type i) const
+  const MultiIndex& index(size_type i) const
   {
     return indices_[i];
   }
@@ -148,7 +167,7 @@ protected:
   const GlobalBasis* globalBasis_;
   std::optional<Element> element_;
   Tree tree_;
-  std::vector<MultiIndex> indices_;
+  std::vector<MultiIndexStorage> indices_;
 };
 
 

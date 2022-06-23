@@ -12,6 +12,8 @@ install(FILES
         interfaces.hh
         localfunction.hh
         localfunction_imp.hh
+        multiindex.hh
+        overflowarray.hh
         polymorphicsmallobject.hh
         referencehelper.hh
         reserveddeque.hh
