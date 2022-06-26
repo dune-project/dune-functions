@@ -7,6 +7,7 @@
 #include <array>
 #include <iostream>
 
+#include <dune/common/hash.hh>
 
 
 namespace Dune::Functions {
