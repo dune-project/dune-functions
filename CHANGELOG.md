@@ -46,6 +46,7 @@ corresponding version of the Dune core modules.
   bound with a call to the `bind()` method or not.  Implementations of
   the two concepts outside dune-functions will have to implement this
   additional method.
+- The derivative of a `DiscreteGlobalBasisFunction` is now implemented.
 
 ## Release 2.8
 
