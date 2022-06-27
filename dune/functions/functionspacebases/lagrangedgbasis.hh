@@ -158,58 +158,35 @@ public:
     const auto& gridIndexSet = gridView().indexSet();
     const auto& element = node.element();
 
+    size_type offset = 0;
+    if constexpr (dim==1)
+      offset = dofsPerEdge*gridIndexSet.subIndex(element,0,0);
+    else if constexpr (dim==2)
+    {
+      if (element.type().isTriangle())
+        offset = dofsPerTriangle*gridIndexSet.subIndex(element,0,0);
+      else if (element.type().isQuadrilateral())
+        offset = quadrilateralOffset_ + dofsPerQuad*gridIndexSet.subIndex(element,0,0);
+      else
+        DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
+    }
+    else if constexpr (dim==3)
+    {
+      if (element.type().isTetrahedron())
+        offset = dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0);
+      else if (element.type().isPrism())
+        offset = prismOffset_ + dofsPerPrism*gridIndexSet.subIndex(element,0,0);
+      else if (element.type().isHexahedron())
+        offset = hexahedronOffset_ + dofsPerHexahedron*gridIndexSet.subIndex(element,0,0);
+      else if (element.type().isPyramid())
+        offset = pyramidOffset_ + dofsPerPyramid*gridIndexSet.subIndex(element,0,0);
+      else
+        DUNE_THROW(Dune::NotImplemented, "3d elements have to be tetrahedrons, prisms, hexahedrons or pyramids");
+    }
+    else
+      DUNE_THROW(Dune::NotImplemented, "No index method for " << dim << "d grids available yet!");
     for (size_type i = 0, end = node.size() ; i < end ; ++i, ++it)
-      {
-        switch (dim)
-          {
-          case 1:
-            {
-              *it = {dofsPerEdge*gridIndexSet.subIndex(element,0,0) + i};
-              continue;
-            }
-          case 2:
-            {
-              if (element.type().isTriangle())
-                {
-                  *it = {dofsPerTriangle*gridIndexSet.subIndex(element,0,0) + i};
-                  continue;
-                }
-              else if (element.type().isQuadrilateral())
-                {
-                  *it = { quadrilateralOffset_ + dofsPerQuad*gridIndexSet.subIndex(element,0,0) + i};
-                  continue;
-                }
-              else
-                DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
-            }
-          case 3:
-            {
-              if (element.type().isTetrahedron())
-                {
-                  *it = {dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0) + i};
-                  continue;
-                }
-              else if (element.type().isPrism())
-                {
-                  *it = { prismOffset_ + dofsPerPrism*gridIndexSet.subIndex(element,0,0) + i};
-                  continue;
-                }
-              else if (element.type().isHexahedron())
-                {
-                  *it = { hexahedronOffset_ + dofsPerHexahedron*gridIndexSet.subIndex(element,0,0) + i};
-                  continue;
-                }
-              else if (element.type().isPyramid())
-                {
-                  *it = { pyramidOffset_ + dofsPerPyramid*gridIndexSet.subIndex(element,0,0) + i};
-                  continue;
-                }
-              else
-                DUNE_THROW(Dune::NotImplemented, "3d elements have to be tetrahedrons, prisms, hexahedrons or pyramids");
-            }
-          }
-        DUNE_THROW(Dune::NotImplemented, "No index method for " << dim << "d grids available yet!");
-      }
+      *it = {offset + i};
     return it;
   }
 
