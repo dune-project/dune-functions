@@ -20,6 +20,8 @@ namespace Dune {
 namespace Functions {
 
 
+namespace Impl {
+
 template<typename B, typename V, typename NTRE>
 class DiscreteGlobalBasisFunctionBase
 {
@@ -42,6 +44,10 @@ public:
   using Element = typename EntitySet::Element;
 
 protected:
+
+  // This collects all data that is shared by all related
+  // global and locl functions. This way we don't need to
+  // keep track of it individually.
   struct Data
   {
     EntitySet entitySet;
@@ -156,6 +162,23 @@ public:
     }
 
   protected:
+
+    template<class To, class From>
+    void assignWith(To& to, const From& from) const
+    {
+        auto from_flat = flatVectorView(from);
+        auto to_flat = flatVectorView(to);
+        assert(from_flat.size() == to_flat.size());
+        for (size_type i = 0; i < to_flat.size(); ++i)
+          to_flat[i] = from_flat[i];
+    }
+
+    template<class Node, class TreePath, class Range>
+    decltype(auto) nodeToRangeEntry(const Node& node, const TreePath& treePath, Range& y) const
+    {
+      return (*data_->nodeToRangeEntry)(node, treePath, y);
+    }
+
     std::shared_ptr<const Data> data_;
     LocalView localView_;
     std::vector<Coefficient> localDoFs_;
@@ -199,6 +222,9 @@ protected:
   std::shared_ptr<const Data> data_;
 };
 
+} // namespace Impl
+
+
 
 template<typename DGBF>
 class DiscreteGlobalBasisFunctionDerivative;
@@ -216,29 +242,24 @@ class DiscreteGlobalBasisFunctionDerivative;
  * by vector-valued coefficients. The mapping of these to the range
  * type is done via the following multistage procedure:
  *
- * 1.Each leaf node N in the local ansatz subtree is associated to an entry
- *   RE of the range-type via the given node-to-range-entry-map.
+ * 1.Each leaf node in the local ansatz subtree is associated to an
+ *   entry `RE` of the range-type via the given node-to-range-entry-map.
+ *   Based on this mapping each node is processed independently in the
+ *   following way:
  *
- * Now let C be the coefficient block for a single basis function and
- * V the value of this basis function at the evaluation point. Notice
- * that both may be scalar, vector, matrix, or general container valued.
+ * 2.Now let the coefficients type `C` per basis function be `dim_C`-dimensional.
+ *   Then we compute the dim(C) linear combinations (one for each coeffient
+ *   index) of the shape function values with type `V` independently storing them in
+ *   a `std::array<V,dim_C>`.
  *
- * 2.Each entry of C is associated with a flat index j via flatVectorView.
- *   This is normally a lexicographic index. The total scalar dimension according
- *   to those flat indices is dim(C).
- * 3.Each entry of V is associated with a flat index k via flatVectorView.
- *   This is normally a lexicographic index. The total scalar dimension according
- *   to those flat indices dim(V).
- * 4.Each entry of RE is associated with a flat index k via flatVectorView.
- *   This is normally a lexicographic index. The total scalar dimension according
- *   to those flat indices dim(RE).
- * 5.Via those flat indices we now interpret C,V, and RE as vectors and compute the diadic
- *   product (C x V). The entries of this product are mapped to the flat indices for
- *   RE lexicographically. I.e. we set
+ * 3.Finally the resulting array of function values is assigned to the
+ *   nodal range entry `RE`. Since both types may be different their entries
+ *   are mapped to one another via `flatVectorView()`. This will recursive
+ *   enumerate the entries of the types in lexicographic order (unless
+ *   `flatVectorView` is specialized differently for a certain type).
  *
- *     RE[j*dim(V)+k] = C[j] * V[k]
- *
- * Hence the range entry RE must have dim(RE) = dim(C)*dim(V).
+ * As a consequence the nodal range entry is required to have a total
+ * dimension `dim_RE = dim_C * dim_V` and to be compatible with `flatVectorView()`.
  *
  * \tparam B Type of global basis
  * \tparam V Type of coefficient vectors
@@ -249,9 +270,9 @@ template<typename B, typename V,
   typename NTRE = HierarchicNodeToRangeMap,
   typename R = typename V::value_type>
 class DiscreteGlobalBasisFunction
-  : public DiscreteGlobalBasisFunctionBase<B, V, NTRE>
+  : public Impl::DiscreteGlobalBasisFunctionBase<B, V, NTRE>
 {
-  using Base = DiscreteGlobalBasisFunctionBase<B, V, NTRE>;
+  using Base = Impl::DiscreteGlobalBasisFunctionBase<B, V, NTRE>;
   using Data = typename Base::Data;
 
 public:
@@ -264,6 +285,7 @@ public:
   using Traits = Imp::GridFunctionTraits<Range(Domain), typename Base::EntitySet, DefaultDerivativeTraits, 16>;
 
 private:
+
   template<class Node>
   using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
   template<class Node>
@@ -276,6 +298,7 @@ public:
   {
     using LocalBase = typename Base::template LocalFunctionBase<PerNodeEvaluationBuffer>;
     using size_type = typename Base::Tree::size_type;
+    using LocalBase::nodeToRangeEntry;
 
   public:
 
@@ -306,38 +329,30 @@ public:
       istlVectorBackend(y) = 0;
 
       TypeTree::forEachLeafNode(this->localView_.tree(), [&](auto&& node, auto&& treePath) {
-        const auto& nodeToRangeEntry = *this->data_->nodeToRangeEntry;
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
         auto& shapeFunctionValues = this->evaluationBuffer_[treePath];
 
         localBasis.evaluateFunction(x, shapeFunctionValues);
 
-        // Get range entry associated to this node
-        auto re = flatVectorView(nodeToRangeEntry(node, treePath, y));
-
+        // Compute linear combinations of basis function jacobian.
+        // Non-scalar coefficients of dimension coeffDim are handled by
+        // processing the coeffDim linear combinations independently
+        // and storing them as entries of an array.
+        using Value = LocalBasisRange< std::decay_t<decltype(node)> >;
+        static constexpr auto coeffDim = decltype(flatVectorView(this->localDoFs_[node.localIndex(0)]).size())::value;
+        auto values = std::array<Value, coeffDim>{};
+        istlVectorBackend(values) = 0;
         for (size_type i = 0; i < localBasis.size(); ++i)
         {
-          // Get coefficient associated to i-th shape function
           auto c = flatVectorView(this->localDoFs_[node.localIndex(i)]);
-
-          // Get value of i-th shape function
-          auto v = flatVectorView(shapeFunctionValues[i]);
-
-          // Notice that the range entry re, the coefficient c, and the shape functions
-          // value v may all be scalar, vector, matrix, or general container valued.
-          // The matching of their entries is done via the multistage procedure described
-          // in the class documentation of DiscreteGlobalBasisFunction.
-          auto&& dimC = c.size();
-          auto dimV = v.size();
-          assert(dimC*dimV == re.size());
-          for(size_type j=0; j<dimC; ++j)
-          {
-            auto&& c_j = c[j];
-            for(size_type k=0; k<dimV; ++k)
-              re[j*dimV + k] += c_j*v[k];
-          }
+          for (std::size_t j = 0; j < coeffDim; ++j)
+            values[j].axpy(c[j], shapeFunctionValues[i]);
         }
+
+        // Assign computed values to node entry of range.
+        // Types are matched using the lexicographic ordering provided by flatVectorView.
+        LocalBase::assignWith(nodeToRangeEntry(node, treePath, y), values);
       });
 
       return y;
@@ -445,10 +460,8 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
  * with respect to global coordinates.
  *
  * The function handles the mapping of coefficient blocks and basis function values
- * to range entries similar to the `DiscreteGlobalBasisFunction`. Given the
- * flat index `l` as used in the `DiscreteGlobalBasisFunction` and dimension `d` of
- * global coordinates, the derivative assumes that the flat indices `d*l`,
- * `d*l + 1`, ..., `d*l + d - 1` are the flat indices for the partial derivatives.
+ * to range entries analoguesly to the `DiscreteGlobalBasisFunction`. This mapping
+ * is implemented with the same algorithm but with values replace by jacobian.
  *
  * \ingroup FunctionImplementations
  *
@@ -456,9 +469,9 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
  */
 template<typename DGBF>
 class DiscreteGlobalBasisFunctionDerivative
-  : public DiscreteGlobalBasisFunctionBase<typename DGBF::Basis, typename DGBF::Vector, typename DGBF::NodeToRangeEntry>
+  : public Impl::DiscreteGlobalBasisFunctionBase<typename DGBF::Basis, typename DGBF::Vector, typename DGBF::NodeToRangeEntry>
 {
-  using Base = DiscreteGlobalBasisFunctionBase<typename DGBF::Basis, typename DGBF::Vector, typename DGBF::NodeToRangeEntry>;
+  using Base = Impl::DiscreteGlobalBasisFunctionBase<typename DGBF::Basis, typename DGBF::Vector, typename DGBF::NodeToRangeEntry>;
   using Data = typename Base::Data;
 
 public:
@@ -473,7 +486,6 @@ public:
   using Traits = Imp::GridFunctionTraits<Range(Domain), typename Base::EntitySet, DefaultDerivativeTraits, 16>;
 
 private:
-  using Field = field_t<typename Base::Coefficient>;
 
   template<class Node>
   using LocalBasisRange = typename Node::FiniteElement::Traits::LocalBasisType::Traits::JacobianType;
@@ -495,6 +507,7 @@ public:
   {
     using LocalBase = typename Base::template LocalFunctionBase<PerNodeEvaluationBuffer>;
     using size_type = typename Base::Tree::size_type;
+    using LocalBase::nodeToRangeEntry;
 
   public:
     using GlobalFunction = DiscreteGlobalBasisFunctionDerivative;
@@ -549,42 +562,37 @@ public:
       const auto& jacobianInverse = geometry_->jacobianInverse(x);
 
       TypeTree::forEachLeafNode(this->localView_.tree(), [&](auto&& node, auto&& treePath) {
-        const auto& nodeToRangeEntry = *this->data_->nodeToRangeEntry;
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
         auto& shapeFunctionJacobians = this->evaluationBuffer_[treePath];
 
         localBasis.evaluateJacobian(x, shapeFunctionJacobians);
 
-        // compute Jacobian wrt. reference coordinates
-
+        // Compute linear combinations of basis function jacobian.
+        // Non-scalar coefficients of dimension coeffDim are handled by
+        // processing the coeffDim linear combinations independently
+        // and storing them as entries of an array.
         using RefJacobian = LocalBasisRange< std::decay_t<decltype(node)> >;
         static constexpr auto coeffDim = decltype(flatVectorView(this->localDoFs_[node.localIndex(0)]).size())::value;
         auto refJacobians = std::array<RefJacobian, coeffDim>{};
-        refJacobians.fill(RefJacobian(Field{0}));
-        for (std::size_t j = 0; j < coeffDim; ++j)
+        istlVectorBackend(refJacobians) = 0;
+        for (size_type i = 0; i < localBasis.size(); ++i)
         {
-          for (size_type i = 0; i < localBasis.size(); ++i)
-          {
-            auto c = flatVectorView(this->localDoFs_[node.localIndex(i)]);
+          auto c = flatVectorView(this->localDoFs_[node.localIndex(i)]);
+          for (std::size_t j = 0; j < coeffDim; ++j)
             refJacobians[j].axpy(c[j], shapeFunctionJacobians[i]);
-          }
         }
 
-        // multiply with Jacobian of inverse coordinate map to get
-        // Jacobian wrt. world coordinates and update result
-
+        // Transform Jacobians form local to global coordinates.
         using Jacobian = decltype(refJacobians[0] * jacobianInverse);
         auto jacobians = std::array<Jacobian, coeffDim>{};
         std::transform(
           refJacobians.begin(), refJacobians.end(), jacobians.begin(),
           [&](const auto& refJacobian) { return refJacobian * jacobianInverse; });
-        auto flatJacobians = flatVectorView(jacobians);
-        auto flatY = flatVectorView(nodeToRangeEntry(node, treePath, y));
-        assert(flatJacobians.size() == flatY.size());
-        for (size_type i = 0; i < flatY.size(); ++i) {
-          flatY[i] += flatJacobians[i];
-        }
+
+        // Assign computed jacobians to node entry of range.
+        // Types are matched using the lexicographic ordering provided by flatVectorView.
+        LocalBase::assignWith(nodeToRangeEntry(node, treePath, y), jacobians);
       });
 
       return y;
