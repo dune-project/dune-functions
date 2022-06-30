@@ -20,7 +20,7 @@ namespace Dune {
 namespace Functions {
 
 
-namespace Impl {
+namespace ImplDoc {
 
 template<typename B, typename V, typename NTRE>
 class DiscreteGlobalBasisFunctionBase
@@ -216,7 +216,7 @@ protected:
   std::shared_ptr<const Data> data_;
 };
 
-} // namespace Impl
+} // namespace ImplDoc
 
 
 
@@ -264,9 +264,9 @@ template<typename B, typename V,
   typename NTRE = HierarchicNodeToRangeMap,
   typename R = typename V::value_type>
 class DiscreteGlobalBasisFunction
-  : public Impl::DiscreteGlobalBasisFunctionBase<B, V, NTRE>
+  : public ImplDoc::DiscreteGlobalBasisFunctionBase<B, V, NTRE>
 {
-  using Base = Impl::DiscreteGlobalBasisFunctionBase<B, V, NTRE>;
+  using Base = ImplDoc::DiscreteGlobalBasisFunctionBase<B, V, NTRE>;
   using Data = typename Base::Data;
 
 public:
@@ -467,9 +467,9 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
  */
 template<typename DGBF>
 class DiscreteGlobalBasisFunctionDerivative
-  : public Impl::DiscreteGlobalBasisFunctionBase<typename DGBF::Basis, typename DGBF::Vector, typename DGBF::NodeToRangeEntry>
+  : public ImplDoc::DiscreteGlobalBasisFunctionBase<typename DGBF::Basis, typename DGBF::Vector, typename DGBF::NodeToRangeEntry>
 {
-  using Base = Impl::DiscreteGlobalBasisFunctionBase<typename DGBF::Basis, typename DGBF::Vector, typename DGBF::NodeToRangeEntry>;
+  using Base = ImplDoc::DiscreteGlobalBasisFunctionBase<typename DGBF::Basis, typename DGBF::Vector, typename DGBF::NodeToRangeEntry>;
   using Data = typename Base::Data;
 
 public:
