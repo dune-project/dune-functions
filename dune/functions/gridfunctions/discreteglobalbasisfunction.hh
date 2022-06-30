@@ -57,13 +57,10 @@ protected:
   };
 
 public:
-  template<typename PNEB>
   class LocalFunctionBase
   {
     using LocalView = typename Basis::LocalView;
     using size_type = typename Tree::size_type;
-
-    using PerNodeEvaluationBuffer = PNEB;
 
   public:
     using Domain = LocalDomain;
@@ -73,7 +70,6 @@ public:
     LocalFunctionBase(const std::shared_ptr<const Data>& data)
       : data_(data)
       , localView_(data_->basis->localView())
-      , evaluationBuffer_(this->localView_.tree())
     {
       localDoFs_.reserve(localView_.maxSize());
     }
@@ -87,7 +83,6 @@ public:
     LocalFunctionBase(const LocalFunctionBase& other)
       : data_(other.data_)
       , localView_(other.localView_)
-      , evaluationBuffer_(this->localView_.tree())
     {
       localDoFs_.reserve(localView_.maxSize());
       if (bound())
@@ -182,7 +177,6 @@ public:
     std::shared_ptr<const Data> data_;
     LocalView localView_;
     std::vector<Coefficient> localDoFs_;
-    mutable PerNodeEvaluationBuffer evaluationBuffer_;
   };
 
 protected:
@@ -294,9 +288,9 @@ private:
 
 public:
   class LocalFunction
-    : public Base::template LocalFunctionBase<PerNodeEvaluationBuffer>
+    : public Base::LocalFunctionBase
   {
-    using LocalBase = typename Base::template LocalFunctionBase<PerNodeEvaluationBuffer>;
+    using LocalBase = typename Base::LocalFunctionBase;
     using size_type = typename Base::Tree::size_type;
     using LocalBase::nodeToRangeEntry;
 
@@ -310,6 +304,7 @@ public:
     //! Create a local-function from the associated grid-function
     LocalFunction(const DiscreteGlobalBasisFunction& globalFunction)
       : LocalBase(globalFunction.data_)
+      , evaluationBuffer_(this->localView_.tree())
     {
       /* Nothing. */
     }
@@ -331,7 +326,7 @@ public:
       TypeTree::forEachLeafNode(this->localView_.tree(), [&](auto&& node, auto&& treePath) {
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
-        auto& shapeFunctionValues = this->evaluationBuffer_[treePath];
+        auto& shapeFunctionValues = evaluationBuffer_[treePath];
 
         localBasis.evaluateFunction(x, shapeFunctionValues);
 
@@ -366,6 +361,9 @@ public:
         dlf.bind(lf.localContext());
       return dlf;
     }
+
+  private:
+    mutable PerNodeEvaluationBuffer evaluationBuffer_;
   };
 
   //! Create a grid-function, by wrapping the arguments in `std::shared_ptr`.
@@ -503,9 +501,9 @@ public:
    * an element.
    */
   class LocalFunction
-    : public Base::template LocalFunctionBase<PerNodeEvaluationBuffer>
+    : public Base::LocalFunctionBase
   {
-    using LocalBase = typename Base::template LocalFunctionBase<PerNodeEvaluationBuffer>;
+    using LocalBase = typename Base::LocalFunctionBase;
     using size_type = typename Base::Tree::size_type;
     using LocalBase::nodeToRangeEntry;
 
@@ -518,6 +516,7 @@ public:
     //! Create a local function from the associated grid function
     LocalFunction(const GlobalFunction& globalFunction)
       : LocalBase(globalFunction.data_)
+      , evaluationBuffer_(this->localView_.tree())
     {
       /* Nothing. */
     }
@@ -564,7 +563,7 @@ public:
       TypeTree::forEachLeafNode(this->localView_.tree(), [&](auto&& node, auto&& treePath) {
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
-        auto& shapeFunctionJacobians = this->evaluationBuffer_[treePath];
+        auto& shapeFunctionJacobians = evaluationBuffer_[treePath];
 
         localBasis.evaluateJacobian(x, shapeFunctionJacobians);
 
@@ -605,6 +604,7 @@ public:
     }
 
   private:
+    mutable PerNodeEvaluationBuffer evaluationBuffer_;
     std::optional<typename Element::Geometry> geometry_;
   };
 
