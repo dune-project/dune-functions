@@ -46,7 +46,7 @@ public:
 protected:
 
   // This collects all data that is shared by all related
-  // global and locl functions. This way we don't need to
+  // global and local functions. This way we don't need to
   // keep track of it individually.
   struct Data
   {
@@ -131,7 +131,7 @@ public:
       for (size_type i = 0; i < localView_.tree().size(); ++i)
       {
         // For a subspace basis the index-within-tree i
-        // is not the same as the localIndex withn the
+        // is not the same as the localIndex within the
         // full local view.
         size_t localIndex = localView_.tree().localIndex(i);
         localDoFs_[localIndex] = dofs[localView_.index(localIndex)];
@@ -242,7 +242,7 @@ class DiscreteGlobalBasisFunctionDerivative;
  *   following way:
  *
  * 2.Now let the coefficients type `C` per basis function be `dim_C`-dimensional.
- *   Then we compute the dim(C) linear combinations (one for each coeffient
+ *   Then we compute the dim(C) linear combinations (one for each coefficient
  *   index) of the shape function values with type `V` independently storing them in
  *   a `std::array<V,dim_C>`.
  *
@@ -458,7 +458,7 @@ auto makeDiscreteGlobalBasisFunction(B&& basis, V&& vector)
  * with respect to global coordinates.
  *
  * The function handles the mapping of coefficient blocks and basis function values
- * to range entries analoguesly to the `DiscreteGlobalBasisFunction`. This mapping
+ * to range entries analogously to the `DiscreteGlobalBasisFunction`. This mapping
  * is implemented with the same algorithm but with values replace by jacobian.
  *
  * \ingroup FunctionImplementations
@@ -549,7 +549,7 @@ public:
      * you have to call bind() again in order to make operator()
      * usable.
      *
-     * Note that the function returns the derivative with repsect to global
+     * Note that the function returns the derivative with respect to global
      * coordinates even when the point is given in reference coordinates on
      * an element.
      */
@@ -589,7 +589,7 @@ public:
           refJacobians.begin(), refJacobians.end(), jacobians.begin(),
           [&](const auto& refJacobian) { return refJacobian * jacobianInverse; });
 
-        // Assign computed jacobians to node entry of range.
+        // Assign computed Jacobians to node entry of range.
         // Types are matched using the lexicographic ordering provided by flatVectorView.
         LocalBase::assignWith(nodeToRangeEntry(node, treePath, y), jacobians);
       });
