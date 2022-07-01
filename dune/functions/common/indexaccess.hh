@@ -247,7 +247,7 @@ struct MultiIndexResolver
  * \ingroup Utility
  *
  * This provides access to a nested container by given
- * multi-index. Internally this is resolved by recusive
+ * multi-index. Internally this is resolved by recursive
  * operator[]-calls with static or dynamic indices.
  * Because this recursion must be terminated using a
  * compile-time criterion, the result type must explicitly
@@ -334,7 +334,7 @@ namespace Imp {
  * \ingroup Utility
  *
  * This provides access to a nested container by given dynamically sized
- * multi-index. Internally this is resolved by recusive
+ * multi-index. Internally this is resolved by recursive
  * operator[]-calls with static or dynamic indices.
  * Because this recursion must be terminated, a predicate
  * is used to determine if a type is considered final for the
@@ -362,12 +362,12 @@ constexpr decltype(auto) resolveDynamicMultiIndex(C&& c, const MultiIndex& multi
  * \ingroup Utility
  *
  * This provides access to a nested container by given dynamically sized
- * multi-index. Internally this is resolved by recusive
+ * multi-index. Internally this is resolved by recursive
  * operator[]-calls with static or dynamic indices.
  * Because this recursion must be terminated, a predicate
  * is used to determine if a type is considered final for the
  * multi-index resolution. This version terminates the recursion
- * on values that neither have a static nore a dynamic operator[].
+ * on values that neither have a static nor a dynamic operator[].
  *
  * \param c Container to access
  * \param index Multi-index
@@ -385,7 +385,7 @@ constexpr decltype(auto) resolveDynamicMultiIndex(C&& c, const MultiIndex& multi
  * \ingroup Utility
  *
  * This provides access to a nested container by given statically sized
- * multi-index. Internally this is resolved by recusive
+ * multi-index. Internally this is resolved by recursive
  * operator[]-calls with static or dynamic indices.
  * Since the multi-index must have compile-time known size
  * it is possible, that values resolved by different multi-indices

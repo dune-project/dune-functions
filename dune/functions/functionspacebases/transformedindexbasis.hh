@@ -223,7 +223,7 @@ auto transformIndices(
  * argument.
  *
  * \tparam IndexTransformation Callback type for transforming multi-indices
- * \tparam SizeImplementation Callback type for implemenation of size(prefix)
+ * \tparam SizeImplementation Callback type for implementation of size(prefix)
  * \tparam minIS Minimal multi-index size
  * \tparam maxIS Maximal multi-index size. Notice that this has to large enough to also store the untransformed indices.
  */
@@ -280,7 +280,7 @@ private:
  * argument.
  *
  * \tparam IndexTransformation Callback type for transforming multi-indices
- * \tparam SizeImplementation Callback type for implemenation of size(prefix)
+ * \tparam SizeImplementation Callback type for implementation of size(prefix)
  * \tparam minIS Minimal multi-index size
  * \tparam maxIS Maximal multi-index size. Notice that this has to be large enough to also store the untransformed indices.
  */

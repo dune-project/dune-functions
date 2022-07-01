@@ -157,7 +157,7 @@ corresponding version of the Dune core modules.
 - Add a set of unit tests for bases
 - Extend the documentation of these bases
 - Remove `DiscreteScalarGlobalBasisFunction`. This was replaced by `DiscreteGlobalBasisFunction`.
-- Introduce inteface method `NodeIndexSet::indices(it)` that must write all global
+- Introduce interface method `NodeIndexSet::indices(it)` that must write all global
   indices for the bound tree into the container pointed to by the iterator `it`
 - Remove `NodeIndexSet::index(i)` for computation of individual global indices.
 - `DefaultLocalIndexSet::bind(...)` now computes and caches all global indices

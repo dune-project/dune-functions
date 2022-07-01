@@ -72,7 +72,7 @@ int main (int argc, char* argv[]) try
     // Interpolate f wrt basis.
     interpolate(basis, c, f);
 
-    // Create grid functions from coeffients of individual
+    // Create grid functions from coefficients of individual
     // components. Each is the piecewise Q2 interpolation of f_i.
     // They should be exact, since f is P2.
     auto basis_0 = Dune::Functions::subspaceBasis(basis, 0);

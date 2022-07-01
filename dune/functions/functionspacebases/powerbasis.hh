@@ -244,7 +244,7 @@ private:
     // Fill indices for first child at the beginning.
     auto next = subPreBasis().indices(node.child(_0), multiIndices);
     // Multiply first component of all indices for first child by
-    // number of children to strech the index range for interleaving.
+    // number of children to stretch the index range for interleaving.
     for (std::size_t i = 0; i<subTreeSize; ++i)
       multiIndices[i][0] *= children;
     for (std::size_t child = 1; child<children; ++child)

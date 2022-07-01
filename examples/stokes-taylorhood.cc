@@ -472,7 +472,7 @@ int main (int argc, char *argv[]) try
   // Construct the actual iterative solver
   RestartedGMResSolver<VectorType> solver(
           stiffnessOperator,  // operator to invert
-          preconditioner,     // preconditioner for interation
+          preconditioner,     // preconditioner for iteration
           1e-10,              // desired residual reduction factor
           500,                // number of iterations between restarts
           500,                // maximum number of iterations
