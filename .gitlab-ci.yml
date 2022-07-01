@@ -45,3 +45,4 @@ code-spelling-check:
   image: registry.dune-project.org/docker/ci/debian:11
   script:
   - codespell
+    --ignore-words-list ans,nd,ba,ser,elemente
