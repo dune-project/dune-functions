@@ -81,7 +81,7 @@ UniformNodeVisitor :
  * the type of these data objects must be default constructible.
  *
  * Notice that the data per node can only be interpreted if the
- * node type is known. Hence the tree will be traversed on initilization,
+ * node type is known. Hence the tree will be traversed on initialization,
  * copy, assignment, and destruction of a TreeData container.
  *
  * \tparam T Type of the tree
@@ -119,7 +119,7 @@ protected:
   // tree traversal. Once we can use C++14 this can
   // be written in a much easier and more selfcontained
   // ways using generic lambda functions.
-  // Until then we need explicite visitor classes for
+  // Until then we need explicit visitor classes for
   // each operation.
 
   struct InitVisitor :

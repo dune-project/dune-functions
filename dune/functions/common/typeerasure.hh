@@ -105,9 +105,9 @@ protected:
  * type it can use the wrapper_ member of this base class being
  * of this type.
  *
- * \tparam Interface Class defininig the internal abstract virtual interface
- * \tparam Implementation Class defininig implemention the abstract methods of Interface
- * \tparam T A type modelleding the desired interface
+ * \tparam Interface Class defining the internal abstract virtual interface
+ * \tparam Implementation Class defining the implementation of the abstract methods of Interface
+ * \tparam T A type modeling the desired interface
  */
 template<class Interface, template<class> class Implementation, class T>
 class TypeErasureWrapperImplementation :

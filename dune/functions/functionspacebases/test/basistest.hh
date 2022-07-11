@@ -199,7 +199,7 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
       auto multiIndex = localView.index(i);
       for(auto mi: multiIndex)
         test.check(mi>=0)
-          << "Global multi-index containes negative entry for shape function " << i
+          << "Global multi-index contains negative entry for shape function " << i
           << " in element " << elementStr(localView.element(), basis.gridView());
       multiIndexSet.insert(multiIndex);
     }

@@ -20,7 +20,7 @@ namespace Functions {
 
 namespace Imp {
 
-  // Construct default coefficent type from vector and multiindex type
+  // Construct default coefficient type from vector and multiindex type
   // This requires that MultiIndex has a static size. Otherwise the
   // vector type itself is returned.
   template<class V, class MultiIndex>

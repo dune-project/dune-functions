@@ -164,7 +164,7 @@ public:
   }
 
   /**
-   * \brief Obtain local contex this LocalFunction is bound to
+   * \brief Obtain local context this LocalFunction is bound to
    */
   const LocalContext& localContext() const
   {

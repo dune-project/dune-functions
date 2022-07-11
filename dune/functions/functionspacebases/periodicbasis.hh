@@ -29,7 +29,7 @@ namespace Experimental {
  *
  * This class is intended to be passed to the BasisFactory::periodic()
  * function.
- * The class stores a set of index pairs which whould be
+ * The class stores a set of index pairs which should be
  * identified in order to construct a basis with periodic functions.
  */
 class PeriodicIndexSet
@@ -67,7 +67,7 @@ private:
 namespace Impl {
 
 // An index transformation for a TransformedIndexPreBasis
-// impelementing periodic functions by merging indices.
+// implementing periodic functions by merging indices.
 // Currently only flat indices are supported.
 class PeriodicIndexingTransformation
 {

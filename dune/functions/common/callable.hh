@@ -42,7 +42,7 @@ class CallableFunctionWrapper
   public:
 
     /**
-     * \brief Instanciate from reference to f
+     * \brief Instantiate from reference to f
      *
      * The CallableFunctionWrapper will not take ownership
      * of the provided function.
@@ -53,7 +53,7 @@ class CallableFunctionWrapper
     }
 
     /**
-     * \brief Instanciate from std::shared_ptr to f
+     * \brief Instantiate from std::shared_ptr to f
      *
      * The CallableFunctionWrapper will share ownership
      * with the provided function.

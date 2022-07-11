@@ -196,7 +196,7 @@ class ISTLVectorBackend
     // size we throw an exception.
     //
     // We could perhaps also allow c.size()>size.
-    // But then looping the loop below get's complicated:
+    // But then looping the loop below gets complicated:
     // We're not allowed to loop until c.size(). But
     // we also cannot use size for termination,
     // because this fails if c is a static vector.

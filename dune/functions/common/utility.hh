@@ -43,7 +43,7 @@ auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue, secondV
  * This will call the given function with index_constant<i>
  * where i is the dynamically provided index.
  *
- * To achieve this the conditon i==ii is checked subsequently
+ * To achieve this the condition i==ii is checked subsequently
  * for al static indices ii in the range 0,...,(end-1). In order
  * to be able to compile this we require for all ii in this range
  * that f(index_constant<ii>()) is well-formed and that the result
@@ -262,7 +262,7 @@ struct RotateTuple
  * This returns a function object that allows to check if the
  * expression encoded in f is valid for the given arguments.
  * To be precise it checks if f can be called using the given arguments.
- * This can be used inthe following way: To generate a check if the
+ * This can be used in the following way: To generate a check if the
  * expression x(a,b) is valid for some a and b use:
  *
  \code{.cpp}

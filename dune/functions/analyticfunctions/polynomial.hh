@@ -56,7 +56,7 @@ public:
    *
    * Coefficients are ordered in accordance with
    * the corresponding monomial order. This will
-   * move the coefficients from givven vector.
+   * move the coefficients from the given vector.
    */
   Polynomial(std::vector<K>&& coefficients) :
       coefficients_(std::move(coefficients))
@@ -67,7 +67,7 @@ public:
    *
    * Coefficients are ordered in accordance with
    * the corresponding monomial order. This will
-   * copy coefficients from given vector.
+   * copy coefficients from the given vector.
    */
   Polynomial(const std::vector<K>& coefficients) :
     coefficients_(coefficients)
