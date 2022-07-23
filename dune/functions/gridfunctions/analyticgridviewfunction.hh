@@ -177,14 +177,14 @@ private:
  */
 template<class F, class GridView>
 AnalyticGridViewFunction<
-  typename std::result_of<F(typename GridView::template Codim<0>::Geometry::GlobalCoordinate)>::type  // Range
+  typename std::invoke_result<F, typename GridView::template Codim<0>::Geometry::GlobalCoordinate>::type  // Range
   (typename GridView::template Codim<0>::Geometry::GlobalCoordinate),                                 // Domain
   GridView,
   typename std::decay<F>::type >                                                                      // Raw type of F (without & or &&)
   makeAnalyticGridViewFunction(F&& f, const GridView& gridView)
 {
   using Domain = typename GridView::template Codim<0>::Geometry::GlobalCoordinate;
-  using Range = typename std::result_of<F(Domain)>::type;
+  using Range = typename std::invoke_result<F, Domain>::type;
   using FRaw = typename std::decay<F>::type;
 
   return AnalyticGridViewFunction<Range(Domain), GridView, FRaw>(std::forward<F>(f), gridView);
