@@ -3,6 +3,8 @@
 #ifndef DUNE_FUNCTIONS_GRIDFUNCTIONS_TEST_GRIDFUNCTIONTEST_HH
 #define DUNE_FUNCTIONS_GRIDFUNCTIONS_TEST_GRIDFUNCTIONTEST_HH
 
+#include <type_traits>
+
 #include <dune/geometry/quadraturerules.hh>
 
 #include <dune/functions/common/functionconcepts.hh>
@@ -75,7 +77,7 @@ bool checkGridViewFunction(const GridView& gridView, const F& f, double exactInt
 
   using EntitySet = typename F::EntitySet;
   using Domain = typename EntitySet::GlobalCoordinate;
-  using Range = typename std::result_of<F(Domain)>::type;
+  using Range = typename std::invoke_result<F, Domain>::type;
 
 
 
