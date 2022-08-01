@@ -4,6 +4,7 @@
 #define DUNE_FUNCTIONS_GRIDFUNCTIONS_DISCRETEGLOBALBASISFUNCTIONS_HH
 
 #include <memory>
+#include <optional>
 
 #include <dune/common/typetraits.hh>
 
