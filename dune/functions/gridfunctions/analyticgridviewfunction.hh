@@ -8,6 +8,7 @@
 
 #include <dune/common/copyableoptional.hh>
 #include <dune/common/typeutilities.hh>
+
 #include <dune/functions/common/signature.hh>
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/common/differentiablefunction_imp.hh>

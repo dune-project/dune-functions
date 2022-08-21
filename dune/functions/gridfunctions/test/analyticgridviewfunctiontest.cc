@@ -4,6 +4,7 @@
 
 #include <iostream>
 
+#include <dune/common/concepts.hh>
 #include <dune/common/parallel/mpihelper.hh>
 
 #include <dune/grid/yaspgrid.hh>
@@ -27,6 +28,19 @@ template<typename Coord>
 double x_component_B(const Coord & x)
 {
     return x[0];
+}
+
+template<class F>
+void checkCopyable(const F& f)
+{
+  F f2 = f;
+  F f3 = std::move(f2);
+  f2 = f3;
+  f3 = std::move(f2);
+
+#if DUNE_ENABLE_CONCEPTS
+  static_assert(std::copyable<F>);
+#endif
 }
 
 int main (int argc, char* argv[]) try
@@ -93,15 +107,19 @@ int main (int argc, char* argv[]) try
     auto df = [](Domain){ return FieldVector<Range,2>({0.0, 0.0}); };
     auto af = makeDifferentiableFunctionFromCallables(Dune::Functions::SignatureTag<Range(Domain)>(), f, df);
     auto gf = makeAnalyticGridViewFunction(af, gridView);
+    checkCopyable(gf);
     passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, gf, 1.0);
 
     auto ep = gridView.template begin<0>();
     {
       std::cout << "Checking evaluation of function and derivative" << std::endl;
       auto _lf = localFunction(gf);
+      checkCopyable(_lf);
       _lf.bind(*ep);
       auto _df = derivative(gf);
+      checkCopyable(_df);
       auto _ldf = localFunction(_df);
+      checkCopyable(_ldf);
       _ldf.bind(*ep);
       passed = passed and gf({0.0,0.0}) == 1.0;
       passed = passed and _lf({0.0,0.0}) == 1.0;
@@ -112,9 +130,12 @@ int main (int argc, char* argv[]) try
       std::cout << "Checking evaluation of function and derivative via Interface class" << std::endl;
       GridViewFunction<Range(Domain), GridView> _gf = gf;
       auto _lf = localFunction(_gf);
+      checkCopyable(_lf);
       _lf.bind(*ep);
       auto _df = derivative(_gf);
+      checkCopyable(_df);
       auto _ldf = localFunction(_df);
+      checkCopyable(_ldf);
       _ldf.bind(*ep);
       passed = passed and gf({0.0,0.0}) == 1.0;
       passed = passed and _lf({0.0,0.0}) == 1.0;
@@ -125,8 +146,10 @@ int main (int argc, char* argv[]) try
     {
       std::cout << "Checking evaluation of local-function and local-derivative" << std::endl;
       auto lf = localFunction(gf);
+      checkCopyable(lf);
       lf.bind(*ep);
       auto dlf = derivative(lf);
+      checkCopyable(dlf);
       passed = passed and gf({0.0,0.0}) == 1.0;
       passed = passed and lf({0.0,0.0}) == 1.0;
       passed = passed and dlf({0.0,0.0}) == Domain(0.0);
