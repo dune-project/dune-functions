@@ -25,6 +25,7 @@ class StaticMultiIndex :
 {
 public:
   static constexpr std::size_t size() { return n; }
+  static constexpr std::size_t max_size() { return n; }
 
   inline friend std::size_t hash_value(const StaticMultiIndex& v) noexcept {
     return hash_range(v.begin(), v.end());
@@ -50,6 +51,8 @@ class StaticMultiIndex<size_type,1> :
 public:
 
   static constexpr std::size_t size() { return 1; }
+  static constexpr std::size_t max_size() { return 1; }
+
 
   operator const size_type& () const {
     return (*this)[0];
