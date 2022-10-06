@@ -14,3 +14,7 @@ dune_python_add_test(NAME pyfunction
                      SCRIPT function.py
                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                      LABELS python)
+dune_python_add_test(NAME pydiscretefunction
+                     SCRIPT discretefunction.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
