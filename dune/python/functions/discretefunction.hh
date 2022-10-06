@@ -85,6 +85,7 @@ namespace Dune
       detail::registerDiscreteFunctionConstructor( cls, PriorityTag< 42 >() );
 
       cls.def_property_readonly( "basis", [] ( const DiscreteFunction &self ) -> const Basis & { return self.basis(); }, pybind11::keep_alive< 0, 1 >() );
+      cls.def_property_readonly( "grid", [] ( const DiscreteFunction &self ) -> const typename Basis::GridView & { return self.basis().gridView(); }, pybind11::keep_alive< 0, 1 >() );
     }
 
   } // namespace Python
