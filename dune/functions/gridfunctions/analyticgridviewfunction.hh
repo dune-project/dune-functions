@@ -125,6 +125,7 @@ public:
   }
 
 private:
+  // Wrap the function into CopyableOptional to make it copy-assignable
   CopyableOptional<F> f_;
   Element element_;
   std::optional<Geometry> geometry_ = std::nullopt;
@@ -200,6 +201,7 @@ public:
   }
 
 private:
+  // Wrap the function into CopyableOptional to make it copy-assignable
   CopyableOptional<F> f_;
   EntitySet entitySet_;
 };
