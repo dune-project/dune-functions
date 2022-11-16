@@ -3,6 +3,9 @@
 Any version of dune-functions is supposed to be compatible with the
 corresponding version of the Dune core modules.
 
+## Master (will become release 2.10)
+
+
 ## Release 2.9
 
 - The `MultiIndex` used by `DefaultGlobalBasis` is now a `StaticMultiIndex`
