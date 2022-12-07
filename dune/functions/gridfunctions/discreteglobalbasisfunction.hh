@@ -394,7 +394,7 @@ public:
   /**
    * \brief Construct local function from a DiscreteGlobalBasisFunction.
    *
-   * The obtained a local-function the satisfies the concept
+   * The obtained local function satisfies the concept
    * `Dune::Functions::Concept::LocalFunction`. It must be bound
    * to an entity from the entity set of the DiscreteGlobalBasisFunction
    * before it can be used.
