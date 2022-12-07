@@ -8,6 +8,8 @@
 
 #include <dune/common/typetraits.hh>
 
+#include <dune/grid/utility/hierarchicsearch.hh>
+
 #include <dune/typetree/treecontainer.hh>
 
 #include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
@@ -378,11 +380,20 @@ public:
     : Base(std::make_shared<Data>(Data{{basis->gridView()}, basis, coefficients, nodeToRangeEntry}))
   {}
 
-  //! Not implemented.
+  /** \brief Evaluate at a point given in world coordinates
+   *
+   * \warning This has to find the element that the evaluation point is in.
+   *   It is therefore very slow.
+   */
   Range operator() (const Domain& x) const
   {
-    // TODO: Implement this using hierarchic search
-    DUNE_THROW(NotImplemented,"not implemented");
+    using ElementSearch = HierarchicSearch<typename Basis::GridView::Grid, typename Basis::GridView::IndexSet>;
+    ElementSearch search(this->data_->basis->gridView().grid(), this->data_->basis->gridView().indexSet());
+
+    const auto e = search.findEntity(x);
+    auto localThis = localFunction(*this);
+    localThis.bind(e);
+    return localThis(e.geometry().local(x));
   }
 
   //! Derivative of the `DiscreteGlobalBasisFunction`
