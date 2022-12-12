@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <dune/common/exceptions.hh>
 
-#include <dune/localfunctions/refined/refinedp1.hh>
+#include <dune/localfunctions/refined.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -16,25 +16,25 @@
 namespace Dune {
 namespace Functions {
 
-template<typename GV, typename R=double>
+template<typename GV, int k, typename R=double>
 class RefinedLagrangeNode;
 
-template<typename GV, typename MI, typename R=double>
+template<typename GV, int k, typename R=double>
 class RefinedLagrangePreBasis;
 
 
 /**
- * \brief A pre-basis for a refined lagrange bases
+ * \brief A pre-basis for a refined Lagrange bases
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \tparam GV  The grid view that the FE basis is defined on
- * \tparam MI  Type to be used for multi-indices
+ * \tparam k   The polynomial order of ansatz functions
  * \tparam R   Range type used for shape function values
  *
  * \note This only works for simplex grids.
  */
-template <typename GV, typename MI, typename R>
+template <typename GV, int k, typename R>
 class RefinedLagrangePreBasis
 {
   static const int dim = GV::dimension;
@@ -48,13 +48,11 @@ public:
   using size_type = std::size_t;
 
   //! Template mapping root tree path to type of created tree node
-  using Node = RefinedLagrangeNode<GV, R>;
+  using Node = RefinedLagrangeNode<GV, k, R>;
 
-  //! Type used for global numbering of the basis vectors
-  using MultiIndex = MI;
-
-  //! Type used for prefixes handed to the size() method
-  using SizePrefix = Dune::ReservedVector<size_type, 1>;
+  static constexpr size_type maxMultiIndexSize = 1;
+  static constexpr size_type minMultiIndexSize = 1;
+  static constexpr size_type multiIndexBufferSize = 1;
 
   //! Constructor for a given grid view object
   RefinedLagrangePreBasis (const GridView& gv)
@@ -116,7 +114,8 @@ public:
   }
 
   //! Return number of possible values for next position in multi index
-  size_type size (const SizePrefix prefix) const
+  template <class SizePrefix>
+  size_type size (const SizePrefix& prefix) const
   {
     assert(prefix.size() == 0 || prefix.size() == 1);
     return (prefix.size() == 0) ? size() : 0;
@@ -206,13 +205,19 @@ public:
     return it;
   }
 
+  //! Polynomial order used in the local Lagrange finite-elements
+  constexpr unsigned int order() const
+  {
+    return k;
+  }
+
 protected:
   GridView gridView_;
 
   //! Number of degrees of freedom assigned to a simplex (without the ones assigned to its faces!)
   size_type dofsPerSimplex (std::size_t simplexDim) const
   {
-    return Dune::binomial(std::size_t(1),simplexDim);
+    return k == 0 ? (dim == simplexDim ? (1<<dim) : 0) : Dune::binomial(std::size_t(1),simplexDim);
   }
 
   size_type vertexOffset_;
@@ -223,16 +228,21 @@ protected:
 
 
 
-template <typename GV, typename R>
+template <typename GV, int k, typename R>
 class RefinedLagrangeNode
   : public LeafBasisNode
 {
   static constexpr int dim = GV::dimension;
 
+  // refined basis only implemented for P0 and P1
+  static_assert(k == 0 || k == 1);
+
 public:
   using size_type = std::size_t;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElement = Dune::RefinedP1LocalFiniteElement<typename GV::ctype,R,dim>;
+  using FiniteElement = std::conditional_t<(k==0),
+    Dune::RefinedP0LocalFiniteElement<typename GV::ctype,R,dim>,
+    Dune::RefinedP1LocalFiniteElement<typename GV::ctype,R,dim>>;
 
   RefinedLagrangeNode ()
     : finiteElement_{}
@@ -269,23 +279,6 @@ protected:
 
 
 namespace BasisFactory {
-namespace Imp {
-
-template <typename R=double>
-class RefinedLagrangePreBasisFactory
-{
-public:
-  static const std::size_t requiredMultiIndexSize = 1;
-
-  template <typename MultiIndex, typename GridView>
-  auto makePreBasis (const GridView& gridView) const
-  {
-    return RefinedLagrangePreBasis<GridView, MultiIndex, R>{gridView};
-  }
-};
-
-} // end namespace BasisFactory::Imp
-
 
 /**
  * \brief Create a pre-basis factory that can create a  RefinedLagrange pre-basis
@@ -294,29 +287,32 @@ public:
  *
  * \tparam R   The range type of the local basis
  */
-template <typename R=double>
+template <int k, typename R=double>
 auto refinedLagrange ()
 {
-  return Imp::RefinedLagrangePreBasisFactory<R>{};
+  return [](const auto& gridView) {
+    return RefinedLagrangePreBasis<std::decay_t<decltype(gridView)>, k, R>(gridView);
+  };
 }
 
 } // end namespace BasisFactory
 
 
-/** \brief Nodal basis of a scalar piecewise linear continuous Lagrange finite-element space on a uniformly refined simplex element
+/** \brief Nodal basis of a continuous Lagrange finite-element space on a uniformly refined simplex element
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
  * \note This only works for simplex grids.
  *
  * All arguments passed to the constructor will be forwarded to the constructor
- * of LagrangePreBasis.
+ * of RefinedLagrangeBasis.
  *
  * \tparam GV The GridView that the space is defined on
+ * \tparam k The order of the basis
  * \tparam R The range type of the local basis
  */
-template <typename GV, typename R=double>
-using RefinedLagrangeBasis = DefaultGlobalBasis<RefinedLagrangePreBasis<GV, FlatMultiIndex<std::size_t>, R> >;
+template <typename GV, int k, typename R=double>
+using RefinedLagrangeBasis = DefaultGlobalBasis<RefinedLagrangePreBasis<GV,k,R> >;
 
 } // end namespace Functions
 } // end namespace Dune
