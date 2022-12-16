@@ -39,21 +39,7 @@ namespace Imp {
       using type = E;
     };
 
-    template<class MI,
-      typename std::enable_if<HasStaticSize<MI>::value, int>::type = 0>
-    static constexpr std::size_t getStaticSizeOrZero()
-    {
-      return StaticSize<MI>::value;
-    }
-
-    template<class MI,
-      typename std::enable_if<not HasStaticSize<MI>::value, int>::type = 0>
-    static constexpr std::size_t getStaticSizeOrZero()
-    {
-      return 0;
-    }
-
-    using type = typename DefaultCoefficientTypeHelper<V, getStaticSizeOrZero<MultiIndex>()>::type;
+    using type = typename DefaultCoefficientTypeHelper<V, StaticSizeOrZero<MultiIndex>::value>::type;
   };
 
 
@@ -91,7 +77,7 @@ template<class V, class CO=Imp::DeducedCoefficientTag>
 class HierarchicVectorWrapper
 {
   template<class MultiIndex>
-  using Coefficient = typename std::conditional< std::is_same<Imp::DeducedCoefficientTag,CO>::value and HasStaticSize<MultiIndex>::value,
+  using Coefficient = typename std::conditional< std::is_same<Imp::DeducedCoefficientTag,CO>::value and HasStaticSize_v<MultiIndex>,
             typename Imp::CoefficientType<V, MultiIndex>::type,
             CO
             >::type;

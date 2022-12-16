@@ -5,6 +5,7 @@
 
 #include <type_traits>
 
+#include <dune/common/hybridutilities.hh>
 #include <dune/common/typeutilities.hh>
 
 namespace Dune {
@@ -27,49 +28,6 @@ using enableIfConstructible = typename std::enable_if<
 
 
 
-namespace Imp {
-
-  // As a last resort try if there's a static constexpr size()
-  template<class T>
-  constexpr auto staticSize(const T*, const PriorityTag<0>&)
-    -> decltype(std::integral_constant<std::size_t,T::size()>())
-  {
-    return {};
-  }
-
-  // Try if class has constexpr default constructor and size method
-  template<class T>
-  constexpr auto staticSize(const T*, const PriorityTag<1>&)
-    -> decltype(std::integral_constant<std::size_t,T().size()>())
-  {
-    return {};
-  }
-
-  // Try if tuple_size is implemented for class
-  template<class T>
-  constexpr auto staticSize(const T*, const PriorityTag<2>&)
-    -> decltype(std::integral_constant<std::size_t,std::tuple_size<T>::value>())
-  {
-    return {};
-  }
-
-  template<class T>
-  constexpr std::false_type hasStaticSize(const T* t, const PriorityTag<0>& p)
-  {
-    return {};
-  }
-
-  template<class T>
-  constexpr auto hasStaticSize(const T* t, const PriorityTag<1>& p)
-    -> decltype(staticSize(t ,PriorityTag<42>()), std::true_type())
-  {
-    return {};
-  }
-
-}
-
-
-
 /**
  * \brief Check if type is a statically sized container
  *
@@ -79,21 +37,26 @@ namespace Imp {
  */
 template<class T>
 struct HasStaticSize :
-  public decltype(Imp::hasStaticSize((typename std::decay<T>::type*)(nullptr), PriorityTag<42>()))
+  public IsIntegralConstant<decltype(Dune::Hybrid::size(std::declval<T>()))>
 {};
 
+//! A variable template representing the value of \ref HasStaticSize
+template<class T>
+inline constexpr bool HasStaticSize_v = HasStaticSize<T>::value;
 
 
 /**
- * \brief Obtain size of statically sized container
+ * \brief Obtain size of statically sized container, or 0 if dynamic size
  *
  * \ingroup Utility
  *
  * Derives from std::integral_constant<std::size_t, size>
  */
 template<class T>
-struct StaticSize :
-  public decltype(Imp::staticSize((typename std::decay<T>::type*)(nullptr), PriorityTag<42>()))
+struct StaticSizeOrZero :
+  public std::conditional_t<HasStaticSize_v<T>,
+    decltype(Dune::Hybrid::size(std::declval<T>())),
+    std::integral_constant<std::size_t,0>>
 {};
 
 
