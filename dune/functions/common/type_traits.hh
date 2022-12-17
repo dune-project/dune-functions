@@ -59,6 +59,13 @@ struct StaticSizeOrZero :
     std::integral_constant<std::size_t,0>>
 {};
 
+/**
+ * \brief Obtain size of statically sized container as integral_constant, or fail.
+ * \ingroup Utility
+ */
+template<class T>
+using StaticSize = std::enable_if_t<HasStaticSize_v<T>,
+  decltype(Dune::Hybrid::size(std::declval<T>()))>;
 
 
 }} // namespace Dune::Functions
