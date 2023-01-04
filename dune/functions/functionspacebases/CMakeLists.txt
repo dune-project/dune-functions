@@ -12,6 +12,7 @@ install(FILES
         defaultnodetorangemap.hh
         flatmultiindex.hh
         flatvectorview.hh
+        globalvaluedlocalfiniteelement.hh
         hierarchicallagrangebasis.hh
         hierarchicnodetorangemap.hh
         hierarchicvectorwrapper.hh
@@ -22,6 +23,7 @@ install(FILES
         periodicbasis.hh
         powerbasis.hh
         rannacherturekbasis.hh
+        raviartthomasbasis.hh
         nodes.hh
         sizeinfo.hh
         subentitydofs.hh
