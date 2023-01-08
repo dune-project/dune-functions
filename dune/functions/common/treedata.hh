@@ -33,7 +33,7 @@ namespace Functions {
  */
 template<class SimpleNodeVisitorImp, bool leafOnly>
 struct
-[[deprecated("This is an implementation detail of the deprecated class TreeDate and thus deprecated itself.")]]
+[[deprecated("This is an implementation detail of the deprecated class TreeData and thus deprecated itself.")]]
 UniformNodeVisitor :
     public TypeTree::TreeVisitor,
     public TypeTree::DynamicTraversal
