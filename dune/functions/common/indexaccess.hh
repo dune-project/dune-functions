@@ -144,6 +144,11 @@ namespace Imp {
         return 0;
     }
 
+    const Index& originalIndex() const
+    {
+      return index_;
+    }
+
   private:
     const Index& index_;
   };
@@ -196,6 +201,20 @@ namespace Imp {
   ShiftedDynamicMultiIndex<Index, offset> shiftedDynamicMultiIndex(const Index& index)
   {
     return {index};
+  }
+
+  /**
+   * \brief Create a ShiftedDynamicMultiIndex
+   *
+   * \tparam offset Number of positions to shift left
+   *
+   * This overload ensures that shifting a multi index twice will not
+   * nest the shifting wrapper but add the offsets.
+   */
+  template<std::size_t offset, class Index, std::size_t oldOffset>
+  ShiftedDynamicMultiIndex<Index, offset+oldOffset> shiftedDynamicMultiIndex(const ShiftedDynamicMultiIndex<Index, oldOffset>& index)
+  {
+    return {index.originalIndex()};
   }
 
   template<std::size_t offset, class Index>
