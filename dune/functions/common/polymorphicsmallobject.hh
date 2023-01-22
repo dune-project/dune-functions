@@ -3,6 +3,7 @@
 #ifndef DUNE_FUNCTIONS_COMMON_POLYMORPHICSMALLOBJECT_HH
 #define DUNE_FUNCTIONS_COMMON_POLYMORPHICSMALLOBJECT_HH
 
+#include <cstddef>
 #include <utility>
 #include <type_traits>
 
@@ -43,6 +44,13 @@ namespace Functions {
 template<class Base, size_t bufferSize>
 class PolymorphicSmallObject
 {
+  // Actual buffer size must be > 0
+  static constexpr std::size_t actualBufferSize = std::max(sizeof(std::byte), bufferSize);
+
+  // Alignment requirement for the buffer. The `Derived` type must have
+  // an alignment requirement that is a divisor of `bufferAlignment`
+  static constexpr std::size_t bufferAlignment = alignof(std::max_align_t);
+
 public:
 
   //! Default constructor
@@ -61,7 +69,9 @@ public:
           std::remove_reference_t<Derived>>>::value, int>::type = 0>
   PolymorphicSmallObject(Derived&& derived)
   {
-    constexpr bool useBuffer = sizeof(Derived) <= bufferSize;
+    constexpr bool useBuffer = (sizeof(Derived) <= bufferSize)
+        && (bufferAlignment % alignof(Derived) == 0);
+
     if constexpr (useBuffer) {
       p_ = new (&buffer_) Derived(std::forward<Derived>(derived));
     } else {
@@ -170,7 +180,7 @@ private:
       p_ = other.p_->clone();
   }
 
-  std::aligned_storage_t<bufferSize> buffer_;
+  alignas(bufferAlignment) std::byte buffer_[actualBufferSize];
   Base* p_;
 };
 
