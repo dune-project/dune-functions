@@ -3,6 +3,7 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTNODETORANGEMAP_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_DEFAULTNODETORANGEMAP_HH
 
+#warning The header dune/functions/common/defaultnodetorangemap.hh is deprecated and will be removed after release 2.10.
 
 #include <dune/common/concept.hh>
 
@@ -33,9 +34,13 @@ namespace Functions {
  *
  * Notice that the lexicographic index is only computed
  * wrt the leaf nodes.
+ *
+ * \deprecated This class is deprecated. The actual default is HierarchicNodeToRangeMap
  */
 template<class Tree>
-struct DefaultNodeToRangeMap
+struct
+[[deprecated("DefaultNodeToRangeMap is deprecated and will be removed after release 2.10.")]]
+DefaultNodeToRangeMap
 {
 
   // A simple visitor for computing lexicographic

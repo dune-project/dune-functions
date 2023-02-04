@@ -41,6 +41,8 @@ corresponding version of the Dune core modules.
 
 Deprecations and removals
 
+- The class `DefaultNodeToRangeMap` and the corresponding header `functionspacebases/defaultnodetorangemap.hh`
+  have been deprecated. This has been replaced as default by `HierarchicNodeToRangeMap` for some time.
 - The `BasisBuilder` namespace is deprecated and will be removed
   after the 2.10 release. Use `BasisFactory` instead.
 - The headers `common/callable.hh` and `common/functionfromcallable.hh` providing adaptors
