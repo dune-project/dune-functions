@@ -5,6 +5,7 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.10)
 
+- The deprecated header `common/treedata.hh` was removed.
 - The deprecated header `common/referencehelper.hh` was removed. Use the corresponding header
   from dune-common instead.
 - The method `operator()` of the class `DiscreteGlobalBasisFunction` has been implemented.
