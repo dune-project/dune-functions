@@ -15,7 +15,6 @@ install(FILES
         multiindex.hh
         overflowarray.hh
         polymorphicsmallobject.hh
-        referencehelper.hh
         reserveddeque.hh
         signature.hh
         staticforloop.hh
