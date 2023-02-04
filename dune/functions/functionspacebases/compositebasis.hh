@@ -6,7 +6,6 @@
 #include <tuple>
 #include <utility>
 
-#include <dune/common/std/apply.hh>
 #include <dune/common/hybridutilities.hh>
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>

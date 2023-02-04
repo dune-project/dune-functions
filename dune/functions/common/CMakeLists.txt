@@ -15,11 +15,9 @@ install(FILES
         multiindex.hh
         overflowarray.hh
         polymorphicsmallobject.hh
-        referencehelper.hh
         reserveddeque.hh
         signature.hh
         staticforloop.hh
-        treedata.hh
         type_traits.hh
         typeerasure.hh
         utility.hh
