@@ -20,13 +20,6 @@ namespace Dune
   namespace Python
   {
 
-    // DefaultNodeToRangeMap
-    // ---------------------
-
-    template< class Basis, class TreePath >
-    using DefaultNodeToRangeMap = Dune::Functions::DefaultNodeToRangeMap< typename TypeTree::ChildForTreePath< typename Basis::LocalView::Tree, TreePath > >;
-
-
 
     // HierarchicPythonVector
     // ----------------------
@@ -44,12 +37,12 @@ namespace Dune
 
       template< class Basis, class TreePath, class K, class Range, class... options >
       inline static std::enable_if_t< std::is_constructible_v< TreePath > >
-      registerDiscreteFunctionConstructor ( pybind11::class_< Dune::Functions::DiscreteGlobalBasisFunction< Basis, HierarchicPythonVector< K >, DefaultNodeToRangeMap< Basis, TreePath >, Range >, options... > &cls, PriorityTag< 1 > )
+      registerDiscreteFunctionConstructor ( pybind11::class_< Dune::Functions::DiscreteGlobalBasisFunction< Basis, HierarchicPythonVector< K >, Dune::Functions::HierarchicNodeToRangeMap, Range >, options... > &cls, PriorityTag< 1 > )
       {
         using pybind11::operator""_a;
 
         typedef HierarchicPythonVector< K > Vector;
-        typedef DefaultNodeToRangeMap< Basis, TreePath > NodeToRangeMap;
+        typedef Dune::Functions::HierarchicNodeToRangeMap NodeToRangeMap;
         typedef Dune::Functions::DiscreteGlobalBasisFunction< Basis, Vector, NodeToRangeMap, Range > DiscreteFunction;
 
         cls.def( pybind11::init( [] ( const Basis &basis, pybind11::buffer dofVector ) {

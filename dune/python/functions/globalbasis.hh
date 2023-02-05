@@ -114,7 +114,6 @@ namespace Dune
     {
       using pybind11::operator""_a;
       using GridView = typename GlobalBasis::GridView;
-      using DefaultTreePath = Dune::TypeTree::HybridTreePath<>;
 
       const std::size_t dimRange = DimRange< typename GlobalBasis::PreBasis::Node >::value;
       const std::size_t dimWorld = GridView::dimensionworld;
@@ -162,7 +161,7 @@ namespace Dune
       RangeType< double, dimRange >::registerRange(module);
       using Domain = Dune::FieldVector< double, dimWorld >;
       registerFieldVector<double,dimWorld>(module);
-      using DiscreteFunction = Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, DefaultNodeToRangeMap< GlobalBasis, DefaultTreePath >, Range >;
+      using DiscreteFunction = Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, Dune::Functions::HierarchicNodeToRangeMap, Range >;
       // register the HierarchicPythonVector
       Dune::Python::addToTypeRegistry<HierarchicPythonVector<double>>(
         GenerateTypeName("Dune::Python::HierarchicPythonVector", MetaType<double>()),
@@ -173,7 +172,7 @@ namespace Dune
         GenerateTypeName( "Dune::Functions::DiscreteGlobalBasisFunction",
           MetaType<GlobalBasis>(),
           MetaType<HierarchicPythonVector< double >>(),
-          "Dune::Python::DefaultNodeToRangeMap< " + Dune::Python::findInTypeRegistry<GlobalBasis>().first->second.name + ", Dune::TypeTree::HybridTreePath<> >",
+          "Dune::Functions::HierarchicNodeToRangeMap",
           MetaType<Range>()
           ), includes);
       // register the GridViewFunction and register the implicit conversion
@@ -190,16 +189,7 @@ namespace Dune
       registerDiscreteFunction<GlobalBasis>( module, clsDiscreteFunction.first );
 
       cls.def("asFunction", [] ( GlobalBasis &self, pybind11::buffer dofVector ) {
-          auto nodeToRangeMapPtr =
-            std::make_shared< const DefaultNodeToRangeMap<
-              GlobalBasis, DefaultTreePath >
-                              >(
-                                makeDefaultNodeToRangeMap(self, DefaultTreePath()));
-          std::shared_ptr<const GlobalBasis> basisPtr = Dune::wrap_or_move( self );
-          auto vectorPtr = std::make_shared< const HierarchicPythonVector< double > >( dofVector );
-          return new DiscreteFunction( basisPtr,
-                                       vectorPtr,
-                                       nodeToRangeMapPtr);
+          return new DiscreteFunction( self, HierarchicPythonVector<double>(dofVector), Dune::Functions::HierarchicNodeToRangeMap());
         }, pybind11::keep_alive< 0, 1 >(), pybind11::keep_alive< 0, 2 >(), "dofVector"_a );
 
     }
