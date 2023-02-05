@@ -9,7 +9,7 @@
 #include <dune/common/exceptions.hh>
 #include <dune/common/bitsetvector.hh>
 
-#include <dune/typetree/childextraction.hh>
+#include <dune/typetree/traversal.hh>
 
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 #include <dune/functions/common/functionconcepts.hh>
@@ -19,9 +19,6 @@
 #include <dune/functions/functionspacebases/sizeinfo.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
-
-#include <dune/typetree/traversal.hh>
-#include <dune/typetree/visitor.hh>
 
 namespace Dune {
 namespace Functions {
@@ -54,58 +51,15 @@ struct AllTrueBitSetVector
 
 
 
-template <class B, class T, class NTRE, class HV, class LF, class HBV>
-class LocalInterpolateVisitor
-  : public TypeTree::TreeVisitor
-  , public TypeTree::DynamicTraversal
+template<class VectorBackend, class BitVectorBackend, class LocalFunction, class LocalView, class NodeToRangeEntry>
+void interpolateLocal(VectorBackend& vector, const BitVectorBackend& bitVector, const LocalFunction& localF, const LocalView& localView, const NodeToRangeEntry& nodeToRangeEntry)
 {
-
-public:
-
-  using Basis = B;
-  using LocalView = typename B::LocalView;
-  using MultiIndex = typename LocalView::MultiIndex;
-
-  using LocalFunction = LF;
-
-  using Tree = T;
-
-  using VectorBackend = HV;
-  using BitVectorBackend = HBV;
-
-  using NodeToRangeEntry = NTRE;
-
-  using GridView = typename Basis::GridView;
-  using Element = typename GridView::template Codim<0>::Entity;
-
-  using LocalDomain = typename Element::Geometry::LocalCoordinate;
-
-  using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
-
-  LocalInterpolateVisitor(const B& /*basis*/, HV& coeff, const HBV& bitVector, const LF& localF, const LocalView& localView, const NodeToRangeEntry& nodeToRangeEntry) :
-    vector_(coeff),
-    localF_(localF),
-    bitVector_(bitVector),
-    localView_(localView),
-    nodeToRangeEntry_(nodeToRangeEntry)
-  {
-    static_assert(Dune::Functions::Concept::isCallable<LocalFunction, LocalDomain>(), "Function passed to LocalInterpolateVisitor does not model the Callable<LocalCoordinate> concept");
-  }
-
-  template<typename Node, typename TreePath>
-  void pre(Node&, TreePath)
-  {}
-
-  template<typename Node, typename TreePath>
-  void post(Node&, TreePath)
-  {}
-
-  template<typename Node, typename TreePath>
-  void leaf(Node& node, TreePath treePath)
-  {
+  Dune::TypeTree::forEachLeafNode(localView.tree(), [&](auto&& node, auto&& treePath) {
+    using Node = std::decay_t<decltype(node)>;
     using FiniteElement = typename Node::FiniteElement;
     using FiniteElementRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
     using FiniteElementRangeField = typename FiniteElement::Traits::LocalBasisType::Traits::RangeFieldType;
+    using LocalDomain = typename FiniteElement::Traits::LocalBasisType::Traits::DomainType;
 
     auto interpolationCoefficients = std::vector<FiniteElementRangeField>();
     auto&& fe = node.finiteElement();
@@ -120,26 +74,26 @@ public:
       // should avoid this naughty statefull lambda hack in favor
       // of a separate helper class.
       std::size_t j=0;
-      auto localFj = [&](const LocalDomain& x){
-        const auto& y = localF_(x);
-        return FiniteElementRange(flatVectorView(nodeToRangeEntry_(node, treePath, y))[j]);
+      auto localF_REj = [&](const LocalDomain& x){
+        const auto& y = localF(x);
+        return FiniteElementRange(flatVectorView(nodeToRangeEntry(node, treePath, y))[j]);
       };
 
       // We loop over j defined above and thus over the components of the
-      // range type of localF_.
+      // range type of localF.
 
-      auto blockSize = flatVectorView(vector_[localView_.index(0)]).size();
+      auto blockSize = flatVectorView(vector[localView.index(0)]).size();
 
       for(j=0; j<blockSize; ++j)
       {
-        fe.localInterpolation().interpolate(localFj, interpolationCoefficients);
+        fe.localInterpolation().interpolate(localF_REj, interpolationCoefficients);
         for (size_t i=0; i<fe.localBasis().size(); ++i)
         {
-          auto multiIndex = localView_.index(node.localIndex(i));
-          auto bitVectorBlock = flatVectorView(bitVector_[multiIndex]);
+          auto multiIndex = localView.index(node.localIndex(i));
+          auto bitVectorBlock = flatVectorView(bitVector[multiIndex]);
           if (bitVectorBlock[j])
           {
-            auto vectorBlock = flatVectorView(vector_[multiIndex]);
+            auto vectorBlock = flatVectorView(vector[multiIndex]);
             vectorBlock[j] = interpolationCoefficients[i];
           }
         }
@@ -148,32 +102,23 @@ public:
     else // ( FiniteElement::Traits::LocalBasisType::Traits::dimRange != 1 )
     {
       // for all other finite elements: use the FiniteElementRange directly for the interpolation
-      auto localF = [&](const LocalDomain& x){
-        const auto& y = localF_(x);
-        return FiniteElementRange(nodeToRangeEntry_(node, treePath, y));
+      auto localF_RE = [&](const LocalDomain& x){
+        const auto& y = localF(x);
+        return FiniteElementRange(nodeToRangeEntry(node, treePath, y));
       };
 
-      fe.localInterpolation().interpolate(localF, interpolationCoefficients);
+      fe.localInterpolation().interpolate(localF_RE, interpolationCoefficients);
       for (size_t i=0; i<fe.localBasis().size(); ++i)
       {
-        auto multiIndex = localView_.index(node.localIndex(i));
-        if ( bitVector_[multiIndex] )
+        auto multiIndex = localView.index(node.localIndex(i));
+        if ( bitVector[multiIndex] )
         {
-          vector_[multiIndex] = interpolationCoefficients[i];
+          vector[multiIndex] = interpolationCoefficients[i];
         }
       }
     }
-  }
-
-
-protected:
-
-  VectorBackend& vector_;
-  const LocalFunction& localF_;
-  const BitVectorBackend& bitVector_;
-  const LocalView& localView_;
-  const NodeToRangeEntry& nodeToRangeEntry_;
-};
+  });
+}
 
 
 } // namespace Imp
@@ -203,8 +148,6 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bv, const NTRE
 {
   using GridView = typename B::GridView;
   using Element = typename GridView::template Codim<0>::Entity;
-
-  using Tree = typename B::LocalView::Tree;
 
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
@@ -248,9 +191,7 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bv, const NTRE
   {
     localView.bind(e);
     localF.bind(e);
-
-    Imp::LocalInterpolateVisitor<B, Tree, NTRE, decltype(vector), decltype(localF), decltype(bitVector)> localInterpolateVisitor(basis, vector, bitVector, localF, localView, nodeToRangeEntry);
-    TypeTree::applyToTree(localView.tree(),localInterpolateVisitor);
+    Imp::interpolateLocal(vector, bitVector, localF, localView, nodeToRangeEntry);
   }
 }
 
