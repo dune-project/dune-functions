@@ -64,58 +64,18 @@ void interpolateLocal(VectorBackend& vector, const BitVectorBackend& bitVector, 
     auto interpolationCoefficients = std::vector<FiniteElementRangeField>();
     auto&& fe = node.finiteElement();
 
-    // backward compatibility: for scalar basis functions and possibly vector valued coefficients
-    //                         (like used in dune-fufem for power bases) loop over the components
-    //                         of the coefficients
-    if constexpr ( FiniteElement::Traits::LocalBasisType::Traits::dimRange == 1 )
+    // for all other finite elements: use the FiniteElementRange directly for the interpolation
+    auto localF_RE = [&](const LocalDomain& x){
+      const auto& y = localF(x);
+      return FiniteElementRange(nodeToRangeEntry(node, treePath, y));
+    };
+
+    fe.localInterpolation().interpolate(localF_RE, interpolationCoefficients);
+    for (size_t i=0; i<fe.localBasis().size(); ++i)
     {
-      // Note that we capture j by reference. Hence we can switch
-      // the selected component later on by modifying j. Maybe we
-      // should avoid this naughty statefull lambda hack in favor
-      // of a separate helper class.
-      std::size_t j=0;
-      auto localF_REj = [&](const LocalDomain& x){
-        const auto& y = localF(x);
-        return FiniteElementRange(flatVectorView(nodeToRangeEntry(node, treePath, y))[j]);
-      };
-
-      // We loop over j defined above and thus over the components of the
-      // range type of localF.
-
-      auto blockSize = flatVectorView(vector[localView.index(0)]).size();
-
-      for(j=0; j<blockSize; ++j)
-      {
-        fe.localInterpolation().interpolate(localF_REj, interpolationCoefficients);
-        for (size_t i=0; i<fe.localBasis().size(); ++i)
-        {
-          auto multiIndex = localView.index(node.localIndex(i));
-          auto bitVectorBlock = flatVectorView(bitVector[multiIndex]);
-          if (bitVectorBlock[j])
-          {
-            auto vectorBlock = flatVectorView(vector[multiIndex]);
-            vectorBlock[j] = interpolationCoefficients[i];
-          }
-        }
-      }
-    }
-    else // ( FiniteElement::Traits::LocalBasisType::Traits::dimRange != 1 )
-    {
-      // for all other finite elements: use the FiniteElementRange directly for the interpolation
-      auto localF_RE = [&](const LocalDomain& x){
-        const auto& y = localF(x);
-        return FiniteElementRange(nodeToRangeEntry(node, treePath, y));
-      };
-
-      fe.localInterpolation().interpolate(localF_RE, interpolationCoefficients);
-      for (size_t i=0; i<fe.localBasis().size(); ++i)
-      {
-        auto multiIndex = localView.index(node.localIndex(i));
-        if ( bitVector[multiIndex] )
-        {
-          vector[multiIndex] = interpolationCoefficients[i];
-        }
-      }
+      auto multiIndex = localView.index(node.localIndex(i));
+      if ( bitVector[multiIndex] )
+        vector[multiIndex] = interpolationCoefficients[i];
     }
   });
 }
@@ -148,7 +108,6 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bv, const NTRE
 {
   using GridView = typename B::GridView;
   using Element = typename GridView::template Codim<0>::Entity;
-
   using GlobalDomain = typename Element::Geometry::GlobalCoordinate;
 
   static_assert(Dune::Functions::Concept::isCallable<F, GlobalDomain>(), "Function passed to interpolate does not model the Callable<GlobalCoordinate> concept");
@@ -176,8 +135,6 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bv, const NTRE
   auto&& bitVector = toConstVectorBackend(bv);
   auto&& vector = toVectorBackend(coeff);
   vector.resize(sizeInfo(basis));
-
-
 
   // Make a grid function supporting local evaluation out of f
   auto gf = makeGridViewFunction(f, gridView);
