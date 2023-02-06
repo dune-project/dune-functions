@@ -172,7 +172,9 @@ public:
   //! Evaluation of the composed grid function in coordinates `x`
   Range operator()(const Domain& x) const
   {
-    DUNE_THROW(NotImplemented,"not implemented");
+    return std::apply([&](const auto&... innerFunction) {
+      return outerFunction_(innerFunction(x)...);
+    }, innerFunctions_);
   }
 
   //! Not implemented.
