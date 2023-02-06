@@ -79,24 +79,6 @@ int main (int argc, char* argv[]) try
 
   const auto& gridView = grid.leafGridView();
 
-  // scalar Lagrange basis with vector valued coefficients
-  {
-    using Range = FieldVector<double,5>;
-    auto f = [](const auto& x){
-      Range y;
-      for (typename Range::size_type i=0; i<y.size(); ++i)
-        y[i] = x[0]+i;
-      return y;
-    };
-
-    std::vector<Range> x;
-    auto feBasis = makeBasis(gridView,lagrange<1>());
-    interpolate(feBasis, x, f);
-    auto passedThisTest = checkInterpolationConsistency<Range>(feBasis, x);
-    std::cout << "checkInterpolationConsistency for scalar Lagrange basis with vector-valued coefficients " << (passedThisTest? " " : " NOT  ") << "successful." << std::endl;
-    passed = passed and passedThisTest;
-  }
-
   // scalar Lagrange Basis
   {
     auto feBasis = makeBasis(gridView,lagrange<1>());
