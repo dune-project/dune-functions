@@ -16,7 +16,6 @@
 
 #include <dune/functions/backends/concepts.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
-#include <dune/functions/functionspacebases/sizeinfo.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>
 #include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
 
@@ -134,7 +133,7 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bv, const NTRE
 
   auto&& bitVector = toConstVectorBackend(bv);
   auto&& vector = toVectorBackend(coeff);
-  vector.resize(sizeInfo(basis));
+  vector.resize(basis);
 
   // Make a grid function supporting local evaluation out of f
   auto gf = makeGridViewFunction(f, gridView);
