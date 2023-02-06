@@ -3,6 +3,8 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_SIZEINFO_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_SIZEINFO_HH
 
+#warning The header dune/functions/functionspacebases/sizeinfo.hh is deprecated and will be removed after release 2.10.
+
 #include <array>
 
 namespace Dune {
@@ -19,9 +21,13 @@ namespace Functions {
  * calling basis.size() without arguments. Until we
  * decided on this, we can use sizeInfo(basis) and
  * use the result as size provider for a VectorBackend.
+ *
+ * \deprecated This class is deprecated.
  */
 template<class B>
-class SizeInfo
+class
+[[deprecated("SizeInfo is deprecated and will be removed after release 2.10.")]]
+SizeInfo
 {
 public:
     using Basis = B;
@@ -65,6 +71,9 @@ protected:
 };
 
 
+/**
+ * \deprecated This function is deprecated.
+ */
 template<class Basis>
 SizeInfo<Basis> sizeInfo(const Basis& basis)
 {
