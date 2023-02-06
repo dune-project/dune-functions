@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <optional>
 
+#include <dune/common/copyableoptional.hh>
 #include <dune/common/typeutilities.hh>
 
 #include <dune/functions/common/signature.hh>
@@ -100,7 +101,7 @@ public:
   Range operator()(const LocalDomain& x) const
   {
     assert(!!geometry_);
-    return f_(geometry_->global(x));
+    return (*f_)(geometry_->global(x));
   }
 
   //! Return the bound element
@@ -120,11 +121,12 @@ public:
    **/
   friend LocalDerivative derivative(const LocalAnalyticGridViewFunction& t)
   {
-    return LocalDerivative(Imp::derivativeIfImplemented<DerivativeDummy, F>(t.f_), t.element_, t.geometry_);
+    return LocalDerivative(Imp::derivativeIfImplemented<DerivativeDummy, F>(*t.f_), t.element_, t.geometry_);
   }
 
 private:
-  F f_;
+  // Wrap the function into CopyableOptional to make it copy-assignable
+  CopyableOptional<F> f_;
   Element element_;
   std::optional<Geometry> geometry_ = std::nullopt;
 };
@@ -177,19 +179,19 @@ public:
   //! Evaluate the wrapped function `f` directly in global coordinates `x`.
   Range operator()(const Domain& x) const
   {
-    return f_(x);
+    return (*f_)(x);
   }
 
   //! Create a derivative grid-function by wrapping the derivative of `f`.
   friend Derivative derivative(const AnalyticGridViewFunction& t)
   {
-    return Derivative(Imp::derivativeIfImplemented<DerivativeDummy, F>(t.f_), t.entitySet_.gridView());
+    return Derivative(Imp::derivativeIfImplemented<DerivativeDummy, F>(*t.f_), t.entitySet_.gridView());
   }
 
   //! Construct the associated local-function.
   friend LocalFunction localFunction(const AnalyticGridViewFunction& t)
   {
-    return LocalFunction(t.f_);
+    return LocalFunction(*t.f_);
   }
 
   //! Return the set of entities this local-function can be bound to.
@@ -199,7 +201,8 @@ public:
   }
 
 private:
-  F f_;
+  // Wrap the function into CopyableOptional to make it copy-assignable
+  CopyableOptional<F> f_;
   EntitySet entitySet_;
 };
 

@@ -8,6 +8,7 @@ corresponding version of the Dune core modules.
 - The deprecated header `common/treedata.hh` was removed.
 - The deprecated header `common/referencehelper.hh` was removed. Use the corresponding header
   from dune-common instead.
+- Make `AnalyticGridViewFunction` copyable
 - The method `operator()` of the class `DiscreteGlobalBasisFunction` has been implemented.
   It evaluates a piecewise function on a grid at a point given in global coordinates.
   As this evaluation requires finding the element that the evaluation point is in,
