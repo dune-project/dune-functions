@@ -60,6 +60,13 @@ int main (int argc, char* argv[]) try
     passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, fGVF, exactIntegral);
   }
 
+  std::cout << "Testing deduction guide of AnalyticGridViewFunction with range type double" << std::endl;
+  {
+    auto f = [](const Domain& x) {return x[0];};
+
+    passed = passed and Dune::Functions::Test::checkGridViewFunction(gridView, AnalyticGridViewFunction{f, gridView}, exactIntegral);
+  }
+
   std::cout << "Testing makeAnalyticGridViewFunction with range type double" << std::endl;
   {
     auto f = [](const Domain& x) {return x[0];};
