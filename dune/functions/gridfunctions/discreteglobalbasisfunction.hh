@@ -387,8 +387,7 @@ public:
    */
   Range operator() (const Domain& x) const
   {
-    using ElementSearch = HierarchicSearch<typename Basis::GridView::Grid, typename Basis::GridView::IndexSet>;
-    ElementSearch search(this->data_->basis->gridView().grid(), this->data_->basis->gridView().indexSet());
+    HierarchicSearch search(this->data_->basis->gridView().grid(), this->data_->basis->gridView().indexSet());
 
     const auto e = search.findEntity(x);
     auto localThis = localFunction(*this);
@@ -635,8 +634,7 @@ public:
   //! Evaluate the discrete grid-function derivative in global coordinates
   Range operator()(const Domain& x) const
   {
-    using ElementSearch = HierarchicSearch<typename Basis::GridView::Grid, typename Basis::GridView::IndexSet>;
-    ElementSearch search(this->data_->basis->gridView().grid(), this->data_->basis->gridView().indexSet());
+    HierarchicSearch search(this->data_->basis->gridView().grid(), this->data_->basis->gridView().indexSet());
 
     const auto e = search.findEntity(x);
     auto localThis = localFunction(*this);
