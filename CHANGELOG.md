@@ -13,6 +13,9 @@ corresponding version of the Dune core modules.
   It evaluates a piecewise function on a grid at a point given in global coordinates.
   As this evaluation requires finding the element that the evaluation point is in,
   it can be very slow.
+- Reimplement `HasStaticSize` in terms by checking `Hybrid::size()`
+- Add utility `StaticSizeOrZero` that defaults to the `integral_constant<size_t,0>` in case
+  the container does only have dynamic size.
 
 ## Release 2.9
 
