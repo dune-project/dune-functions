@@ -5,6 +5,8 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.10)
 
+- The class `HierarchicalVectorWrapper` and the corresponding header `functionspacebases/hierarchicvectorwrapper.hh`
+  have been deprecated. Use `istlVectorBackend()` from `backends/istlvectorbackend.hh` instead.
 - The class `SizeInfo` and the corresponding header `functionspacebases/sizeinfo.hh`
   have been deprecated. One now can directly use `vectorBackend.resize(globalBasis)`
   instead of `vectorBackend.resize(sizeInfo(globalBasis))`.

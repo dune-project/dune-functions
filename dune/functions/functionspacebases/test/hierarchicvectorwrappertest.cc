@@ -5,6 +5,9 @@
 #include <vector>
 #include <array>
 
+#include <dune/common/deprecated.hh>
+DUNE_NO_DEPRECATED_BEGIN
+
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/reservedvector.hh>
 #include <dune/common/classname.hh>
@@ -17,6 +20,8 @@
 #include <dune/istl/multitypeblockvector.hh>
 
 #include <dune/functions/common/type_traits.hh>
+
+#define DUNE_FUNCTIONS_HIERARCHICVECTORWRAPPER_TEST_NO_DEPRECATION 1
 #include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
 
 
@@ -261,3 +266,4 @@ catch (Exception& e) {
   std::cout << e.what() << std::endl;
   return 1;
 }
+DUNE_NO_DEPRECATED_END

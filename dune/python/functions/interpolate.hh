@@ -2,7 +2,7 @@
 #define DUNE_PYTHON_FUNCTIONS_INTERPOLATE_HH
 
 #include <dune/functions/functionspacebases/interpolate.hh>
-#include <dune/functions/functionspacebases/hierarchicvectorwrapper.hh>
+#include <dune/functions/backends/istlvectorbackend.hh>
 
 #include <dune/python/pybind11/numpy.h>
 #include <dune/python/pybind11/pybind11.h>
@@ -20,7 +20,7 @@ void interpolate(const Basis& basis, pybind11::array_t<T> x, const std::function
   auto x1 = x.template mutable_unchecked<1>();
 
   using V = decltype(x1);
-  auto x2 = Dune::Functions::HierarchicVectorWrapper<V, T>(x1);
+  auto x2 = Dune::Functions::istlVectorBackend(x1);
 
   interpolate(basis, x2, f);
 }

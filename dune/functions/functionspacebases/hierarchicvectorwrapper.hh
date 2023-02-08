@@ -3,6 +3,10 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_HIERARCHICVECTORWRAPPER_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_HIERARCHICVECTORWRAPPER_HH
 
+#ifndef DUNE_FUNCTIONS_HIERARCHICVECTORWRAPPER_TEST_NO_DEPRECATION
+#warning The header dune/functions/functionspacebases/hierarchicvectorwrapper.hh is deprecated and will be removed after release 2.10.
+#endif
+
 #include <dune/common/concept.hh>
 #include <dune/common/hybridutilities.hh>
 #include <dune/common/indices.hh>
@@ -70,11 +74,15 @@ namespace Imp {
  * the coefficient type on its own assuming that the multi-indices
  * have fixed size.
  *
+ * \deprecated This class is deprecated. Use istlVectorBackend(V) instead.
+ *
  * \tparam V Type of the raw wrapper vector
  * \tparam CO Coefficient type
  */
 template<class V, class CO=Imp::DeducedCoefficientTag>
-class HierarchicVectorWrapper
+class
+[[deprecated("HierarchicVectorWrapper is deprecated and will be removed after release 2.10.")]]
+HierarchicVectorWrapper
 {
   template<class MultiIndex>
   using Coefficient = typename std::conditional< std::is_same<Imp::DeducedCoefficientTag,CO>::value and HasStaticSize_v<MultiIndex>,
@@ -212,7 +220,9 @@ private:
 
 
 
-
+/**
+ * \deprecated This function is deprecated. Use istlVectorBackend() instead.
+ */
 template<class V>
 HierarchicVectorWrapper< V > hierarchicVector(V& v)
 {
@@ -221,6 +231,9 @@ HierarchicVectorWrapper< V > hierarchicVector(V& v)
 
 
 
+/**
+ * \deprecated This function is deprecated. Use istlVectorBackend() instead.
+ */
 template<class MultiIndex, class V,
     typename std::enable_if< models<Concept::HasIndexAccess, V, MultiIndex>(), int>::type = 0>
 V& makeHierarchicVectorForMultiIndex(V& v)
@@ -230,6 +243,9 @@ V& makeHierarchicVectorForMultiIndex(V& v)
 
 
 
+/**
+ * \deprecated This function is deprecated. Use istlVectorBackend() instead.
+ */
 template<class MultiIndex, class V,
     typename std::enable_if< not models<Concept::HasIndexAccess, V, MultiIndex>(), int>::type = 0>
 HierarchicVectorWrapper< V > makeHierarchicVectorForMultiIndex(V& v)
