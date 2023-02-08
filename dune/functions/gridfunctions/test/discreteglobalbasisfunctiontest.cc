@@ -3,9 +3,11 @@
 #include <config.h>
 
 #include <iostream>
+#include <tuple>
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/hybridutilities.hh>
 
 #include <dune/grid/yaspgrid.hh>
 
@@ -46,20 +48,28 @@ bool checkInterpolationConsistency(B&& basis, C&& x)
   using Coeff = typename std::decay<C>::type;
   using Range = R;
 
+  bool passed = true;
+
   // generate a discrete function
   auto f = Dune::Functions::makeDiscreteGlobalBasisFunction<Range>(basis, x);
 
-  Coeff y;
-  interpolate(basis, y, f);
-  for (typename std::decay_t<C>::size_type i=0; i<x.size(); ++i)
-  {
-    if (infinityDiff(x[i],y[i]) > 1e-10)
+  // By wrapping into a lambda, we force interpolate to use the global evaluation of f
+  auto fGlobal = [&](auto x){ return f(x); };
+
+  Dune::Hybrid::forEach(std::tie(f, fGlobal), [&](auto&& ff) {
+    Coeff y;
+    interpolate(basis, y, ff);
+    for (typename std::decay_t<C>::size_type i=0; i<x.size(); ++i)
     {
-      std::cout << "Interpolation of DiscreteGlobalBasisFunction differs from original coefficient vector" << std::endl;
-      return false;
+      if (infinityDiff(x[i],y[i]) > 1e-10)
+      {
+        std::cout << "Interpolation of DiscreteGlobalBasisFunction differs from original coefficient vector" << std::endl;
+        passed = false;
+      }
     }
-  }
-  return true;
+  });
+
+  return passed;
 }
 
 
