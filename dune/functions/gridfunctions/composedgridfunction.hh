@@ -220,6 +220,10 @@ protected:
   InnerFunctions innerFunctions_;
 };
 
+// deduction guides
+template<class OF, class... IF>
+ComposedGridFunction(const OF&, const IF&...)
+  -> ComposedGridFunction<OF,IF...>;
 
 
 /**

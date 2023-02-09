@@ -84,6 +84,8 @@ int main (int argc, char* argv[]) try
     {
       // Check with capture by std::ref
       auto gf_gridfunction = makeComposedGridFunction(g, std::ref(f0_gridfunction), std::ref(f1_gridfunction));
+      auto gf_gridfunction_= ComposedGridFunction(g, std::ref(f0_gridfunction), std::ref(f1_gridfunction));
+      static_assert(std::is_same_v<decltype(gf_gridfunction), decltype(gf_gridfunction_)>);
       suite.check(
           checkGridViewFunction(gridView, gf_gridfunction, integral, 4),
           "Check if ComposedGridFunction has correct integral (capture with std::ref)");
@@ -91,6 +93,8 @@ int main (int argc, char* argv[]) try
     {
       // Check with capture by std::cref
       auto gf_gridfunction = makeComposedGridFunction(g, std::cref(f0_gridfunction), std::cref(f1_gridfunction));
+      auto gf_gridfunction_= ComposedGridFunction(g, std::cref(f0_gridfunction), std::cref(f1_gridfunction));
+      static_assert(std::is_same_v<decltype(gf_gridfunction), decltype(gf_gridfunction_)>);
       suite.check(
           checkGridViewFunction(gridView, gf_gridfunction, integral, 4),
           "Check if ComposedGridFunction has correct integral (capture with std::cref)");
@@ -98,6 +102,8 @@ int main (int argc, char* argv[]) try
     {
       // Check with capture by value
       auto gf_gridfunction = makeComposedGridFunction(g, f0_gridfunction, f1_gridfunction);
+      auto gf_gridfunction_= ComposedGridFunction(g, f0_gridfunction, f1_gridfunction);
+      static_assert(std::is_same_v<decltype(gf_gridfunction), decltype(gf_gridfunction_)>);
       suite.check(
           checkGridViewFunction(gridView, gf_gridfunction, integral, 4),
           "Check if ComposedGridFunction has correct integral (capture by value)");
