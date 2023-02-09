@@ -387,8 +387,7 @@ public:
    */
   Range operator() (const Domain& x) const
   {
-    using ElementSearch = HierarchicSearch<typename Basis::GridView::Grid, typename Basis::GridView::IndexSet>;
-    ElementSearch search(this->data_->basis->gridView().grid(), this->data_->basis->gridView().indexSet());
+    HierarchicSearch search(this->data_->basis->gridView().grid(), this->data_->basis->gridView().indexSet());
 
     const auto e = search.findEntity(x);
     auto localThis = localFunction(*this);
@@ -632,11 +631,19 @@ public:
     /* Nothing. */
   }
 
-  //! Not implemented.
+  /** \brief Evaluate the discrete grid-function derivative in global coordinates
+   *
+   * \warning This has to find the element that the evaluation point is in.
+   *   It is therefore very slow.
+   */
   Range operator()(const Domain& x) const
   {
-    // TODO: Implement this using hierarchic search
-    DUNE_THROW(NotImplemented,"not implemented");
+    HierarchicSearch search(this->data_->basis->gridView().grid(), this->data_->basis->gridView().indexSet());
+
+    const auto e = search.findEntity(x);
+    auto localThis = localFunction(*this);
+    localThis.bind(e);
+    return localThis(e.geometry().local(x));
   }
 
   friend typename Traits::DerivativeInterface derivative(const DiscreteGlobalBasisFunctionDerivative& f)

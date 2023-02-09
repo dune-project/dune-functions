@@ -36,6 +36,7 @@ Dune::TestSuite compare(const Function& function, const Reference& reference, co
   Dune::TestSuite test;
 
   double err2 = 0.0;
+  double err3 = 0.0;
   const auto& gridView = function.basis().gridView();
   const int dim = std::decay_t<decltype(gridView)>::dimension;
 
@@ -53,10 +54,14 @@ Dune::TestSuite compare(const Function& function, const Reference& reference, co
       const auto x = qp.position();
       const auto integrationElement = geometry.integrationElement(x);
       err2 += flocal(x) * qp.weight() * integrationElement;
+
+      // evaluate the functions in global coordinates
+      const auto X = geometry.global(x);
+      err3 += Difference2()(function(X), reference(X)) * qp.weight() * integrationElement;
     }
   }
 
-  const double err = std::sqrt(err2);
+  const double err = 0.5*(std::sqrt(err2) + std::sqrt(err3));
 
   std::cout << "err = " << err << "\n";
   test.check(err <= tol);
