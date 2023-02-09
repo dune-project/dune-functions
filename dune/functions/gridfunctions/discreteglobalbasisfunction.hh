@@ -631,7 +631,11 @@ public:
     /* Nothing. */
   }
 
-  //! Evaluate the discrete grid-function derivative in global coordinates
+  /** \brief Evaluate the discrete grid-function derivative in global coordinates
+   *
+   * \warning This has to find the element that the evaluation point is in.
+   *   It is therefore very slow.
+   */
   Range operator()(const Domain& x) const
   {
     HierarchicSearch search(this->data_->basis->gridView().grid(), this->data_->basis->gridView().indexSet());
