@@ -57,7 +57,7 @@ Dune::TestSuite compare(const Function& function, const Reference& reference, co
 
       // evaluate the functions in global coordinates
       const auto X = geometry.global(x);
-      err3 += Difference2()(function(X), reference(X)) * qp.weight() * integrationElement;
+      err3 += f(X) * qp.weight() * integrationElement;
     }
   }
 
