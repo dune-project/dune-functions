@@ -134,31 +134,29 @@ Dune::TestSuite checkBasisSizeConsistency(const Basis& basis, const MultiIndexSe
 {
   Dune::TestSuite test("index size consistency check");
 
-  auto prefix = typename Basis::SizePrefix{};
-
+  // Based on the index tree, build a map that contains all possible
+  // prefixes and maps each prefix to the size (of the subsequent digit).
+  using Prefix = typename Basis::SizePrefix;
+  auto prefixSet = std::map<Prefix, std::size_t>();
   for(const auto& index : multiIndexSet)
   {
-    prefix.clear();
+    auto prefix  = Prefix();
     for (const auto& i: index)
     {
-      // All indices i collected so far from the multi-index
-      // refer to a non-empty multi-index subtree. Hence the
-      // size must be nonzero and in fact strictly larger than
-      // the next index.
-      auto prefixSize = basis.size(prefix);
-      test.require(prefixSize > i, "basis.size(prefix) subtree check")
-        << "basis.size(" << prefix << ")=" << prefixSize << " but index " << index << " exists";
-
-      // append next index from multi-index
+      prefixSet[prefix] = std::max(prefixSet[prefix], i+1);
       prefix.push_back(i);
     }
-    auto prefixSize = basis.size(prefix);
-    test.require(prefixSize == 0, "basis.size(prefix) leaf check")
-      << "basis.size(" << prefix << ")=" << prefixSize << " but the prefix exists as index";
+    prefixSet[prefix] = 0;
   }
 
-  // ToDo: Add check that for basis.size(prefix)==n with i>0
-  // there exist multi-indices of the form (prefix,0,...)...(prefix,n-1,...)
+  // Now check for all prefixes, if the size conputed from the
+  // index tree is consistent with basis.size(prefix).
+  for(const auto& [prefix, size] : prefixSet)
+  {
+    auto prefixSize = basis.size(prefix);
+    test.check(prefixSize == size, "basis.size(prefix) check")
+      << "basis.size(" << prefix << ")=" << prefixSize << " but should be " << size;
+  }
 
   return test;
 }

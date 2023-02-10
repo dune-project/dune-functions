@@ -168,24 +168,31 @@ public:
 
 private:
 
+  template<class MultiIndex>
+  static void multiIndexPopFront(MultiIndex& M)
+  {
+    for(std::size_t i=0; i<M.size()-1; ++i)
+      M[i] = M[i+1];
+    M.resize(M.size()-1);
+  }
+
   template<class SizePrefix>
-  size_type size(const SizePrefix& prefix, BasisFactory::BlockedLexicographic) const
+  size_type size(SizePrefix prefix, BasisFactory::BlockedLexicographic) const
   {
     if (prefix.size() == 0)
       return children;
 
-    return Hybrid::switchCases(ChildIndices(), prefix[0], [&] (auto i) {
-      SizePrefix subPrefix;
-      for(std::size_t i=1; i<prefix.size(); ++i)
-        subPrefix.push_back(prefix[i]);
-      return this->subPreBasis(i).size(subPrefix);
+    auto front = prefix.front();
+    multiIndexPopFront(prefix);
+    return Hybrid::switchCases(ChildIndices(), front, [&] (auto i) {
+      return this->subPreBasis(i).size(prefix);
     }, []() {
       return size_type(0);
     });
   }
 
   template<class SizePrefix>
-  size_type size(const SizePrefix& prefix, BasisFactory::FlatLexicographic) const
+  size_type size(SizePrefix prefix, BasisFactory::FlatLexicographic) const
   {
     size_type result = 0;
     if (prefix.size() == 0)
@@ -193,19 +200,14 @@ private:
         result += this->subPreBasis(i).size();
       });
     else {
-      size_type shiftedFirstDigit = prefix[0];
       staticFindInRange<0, children>([&](auto i) {
           auto firstDigitSize = this->subPreBasis(i).size();
-          if (shiftedFirstDigit < firstDigitSize)
+          if (prefix[0] < firstDigitSize)
           {
-            SizePrefix subPrefix;
-            subPrefix.push_back(shiftedFirstDigit);
-            for(std::size_t i=1; i<prefix.size(); ++i)
-              subPrefix.push_back(prefix[i]);
-            result = this->subPreBasis(i).size(subPrefix);
+            result = this->subPreBasis(i).size(prefix);
             return true;
           }
-          shiftedFirstDigit -= firstDigitSize;
+          prefix[0] -= firstDigitSize;
           return false;
         });
     }
