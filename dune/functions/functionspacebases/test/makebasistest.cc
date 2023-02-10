@@ -78,5 +78,35 @@ int main (int argc, char* argv[])
       test.require(std::abs(xij - 1.0) < 1e-10)
         << "Coefficient of interpolated 1-function does not match";
 
+  {
+    auto gridView = grid.leafGridView();
+    auto basis = makeBasis(gridView,
+        power<2>(
+          composite(
+            power<1>(power<1>(lagrange<1>())),
+            power<2>(lagrange<1>()),
+            power<3>(lagrange<1>())
+          ),
+          flatInterleaved()
+        )
+      );
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
+  }
+
+  {
+    auto gridView = grid.leafGridView();
+    auto basis = makeBasis(gridView,
+        power<2>(
+          composite(
+            power<1>(power<1>(lagrange<1>())),
+            power<2>(lagrange<1>()),
+            power<3>(lagrange<1>())
+          ),
+          flatLexicographic()
+        )
+      );
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
+  }
+
   return test.exit();
 }
