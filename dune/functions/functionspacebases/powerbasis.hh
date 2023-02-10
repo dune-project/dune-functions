@@ -129,7 +129,7 @@ public:
 private:
 
   template<class SizePrefix>
-  size_type size(const SizePrefix& prefix, BasisFactory::FlatInterleaved) const
+  size_type size(SizePrefix prefix, BasisFactory::FlatInterleaved) const
   {
     // The root index size is the root index size of a single subnode
     // multiplied by the number of subnodes because we enumerate all
@@ -137,20 +137,15 @@ private:
     if (prefix.size() == 0)
       return children*subPreBasis_.size();
 
-    // The first prefix entry refers to one of the (root index size)
-    // subindex trees. Hence we have to first compute the corresponding
-    // prefix entry for a single subnode subnode. The we can append
-    // the other prefix entries unmodified, because the index tree
-    // looks the same after the first level.
-    SizePrefix subPrefix;
-    subPrefix.push_back(prefix[0] / children);
-    for(std::size_t i=1; i<prefix.size(); ++i)
-      subPrefix.push_back(prefix[i]);
-    return subPreBasis_.size(subPrefix);
+    // The FlatLexicographic index merging strategy only changes the first
+    // index digit. Hence we of to reconstruct the corresponding digit
+    // for the subtree and can then return the corresponding size of the subtree.
+    prefix[0] = prefix[0] / children;
+    return subPreBasis_.size(prefix);
   }
 
   template<class SizePrefix>
-  size_type size(const SizePrefix& prefix, BasisFactory::FlatLexicographic) const
+  size_type size(SizePrefix prefix, BasisFactory::FlatLexicographic) const
   {
     // The size at the index tree root is the size of at the index tree
     // root of a single subnode multiplied by the number of subnodes
@@ -163,42 +158,58 @@ private:
     // prefix entry for a single subnode subnode. The we can append
     // the other prefix entries unmodified, because the index tree
     // looks the same after the first level.
-    SizePrefix subPrefix;
-    subPrefix.push_back(prefix[0] % subPreBasis_.size());
-    for(std::size_t i=1; i<prefix.size(); ++i)
-      subPrefix.push_back(prefix[i]);
-    return subPreBasis_.size(subPrefix);
+
+    // The FlatLexicographic index merging strategy only changes the first
+    // index digit. Hence we of to reconstruct the corresponding digit
+    // for the subtree and can then return the corresponding size of the subtree.
+    prefix[0] = prefix[0] % subPreBasis_.size();
+    return subPreBasis_.size(prefix);
+  }
+
+  template<class MultiIndex>
+  static void multiIndexPopFront(MultiIndex& M)
+  {
+    for(std::size_t i=0; i<M.size()-1; ++i)
+      M[i] = M[i+1];
+    M.resize(M.size()-1);
   }
 
   template<class SizePrefix>
-  size_type size(const SizePrefix& prefix, BasisFactory::BlockedLexicographic) const
+  size_type size(SizePrefix prefix, BasisFactory::BlockedLexicographic) const
   {
     if (prefix.size() == 0)
       return children;
-    SizePrefix subPrefix;
-    for(std::size_t i=1; i<prefix.size(); ++i)
-      subPrefix.push_back(prefix[i]);
-    return subPreBasis_.size(subPrefix);
+    multiIndexPopFront(prefix);
+    return subPreBasis_.size(prefix);
   }
 
   template<class SizePrefix>
-  size_type size(const SizePrefix& prefix, BasisFactory::BlockedInterleaved) const
+  size_type size(SizePrefix prefix, BasisFactory::BlockedInterleaved) const
   {
     if (prefix.size() == 0)
       return subPreBasis_.size();
 
-    SizePrefix subPrefix;
-    for(std::size_t i=0; i<prefix.size()-1; ++i)
-      subPrefix.push_back(prefix[i]);
-
-    size_type r = subPreBasis_.size(subPrefix);
-    if (r==0)
+    // Remember last index, remove it and check if the remaining
+    // prefix refers to a leaf in the subPreBasis index tree.
+    // If yes, then the full prefix must also refer to a
+    // leaf in the merged index tree. If not, then restore the full
+    // prefix and proceed.
+    auto tail = prefix.back();
+    prefix.pop_back();
+    if (subPreBasis_.size(prefix)==0)
       return 0;
-    subPrefix.push_back(prefix.back());
-    r = subPreBasis_.size(subPrefix);
-    if (r==0)
+    prefix.push_back(tail);
+
+    // Now check if the full prefix refers to a leaf in the subPreBasis
+    // index tree.
+    // If yes, then it has exactly 'children' appended children in the subtree.
+    // If not, the the index tree looks the same in the merged subtree and we
+    // can forward the result.
+    // index tree.
+    auto subSize = subPreBasis_.size(prefix);
+    if (subSize==0)
       return children;
-    return r;
+    return subSize;
   }
 
 public:
