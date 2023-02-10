@@ -164,7 +164,7 @@ private:
     // the other prefix entries unmodified, because the index tree
     // looks the same after the first level.
     SizePrefix subPrefix;
-    subPrefix.push_back(prefix[0] % children);
+    subPrefix.push_back(prefix[0] % subPreBasis_.size());
     for(std::size_t i=1; i<prefix.size(); ++i)
       subPrefix.push_back(prefix[i]);
     return subPreBasis_.size(subPrefix);
