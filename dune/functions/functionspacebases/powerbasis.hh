@@ -119,7 +119,6 @@ public:
   }
 
   //! Return number of possible values for next position in multi index
-
   template<class SizePrefix>
   size_type size(const SizePrefix& prefix) const
   {
@@ -132,13 +131,13 @@ private:
   size_type size(SizePrefix prefix, BasisFactory::FlatInterleaved) const
   {
     // The root index size is the root index size of a single subnode
-    // multiplied by the number of subnodes because we enumerate all
+    // multiplied by the number of subnodes, because we enumerate all
     // child indices in a row.
     if (prefix.size() == 0)
       return children*subPreBasis_.size();
 
-    // The FlatLexicographic index merging strategy only changes the first
-    // index digit. Hence we of to reconstruct the corresponding digit
+    // The FlatInterleaved index merging strategy only changes the first
+    // index digit. Hence, we have to reconstruct the corresponding digit
     // for the subtree and can then return the corresponding size of the subtree.
     prefix[0] = prefix[0] / children;
     return subPreBasis_.size(prefix);
@@ -148,19 +147,19 @@ private:
   size_type size(SizePrefix prefix, BasisFactory::FlatLexicographic) const
   {
     // The size at the index tree root is the size of at the index tree
-    // root of a single subnode multiplied by the number of subnodes
+    // root of a single subnode multiplied by the number of subnodes,
     // because we enumerate all child indices in a row.
     if (prefix.size() == 0)
       return children*subPreBasis_.size();
 
     // The first prefix entry refers to one of the (root index size)
-    // subindex trees. Hence we have to first compute the corresponding
-    // prefix entry for a single subnode subnode. The we can append
+    // subindex trees. Hence, we have to first compute the corresponding
+    // prefix entry for a single subnode subnode. Then we can append
     // the other prefix entries unmodified, because the index tree
     // looks the same after the first level.
 
     // The FlatLexicographic index merging strategy only changes the first
-    // index digit. Hence we of to reconstruct the corresponding digit
+    // index digit. Hence, we have to reconstruct the corresponding digit
     // for the subtree and can then return the corresponding size of the subtree.
     prefix[0] = prefix[0] % subPreBasis_.size();
     return subPreBasis_.size(prefix);
@@ -196,18 +195,17 @@ private:
     // prefix and proceed.
     auto tail = prefix.back();
     prefix.pop_back();
-    if (subPreBasis_.size(prefix)==0)
+    if (subPreBasis_.size(prefix) == 0)
       return 0;
     prefix.push_back(tail);
 
     // Now check if the full prefix refers to a leaf in the subPreBasis
     // index tree.
     // If yes, then it has exactly 'children' appended children in the subtree.
-    // If not, the the index tree looks the same in the merged subtree and we
+    // If not, then the index tree looks the same in the merged subtree and we
     // can forward the result.
-    // index tree.
     auto subSize = subPreBasis_.size(prefix);
-    if (subSize==0)
+    if (subSize == 0)
       return children;
     return subSize;
   }
