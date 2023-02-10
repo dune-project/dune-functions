@@ -21,6 +21,7 @@ corresponding version of the Dune core modules.
 - Reimplement `HasStaticSize` in terms by checking `Hybrid::size()`
 - Add utility `StaticSizeOrZero` that defaults to the `integral_constant<size_t,0>` in case
   the container does only have dynamic size.
+- Add global coordinate evaluation for `CompositeGridFunction`
 
 ## Release 2.9
 
