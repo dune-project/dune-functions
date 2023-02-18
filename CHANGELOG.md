@@ -10,6 +10,9 @@ corresponding version of the Dune core modules.
   accessor to base class for python bindings.
 - The headers `common/callable.hh` and `common/functionfromcallable.hh` providing adaptors
   the the removed `VirtualFunction` interface from dune-common have been removed.
+- The class `Polynomial` now allows to explicitly specify the used coefficient container.
+  Supported containers are `std::vector` (default, as before), `std::array`, `std::tuple`,
+  and `std::integer_sequence`.
 - The class `HierarchicalVectorWrapper` and the corresponding header `functionspacebases/hierarchicvectorwrapper.hh`
   have been deprecated. Use `istlVectorBackend()` from `backends/istlvectorbackend.hh` instead.
 - The class `SizeInfo` and the corresponding header `functionspacebases/sizeinfo.hh`
