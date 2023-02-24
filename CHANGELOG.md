@@ -12,7 +12,10 @@ corresponding version of the Dune core modules.
   the the removed `VirtualFunction` interface from dune-common have been removed.
 - The class `Polynomial` now allows to explicitly specify the used coefficient container.
   Supported containers are `std::vector` (default, as before), `std::array`, `std::tuple`,
-  and `std::integer_sequence`.
+  and `std::integer_sequence`. Class template argument deduction allows to deduce the
+  scalar type from homogeneous containers. The scalar type can be explicitly specified
+  to be different with the `makePolynomial()` helper function, while the coefficients
+  container type is still deduced.
 - The class `HierarchicalVectorWrapper` and the corresponding header `functionspacebases/hierarchicvectorwrapper.hh`
   have been deprecated. Use `istlVectorBackend()` from `backends/istlvectorbackend.hh` instead.
 - The class `SizeInfo` and the corresponding header `functionspacebases/sizeinfo.hh`

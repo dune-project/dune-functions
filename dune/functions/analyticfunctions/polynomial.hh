@@ -96,7 +96,19 @@ namespace Impl {
  * \tparam C Coefficient container type (default std::vector<K>)
  *
  * This class will store a coefficient container of type C.
- * Supported containers are std::vector, std::array, std::integer_sequence.
+ * Supported containers are std::vector, std::array, std::integer_sequence, std::tuple.
+ * When passing std::tuple, coefficients of type std::integral_constant are promoted
+ * as std::integral_constant when computing derivatives.
+ *
+ * Class template argument deduction is supported for passing std::array, std::vector,
+ * std::integer_sequence, std::initializer_list. When passing such containers
+ * without specifying the template parameters, then the scalar type is deduced to
+ * be the coefficient type. Notice that the deduced coefficient container type when
+ * passing std::initializer_list is std::vector.
+ *
+ * If you want to use different types for scalar and coefficients, you can use the
+ * makePolynomial() function to explicitly specify the scalar type while the
+ * coefficient type is deduced.
  *
  * This class exists mainly to demonstrate how to implement
  * the \ref Concept::DifferentiableFunction<Range(Domain), DerivativeTraits> concept.
@@ -178,14 +190,31 @@ private:
 
 
 
+template<class K>
+Polynomial(std::vector<K>) -> Polynomial<K, std::vector<K>>;
+
+template<class K, unsigned long n>
+Polynomial(std::array<K,n>) -> Polynomial<K, std::array<K,n>>;
+
+template<class K, K... ci>
+Polynomial(std::integer_sequence<K, ci...>) -> Polynomial<K, std::integer_sequence<K,ci...>>;
+
+template<class K>
+Polynomial(std::initializer_list<K>) -> Polynomial<K, std::vector<K>>;
+
+
+
 /**
  * \brief Create Polynomial
  *
  * \tparam K Scalar type. The polynomial will map K to K
  * \tparam C Coefficient container type
  *
- * This helper function allows to specify K, but let C deduce
- * from the argument.
+ * This helper function allows to specify K, but lets C be deduced from
+ * the argument. If the scalar type K is the same as the coefficient
+ * type (i.e. the entry type of the coefficient container C), then
+ * you can also rely on class template argument deduction and
+ * call Polynomial(coefficients) directly.
  */
 template<class K, class Coefficients>
 auto makePolynomial(Coefficients coefficients)

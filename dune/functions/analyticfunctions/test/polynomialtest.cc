@@ -39,13 +39,22 @@ using Dune::Functions::makePolynomial;
 
 
 
-template<class... Args>
+template<class Scalar, class... CoefficientArgs>
 Dune::TestSuite testDynamicPolynomial()
 {
   Dune::TestSuite suite;
 
   // Check construction from initializer list
-  using P = Polynomial<Args...>;
+  using P = Polynomial<Scalar, CoefficientArgs...>;
+  using Coefficients = typename P::Coefficients;
+
+  // Check if CTAD works
+  if constexpr (std::is_same_v<Scalar, typename Coefficients::value_type>)
+  {
+    auto p = Polynomial(Coefficients({1, 2, 3, -4}));
+    suite.check(std::is_same_v<decltype(p), P>);
+  }
+
   auto p = P({ 1, 2, 3, -4});
 
   {
@@ -116,6 +125,14 @@ template<class K>
 Dune::TestSuite testIntegerSequencePolynomial()
 {
   Dune::TestSuite suite;
+
+  // Check if CTAD works
+  {
+    using Scalar = int;
+    using Coefficients = std::integer_sequence<Scalar,6, -24>;
+    auto p = Polynomial(Coefficients{});
+    suite.check(std::is_same_v<decltype(p), Polynomial<Scalar, Coefficients>>);
+  }
 
   auto p = Polynomial<K, std::integer_sequence<int, 1,2,3,-4>>();
   auto dp = Polynomial<K, std::integer_sequence<int,2,6,-12>>();
@@ -189,10 +206,18 @@ int main(int argc, char* argv[])
   Dune::MPIHelper::instance(argc, argv);
   Dune::TestSuite suite;
 
+  // Check if CTAD works for initializer_list
+  {
+    auto p = Polynomial({1.0, 2.0, 3.0, -4.0});
+    suite.check(std::is_same_v<decltype(p), Polynomial<double,std::vector<double>>>);
+  }
+
   suite.subTest(testDynamicPolynomial<int>());
   suite.subTest(testDynamicPolynomial<double>());
   suite.subTest(testDynamicPolynomial<double, std::array<double,4>>());
+  suite.subTest(testDynamicPolynomial<double, std::array<int,4>>());
   suite.subTest(testDynamicPolynomial<double, std::vector<double>>());
+  suite.subTest(testDynamicPolynomial<double, std::vector<int>>());
 
   suite.subTest(testIntegerSequencePolynomial<int>());
   suite.subTest(testIntegerSequencePolynomial<double>());
