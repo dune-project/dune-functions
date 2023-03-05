@@ -1,12 +1,10 @@
 add_subdirectory("test")
 
 install(FILES
-        callable.hh
         defaultderivativetraits.hh
         differentiablefunction.hh
         differentiablefunction_imp.hh
         differentiablefunctionfromcallables.hh
-        functionfromcallable.hh
         functionconcepts.hh
         indexaccess.hh
         interfaces.hh

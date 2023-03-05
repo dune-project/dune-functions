@@ -5,6 +5,8 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.10)
 
+- The headers `common/callable.hh` and `common/functionfromcallable.hh` providing adaptors
+  the the removed `VirtualFunction` interface from dune-common have been removed.
 - The class `HierarchicalVectorWrapper` and the corresponding header `functionspacebases/hierarchicvectorwrapper.hh`
   have been deprecated. Use `istlVectorBackend()` from `backends/istlvectorbackend.hh` instead.
 - The class `SizeInfo` and the corresponding header `functionspacebases/sizeinfo.hh`
