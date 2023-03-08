@@ -8,7 +8,7 @@
 
 #include <dune/localfunctions/lagrange.hh>
 #include <dune/localfunctions/lagrange/equidistantpoints.hh>
-#include <dune/localfunctions/lagrange/pqkfactory.hh>
+#include <dune/localfunctions/lagrange/lagrangelfecache.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
@@ -409,7 +409,7 @@ class LagrangeNode :
 
   using FiniteElementCache = typename std::conditional<(useDynamicOrder),
                                                        LagrangeRunTimeLFECache<typename GV::ctype, R, dim>,
-                                                       PQkLocalFiniteElementCache<typename GV::ctype, R, dim, k>
+                                                       LagrangeLocalFiniteElementCache<typename GV::ctype, R, dim, std::max(k,0)>
                                                       >::type;
 
 public:
