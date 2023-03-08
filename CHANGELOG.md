@@ -5,6 +5,8 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.10)
 
+- Added a constructor for `LocalViewWrapper` from a `LocalView` object and added
+  accessor to base class for python bindings.
 - The headers `common/callable.hh` and `common/functionfromcallable.hh` providing adaptors
   the the removed `VirtualFunction` interface from dune-common have been removed.
 - The class `HierarchicalVectorWrapper` and the corresponding header `functionspacebases/hierarchicvectorwrapper.hh`
