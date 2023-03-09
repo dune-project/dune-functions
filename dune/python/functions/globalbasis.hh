@@ -34,11 +34,22 @@ namespace Dune
       typedef typename Basis::LocalView Base;
       typedef typename Base::Element EntityType;
       LocalViewWrapper(const Basis &b) : Base(b) {}
+      LocalViewWrapper(const Base &lv) : Base(lv) {}
+
+      Base& base()
+      {
+        return *this;
+      }
+
+      const Base& base() const
+      {
+        return *this;
+      }
 
       std::vector<int> index(int idx) const
       {
         // call index in the base class
-        auto ind = Base::index(idx);
+        auto ind = base().index(idx);
         std::vector<int> ret(ind.size());
         for (int i=0;i<ind.size();++i) ret[i] = ind[i];
         return ret;
@@ -48,11 +59,11 @@ namespace Dune
       {
         obj_ = obj;
         const EntityType &entity = obj.template cast<const EntityType&>();
-        Base::bind(entity);
+        base().bind(entity);
       }
       void unbind ( )
       {
-        Base::unbind();
+        base().unbind();
         obj_.release();
       }
       pybind11::object obj_;
