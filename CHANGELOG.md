@@ -41,6 +41,8 @@ corresponding version of the Dune core modules.
 - All basis implementations are now copyable and assignable
 - Add mixin class `LeafPreBasisMixin` and make available the mixin class `LeafPreBasisMapperMixin` to
   simplify writing of new pre-bases.
+- Add a dynamic power basis with a runtime exponent that can be constructed with the factory
+  `power(<sub-basis>, k)` or `power(<sub-basis>, k, <index-merging>)`.
 
 ## Release 2.9
 
