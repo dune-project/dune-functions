@@ -24,6 +24,7 @@ install(FILES
         powerbasis.hh
         rannacherturekbasis.hh
         raviartthomasbasis.hh
+        refinedlagrangebasis.hh
         nodes.hh
         sizeinfo.hh
         subentitydofs.hh

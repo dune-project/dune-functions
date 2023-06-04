@@ -26,6 +26,9 @@ corresponding version of the Dune core modules.
 - Add utility `StaticSizeOrZero` that defaults to the `integral_constant<size_t,0>` in case
   the container does only have dynamic size.
 - Add global coordinate evaluation for `CompositeGridFunction`
+- Add new global basis function based on refined Lagrange local-functions. The pre-basis is called
+  `template <typename GV, int k, typename R=double> class RefinedLagrangePreBasis` and a corresponding
+  pre-basis-factory `refinedLagrange<k,R=double>()` with `k=[1|2]` currently implemented.
 
 ## Release 2.9
 
