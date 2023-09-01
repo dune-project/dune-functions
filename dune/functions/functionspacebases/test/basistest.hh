@@ -533,7 +533,6 @@ Dune::TestSuite checkConstBasis(const Basis& basis, Flags... flags)
   return test;
 }
 
-
 template<class Basis, class... Flags>
 Dune::TestSuite checkBasis(Basis& basis, Flags... flags)
 {
@@ -545,6 +544,8 @@ Dune::TestSuite checkBasis(Basis& basis, Flags... flags)
   // Check copy-construction / copy-assignable of a basis
   {
     Basis copy(basis);
+    test.subTest(checkConstBasis(copy,flags...));
+    copy = basis;
     test.subTest(checkConstBasis(copy,flags...));
   }
 
