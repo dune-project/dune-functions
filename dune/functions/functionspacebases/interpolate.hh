@@ -8,6 +8,7 @@
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/bitsetvector.hh>
+#include <dune/common/referencehelper.hh>
 
 #include <dune/typetree/traversal.hh>
 
@@ -50,24 +51,110 @@ struct AllTrueBitSetVector
 
 
 
+// This helper function implements the restriction of some given function of type F.
+// The restriction is a simple callback that is applied to the values of the
+// function and the values of its derivative.
+template<class F, class Restriction>
+class ComponentFunction
+{
+public:
+
+  ComponentFunction(F f, Restriction restriction) :
+    f_(std::move(f)),
+    restriction_(std::move(restriction))
+  {}
+
+  template<class Domain>
+  auto operator()(const Domain& x) const
+  {
+    return restriction_(f_(x));
+  }
+
+  friend auto derivative(const ComponentFunction& cf)
+  {
+    // This provides support for capturing the derivative of the function by reference
+    // using forwardCapture for perfect forwarding capture. If the function caches its
+    // derivative, this saves a potentially costly copy.
+    auto&& df = derivative(Dune::resolveRef(cf.f_));
+    return [&, df=forwardCapture(std::forward<decltype(df)>(df))](const auto&& x) {
+      return cf.restriction_(df.forward()(x));
+    };
+  }
+
+private:
+  F f_;
+  Restriction restriction_;
+};
+
+
+
+
+// This helper function implements caching of the derivative for local functions.
+// When using an algorithm that gets a LocalFunction and calls it's derivative
+// on each element, this leads to a costly call of derivative(f). E.g. for a
+// DiscreteGlobalBasisFunction, this will allocate several buffer.
+// To avoid this, this helper function caches the derivative and hands
+// out the cached derivative by reference. To ensure that the handed out
+// derivative is appropriately bound, binding the function will automatically
+// bind the cached derivative.
+//
+// Notice that we cannot simply create the derivative in the constructor,
+// because this may throw for functions that do not implement the derivative.
+template<class F>
+class CachedDerivativeLocalFunction
+{
+  using Derivative = std::decay_t<decltype(derivative(Dune::resolveRef(std::declval<const F&>())))>;
+
+public:
+
+  CachedDerivativeLocalFunction(F f) :
+    f_(f)
+  {}
+
+  template<class Element>
+  void bind(const Element& element)
+  {
+    Dune::resolveRef(f_).bind(element);
+    if (derivative_)
+      derivative_.value().bind(element);
+  }
+
+  template<class X>
+  auto operator()(const X& x) const
+  {
+    return f_(x);
+  }
+
+  friend const Derivative& derivative(const CachedDerivativeLocalFunction& cdlf)
+  {
+    if (not cdlf.derivative_)
+    {
+      auto&& lf = Dune::resolveRef(cdlf.f_);
+      cdlf.derivative_ = derivative(lf);
+      if (lf.bound())
+        cdlf.derivative_.value().bind(lf.localContext());
+    }
+    return cdlf.derivative_.value();
+  }
+
+private:
+  F f_;
+  mutable std::optional<Derivative> derivative_;
+};
+
+
+
 template<class VectorBackend, class BitVectorBackend, class LocalFunction, class LocalView, class NodeToRangeEntry>
 void interpolateLocal(VectorBackend& vector, const BitVectorBackend& bitVector, const LocalFunction& localF, const LocalView& localView, const NodeToRangeEntry& nodeToRangeEntry)
 {
   Dune::TypeTree::forEachLeafNode(localView.tree(), [&](auto&& node, auto&& treePath) {
     using Node = std::decay_t<decltype(node)>;
     using FiniteElement = typename Node::FiniteElement;
-    using FiniteElementRange = typename FiniteElement::Traits::LocalBasisType::Traits::RangeType;
     using FiniteElementRangeField = typename FiniteElement::Traits::LocalBasisType::Traits::RangeFieldType;
-    using LocalDomain = typename FiniteElement::Traits::LocalBasisType::Traits::DomainType;
 
     auto interpolationCoefficients = std::vector<FiniteElementRangeField>();
     auto&& fe = node.finiteElement();
-
-    // for all other finite elements: use the FiniteElementRange directly for the interpolation
-    auto localF_RE = [&](const LocalDomain& x){
-      const auto& y = localF(x);
-      return FiniteElementRange(nodeToRangeEntry(node, treePath, y));
-    };
+    auto localF_RE = ComponentFunction(std::cref(localF), [&](auto&& y) { return nodeToRangeEntry(node, treePath, y); });
 
     fe.localInterpolation().interpolate(localF_RE, interpolationCoefficients);
     for (size_t i=0; i<fe.localBasis().size(); ++i)
@@ -139,7 +226,10 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bv, const NTRE
   auto gf = makeGridViewFunction(f, gridView);
 
   // Obtain a local view of f
-  auto localF = localFunction(gf);
+  // To avoid costly reconstruction of the derivative on each element,
+  // we use the CachedDerivativeLocalFunction wrapper that will handout
+  // a reference to a single cached derivative object.
+  auto localF = Imp::CachedDerivativeLocalFunction(localFunction(gf));
 
   auto localView = basis.localView();
 
