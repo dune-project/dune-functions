@@ -282,9 +282,6 @@ void testOnStructuredGrid()
 template <int dim>
 void testOnHybridGrid()
 {
-#if ! HAVE_DUNE_UGGRID
-  std::cout << "   ---- Skipping test on hybrid " << dim << "d grid -- UGGrid is not installed ----" << std::endl;
-#else
   std::cout << "   +++++++++++  Testing on hybrid " << dim << "d grid  ++++++++++++" << std::endl;
 
   // Generate grid for testing
@@ -332,7 +329,6 @@ void testOnHybridGrid()
   // \todo Enable these tests once pyramid element of order three is implemented
 //  LagrangeDGBasis<GridView, 3> lagrangeDG3Basis(gridView);
 //  testScalarBasisConst(lagrangeDG3Basis, true, disableInterpolate);
-#endif
 }
 
 
