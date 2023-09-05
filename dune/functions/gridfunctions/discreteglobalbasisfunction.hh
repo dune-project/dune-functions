@@ -262,6 +262,12 @@ class DiscreteGlobalBasisFunctionDerivative;
  * \tparam V Type of coefficient vectors
  * \tparam NTRE Type of node-to-range-entry-map that associates each leaf node in the local ansatz subtree with an entry in the range type
  * \tparam R Range type of this function
+ *
+ * \b Requirements:
+ * - Type `R` is default constructible
+ * - default constructed `R` has correct "shape" to hold the components of the range and
+ *   to be accessible using the node-to-range-entry map `NTRE`.
+ * - This requirements applies recursively to the derivative ranges.
  */
 template<typename B, typename V,
   typename NTRE = HierarchicNodeToRangeMap,
@@ -430,7 +436,9 @@ public:
  *            a mapping `R(Domain)` with `Domain` the global coordinates of the
  *            associated GridView. This must be compatible with the basis and
  *            coefficients. See the documentation of \ref DiscreteGlobalBasisFunction
- *            for more details.
+ *            for more details. The type `R` must be default constructible and
+ *            by this default construction provides a well resized container to be
+ *            filled in the evaluation method of the grid function.
  *
  * \param basis  The global basis or subspace basis associated with this
  *               grid-function
