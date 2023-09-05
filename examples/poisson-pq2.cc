@@ -262,16 +262,6 @@ void boundaryTreatment (const FEBasis& feBasis, std::vector<char>& dirichletNode
   });
 }
 
-template<int dim>
-auto createUniformCubeGrid()
-{
-  using Grid = Dune::YaspGrid<dim>;
-  Dune::FieldVector<double,dim> l(1.0);
-  std::array<int,dim> elements = {{2, 2}};
-  return std::make_unique<Grid>(l, elements);
-}
-
-#if HAVE_DUNE_UGGRID
 auto createMixedGrid()
 {
   using Grid = Dune::UGGrid<2>;
@@ -286,7 +276,6 @@ auto createMixedGrid()
   factory.insertElement(Dune::GeometryTypes::simplex(2), {5, 8, 7});
   return std::unique_ptr<Grid>{factory.createGrid()};
 }
-#endif
 
 int main (int argc, char *argv[]) try
 {
@@ -297,11 +286,7 @@ int main (int argc, char *argv[]) try
   //   Generate the grid
   ///////////////////////////////////
 
-#if HAVE_DUNE_UGGRID
   auto gridPtr = createMixedGrid();
-#else
-  auto gridPtr = createUniformCubeGrid<2>();
-#endif
 
   auto& grid = *gridPtr;
   grid.globalRefine(4);
