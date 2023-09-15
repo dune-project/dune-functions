@@ -533,7 +533,6 @@ Dune::TestSuite checkConstBasis(const Basis& basis, Flags... flags)
   return test;
 }
 
-
 template<class Basis, class... Flags>
 Dune::TestSuite checkBasis(Basis& basis, Flags... flags)
 {
@@ -541,6 +540,14 @@ Dune::TestSuite checkBasis(Basis& basis, Flags... flags)
 
   // Perform tests for a constant basis
   test.subTest(checkConstBasis(basis,flags...));
+
+  // Check copy-construction / copy-assignable of a basis
+  {
+    Basis copy(basis);
+    test.subTest(checkConstBasis(copy,flags...));
+    copy = basis;
+    test.subTest(checkConstBasis(copy,flags...));
+  }
 
   // Check update of gridView
   auto gridView = basis.gridView();

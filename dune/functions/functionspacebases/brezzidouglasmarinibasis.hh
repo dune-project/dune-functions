@@ -92,10 +92,10 @@ namespace Impl {
 
       // create all variants
       for (size_t i = 0; i < cubeVariant_.size(); i++)
-        cubeVariant_[i] = std::make_unique<LocalFiniteElementVirtualImp<CubeFiniteElement> >(CubeFiniteElement(i));
+        cubeVariant_[i] = std::make_shared<LocalFiniteElementVirtualImp<CubeFiniteElement> >(CubeFiniteElement(i));
 
       for (size_t i = 0; i < simplexVariant_.size(); i++)
-        simplexVariant_[i] = std::make_unique<LocalFiniteElementVirtualImp<SimplexFiniteElement> >(SimplexFiniteElement(i));
+        simplexVariant_[i] = std::make_shared<LocalFiniteElementVirtualImp<SimplexFiniteElement> >(SimplexFiniteElement(i));
 
       // compute orientation for all elements
       // loop once over the grid
@@ -123,8 +123,8 @@ namespace Impl {
     }
 
     private:
-      std::vector<std::unique_ptr<LocalFiniteElementVirtualImp<CubeFiniteElement> > > cubeVariant_;
-      std::vector<std::unique_ptr<LocalFiniteElementVirtualImp<SimplexFiniteElement> > > simplexVariant_;
+      std::vector<std::shared_ptr<LocalFiniteElementVirtualImp<CubeFiniteElement> > > cubeVariant_;
+      std::vector<std::shared_ptr<LocalFiniteElementVirtualImp<SimplexFiniteElement> > > simplexVariant_;
       const typename GV::IndexSet* is_;
       std::vector<unsigned char> orient_;
   };

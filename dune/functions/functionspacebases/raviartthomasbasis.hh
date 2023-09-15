@@ -165,7 +165,7 @@ namespace Impl {
 
     private:
       std::vector<FiniteElement> variants_;
-      const Dune::MultipleCodimMultipleGeomTypeMapper<GV> elementMapper_;
+      Dune::MultipleCodimMultipleGeomTypeMapper<GV> elementMapper_;
       std::vector<unsigned char> orient_;
   };
 

@@ -316,7 +316,7 @@ protected:
   GridView gridView_;
 
   // Run-time order, only valid if k<0
-  const unsigned int order_;
+  unsigned int order_;
 
   //! Number of degrees of freedom assigned to a simplex (without the ones assigned to its faces!)
   size_type dofsPerSimplex(std::size_t simplexDim) const
