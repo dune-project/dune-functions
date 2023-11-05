@@ -19,7 +19,6 @@ void interpolate(const Basis& basis, pybind11::array_t<T> x, const std::function
 
   auto x1 = x.template mutable_unchecked<1>();
 
-  using V = decltype(x1);
   auto x2 = Dune::Functions::istlVectorBackend(x1);
 
   interpolate(basis, x2, f);
