@@ -85,7 +85,7 @@ int main (int argc, char* argv[]) try
   std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
-  using namespace Functions::BasisBuilder;
+  using namespace Functions::BasisFactory;
 
   const auto& gridView = grid.leafGridView();
 

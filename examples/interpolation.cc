@@ -62,7 +62,7 @@ int main (int argc, char *argv[])
 
   // Interpolate a vector-valued function using a vector-valued basis
   // { taylorhood_basis_begin }
-  using namespace Functions::BasisBuilder;
+  using namespace Functions::BasisFactory;
 
   auto taylorHoodBasis = makeBasis(
     gridView,

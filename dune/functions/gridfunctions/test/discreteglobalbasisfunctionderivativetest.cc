@@ -79,7 +79,7 @@ int main(int argc, char** argv)
   auto grid = Dune::YaspGrid<dim>({1., 1.}, {10, 42});
   const auto gridView = leafGridView(grid);
 
-  using namespace Dune::Functions::BasisBuilder;
+  using namespace Dune::Functions::BasisFactory;
 
   // scalar Lagrange basis with scalar coefficients
   {

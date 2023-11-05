@@ -39,7 +39,7 @@ int main (int argc, char* argv[]) try
   auto grid = Grid(l, elements);
   auto gridView = grid.leafGridView();
 
-  using namespace Functions::BasisBuilder;
+  using namespace Functions::BasisFactory;
 
   {
     using Range = FieldVector<double,2>;
