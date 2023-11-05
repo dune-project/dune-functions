@@ -11,6 +11,7 @@
 #include <dune/common/visibility.hh>
 
 #include <dune/python/pybind11/pybind11.h>
+#include <dune/python/pybind11/extensions.h>
 #include <dune/python/localfunctions/localfiniteelement.hh>
 
 namespace Dune {

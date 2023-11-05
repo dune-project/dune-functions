@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <utility>
 #include <type_traits>
+#include <algorithm>
 
 namespace Dune {
 namespace Functions {

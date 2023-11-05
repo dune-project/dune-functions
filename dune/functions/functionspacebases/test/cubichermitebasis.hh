@@ -8,6 +8,7 @@
 
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/mcmgmapper.hh>
+#include <dune/grid/common/rangegenerators.hh>
 
 #include <dune/localfunctions/common/localfiniteelementvariant.hh>
 #include <dune/localfunctions/rannacherturek.hh>
