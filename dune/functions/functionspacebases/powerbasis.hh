@@ -405,7 +405,7 @@ auto power(ChildPreBasisFactory&& childPreBasisFactory)
 } // end namespace BasisFactory
 
 // Backward compatibility
-namespace BasisBuilder {
+namespace [[deprecated]] BasisBuilder {
 
   using namespace BasisFactory;
 

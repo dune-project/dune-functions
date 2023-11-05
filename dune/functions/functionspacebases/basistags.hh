@@ -223,7 +223,7 @@ namespace BasisFactory {
 } // end namespace BasisFactory
 
 // Backward compatibility
-namespace BasisBuilder {
+namespace [[deprecated]] BasisBuilder {
 
   using namespace BasisFactory;
 

@@ -195,7 +195,7 @@ auto makeBasis(const GridView& gridView, PreBasisFactory&& preBasisFactory)
 } // end namespace BasisFactory
 
 // Backward compatibility
-namespace BasisBuilder {
+namespace [[deprecated]] BasisBuilder {
 
   using namespace BasisFactory;
 
