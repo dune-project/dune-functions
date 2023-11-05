@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <string>
 #include <sstream>
+#include <map>
+#include <optional>
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/concept.hh>
