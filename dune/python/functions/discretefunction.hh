@@ -43,7 +43,7 @@ namespace Dune
       // -----------------------------------
 
       template< class Basis, class TreePath, class K, class Range, class... options >
-      inline static std::enable_if_t< std::is_constructible< TreePath >::value >
+      inline static std::enable_if_t< std::is_constructible_v< TreePath > >
       registerDiscreteFunctionConstructor ( pybind11::class_< Dune::Functions::DiscreteGlobalBasisFunction< Basis, HierarchicPythonVector< K >, DefaultNodeToRangeMap< Basis, TreePath >, Range >, options... > &cls, PriorityTag< 1 > )
       {
         using pybind11::operator""_a;

@@ -24,7 +24,7 @@ namespace Functions {
  */
 template<class T, class... Args>
 using enableIfConstructible = std::enable_if_t<
-  std::is_constructible<T, Args...>::value, int>;
+  std::is_constructible_v<T, Args...>, int>;
 
 
 

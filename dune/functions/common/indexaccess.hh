@@ -238,7 +238,7 @@ struct MultiIndexResolver
   {}
 
   template<class C,
-    std::enable_if_t<not std::is_convertible<C&, Result>::value, int> = 0>
+    std::enable_if_t<not std::is_convertible_v<C&, Result>, int> = 0>
   Result operator()(C&& c)
   {
     auto&& subIndex = Imp::shiftedDynamicMultiIndex<1>(index_);
@@ -247,7 +247,7 @@ struct MultiIndexResolver
   }
 
   template<class C,
-    std::enable_if_t<std::is_convertible<C&, Result>::value, int> = 0>
+    std::enable_if_t<std::is_convertible_v<C&, Result>, int> = 0>
   Result operator()(C&& c)
   {
     return (Result)(std::forward<C>(c));

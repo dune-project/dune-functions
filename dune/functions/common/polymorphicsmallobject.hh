@@ -66,8 +66,8 @@ public:
    * \param derived Object to be stored
    */
   template<class Derived,
-        std::enable_if_t<std::is_base_of<Base, std::remove_cv_t<
-          std::remove_reference_t<Derived>>>::value, int> = 0>
+        std::enable_if_t<std::is_base_of_v<Base, std::remove_cv_t<
+          std::remove_reference_t<Derived>>>, int> = 0>
   PolymorphicSmallObject(Derived&& derived)
   {
     constexpr bool useBuffer = (sizeof(Derived) <= bufferSize)

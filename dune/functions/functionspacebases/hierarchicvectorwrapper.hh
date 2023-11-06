@@ -85,7 +85,7 @@ class
 HierarchicVectorWrapper
 {
   template<class MultiIndex>
-  using Coefficient = std::conditional_t< std::is_same<Imp::DeducedCoefficientTag,CO>::value and HasStaticSize_v<MultiIndex>,
+  using Coefficient = std::conditional_t< std::is_same_v<Imp::DeducedCoefficientTag,CO> and HasStaticSize_v<MultiIndex>,
             typename Imp::CoefficientType<V, MultiIndex>::type,
             CO
             >;
@@ -178,28 +178,28 @@ public:
   template<class MultiIndex>
   const Entry<MultiIndex>& operator[](const MultiIndex& index) const
   {
-      static_assert(not std::is_same<Imp::DeducedCoefficientTag,Entry<MultiIndex>>::value, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
+      static_assert(not std::is_same_v<Imp::DeducedCoefficientTag,Entry<MultiIndex>>, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
       return hybridMultiIndexAccess<const Entry<MultiIndex>&>(*vector_, index);
   }
 
   template<class MultiIndex>
   Entry<MultiIndex>& operator[](const MultiIndex& index)
   {
-      static_assert(not std::is_same<Imp::DeducedCoefficientTag,Entry<MultiIndex>>::value, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
+      static_assert(not std::is_same_v<Imp::DeducedCoefficientTag,Entry<MultiIndex>>, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
       return hybridMultiIndexAccess<Entry<MultiIndex>&>(*vector_, index);
   }
 
   template<class MultiIndex>
   const Entry<MultiIndex>& operator()(const MultiIndex& index) const
   {
-      static_assert(not std::is_same<Imp::DeducedCoefficientTag,Entry<MultiIndex>>::value, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
+      static_assert(not std::is_same_v<Imp::DeducedCoefficientTag,Entry<MultiIndex>>, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
       return (*this)[index];
   }
 
   template<class MultiIndex>
   Entry<MultiIndex>& operator()(const MultiIndex& index)
   {
-      static_assert(not std::is_same<Imp::DeducedCoefficientTag,Entry<MultiIndex>>::value, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
+      static_assert(not std::is_same_v<Imp::DeducedCoefficientTag,Entry<MultiIndex>>, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
       return (*this)[index];
   }
 

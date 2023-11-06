@@ -158,7 +158,7 @@ struct DerivativeRangeTerminationTest
       std::cout << "Type of " << recursionLevel << "-th derivative is " << Dune::className<DR>() << std::endl;
       typedef typename Dune::Functions::DerivativeTraits<D, DR>::DerivativeRange DDR;
       int upperBound = TerminationTest<DDR, recursionLevel+1>::level();
-      if (Dune::is_same<DR, DDR>::value)
+      if (std::is_same_v<DR, DDR>)
         return recursionLevel;
       else
         return upperBound;
@@ -172,7 +172,7 @@ struct DerivativeRangeTerminationTest
     {
       std::cout << "Type of " << maxRecursionLevel << "-th derivative is " << Dune::className<DR>() << std::endl;
       typedef typename Dune::Functions::DerivativeTraits<D, DR>::DerivativeRange DDR;
-      if (Dune::is_same<DR, DDR>::value)
+      if (std::is_same_v<DR, DDR>)
         return maxRecursionLevel;
       else
         return maxRecursionLevel+1;

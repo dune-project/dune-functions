@@ -73,7 +73,7 @@ constexpr auto fieldTypes()
 template<class V>
 constexpr bool hasUniqueFieldType()
 {
-  return std::tuple_size<std::decay_t<decltype(fieldTypes<V>())>>::value==1;
+  return std::tuple_size_v<std::decay_t<decltype(fieldTypes<V>())>> ==1;
 }
 
 
@@ -229,14 +229,14 @@ class ISTLVectorBackend
   }
 
   template<class C, class T,
-    std::enable_if_t<std::is_assignable<C&,T>::value, int> = 0>
+    std::enable_if_t<std::is_assignable_v<C&,T>, int> = 0>
   void recursiveAssign(C& c, const T& t)
   {
     c = t;
   }
 
   template<class C, class T,
-    std::enable_if_t<not std::is_assignable<C&,T>::value, int> = 0>
+    std::enable_if_t<not std::is_assignable_v<C&,T>, int> = 0>
   void recursiveAssign(C& c, const T& t)
   {
     Dune::Hybrid::forEach(c, [&](auto&& ci) {

@@ -32,7 +32,7 @@ namespace Dune
       template< class MultiIndex >
       using Entry = C;
 
-      template< class... Args, std::enable_if_t< std::is_constructible< Holder, Args &&... >::value, int > = 0 >
+      template< class... Args, std::enable_if_t< std::is_constructible_v< Holder, Args &&... >, int > = 0 >
       HierarchicVectorWrapper ( Args &&... args )
         : holder_( std::forward< Args >( args )... )
       {}
