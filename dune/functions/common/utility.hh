@@ -220,7 +220,7 @@ using IntegerSequenceTuple= typename Imp::IntegerSequenceTupleHelper<IntegerSequ
 template<class... T>
 struct LastType
 {
-  using type = typename std::tuple_element<sizeof...(T)-1, std::tuple<T...>>::type;
+  using type = std::tuple_element_t<sizeof...(T)-1, std::tuple<T...>>;
 };
 
 
@@ -233,7 +233,7 @@ struct RotateHelper;
 template<class... T, std::size_t... I>
 struct RotateHelper<std::tuple<T...>, std::index_sequence<I...> >
 {
-  using type = typename std::tuple<typename LastType<T...>::type, typename std::tuple_element<I,std::tuple<T...>>::type...>;
+  using type = typename std::tuple<typename LastType<T...>::type, std::tuple_element_t<I,std::tuple<T...>>...>;
 };
 
 } // end namespace Imp

@@ -27,8 +27,8 @@ struct HasFreeDerivative
 
 
 template<class Dummy, class F,
-  typename std::enable_if<
-    models< HasFreeDerivative, F>() , int>::type = 0>
+  std::enable_if_t<
+    models< HasFreeDerivative, F>() , int> = 0>
 auto derivativeIfImplemented(const F& f) -> decltype(derivative(f))
 {
   return derivative(f);
@@ -37,8 +37,8 @@ auto derivativeIfImplemented(const F& f) -> decltype(derivative(f))
 
 
 template<class Dummy, class F,
-  typename std::enable_if<
-    not(models< HasFreeDerivative, F>()) , int>::type = 0>
+  std::enable_if_t<
+    not(models< HasFreeDerivative, F>()) , int> = 0>
 Dummy derivativeIfImplemented(const F& f)
 {
   DUNE_THROW(Dune::NotImplemented, "Derivative not implemented");

@@ -37,7 +37,7 @@ public:
   using EntitySet = GridViewEntitySet<GridView, 0>;
   using Element = typename EntitySet::Element;
 //  using Geometry = typename Element::Geometry;
-  using Geometry = typename std::decay<typename Element::Geometry>::type;
+  using Geometry = std::decay_t<typename Element::Geometry>;
 
   // Use the indirection via derivativeIfImplemented to also support
   // function types F that do not implement derivative. In this case

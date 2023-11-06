@@ -168,7 +168,7 @@ public:
   //! Construct wrapper from object
   template<class T, disableCopyMove<TypeErasureBase, T> = 0 >
   TypeErasureBase(T&& t) :
-    wrapped_(Imp::TypeErasureWrapperImplementation<Interface, Implementation, typename std::decay<T>::type>(std::forward<T>(t)))
+    wrapped_(Imp::TypeErasureWrapperImplementation<Interface, Implementation, std::decay_t<T>>(std::forward<T>(t)))
   {}
 
   //! Default constructor

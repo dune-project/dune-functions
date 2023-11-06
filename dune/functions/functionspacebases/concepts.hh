@@ -112,9 +112,9 @@ struct BasisTree : Refines<BasisNode>
 {
   template<class N>
   auto require(const N& node) -> decltype(
-    requireConcept<typename std::conditional< N::isLeaf, LeafBasisNode<GridView>, BasisNode>::type, N>(),
-    requireConcept<typename std::conditional< N::isPower, PowerBasisNode<GridView>, BasisNode>::type, N>(),
-    requireConcept<typename std::conditional< N::isComposite, CompositeBasisNode<GridView>, BasisNode>::type, N>()
+    requireConcept<std::conditional_t< N::isLeaf, LeafBasisNode<GridView>, BasisNode>, N>(),
+    requireConcept<std::conditional_t< N::isPower, PowerBasisNode<GridView>, BasisNode>, N>(),
+    requireConcept<std::conditional_t< N::isComposite, CompositeBasisNode<GridView>, BasisNode>, N>()
   );
 };
 

@@ -77,7 +77,7 @@ bool checkGridViewFunction(const GridView& gridView, const F& f, double exactInt
 
   using EntitySet = typename F::EntitySet;
   using Domain = typename EntitySet::GlobalCoordinate;
-  using Range = typename std::invoke_result<F, Domain>::type;
+  using Range = std::invoke_result_t<F, Domain>;
 
 
 

@@ -407,10 +407,10 @@ class LagrangeNode :
   static constexpr int dim = GV::dimension;
   static constexpr bool useDynamicOrder = (k<0);
 
-  using FiniteElementCache = typename std::conditional<(useDynamicOrder),
+  using FiniteElementCache = std::conditional_t<(useDynamicOrder),
                                                        LagrangeRunTimeLFECache<typename GV::ctype, R, dim>,
                                                        LagrangeLocalFiniteElementCache<typename GV::ctype, R, dim, std::max(k,0)>
-                                                      >::type;
+                                                      >;
 
 public:
 

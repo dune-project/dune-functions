@@ -62,9 +62,9 @@ public:
  * \returns A function that models the GridViewFunction interface.
  */
 template<class F, class GridView,
-  typename std::enable_if<
-    models< Imp::HasFreeLocalFunction, F>() , int>::type = 0>
-typename std::decay<F>::type
+  std::enable_if_t<
+    models< Imp::HasFreeLocalFunction, F>() , int> = 0>
+std::decay_t<F>
   makeGridViewFunction(F&& f, const GridView& gridView)
 {
   return std::forward<F>(f);
@@ -88,8 +88,8 @@ typename std::decay<F>::type
  * \returns A function that models the GridFunction interface.
  */
 template<class F, class GridView,
-  typename std::enable_if<
-    not(models< Imp::HasFreeLocalFunction, F>()) , int>::type = 0>
+  std::enable_if_t<
+    not(models< Imp::HasFreeLocalFunction, F>()) , int> = 0>
 auto makeGridViewFunction(F&& f, const GridView& gridView)
   -> decltype(makeAnalyticGridViewFunction(std::forward<F>(f), gridView))
 {
