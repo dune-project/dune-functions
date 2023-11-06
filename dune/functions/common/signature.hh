@@ -87,8 +87,8 @@ struct SignatureTraits<R(D), true>
     using Range = R;
     using Domain = D;
 
-    using RawRange = typename std::decay<Range>::type;
-    using RawDomain = typename std::decay<Domain>::type;
+    using RawRange = std::decay_t<Range>;
+    using RawDomain = std::decay_t<Domain>;
 
     using RawSignature = RawRange(RawDomain);
 

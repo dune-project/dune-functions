@@ -45,7 +45,7 @@ double infinityDiff(const bool& x, const bool& y)
 template<class R, class B, class C>
 bool checkInterpolationConsistency(B&& basis, C&& x)
 {
-  using Coeff = typename std::decay<C>::type;
+  using Coeff = std::decay_t<C>;
   using Range = R;
 
   bool passed = true;

@@ -375,7 +375,7 @@ auto composite(Args&&... args)
   using ArgTuple = std::tuple<std::decay_t<Args>...>;
 
   // Compute number of children and index of the IndexMergingStrategy argument
-  constexpr std::size_t children = Dune::SizeOf<Args...>::value-1;
+  constexpr std::size_t children = sizeof...(Args) - 1;
 
   // Use last type as IndexMergingStrategy
   using IndexMergingStrategy = std::tuple_element_t<children, ArgTuple>;

@@ -96,7 +96,7 @@ public:
 
 #if 0
 template<class Vector, class SizeInfo, class SizePrefix,
-  typename std::enable_if< not HasStaticSize_v<Vector>, int>::type = 0>
+  std::enable_if_t< not HasStaticSize_v<Vector>, int> = 0>
 bool checkHierarchicVectorSize(const Vector& v, const SizeInfo& sizeInfo, SizePrefix prefix)
 {
   TestSuite test;;

@@ -41,7 +41,7 @@ double infinityDiff(const X& x, const Y& y)
 template<class Range, class Basis, class C>
 Dune::TestSuite checkInterpolateConsistency(Basis basis, C&& x)
 {
-  using Coefficients = typename std::decay<C>::type;
+  using Coefficients = std::decay_t<C>;
 
   Dune::TestSuite suite("interpolate consistency check");
   double coeffTol = 1e-10;

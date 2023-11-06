@@ -59,7 +59,7 @@ struct HasStaticIndexAccess
  * \param f A functor to call with the result of operator[]
  */
 template<class C, class I, class F,
-  typename std::enable_if< Dune::models<Imp::Concept::HasDynamicIndexAccess<I>, C>(), int>::type = 0>
+  std::enable_if_t< Dune::models<Imp::Concept::HasDynamicIndexAccess<I>, C>(), int> = 0>
 auto hybridIndexAccess(C&& c, const I& i, F&& f)
   -> decltype(f(c[i]))
 {
@@ -84,7 +84,7 @@ auto hybridIndexAccess(C&& c, const I& i, F&& f)
  * \param f A functor to call with the result of operator[]
  */
 template<class C, class I, class F,
-  typename std::enable_if< not Dune::models<Imp::Concept::HasDynamicIndexAccess<I>, C>(), int>::type = 0>
+  std::enable_if_t< not Dune::models<Imp::Concept::HasDynamicIndexAccess<I>, C>(), int> = 0>
 decltype(auto) hybridIndexAccess(C&& c, const I& i, F&& f)
 {
   using Size = decltype(Hybrid::size(c));
@@ -238,7 +238,7 @@ struct MultiIndexResolver
   {}
 
   template<class C,
-    typename std::enable_if<not std::is_convertible<C&, Result>::value, int>::type = 0>
+    std::enable_if_t<not std::is_convertible_v<C&, Result>, int> = 0>
   Result operator()(C&& c)
   {
     auto&& subIndex = Imp::shiftedDynamicMultiIndex<1>(index_);
@@ -247,7 +247,7 @@ struct MultiIndexResolver
   }
 
   template<class C,
-    typename std::enable_if<std::is_convertible<C&, Result>::value, int>::type = 0>
+    std::enable_if_t<std::is_convertible_v<C&, Result>, int> = 0>
   Result operator()(C&& c)
   {
     return (Result)(std::forward<C>(c));

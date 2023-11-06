@@ -23,8 +23,8 @@ namespace Functions {
  * for base classes or members.
  */
 template<class T, class... Args>
-using enableIfConstructible = typename std::enable_if<
-  std::is_constructible<T, Args...>::value, int>::type;
+using enableIfConstructible = std::enable_if_t<
+  std::is_constructible_v<T, Args...>, int>;
 
 
 

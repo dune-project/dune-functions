@@ -85,17 +85,17 @@ class
 HierarchicVectorWrapper
 {
   template<class MultiIndex>
-  using Coefficient = typename std::conditional< std::is_same<Imp::DeducedCoefficientTag,CO>::value and HasStaticSize_v<MultiIndex>,
+  using Coefficient = std::conditional_t< std::is_same_v<Imp::DeducedCoefficientTag,CO> and HasStaticSize_v<MultiIndex>,
             typename Imp::CoefficientType<V, MultiIndex>::type,
             CO
-            >::type;
+            >;
 
 
   using size_type = std::size_t;
 
   template<class C, class SizeProvider,
-    typename std::enable_if< not models<Concept::HasResize, C>(), int>::type = 0,
-    typename std::enable_if< not models<Concept::HasSizeMethod, C>(), int>::type = 0>
+    std::enable_if_t< not models<Concept::HasResize, C>(), int> = 0,
+    std::enable_if_t< not models<Concept::HasSizeMethod, C>(), int> = 0>
   static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
@@ -114,8 +114,8 @@ HierarchicVectorWrapper
   };
 
   template<class C, class SizeProvider,
-    typename std::enable_if< not models<Concept::HasResize, C>(), int>::type = 0,
-    typename std::enable_if< models<Concept::HasSizeMethod, C>(), int>::type = 0>
+    std::enable_if_t< not models<Concept::HasResize, C>(), int> = 0,
+    std::enable_if_t< models<Concept::HasSizeMethod, C>(), int> = 0>
   static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
@@ -133,7 +133,7 @@ HierarchicVectorWrapper
   }
 
   template<class C, class SizeProvider,
-    typename std::enable_if< models<Concept::HasResize, C>(), int>::type = 0>
+    std::enable_if_t< models<Concept::HasResize, C>(), int> = 0>
   static void resizeHelper(C& c, const SizeProvider& sizeProvider, typename SizeProvider::SizePrefix prefix)
   {
     auto size = sizeProvider.size(prefix);
@@ -178,28 +178,28 @@ public:
   template<class MultiIndex>
   const Entry<MultiIndex>& operator[](const MultiIndex& index) const
   {
-      static_assert(not std::is_same<Imp::DeducedCoefficientTag,Entry<MultiIndex>>::value, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
+      static_assert(not std::is_same_v<Imp::DeducedCoefficientTag,Entry<MultiIndex>>, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
       return hybridMultiIndexAccess<const Entry<MultiIndex>&>(*vector_, index);
   }
 
   template<class MultiIndex>
   Entry<MultiIndex>& operator[](const MultiIndex& index)
   {
-      static_assert(not std::is_same<Imp::DeducedCoefficientTag,Entry<MultiIndex>>::value, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
+      static_assert(not std::is_same_v<Imp::DeducedCoefficientTag,Entry<MultiIndex>>, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
       return hybridMultiIndexAccess<Entry<MultiIndex>&>(*vector_, index);
   }
 
   template<class MultiIndex>
   const Entry<MultiIndex>& operator()(const MultiIndex& index) const
   {
-      static_assert(not std::is_same<Imp::DeducedCoefficientTag,Entry<MultiIndex>>::value, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
+      static_assert(not std::is_same_v<Imp::DeducedCoefficientTag,Entry<MultiIndex>>, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
       return (*this)[index];
   }
 
   template<class MultiIndex>
   Entry<MultiIndex>& operator()(const MultiIndex& index)
   {
-      static_assert(not std::is_same<Imp::DeducedCoefficientTag,Entry<MultiIndex>>::value, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
+      static_assert(not std::is_same_v<Imp::DeducedCoefficientTag,Entry<MultiIndex>>, "Coefficient type for HierarchicVectorWrapper and given multi-index type cannot be determined automatically!");
       return (*this)[index];
   }
 
@@ -235,7 +235,7 @@ HierarchicVectorWrapper< V > hierarchicVector(V& v)
  * \deprecated This function is deprecated. Use istlVectorBackend() instead.
  */
 template<class MultiIndex, class V,
-    typename std::enable_if< models<Concept::HasIndexAccess, V, MultiIndex>(), int>::type = 0>
+    std::enable_if_t< models<Concept::HasIndexAccess, V, MultiIndex>(), int> = 0>
 V& makeHierarchicVectorForMultiIndex(V& v)
 {
   return v;
@@ -247,7 +247,7 @@ V& makeHierarchicVectorForMultiIndex(V& v)
  * \deprecated This function is deprecated. Use istlVectorBackend() instead.
  */
 template<class MultiIndex, class V,
-    typename std::enable_if< not models<Concept::HasIndexAccess, V, MultiIndex>(), int>::type = 0>
+    std::enable_if_t< not models<Concept::HasIndexAccess, V, MultiIndex>(), int> = 0>
 HierarchicVectorWrapper< V > makeHierarchicVectorForMultiIndex(V& v)
 {
   return HierarchicVectorWrapper<V>(v);
