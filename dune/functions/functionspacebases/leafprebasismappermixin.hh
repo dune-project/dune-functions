@@ -13,7 +13,7 @@
 
 
 
-namespace Dune::Functions::Impl {
+namespace Dune::Functions {
 
 
 
@@ -132,6 +132,6 @@ protected:
 
 
 
-} // end namespace Dune::Functions::Impl
+} // end namespace Dune::Functions
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_LEAFPREBASISMAPPERMIXIN_HH
