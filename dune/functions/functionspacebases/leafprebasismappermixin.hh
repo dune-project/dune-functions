@@ -5,13 +5,15 @@
 
 #include <dune/common/rangeutilities.hh>
 
+#include <dune/functions/functionspacebases/leafprebasismixin.hh>
+
 #include <dune/geometry/referenceelements.hh>
 
 #include <dune/grid/common/mcmgmapper.hh>
 
 
 
-namespace Dune::Functions::Impl {
+namespace Dune::Functions {
 
 
 
@@ -52,6 +54,7 @@ auto subIndexRange(const Dune::MultipleCodimMultipleGeomTypeMapper<GridView>& ma
  */
 template<typename GV>
 class LeafPreBasisMapperMixIn
+    : public LeafPreBasisMixin<LeafPreBasisMapperMixIn<GV>>
 {
   static const int gridDim = GV::dimension;
 
@@ -62,15 +65,6 @@ public:
 
   //! Type used for index digits
   using size_type = std::size_t;
-
-  //! Maximal length of global multi-indices
-  static constexpr size_type maxMultiIndexSize = 1;
-
-  //! Minimal length of global multi-indices
-  static constexpr size_type minMultiIndexSize = 1;
-
-  //! Size required temporarily when constructing global multi-indices
-  static constexpr size_type multiIndexBufferSize = 1;
 
   //! Construct from GridView and local DOF layout
   LeafPreBasisMapperMixIn(const GridView& gv, Dune::MCMGLayout layout) :
@@ -106,24 +100,10 @@ public:
     mapper_.update(gridView_);
   }
 
-  //! Return size of first index digit
-  size_type size() const
-  {
-    return mapper_.size();
-  }
-
-  //! Return size of index digit after a given prefix
-  template<class SizePrefix>
-  size_type size(const SizePrefix prefix) const
-  {
-    assert(prefix.size() == 0 || prefix.size() == 1);
-    return (prefix.size() == 0) ? size() : 0;
-  }
-
   //! Return total number of basis functions
   size_type dimension() const
   {
-    return size();
+    return mapper_.size();
   }
 
   //! Return maximal number of basis functions per element
@@ -152,6 +132,6 @@ protected:
 
 
 
-} // end namespace Dune::Functions::Impl
+} // end namespace Dune::Functions
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_LEAFPREBASISMAPPERMIXIN_HH

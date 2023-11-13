@@ -598,9 +598,9 @@ protected:
  * \tparam GV  The grid view that the FE basis is defined on
  */
 template<typename GV, bool reduced = false>
-class CubicHermitePreBasis : public Impl::LeafPreBasisMapperMixIn<GV>
+class CubicHermitePreBasis : public LeafPreBasisMapperMixIn<GV>
 {
-  using Base = Impl::LeafPreBasisMapperMixIn<GV>;
+  using Base = LeafPreBasisMapperMixIn<GV>;
   using Base::mapper_;
   using SubEntityMapper = Dune::MultipleCodimMultipleGeomTypeMapper<GV>;
 

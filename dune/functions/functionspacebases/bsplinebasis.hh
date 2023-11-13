@@ -20,6 +20,7 @@
 #include <dune/geometry/type.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+#include <dune/functions/functionspacebases/leafprebasismixin.hh>
 
 namespace Dune
 {
@@ -495,8 +496,11 @@ class BSplineNode;
  * in a larger basis for the construction of product spaces.
  */
 template<typename GV>
-class BSplinePreBasis
+class BSplinePreBasis :
+  public LeafPreBasisMixin< BSplinePreBasis<GV> >
 {
+  using Base = LeafPreBasisMixin< BSplinePreBasis<GV> >;
+
   static const int dim = GV::dimension;
 
   /** \brief Simple dim-dimensional multi-index class */
@@ -561,10 +565,6 @@ public:
   using size_type = std::size_t;
 
   using Node = BSplineNode<GV>;
-
-  static constexpr size_type maxMultiIndexSize = 1;
-  static constexpr size_type minMultiIndexSize = 1;
-  static constexpr size_type multiIndexBufferSize = 1;
 
   // Type used for function values
   using R = double;
@@ -696,31 +696,6 @@ public:
     return Node{this};
   }
 
-  // Ideally this method should be implemented as
-  //
-  //   template<class SizePrefix>
-  //   size_type size(const SizePrefix& prefix) const
-  //
-  // But leads to ambiguity with the other size method:
-  //
-  //   unsigned int size (size_t d) const
-  //
-  // Once the latter is removed, this implementation should be changed.
-
-  //! Return number of possible values for next position in multi index
-  template<class ST, int i>
-  size_type size(const Dune::ReservedVector<ST, i>& prefix) const
-  {
-    assert(prefix.size() == 0 || prefix.size() == 1);
-    return (prefix.size() == 0) ? size() : 0;
-  }
-
-  //! Get the total dimension of the space spanned by this basis
-  size_type dimension() const
-  {
-    return size();
-  }
-
   //! Get the maximal number of DOFs associated to node for any element
   size_type maxNodeSize() const
   {
@@ -762,7 +737,7 @@ public:
   }
 
   //! \brief Total number of B-spline basis functions
-  unsigned int size () const
+  unsigned int dimension () const
   {
     unsigned int result = 1;
     for (size_t i=0; i<dim; i++)
@@ -775,6 +750,8 @@ public:
   {
     return knotVectors_[d].size() - order_[d] - 1;
   }
+
+  using Base::size;
 
   /** \brief Evaluate all B-spline basis functions at a given point
    */

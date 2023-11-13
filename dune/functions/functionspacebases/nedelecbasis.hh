@@ -14,6 +14,7 @@
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/globalvaluedlocalfiniteelement.hh>
+#include <dune/functions/functionspacebases/leafprebasismixin.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 
 namespace Dune::Functions
@@ -132,7 +133,8 @@ template<typename GV, typename Range, std::size_t kind, int order>
 class NedelecNode;
 
 template<typename GV, typename Range, std::size_t kind, int order>
-class NedelecPreBasis
+class NedelecPreBasis :
+  public LeafPreBasisMixin< NedelecPreBasis<GV,Range,kind,order> >
 {
   static const int dim = GV::dimension;
   static_assert(kind==1, "Only the Nedelec basis of the first kind is currently implemented!");
@@ -146,10 +148,6 @@ public:
   using size_type = std::size_t;
 
   using Node = NedelecNode<GV, Range, kind, order>;
-
-  static constexpr size_type maxMultiIndexSize = 1;
-  static constexpr size_type minMultiIndexSize = 1;
-  static constexpr size_type multiIndexBufferSize = 1;
 
   /** \brief Constructor for a given grid view object */
   NedelecPreBasis(const GridView& gv) :
@@ -201,22 +199,9 @@ public:
     return Node{&finiteElementMap_};
   }
 
-  size_type size() const
-  {
-    return mapper_.size();
-  }
-
-  //! Return number possible values for next position in multi index
-  template<class SizePrefix>
-  size_type size(const SizePrefix& prefix) const
-  {
-    assert(prefix.size() == 0 || prefix.size() == 1);
-    return (prefix.size() == 0) ? size() : 0;
-  }
-
   size_type dimension() const
   {
-    return size();
+    return mapper_.size();
   }
 
   size_type maxNodeSize() const

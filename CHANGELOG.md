@@ -37,6 +37,8 @@ corresponding version of the Dune core modules.
   `template <typename GV, int k, typename R=double> class RefinedLagrangePreBasis` and a corresponding
   pre-basis-factory `refinedLagrange<k,R=double>()` with `k=[1|2]` currently implemented.
 - All basis implementations are now copyable and assignable
+- Add mixin class `LeafPreBasisMixin` and make available the mixin class `LeafPreBasisMapperMixin` to
+  simplify writing of new pre-bases.
 
 ## Release 2.9
 
