@@ -5,6 +5,8 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.10)
 
+- The `BasisBuilder` namespace is deprecated and will be removed
+  after the 2.10 release. Use `BasisFactory` instead.
 - The module dune-uggrid is now officially a hard dependency of dune-functions.
 - Added a constructor for `LocalViewWrapper` from a `LocalView` object and added
   accessor to base class for python bindings.
