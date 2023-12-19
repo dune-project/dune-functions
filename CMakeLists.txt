@@ -16,6 +16,9 @@ include(DuneMacros)
 
 # start a dune project with information from dune.module
 dune_project()
+dune_add_library(dunefunctions INTERFACE
+  EXPORT_NAME Functions
+  LINK_LIBRARIES ${DUNE_LIBS})
 
 add_subdirectory("dune")
 add_subdirectory("doc")
@@ -27,4 +30,4 @@ endif()
 
 
 # finalize the dune project, e.g. generating config.h etc.
-finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
+finalize_dune_project()
