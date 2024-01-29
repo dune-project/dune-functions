@@ -16,6 +16,7 @@
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
+#include <dune/functions/functionspacebases/dynamicpowerbasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
@@ -42,12 +43,13 @@ int main (int argc, char* argv[])
 
   auto gridView = grid.leafGridView();
   auto basis = makeBasis(gridView,
-      power<N>(
-        power<M>(
+      power<N>(       // static power node
+        power(        // dynamic power node
           composite(
-            lagrange<3>(),
-            lagrange<1>(),
+            lagrange<3>(),  // lagrange basis with static order
+            lagrange(1),    // lagrange basis with dynamic order
             flatLexicographic()),
+          M,
           flatLexicographic()),
         blockedInterleaved())
       );

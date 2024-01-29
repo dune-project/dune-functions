@@ -10,6 +10,7 @@ install(FILES
         defaultglobalbasis.hh
         defaultlocalview.hh
         defaultnodetorangemap.hh
+        dynamicpowerbasis.hh
         flatmultiindex.hh
         flatvectorview.hh
         globalvaluedlocalfiniteelement.hh
