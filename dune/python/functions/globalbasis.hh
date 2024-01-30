@@ -74,7 +74,7 @@ namespace Dune
         // call index in the base class
         auto ind = base().index(idx);
         std::vector<int> ret(ind.size());
-        for (int i=0;i<ind.size();++i) ret[i] = ind[i];
+        for (std::size_t i=0;i<ind.size();++i) ret[i] = ind[i];
         return ret;
       }
 
