@@ -5,7 +5,7 @@ from .tree import Composite, DG, Lagrange, Power, Tree
 duneFunctionsLayouts = {"lexicographic": "Lexicographic", "interleaved": "Interleaved"}
 
 def indexMergingStrategy(blocked, layout):
-    return "Dune::Functions::BasisBuilder::" + ("Blocked" if blocked else "Flat") + duneFunctionsLayouts[layout]
+    return "Dune::Functions::BasisFactory::" + ("Blocked" if blocked else "Flat") + duneFunctionsLayouts[layout]
 
 
 def preBasisTypeName(tree, gridViewTypeName):
