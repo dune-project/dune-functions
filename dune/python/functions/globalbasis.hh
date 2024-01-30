@@ -143,9 +143,20 @@ namespace Dune
       cls.def( "localView", [] ( const GlobalBasis &self ) -> LocalView { return LocalView( self ); }, pybind11::keep_alive< 0, 1 >() );
       cls.def_property_readonly( "dimension", [] ( const GlobalBasis &self ) -> int { return self.dimension(); } );
 
-      cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, double> );
-      cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, bool> );
-      cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, int> );
+      // Register the 'interpolate' method
+      // TODO: Currently we only register the method for cases where either scalars or FieldVector<double,dimRange>
+      // are reasonable value types for functions to be interpolated. This excludes various not-very-exotic
+      // composite bases.  Support for them is planned for the future.
+      if constexpr (dimRange==1)
+      {
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, double> );
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, bool> );
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, int> );
+      }
+      else if constexpr (GlobalBasis::LocalView::Tree::isLeaf or GlobalBasis::LocalView::Tree::isPower)
+      {
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, FieldVector<double,dimRange> > );
+      }
 
       using Range = typename RangeType< double, dimRange >::type;
       RangeType< double, dimRange >::registerRange(module);
