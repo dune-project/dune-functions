@@ -7,6 +7,7 @@ install(FILES
         bsplinebasis.hh
         compositebasis.hh
         concepts.hh
+        containerdescriptor.hh
         defaultglobalbasis.hh
         defaultlocalview.hh
         defaultnodetorangemap.hh
