@@ -44,6 +44,10 @@ corresponding version of the Dune core modules.
 - Add a dynamic power basis with a runtime exponent that can be constructed with the factory
   `power(<sub-basis>, k)` or `power(<sub-basis>, k, <index-merging>)`.
 
+Deprecations and removals
+
+- Remove deprecated `DefaultLocalView::isBound()`, use `bound()` instead.
+
 ## Release 2.9
 
 - The `MultiIndex` used by `DefaultGlobalBasis` is now a `StaticMultiIndex`
