@@ -5,27 +5,15 @@ corresponding version of the Dune core modules.
 
 ## Master (will become release 2.10)
 
-- The `BasisBuilder` namespace is deprecated and will be removed
-  after the 2.10 release. Use `BasisFactory` instead.
 - The module dune-uggrid is now officially a hard dependency of dune-functions.
 - Added a constructor for `LocalViewWrapper` from a `LocalView` object and added
   accessor to base class for python bindings.
-- The headers `common/callable.hh` and `common/functionfromcallable.hh` providing adaptors
-  the the removed `VirtualFunction` interface from dune-common have been removed.
 - The class `Polynomial` now allows to explicitly specify the used coefficient container.
   Supported containers are `std::vector` (default, as before), `std::array`, `std::tuple`,
   and `std::integer_sequence`. Class template argument deduction allows to deduce the
   scalar type from homogeneous containers. The scalar type can be explicitly specified
   to be different with the `makePolynomial()` helper function, while the coefficients
   container type is still deduced.
-- The class `HierarchicalVectorWrapper` and the corresponding header `functionspacebases/hierarchicvectorwrapper.hh`
-  have been deprecated. Use `istlVectorBackend()` from `backends/istlvectorbackend.hh` instead.
-- The class `SizeInfo` and the corresponding header `functionspacebases/sizeinfo.hh`
-  have been deprecated. One now can directly use `vectorBackend.resize(globalBasis)`
-  instead of `vectorBackend.resize(sizeInfo(globalBasis))`.
-- The deprecated header `common/treedata.hh` was removed.
-- The deprecated header `common/referencehelper.hh` was removed. Use the corresponding header
-  from dune-common instead.
 - Make `AnalyticGridViewFunction` copyable
 - The method `operator()` of the class `DiscreteGlobalBasisFunction` has been implemented.
   It evaluates a piecewise function on a grid at a point given in global coordinates.
@@ -46,7 +34,19 @@ corresponding version of the Dune core modules.
 
 Deprecations and removals
 
+- The `BasisBuilder` namespace is deprecated and will be removed
+  after the 2.10 release. Use `BasisFactory` instead.
+- The headers `common/callable.hh` and `common/functionfromcallable.hh` providing adaptors
+  the the removed `VirtualFunction` interface from dune-common have been removed.
 - Remove deprecated `DefaultLocalView::isBound()`, use `bound()` instead.
+- The class `HierarchicalVectorWrapper` and the corresponding header `functionspacebases/hierarchicvectorwrapper.hh`
+  have been deprecated. Use `istlVectorBackend()` from `backends/istlvectorbackend.hh` instead.
+- The class `SizeInfo` and the corresponding header `functionspacebases/sizeinfo.hh`
+  have been deprecated. One now can directly use `vectorBackend.resize(globalBasis)`
+  instead of `vectorBackend.resize(sizeInfo(globalBasis))`.
+- The deprecated header `common/treedata.hh` was removed.
+- The deprecated header `common/referencehelper.hh` was removed. Use the corresponding header
+  from dune-common instead.
 
 ## Release 2.9
 
