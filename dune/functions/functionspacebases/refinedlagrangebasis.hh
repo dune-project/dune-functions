@@ -4,24 +4,26 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_REFINEDLAGRANGEBASIS_HH
 
 #include <type_traits>
+
 #include <dune/common/exceptions.hh>
+#include <dune/common/math.hh>
 
 #include <dune/localfunctions/refined.hh>
 
-#include <dune/functions/functionspacebases/nodes.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
+#include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
+#include <dune/functions/functionspacebases/nodes.hh>
+
+#include <dune/geometry/type.hh>
+
+#include <dune/grid/common/mcmgmapper.hh>
 
 
 namespace Dune {
 namespace Functions {
 
-template<typename GV, int k, typename R=double>
+template<typename GV, int k, typename R>
 class RefinedLagrangeNode;
-
-template<typename GV, int k, typename R=double>
-class RefinedLagrangePreBasis;
-
 
 /**
  * \brief A pre-basis for a refined Lagrange bases
@@ -30,200 +32,80 @@ class RefinedLagrangePreBasis;
  *
  * \tparam GV  The grid view that the FE basis is defined on
  * \tparam k   The polynomial order of ansatz functions
- * \tparam R   Range type used for shape function values
+ * \tparam R   Range field-type used for shape function values
  *
  * \note This only works for simplex grids.
  */
-template <typename GV, int k, typename R>
-class RefinedLagrangePreBasis
+template <typename GV, int k, typename R = double>
+class RefinedLagrangePreBasis :
+  public LeafPreBasisMapperMixIn< GV >
 {
+  using Base = LeafPreBasisMapperMixIn< GV >;
+
   static const int dim = GV::dimension;
+
+  // refined basis only implemented for P0 and P1
+  static_assert(k == 0 || k == 1);
+
+  // the layout is defined in terms of a MCMGLayout specialized for k == 0 or 1
+  static MCMGLayout dofLayout()
+  {
+    if constexpr(k == 0)
+      // a refined P0 basis assigns each element 2^dim DOFs
+      return [](GeometryType gt, int) -> size_t {
+        return (gt.dim() == dim) ? (1 << dim) : 0;
+      };
+    else if constexpr(k == 1)
+      // a refined P1 basis has the same layout as a P2 basis
+      return [](GeometryType gt, int) -> size_t {
+        return Dune::binomial(int(k),int(gt.dim()));
+      };
+    else
+      DUNE_THROW(Dune::NotImplemented,
+        "Refined basis not implemented for higher-order Lagrange (k>=2) elements.");
+  }
 
 public:
 
   //! The grid view that the FE basis is defined on
   using GridView = GV;
 
-  //! Type used for indices and size information
-  using size_type = std::size_t;
-
-  //! Template mapping root tree path to type of created tree node
+  //! Type of the refined Lagrange tree node
   using Node = RefinedLagrangeNode<GV, k, R>;
 
-  static constexpr size_type maxMultiIndexSize = 1;
-  static constexpr size_type minMultiIndexSize = 1;
-  static constexpr size_type multiIndexBufferSize = 1;
-
-  //! Constructor for a given grid view object
-  RefinedLagrangePreBasis (const GridView& gv)
-    : gridView_(gv)
-  {}
-
-  //! Initialize the global indices
-  void initializeIndices ()
-  {
-    vertexOffset_        = 0;
-    edgeOffset_          = vertexOffset_   + dofsPerSimplex(0) * ((size_type)gridView_.size(dim));
-
-    if (dim>=2)
-      triangleOffset_    = edgeOffset_     + dofsPerSimplex(1) * ((size_type)gridView_.size(dim-1));
-
-    if (dim==3)
-      tetrahedronOffset_ = triangleOffset_ + dofsPerSimplex(2) * ((size_type)gridView_.size(dim-2));
-  }
-
-  //! Obtain the grid view that the basis is defined on
-  const GridView& gridView () const
-  {
-    return gridView_;
-  }
-
-  //! Update the stored grid view, to be called if the grid has changed
-  void update (const GridView& gv)
-  {
-    gridView_ = gv;
-  }
-
   /**
-   * \brief Create tree node
+   * \brief Constructor for a given grid view object.
+   *
+   * \param gv The GridView the basis is defined on.
+   * \throws Dune::NotImplemented If an element of type !simplex is found.
    */
+  RefinedLagrangePreBasis (const GridView& gv)
+    : Base(gv, dofLayout())
+  {
+    for (auto gt : gv.indexSet().types(0)) {
+      if (!gt.isSimplex())
+        DUNE_THROW(Dune::NotImplemented,
+          "Refined Lagrange basis only implemented for simplex grids.");
+    }
+  }
+
+  //! Create tree node
   Node makeNode () const
   {
     return Node{};
   }
 
-  //! Same as size(prefix) with empty prefix
-  size_type size () const
-  {
-    switch (dim)
-    {
-      case 1:
-        return dofsPerSimplex(0) * ((size_type)gridView_.size(dim))
-             + dofsPerSimplex(1) * ((size_type)gridView_.size(dim-1));
-      case 2:
-        return dofsPerSimplex(0) * ((size_type)gridView_.size(dim))
-             + dofsPerSimplex(1) * ((size_type)gridView_.size(dim-1))
-             + dofsPerSimplex(2) * ((size_type)gridView_.size(dim-2));
-      case 3:
-        return dofsPerSimplex(0) * ((size_type)gridView_.size(dim))
-             + dofsPerSimplex(1) * ((size_type)gridView_.size(dim-1))
-             + dofsPerSimplex(2) * ((size_type)gridView_.size(dim-2))
-             + dofsPerSimplex(3) * ((size_type)gridView_.size(dim-3));
-    }
-    DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
-  }
-
-  //! Return number of possible values for next position in multi index
-  template <class SizePrefix>
-  size_type size (const SizePrefix& prefix) const
-  {
-    assert(prefix.size() == 0 || prefix.size() == 1);
-    return (prefix.size() == 0) ? size() : 0;
-  }
-
-  //! Get the total dimension of the space spanned by this basis
-  size_type dimension () const
-  {
-    return size();
-  }
-
-  //! Get the maximal number of DOFs associated to node for any element
-  size_type maxNodeSize () const
-  {
-    return size();
-  }
-
-  template <typename It>
-  It indices (const Node& node, It it) const
-  {
-    for (size_type i = 0, end = node.finiteElement().size() ; i < end ; ++it, ++i)
-    {
-      Dune::LocalKey localKey = node.finiteElement().localCoefficients().localKey(i);
-      const auto& gridIndexSet = gridView().indexSet();
-      const auto& element = node.element();
-
-      // The dimension of the entity that the current dof is related to
-      auto dofDim = dim - localKey.codim();
-
-
-      if (dofDim==0)
-      { //  vertex dof
-        *it = {{ (size_type)(gridIndexSet.subIndex(element,localKey.subEntity(),dim)) }};
-        continue;
-      }
-
-      if (dofDim==1)
-      {  // edge dof
-        if (dim==1)  // element dof -- any local numbering is fine
-        {
-          *it = {{ edgeOffset_ + dofsPerSimplex(1) * ((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-          continue;
-        }
-        else
-        {
-          const auto refElement = Dune::referenceElement<double,dim>(element.type());
-
-          // we have to reverse the numbering if the local triangle edge is
-          // not aligned with the global edge
-          auto v0 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),0,dim),dim);
-          auto v1 = (size_type)gridIndexSet.subIndex(element,refElement.subEntity(localKey.subEntity(),localKey.codim(),1,dim),dim);
-          bool flip = (v0 > v1);
-          *it = {{ (flip)
-                    ? edgeOffset_
-                    + dofsPerSimplex(1)*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
-                    + (dofsPerSimplex(1)-1)-localKey.index()
-                    : edgeOffset_
-                    + dofsPerSimplex(1)*((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim()))
-                    + localKey.index() }};
-          continue;
-        }
-      }
-
-      if (dofDim==2)
-      {
-        if (dim==2)   // element dof -- any local numbering is fine
-        {
-          *it = {{ triangleOffset_ + dofsPerSimplex(2)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-          continue;
-        }
-        else
-        {
-          *it = {{ triangleOffset_ + ((size_type)gridIndexSet.subIndex(element,localKey.subEntity(),localKey.codim())) }};
-          continue;
-        }
-      }
-
-      if (dofDim==3)
-      {
-        if (dim==3)   // element dof -- any local numbering is fine
-        {
-          *it = {{ tetrahedronOffset_ + dofsPerSimplex(3)*((size_type)gridIndexSet.subIndex(element,0,0)) + localKey.index() }};
-          continue;
-        }
-      }
-    }
-    return it;
-  }
-
-  //! Polynomial order used in the local Lagrange finite-elements
-  constexpr unsigned int order() const
+  /**
+   * \brief Polynomial order used in the local Lagrange finite-elements.
+   *
+   * \note The local function is of order `k` only in subdomains of the element.
+   *       It might be necessary to use a subdivided quadrature rule for
+   *       integration.
+   */
+  static constexpr unsigned int order()
   {
     return k;
   }
-
-protected:
-  GridView gridView_;
-
-  //! Number of degrees of freedom assigned to a simplex (without the ones assigned to its faces!)
-  size_type dofsPerSimplex (std::size_t simplexDim) const
-  {
-    return k == 0 ? (dim == simplexDim ? (1<<dim) : 0) : Dune::binomial(std::size_t(1),simplexDim);
-  }
-
-  size_type vertexOffset_;
-  size_type edgeOffset_;
-  size_type triangleOffset_;
-  size_type tetrahedronOffset_;
 };
 
 
@@ -238,37 +120,62 @@ class RefinedLagrangeNode
   static_assert(k == 0 || k == 1);
 
 public:
-  using size_type = std::size_t;
+  //! Type of the element in the GridView
   using Element = typename GV::template Codim<0>::Entity;
+
+  //! Type of the local finite-element
   using FiniteElement = std::conditional_t<(k==0),
     Dune::RefinedP0LocalFiniteElement<typename GV::ctype,R,dim>,
     Dune::RefinedP1LocalFiniteElement<typename GV::ctype,R,dim>>;
 
+  /**
+   * \brief The default constructor initializes all members to their default.
+   *
+   * The constructor default constructs the local finite-element and sets the
+   * element pointer to `nullptr`, meaning that the node is not bound to any
+   * element yet.
+   *
+   * \note Before the node can be used it needs to be bound to an element.
+   **/
   RefinedLagrangeNode ()
     : finiteElement_{}
     , element_(nullptr)
   {}
 
-  //! Return current element, throw if unbound
+  /**
+   * \brief Return current element.
+   * The behavior is undefined if the node is not bound to any element.
+   */
   const Element& element () const
   {
     return *element_;
   }
 
-  /** \brief Return the LocalFiniteElement for the element we are bound to
+  /**
+   * \brief Return the LocalFiniteElement for the element we are bound to.
    *
-   * The LocalFiniteElement implements the corresponding interfaces of the dune-localfunctions module
+   * The LocalFiniteElement implements the corresponding interfaces of the
+   * dune-localfunctions module.
    */
   const FiniteElement& finiteElement () const
   {
     return finiteElement_;
   }
 
-  //! Bind to element.
+  //! Bind the node to the element `e`.
   void bind (const Element& e)
   {
     element_ = &e;
     this->setSize(finiteElement_.size());
+  }
+
+  /**
+   * \brief Polynomial order used in the local Lagrange finite-elements in
+   * subdomains of the element.
+   */
+  static constexpr unsigned int order()
+  {
+    return k;
   }
 
 protected:
