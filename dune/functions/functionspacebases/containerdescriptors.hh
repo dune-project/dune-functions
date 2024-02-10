@@ -51,34 +51,12 @@ struct Value
   Value operator[] (const Index&) const { return {}; }
 
   //! A value placeholder does not have any sub-descriptors, thus its size is zero.
-  static constexpr std::integral_constant<std::size_t, 0> size{};
+  static constexpr std::size_t size () { return 0; }
 };
 
 //! Descriptor with all children of possibly different type
 template<class... Children>
-struct Tuple
-    : private Dune::TupleVector<Children...>
-{
-  using Base = Dune::TupleVector<Children...>;
-
-  //! Default constructor. Is enable if all children are default constructible.
-  template<class C = std::tuple<Children...>,
-    std::enable_if_t<std::is_default_constructible_v<C>, int> = 0>
-  Tuple ()
-    : Base{Children{}...}
-  {}
-
-  //! Construct the underlying tuple from the variadic pack of children
-  explicit Tuple (Children... children)
-    : Base{std::move(children)...}
-  {}
-
-  //! Access the i'th sub-descriptor
-  using Base::operator[];
-
-  //! The static size information, i.e., number of children
-  static constexpr std::integral_constant<std::size_t, sizeof...(Children)> size{};
-};
+using Tuple = Dune::TupleVector<Children...>;
 
 //! Generate a descriptor in case the children are not all of the same type.
 //! \relates Tuple
@@ -94,47 +72,7 @@ auto makeDescriptor (Child0 child0, Children... children)
 
 //! Descriptor for arrays with all children of the same type and static size.
 template<class Child, std::size_t n>
-struct Array
-    : private std::array<Child, n>
-{
-  using Base = std::array<Child, n>;
-
-  //! Default constructor. Is enable if the child-type is default constructible.
-  template<class C = Child,
-    std::enable_if_t<std::is_default_constructible_v<C>, int> = 0>
-  Array ()
-    : Base{Dune::filledArray<n>(C{})}
-  {}
-
-  //! Construct `n` copies of the passed `child`.
-  explicit Array (Child child)
-    : Base{Dune::unpackIntegerSequence(
-        [&](auto... i) { return Base{((void)i,child)...}; },
-        std::make_index_sequence<n>{})}
-  {}
-
-  //! Construct `n` copies of the passed `child`. Used for CTAD.
-  Array (std::integral_constant<std::size_t,n>, Child child)
-    : Array{std::move(child)}
-  {}
-
-  //! Construct the underlying array from the variadic pack of children.
-  template<class... Children,
-    std::enable_if_t<(std::is_same_v<Children,Child> &&...), int> = 0>
-  explicit Array (Children... children)
-    : Base{std::move(children)...}
-  {}
-
-  //! Access the i'th sub-descriptor.
-  using Base::operator[];
-
-  //! The static size information, i.e., number of children.
-  static constexpr std::integral_constant<std::size_t, n> size{};
-};
-
-template<class Child0, class... Children,
-  std::enable_if_t<(std::is_same_v<Child0,Children> &&...), int> = 0>
-Array (Child0,Children...) -> Array<Child0,1+sizeof...(Children)>;
+using Array = std::array<Child, n>;
 
 //! Generate a descriptor in case the children are all of the same type.
 template<class Child0, class... Children,
@@ -148,22 +86,7 @@ auto makeDescriptor (Child0 child, Children... children)
 
 //! Descriptor for vectors with all children of the same type and dynamic size.
 template<class Child>
-struct Vector
-    : private std::vector<Child>
-{
-  using Base = std::vector<Child>;
-  using Base::Base;
-  using Base::operator[];
-  using Base::size;
-};
-
-template<class Child>
-Vector (std::size_t,Child) -> Vector<Child>;
-
-template<class Child0, class... Children,
-  std::enable_if_t<(not std::is_integral_v<Child0>), int> = 0,
-  std::enable_if_t<(std::is_same_v<Child0,Children> &&...), int> = 0>
-Vector (Child0,Children...) -> Vector<Child0>;
+using Vector = std::vector<Child>;
 
 //! Descriptor for arrays with all children identical and the number of children a static size.
 template<class Child, std::size_t n>
@@ -181,17 +104,12 @@ struct UniformArray
     : child_{std::move(child)}
   {}
 
-  //! Constructor that stores a single child only. Used for CTAD.
-  UniformArray (std::integral_constant<std::size_t,n>, Child child)
-    : child_{std::move(child)}
-  {}
-
   //! Access the i'th child that is always the same, i.e., `child_`.
   template<class Index>
   const Child& operator[] (const Index& /*i*/) const { return child_; }
 
   //! The static size information, i.e., number of children.
-  static constexpr std::integral_constant<std::size_t, n> size{};
+  static constexpr std::size_t size () { return n; }
 
 private:
   Child child_;
