@@ -156,7 +156,7 @@ auto power(ChildPreBasisFactory&& childPreBasisFactory)
 } // end namespace BasisFactory
 
 // Backward compatibility
-namespace [[deprecated]] BasisBuilder {
+namespace [[deprecated("Will be removed after Dune 2.10")]] BasisBuilder {
 
   using namespace BasisFactory;
 
