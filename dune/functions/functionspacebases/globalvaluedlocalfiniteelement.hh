@@ -15,7 +15,6 @@
 
 #include <dune/localfunctions/common/localbasis.hh>
 #include <dune/localfunctions/common/localfiniteelementtraits.hh>
-#include <dune/localfunctions/common/localinterpolation.hh>
 
 namespace Dune::Functions::Impl
 {
@@ -105,8 +104,7 @@ namespace Dune::Functions::Impl
 
       auto operator()(const LocalCoordinate& xi) const
       {
-        auto&& f = Dune::Impl::makeFunctionWithCallOperator<LocalCoordinate>(f_);
-        auto globalValue = f(xi);
+        auto globalValue = f_(xi);
 
         // Apply the inverse Piola transform
         auto jacobianInverseTransposed = element_.geometry().jacobianInverseTransposed(xi);
@@ -203,8 +201,7 @@ namespace Dune::Functions::Impl
 
       auto operator()(const LocalCoordinate& xi) const
       {
-        auto&& f = Dune::Impl::makeFunctionWithCallOperator<LocalCoordinate>(f_);
-        auto globalValue = f(xi);
+        auto globalValue = f_(xi);
 
         // Apply the inverse Piola transform
         auto jacobianTransposed = element_.geometry().jacobianTransposed(xi);
