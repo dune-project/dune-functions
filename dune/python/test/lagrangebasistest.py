@@ -31,3 +31,7 @@ def test(dimension):
     basisComposite = dune.functions.defaultGlobalBasis(grid, dune.functions.Composite(dune.functions.Power(dune.functions.Lagrange(order=2),exponent=dimension),
                                                                                       dune.functions.Lagrange(order=1)))
     assert(len(basisComposite) == nDofs2*dimension + nDofs1)
+
+# Run tests for grids of dimension 2 and 3
+test(2)
+test(3)
