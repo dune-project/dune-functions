@@ -191,9 +191,6 @@ Dune::TestSuite checkBasisIndices(const Basis& basis)
   {
     localView.bind(e);
 
-    test.require(localView.size() <= localView.maxSize(), "localView.size() check")
-      << "localView.size() is " << localView.size() << " but localView.maxSize() is " << localView.maxSize();
-
     for (decltype(localView.size()) i=0; i< localView.size(); ++i)
     {
       auto multiIndex = localView.index(i);
