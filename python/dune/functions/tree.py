@@ -1,6 +1,3 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-
 class Tree(object):
     def __init__(self, name, children=None):
         self.name = name
