@@ -18,3 +18,7 @@ dune_python_add_test(NAME pynedelecbasistest
                      SCRIPT nedelecbasistest.py
                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                      LABELS python)
+dune_python_add_test(NAME pyraviartthomasbasistest
+                     SCRIPT raviartthomasbasistest.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)

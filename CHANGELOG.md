@@ -35,7 +35,7 @@ corresponding version of the Dune core modules.
 
 ### Python
 
-- The Nédélec function space basis is now accessible via the Python interface.
+- The Nédélec and Raviart-Thomas function space bases are now accessible via the Python interface.
 
 Deprecations and removals
 

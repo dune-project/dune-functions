@@ -49,6 +49,15 @@ class Nedelec(Tree):
         return "Nedelec<" + str(self.kind) + "," + str(self.order) + ">"
 
 
+class RaviartThomas(Tree):
+    def __init__(self, order):
+        Tree.__init__(self, "RaviartThomas")
+        self.order = order
+
+    def __repr__(self):
+        return "RaviartThomas<" + str(self.order) + ">"
+
+
 class Composite(Tree):
     def __init__(self, *args, **kwargs):
         assert len(args) > 0
