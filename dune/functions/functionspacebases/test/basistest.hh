@@ -151,13 +151,13 @@ Dune::TestSuite checkBasisSizeConsistency(const Basis& basis, const MultiIndexSe
     prefixSet[prefix] = 0;
   }
 
-  // Now check for all prefixes, if the size conputed from the
+  // Now check for all prefixes, if the size computed from the
   // index tree is consistent with basis.size(prefix).
   for(const auto& [prefix, size] : prefixSet)
   {
     auto prefixSize = basis.size(prefix);
     test.check(prefixSize == size, "basis.size(prefix) check")
-      << "basis.size(" << prefix << ")=" << prefixSize << " but should be " << size;
+      << "basis.size(" << prefix << ")=" << prefixSize << ", but should be " << size;
   }
 
   return test;
@@ -281,7 +281,7 @@ Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView, F
       << "Local index " << i << " appears multiple times";
   }
 
-  // Check if all basis functions are non-constant.
+  // Check that all basis functions are non-zero.
   if (not IsContained<AllowZeroBasisFunctions, Flags...>::value)
   {
     Dune::TypeTree::forEachLeafNode(localView.tree(), [&](const auto& node, auto&& treePath) {
