@@ -67,17 +67,3 @@ class Power(Tree):
             return repr(self.children[0])
         else:
             return "[" + repr(self.children[0]) + "]^" + str(self.exponent)
-
-
-def toFem(tree, dimGrid):
-    assert isinstance(tree, Tree)
-    if isinstance(tree, Lagrange):
-        return "LagrangeDiscreteFunctionSpace< FunctionSpace< " + str(dimGrid) + ", " + str(tree.dimRange) + " >, " + str(tree.order) + " >"
-    elif isinstance(tree, DG):
-        return "DiscontinuousGalerkinSpace< FunctionSpace< " + str(dimGrid) + ", " + str(tree.dimRange) + " >, " + str(tree.order) + " >"
-    elif isinstance(tree, Composite):
-        return "TupleDiscreteFunctionSpace< " + ", ".join(toFem(c, dimGrid) for c in tree.children) + " >"
-    elif isinstance(tree, Power):
-        return "PowerDiscreteFunctionSpace< " + toFem(tree.children[0], dimGrid) + ", " + str(tree.exponent) + " >"
-    else:
-        raise Exception("Unknown type of tree: " + repr(tree))
