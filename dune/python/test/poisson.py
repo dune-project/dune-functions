@@ -70,8 +70,8 @@ def globalAssembler(basis):
     b = np.zeros( N )
 
     # mark all Dirichlet DOFs
-    dichichletDOFs = np.zeros( N, dtype=bool )
-    basis.interpolate(dichichletDOFs,isDirichlet)
+    dirichletDOFs = np.zeros( N, dtype=bool )
+    basis.interpolate(dirichletDOFs,isDirichlet)
 
     # interpolate the boundary values
     gCoeffs = np.zeros( N )
@@ -99,7 +99,7 @@ def globalAssembler(basis):
 
             gi = localView.index(i)[0]
 
-            if dichichletDOFs[gi]:
+            if dirichletDOFs[gi]:
                 A[gi,gi] = 1.0
                 b[gi] = gCoeffs[gi]
             else:
