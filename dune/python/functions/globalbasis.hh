@@ -11,6 +11,8 @@
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
+#include <dune/typetree/nodetags.hh>
+
 #include <dune/python/common/dimrange.hh>
 #include <dune/python/common/fmatrix.hh>
 #include <dune/python/common/fvector.hh>
@@ -27,6 +29,27 @@ namespace Dune
 
   namespace Python
   {
+
+    namespace detail {
+
+      // specialization of the DimRange utility from dune-common
+      template <class T>
+      struct DimRange<T, std::enable_if_t<std::is_same_v<typename T::NodeTag, Dune::TypeTree::CompositeNodeTag>> >
+        : public DimRange<typename T::ChildTypes>
+      {};
+
+      template <class T>
+      struct DimRange<T, std::enable_if_t<std::is_same_v<typename T::NodeTag, Dune::TypeTree::PowerNodeTag>> >
+        : public std::integral_constant<std::size_t, T::degree() * DimRange<typename T::ChildType>::value>
+      {};
+
+      template <class T>
+      struct DimRange<T, std::enable_if_t<std::is_same_v<typename T::NodeTag, Dune::TypeTree::LeafNodeTag>> >
+        : public std::integral_constant<std::size_t, T::FiniteElement::Traits::LocalBasisType::Traits::dimRange>
+      {};
+
+    } // end namespace detail
+
 
     template <class Basis>
     struct LocalViewWrapper : public Basis::LocalView
