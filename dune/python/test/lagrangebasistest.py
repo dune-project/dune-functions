@@ -25,10 +25,6 @@ def test(dimension):
     basisPower = functions.defaultGlobalBasis(grid, functions.Power(functions.Lagrange(order=1),exponent=dimension))
     basistest.checkBasis(basisPower)
 
-    # Test a vector-value Lagrange basis with different orders
-    basisComposite = dune.functions.defaultGlobalBasis(grid, dune.functions.Composite(dune.functions.Power(dune.functions.Lagrange(order=2),exponent=dimension),
-                                                                                      dune.functions.Lagrange(order=1)))
-    assert(len(basisComposite) == len(basisLagrange2)*dimension + len(basisLagrange1))
 
 # Run tests for grids of dimension 2 and 3
 test(2)

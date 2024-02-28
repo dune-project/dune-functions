@@ -10,6 +10,10 @@ dune_python_add_test(NAME pydiscretefunction
                      SCRIPT discretefunction.py
                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                      LABELS python)
+dune_python_add_test(NAME pycompositebasistest
+                     SCRIPT compositebasistest.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
 dune_python_add_test(NAME pylagrangebasistest
                      SCRIPT lagrangebasistest.py
                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
