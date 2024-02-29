@@ -166,40 +166,40 @@ namespace Dune
       // A more general implementation is planned for the future.
       if constexpr (GlobalBasis::LocalView::Tree::isLeaf or GlobalBasis::LocalView::Tree::isPower)
       {
-      using Range = typename RangeType< double, dimRange >::type;
-      RangeType< double, dimRange >::registerRange(module);
-      using Domain = Dune::FieldVector< double, dimWorld >;
-      registerFieldVector<double,dimWorld>(module);
-      using DiscreteFunction = Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, Dune::Functions::HierarchicNodeToRangeMap, Range >;
-      // register the HierarchicPythonVector
-      Dune::Python::addToTypeRegistry<HierarchicPythonVector<double>>(
-        GenerateTypeName("Dune::Python::HierarchicPythonVector", MetaType<double>()),
-        {"dune/python/functions/discretefunction.hh"}
-        );
-      // and add the DiscreteFunction to our module
-      auto clsDiscreteFunction = insertClass< DiscreteFunction >( module, "DiscreteFunction",
-        GenerateTypeName( "Dune::Functions::DiscreteGlobalBasisFunction",
-          MetaType<GlobalBasis>(),
-          MetaType<HierarchicPythonVector< double >>(),
-          "Dune::Functions::HierarchicNodeToRangeMap",
-          MetaType<Range>()
-          ), includes);
-      // register the GridViewFunction and register the implicit conversion
-      Dune::Python::addToTypeRegistry<Range(Domain)>(GenerateTypeName(className<Range(Domain)>()));
-      using GridViewFunction = Dune::Functions::GridViewFunction<Range(Domain), GridView>;
-      auto clsGridViewFunction = insertClass< GridViewFunction >( module, "GridViewFunction",
-        GenerateTypeName( "Dune::Functions::GridViewFunction",
-          MetaType<Range(Domain)>(),
-          MetaType<GridView>()
-          ), includes);
-      clsGridViewFunction.first.def(pybind11::init<DiscreteFunction>());
-      pybind11::implicitly_convertible<DiscreteFunction, GridViewFunction>();
+        using Range = typename RangeType< double, dimRange >::type;
+        RangeType< double, dimRange >::registerRange(module);
+        using Domain = Dune::FieldVector< double, dimWorld >;
+        registerFieldVector<double,dimWorld>(module);
+        using DiscreteFunction = Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, Dune::Functions::HierarchicNodeToRangeMap, Range >;
+        // register the HierarchicPythonVector
+        Dune::Python::addToTypeRegistry<HierarchicPythonVector<double>>(
+          GenerateTypeName("Dune::Python::HierarchicPythonVector", MetaType<double>()),
+          {"dune/python/functions/discretefunction.hh"}
+          );
+        // and add the DiscreteFunction to our module
+        auto clsDiscreteFunction = insertClass< DiscreteFunction >( module, "DiscreteFunction",
+          GenerateTypeName( "Dune::Functions::DiscreteGlobalBasisFunction",
+            MetaType<GlobalBasis>(),
+            MetaType<HierarchicPythonVector< double >>(),
+            "Dune::Functions::HierarchicNodeToRangeMap",
+            MetaType<Range>()
+            ), includes);
+        // register the GridViewFunction and register the implicit conversion
+        Dune::Python::addToTypeRegistry<Range(Domain)>(GenerateTypeName(className<Range(Domain)>()));
+        using GridViewFunction = Dune::Functions::GridViewFunction<Range(Domain), GridView>;
+        auto clsGridViewFunction = insertClass< GridViewFunction >( module, "GridViewFunction",
+          GenerateTypeName( "Dune::Functions::GridViewFunction",
+            MetaType<Range(Domain)>(),
+            MetaType<GridView>()
+            ), includes);
+        clsGridViewFunction.first.def(pybind11::init<DiscreteFunction>());
+        pybind11::implicitly_convertible<DiscreteFunction, GridViewFunction>();
 
-      registerDiscreteFunction<GlobalBasis>( module, clsDiscreteFunction.first );
+        registerDiscreteFunction<GlobalBasis>( module, clsDiscreteFunction.first );
 
-      cls.def("asFunction", [] ( GlobalBasis &self, pybind11::buffer dofVector ) {
-          return new DiscreteFunction( self, HierarchicPythonVector<double>(dofVector), Dune::Functions::HierarchicNodeToRangeMap());
-        }, pybind11::keep_alive< 0, 1 >(), pybind11::keep_alive< 0, 2 >(), "dofVector"_a );
+        cls.def("asFunction", [] ( GlobalBasis &self, pybind11::buffer dofVector ) {
+            return new DiscreteFunction( self, HierarchicPythonVector<double>(dofVector), Dune::Functions::HierarchicNodeToRangeMap());
+          }, pybind11::keep_alive< 0, 1 >(), pybind11::keep_alive< 0, 2 >(), "dofVector"_a );
       }
     }
 
