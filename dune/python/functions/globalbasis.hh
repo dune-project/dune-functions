@@ -135,6 +135,8 @@ namespace Dune
       lv.def( "unbind", &LocalView::unbind );
       lv.def( "index", [] ( const LocalView &localView, int index ) { return localView.index( index ); });
       lv.def( "__len__", [] ( LocalView &self ) -> int { return self.size(); } );
+      lv.def( "size", [] ( LocalView &self ) -> int { return self.size(); } );
+      lv.def( "maxSize", [] ( LocalView &self ) -> int { return self.maxSize(); } );
 
       Functions::registerTree<typename LocalView::Tree>(lv);
       lv.def("tree", [](const LocalView& view) { return view.tree(); });
