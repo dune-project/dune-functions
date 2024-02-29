@@ -116,7 +116,7 @@ namespace Dune
       using pybind11::operator""_a;
       using GridView = typename GlobalBasis::GridView;
 
-      const std::size_t dimRange = DimRange< typename GlobalBasis::PreBasis::Node >::value;
+      const std::size_t dimRange = DimRange< typename GlobalBasis::LocalView::Tree >::value;
       const std::size_t dimWorld = GridView::dimensionworld;
 
       cls.def( pybind11::init( [] ( const GridView &gridView ) { return new GlobalBasis( gridView ); } ), pybind11::keep_alive< 1, 2 >() );
@@ -142,7 +142,7 @@ namespace Dune
       Functions::registerTree<typename LocalView::Tree>(lv);
       lv.def("tree", [](const LocalView& view) { return view.tree(); });
 
-      cls.def( "localView", [] ( const GlobalBasis &self ) -> LocalView { return LocalView( self ); }, pybind11::keep_alive< 0, 1 >() );
+      cls.def( "localView", [] ( const GlobalBasis &self ) -> LocalView { return self.localView(); }, pybind11::keep_alive< 0, 1 >() );
       cls.def_property_readonly( "dimension", [] ( const GlobalBasis &self ) -> int { return self.dimension(); } );
 
       // Register the 'interpolate' method
