@@ -92,6 +92,7 @@ namespace Dune
       pybind11::object obj_;
     };
 
+    // The type of the value of a global finite element function at a particular point
     template<typename K, unsigned int n>
     struct RangeType
     {
@@ -159,6 +160,12 @@ namespace Dune
         cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, FieldVector<double,dimRange> > );
       }
 
+      // Register various grid function types
+      // TODO: As we do not currently have support for nested range types,
+      // we register grid function types only for 'simple' bases.
+      // A more general implementation is planned for the future.
+      if constexpr (GlobalBasis::LocalView::Tree::isLeaf or GlobalBasis::LocalView::Tree::isPower)
+      {
       using Range = typename RangeType< double, dimRange >::type;
       RangeType< double, dimRange >::registerRange(module);
       using Domain = Dune::FieldVector< double, dimWorld >;
@@ -193,7 +200,7 @@ namespace Dune
       cls.def("asFunction", [] ( GlobalBasis &self, pybind11::buffer dofVector ) {
           return new DiscreteFunction( self, HierarchicPythonVector<double>(dofVector), Dune::Functions::HierarchicNodeToRangeMap());
         }, pybind11::keep_alive< 0, 1 >(), pybind11::keep_alive< 0, 2 >(), "dofVector"_a );
-
+      }
     }
 
   } // namespace Python
