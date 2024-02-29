@@ -32,6 +32,7 @@ corresponding version of the Dune core modules.
 - Add a dynamic power basis with a runtime exponent that can be constructed with the factory
   `power(<sub-basis>, k)` or `power(<sub-basis>, k, <index-merging>)`.
 - Add mixin class `LFEPreBasisMixin` to create leaf pre-bases based on a local finite-element and a layout.
+- Add data structures for container descriptors in namespace `Dune::Functions::ContainerDescriptors`.
 
 Deprecations and removals
 

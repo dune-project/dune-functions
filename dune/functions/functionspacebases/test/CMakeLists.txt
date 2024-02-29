@@ -7,6 +7,8 @@ dune_add_test(SOURCES brezzidouglasmarinibasistest.cc LABELS quick)
 
 dune_add_test(SOURCES bsplinebasistest.cc LABELS quick)
 
+dune_add_test(SOURCES containerdescriptortest.cc LABELS quick)
+
 dune_add_test(SOURCES hermitebasistest.cc LABELS quick)
 
 dune_add_test(SOURCES globalvaluedlfetest.cc LABELS quick)
