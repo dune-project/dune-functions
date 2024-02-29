@@ -49,9 +49,9 @@ namespace Dune::Functions {
  */
 template <class GV, class LFE>
 class LFEPreBasisMixin :
-  public LeafPreBasisMapperMixIn< GV >
+  public LeafPreBasisMapperMixin< GV >
 {
-  using Base = LeafPreBasisMapperMixIn< GV >;
+  using Base = LeafPreBasisMapperMixin< GV >;
 
 public:
 

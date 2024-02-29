@@ -53,8 +53,8 @@ auto subIndexRange(const Dune::MultipleCodimMultipleGeomTypeMapper<GridView>& ma
  * \tparam GV The grid view the basis is defined on.
  */
 template<typename GV>
-class LeafPreBasisMapperMixIn
-    : public LeafPreBasisMixin<LeafPreBasisMapperMixIn<GV>>
+class LeafPreBasisMapperMixin
+    : public LeafPreBasisMixin<LeafPreBasisMapperMixin<GV>>
 {
   static const int gridDim = GV::dimension;
 
@@ -67,7 +67,7 @@ public:
   using size_type = std::size_t;
 
   //! Construct from GridView and local DOF layout
-  LeafPreBasisMapperMixIn(const GridView& gv, Dune::MCMGLayout layout) :
+  LeafPreBasisMapperMixin(const GridView& gv, Dune::MCMGLayout layout) :
     gridView_(gv),
     mapper_(gridView_, std::move(layout))
   {}
