@@ -74,7 +74,7 @@ namespace Dune
         // call index in the base class
         auto ind = base().index(idx);
         std::vector<int> ret(ind.size());
-        for (int i=0;i<ind.size();++i) ret[i] = ind[i];
+        for (std::size_t i=0;i<ind.size();++i) ret[i] = ind[i];
         return ret;
       }
 
@@ -92,6 +92,7 @@ namespace Dune
       pybind11::object obj_;
     };
 
+    // The type of the value of a global finite element function at a particular point
     template<typename K, unsigned int n>
     struct RangeType
     {
@@ -114,7 +115,6 @@ namespace Dune
     {
       using pybind11::operator""_a;
       using GridView = typename GlobalBasis::GridView;
-      using DefaultTreePath = Dune::TypeTree::HybridTreePath<>;
 
       const std::size_t dimRange = DimRange< typename GlobalBasis::PreBasis::Node >::value;
       const std::size_t dimWorld = GridView::dimensionworld;
@@ -136,6 +136,8 @@ namespace Dune
       lv.def( "unbind", &LocalView::unbind );
       lv.def( "index", [] ( const LocalView &localView, int index ) { return localView.index( index ); });
       lv.def( "__len__", [] ( LocalView &self ) -> int { return self.size(); } );
+      lv.def( "size", [] ( LocalView &self ) -> int { return self.size(); } );
+      lv.def( "maxSize", [] ( LocalView &self ) -> int { return self.maxSize(); } );
 
       Functions::registerTree<typename LocalView::Tree>(lv);
       lv.def("tree", [](const LocalView& view) { return view.tree(); });
@@ -143,54 +145,62 @@ namespace Dune
       cls.def( "localView", [] ( const GlobalBasis &self ) -> LocalView { return LocalView( self ); }, pybind11::keep_alive< 0, 1 >() );
       cls.def_property_readonly( "dimension", [] ( const GlobalBasis &self ) -> int { return self.dimension(); } );
 
-      cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, double> );
-      cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, bool> );
-      cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, int> );
+      // Register the 'interpolate' method
+      // TODO: Currently we only register the method for cases where either scalars or FieldVector<double,dimRange>
+      // are reasonable value types for functions to be interpolated. This excludes various not-very-exotic
+      // composite bases.  Support for them is planned for the future.
+      if constexpr (dimRange==1)
+      {
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, double> );
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, bool> );
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, int> );
+      }
+      else if constexpr (GlobalBasis::LocalView::Tree::isLeaf or GlobalBasis::LocalView::Tree::isPower)
+      {
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, FieldVector<double,dimRange> > );
+      }
 
-      using Range = typename RangeType< double, dimRange >::type;
-      RangeType< double, dimRange >::registerRange(module);
-      using Domain = Dune::FieldVector< double, dimWorld >;
-      registerFieldVector<double,dimWorld>(module);
-      using DiscreteFunction = Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, DefaultNodeToRangeMap< GlobalBasis, DefaultTreePath >, Range >;
-      // register the HierarchicPythonVector
-      Dune::Python::addToTypeRegistry<HierarchicPythonVector<double>>(
-        GenerateTypeName("Dune::Python::HierarchicPythonVector", MetaType<double>()),
-        {"dune/python/functions/discretefunction.hh"}
-        );
-      // and add the DiscreteFunction to our module
-      auto clsDiscreteFunction = insertClass< DiscreteFunction >( module, "DiscreteFunction",
-        GenerateTypeName( "Dune::Functions::DiscreteGlobalBasisFunction",
-          MetaType<GlobalBasis>(),
-          MetaType<HierarchicPythonVector< double >>(),
-          "Dune::Python::DefaultNodeToRangeMap< " + Dune::Python::findInTypeRegistry<GlobalBasis>().first->second.name + ", Dune::TypeTree::HybridTreePath<> >",
-          MetaType<Range>()
-          ), includes);
-      // register the GridViewFunction and register the implicit conversion
-      Dune::Python::addToTypeRegistry<Range(Domain)>(GenerateTypeName(className<Range(Domain)>()));
-      using GridViewFunction = Dune::Functions::GridViewFunction<Range(Domain), GridView>;
-      auto clsGridViewFunction = insertClass< GridViewFunction >( module, "GridViewFunction",
-        GenerateTypeName( "Dune::Functions::GridViewFunction",
-          MetaType<Range(Domain)>(),
-          MetaType<GridView>()
-          ), includes);
-      clsGridViewFunction.first.def(pybind11::init<DiscreteFunction>());
-      pybind11::implicitly_convertible<DiscreteFunction, GridViewFunction>();
+      // Register various grid function types
+      // TODO: As we do not currently have support for nested range types,
+      // we register grid function types only for 'simple' bases.
+      // A more general implementation is planned for the future.
+      if constexpr (GlobalBasis::LocalView::Tree::isLeaf or GlobalBasis::LocalView::Tree::isPower)
+      {
+        using Range = typename RangeType< double, dimRange >::type;
+        RangeType< double, dimRange >::registerRange(module);
+        using Domain = Dune::FieldVector< double, dimWorld >;
+        registerFieldVector<double,dimWorld>(module);
+        using DiscreteFunction = Dune::Functions::DiscreteGlobalBasisFunction< GlobalBasis, HierarchicPythonVector< double >, Dune::Functions::HierarchicNodeToRangeMap, Range >;
+        // register the HierarchicPythonVector
+        Dune::Python::addToTypeRegistry<HierarchicPythonVector<double>>(
+          GenerateTypeName("Dune::Python::HierarchicPythonVector", MetaType<double>()),
+          {"dune/python/functions/discretefunction.hh"}
+          );
+        // and add the DiscreteFunction to our module
+        auto clsDiscreteFunction = insertClass< DiscreteFunction >( module, "DiscreteFunction",
+          GenerateTypeName( "Dune::Functions::DiscreteGlobalBasisFunction",
+            MetaType<GlobalBasis>(),
+            MetaType<HierarchicPythonVector< double >>(),
+            "Dune::Functions::HierarchicNodeToRangeMap",
+            MetaType<Range>()
+            ), includes);
+        // register the GridViewFunction and register the implicit conversion
+        Dune::Python::addToTypeRegistry<Range(Domain)>(GenerateTypeName(className<Range(Domain)>()));
+        using GridViewFunction = Dune::Functions::GridViewFunction<Range(Domain), GridView>;
+        auto clsGridViewFunction = insertClass< GridViewFunction >( module, "GridViewFunction",
+          GenerateTypeName( "Dune::Functions::GridViewFunction",
+            MetaType<Range(Domain)>(),
+            MetaType<GridView>()
+            ), includes);
+        clsGridViewFunction.first.def(pybind11::init<DiscreteFunction>());
+        pybind11::implicitly_convertible<DiscreteFunction, GridViewFunction>();
 
-      registerDiscreteFunction<GlobalBasis>( module, clsDiscreteFunction.first );
+        registerDiscreteFunction<GlobalBasis>( module, clsDiscreteFunction.first );
 
-      cls.def("asFunction", [] ( GlobalBasis &self, pybind11::buffer dofVector ) {
-          auto nodeToRangeMapPtr =
-            std::make_shared< const DefaultNodeToRangeMap<
-              GlobalBasis, DefaultTreePath >
-                              >(
-                                makeDefaultNodeToRangeMap(self, DefaultTreePath()));
-          std::shared_ptr<const GlobalBasis> basisPtr = Dune::wrap_or_move( self );
-          auto vectorPtr = std::make_shared< const HierarchicPythonVector< double > >( dofVector );
-          return new DiscreteFunction( basisPtr,
-                                       vectorPtr,
-                                       nodeToRangeMapPtr);
-        }, pybind11::keep_alive< 0, 1 >(), pybind11::keep_alive< 0, 2 >(), "dofVector"_a );
-
+        cls.def("asFunction", [] ( GlobalBasis &self, pybind11::buffer dofVector ) {
+            return new DiscreteFunction( self, HierarchicPythonVector<double>(dofVector), Dune::Functions::HierarchicNodeToRangeMap());
+          }, pybind11::keep_alive< 0, 1 >(), pybind11::keep_alive< 0, 2 >(), "dofVector"_a );
+      }
     }
 
   } // namespace Python

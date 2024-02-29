@@ -34,6 +34,10 @@ corresponding version of the Dune core modules.
 - Add mixin class `LFEPreBasisMixin` to create leaf pre-bases based on a local finite-element and a layout.
 - Add data structures for container descriptors in namespace `Dune::Functions::ContainerDescriptors`.
 
+### Python
+
+- The Nédélec and Raviart-Thomas function space bases are now accessible via the Python interface.
+
 Deprecations and removals
 
 - The `BasisBuilder` namespace is deprecated and will be removed

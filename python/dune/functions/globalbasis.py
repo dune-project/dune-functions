@@ -1,11 +1,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .tree import Composite, DG, Lagrange, Power, Tree
+from .tree import Composite, DG, Lagrange, Nedelec, Power, RaviartThomas, Tree
 
 duneFunctionsLayouts = {"lexicographic": "Lexicographic", "interleaved": "Interleaved"}
 
 def indexMergingStrategy(blocked, layout):
-    return "Dune::Functions::BasisBuilder::" + ("Blocked" if blocked else "Flat") + duneFunctionsLayouts[layout]
+    return "Dune::Functions::BasisFactory::" + ("Blocked" if blocked else "Flat") + duneFunctionsLayouts[layout]
 
 
 def preBasisTypeName(tree, gridViewTypeName):
@@ -19,6 +19,10 @@ def preBasisTypeName(tree, gridViewTypeName):
             return scalarPreBasis
     elif isinstance(tree, DG):
         raise Exception(repr(tree) + " not supported by dune-functions.")
+    elif isinstance(tree, Nedelec):
+        return "Dune::Functions::NedelecPreBasis< " + gridViewTypeName + ", double, " + str(tree.kind) + ", " + str(tree.order) + " >"
+    elif isinstance(tree, RaviartThomas):
+        return "Dune::Functions::RaviartThomasPreBasis< " + gridViewTypeName + ", " + str(tree.order) + " >"
     elif isinstance(tree, Composite):
         IMS = indexMergingStrategy(tree.blocked, tree.layout)
         ChildPreBases = " , ".join(preBasisTypeName(c, gridViewTypeName) for c in tree.children)
@@ -34,7 +38,7 @@ def preBasisTypeName(tree, gridViewTypeName):
 def defaultGlobalBasis(gridView, tree):
     from dune.functions import load
 
-    headers = ["powerbasis", "compositebasis", "lagrangebasis", "subspacebasis", "defaultglobalbasis"]
+    headers = ["powerbasis", "compositebasis", "lagrangebasis", "nedelecbasis", "raviartthomasbasis", "subspacebasis", "defaultglobalbasis"]
 
     includes = []
     includes += list(gridView.cppIncludes)

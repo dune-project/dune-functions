@@ -1,11 +1,3 @@
-dune_python_add_test(NAME pyglobalbasis2d
-                     SCRIPT globalbasis2d.py
-                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                     LABELS python)
-dune_python_add_test(NAME pyglobalbasis3d
-                     SCRIPT globalbasis3d.py
-                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                     LABELS python)
 dune_python_add_test(NAME pypoisson
                      SCRIPT poisson.py
                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -16,5 +8,21 @@ dune_python_add_test(NAME pyfunction
                      LABELS python)
 dune_python_add_test(NAME pydiscretefunction
                      SCRIPT discretefunction.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
+dune_python_add_test(NAME pycompositebasistest
+                     SCRIPT compositebasistest.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
+dune_python_add_test(NAME pylagrangebasistest
+                     SCRIPT lagrangebasistest.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
+dune_python_add_test(NAME pynedelecbasistest
+                     SCRIPT nedelecbasistest.py
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                     LABELS python)
+dune_python_add_test(NAME pyraviartthomasbasistest
+                     SCRIPT raviartthomasbasistest.py
                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                      LABELS python)
