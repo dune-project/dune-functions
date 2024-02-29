@@ -3,6 +3,7 @@ set(HEADERS
   globalbasis.hh
   hierarchicvectorwrapper.hh
   interpolate.hh
+  subspacebasis.hh
   tree.hh
 )
 
