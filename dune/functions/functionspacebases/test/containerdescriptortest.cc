@@ -4,13 +4,131 @@
 
 #include <type_traits>
 
+#include <dune/common/indices.hh>
+#include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/functions/common/utility.hh>
 #include <dune/functions/functionspacebases/containerdescriptors.hh>
+#include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
+#include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/grid/yaspgrid.hh>
 
 
 namespace CD = Dune::Functions::ContainerDescriptors;
 
+namespace TestImpl {
+
+// check at run time whether index is a valid child index
+template <class Node, class Index>
+std::true_type checkAccessIndex (Node const& node, Index i)
+{
+  assert(std::size_t(i) < node.size() && "Child index out of range");
+  return {};
+}
+
+// check at compile time whether index is a valid index
+template <class Node, std::size_t i>
+std::bool_constant<(i < Node::size())> checkAccessIndex (Node const& node, Dune::index_constant<i>)
+{
+  static_assert(i < Node::size(), "Child index out of range");
+  return {};
+}
+
+// finally return the node itself if no further indices are provided. Break condition
+// for the recursion over the node children.
+template<class Node>
+decltype(auto) accessImpl (Node&& node)
+{
+  return std::forward<Node>(node);
+}
+
+// recursively call `node[i]` with the given indices
+template<class Node, class I0, class... I>
+decltype(auto) accessImpl (Node&& node, I0 i0, [[maybe_unused]] I... i)
+{
+  auto valid = checkAccessIndex(node,i0);
+  if constexpr (valid)
+    return accessImpl(node[i0],i...);
+  else
+    return;
+}
+
+// forward to the impl methods by extracting the indices from the tree path
+template<class Tree, class... Indices, std::size_t... i>
+decltype(auto) access (Tree&& tree, [[maybe_unused]] Dune::TypeTree::HybridTreePath<Indices...> tp, std::index_sequence<i...>)
+{
+  return accessImpl(std::forward<Tree>(tree),Dune::TypeTree::treePathEntry<i>(tp)...);
+}
+
+// access a tree using a hybridTreePath
+template<class Tree, class... Indices>
+decltype(auto) access (Tree&& tree, Dune::TypeTree::HybridTreePath<Indices...> tp)
+{
+  return access(std::forward<Tree>(tree),tp,std::index_sequence_for<Indices...>{});
+}
+
+// convert a HybridTreePath into a ReservedVector
+template <class SizePrefix, class... Indices>
+auto sizePrefix (Dune::TypeTree::HybridTreePath<Indices...> tp)
+{
+  using value_type = typename SizePrefix::value_type;
+  return Dune::unpackIntegerSequence([&](auto... i) {
+    return SizePrefix{value_type(tp[i])...};
+  }, std::index_sequence_for<Indices...>{});
+}
+
+} // end namespace TestImpl
+
+
+// check that the sizes of an container descriptor correspond to the sizes provided by the
+// basis (size-provider) directly.
+template<class ContainerDescriptor, class SizeProvider,
+         class PrefixPath = Dune::TypeTree::HybridTreePath<>>
+void checkSize (Dune::TestSuite& test, const ContainerDescriptor& cd,
+                const SizeProvider& sizeProvider, PrefixPath prefix = {})
+{
+  using SizePrefix = typename SizeProvider::SizePrefix;
+  auto size1 = sizeProvider.size(TestImpl::sizePrefix<SizePrefix>(prefix));
+  auto size2 = Dune::Hybrid::size(TestImpl::access(cd, prefix));
+  test.require(std::size_t(size1) == std::size_t(size2), "size1 == size2");
+
+  if constexpr(PrefixPath::size() < SizePrefix::max_size()) {
+    Dune::Hybrid::forEach(Dune::range(size2), [&](auto i) {
+      checkSize(test, cd, sizeProvider, push_back(prefix,i));
+    });
+  }
+}
+
+// check a specific multi-index by traversing all its components and the container descriptor
+//  simultaneously
+template <class ContainerDescriptor, class MultiIndex>
+void checkMultiIndex (Dune::TestSuite& test, const ContainerDescriptor& cd,
+                      const MultiIndex& mi, std::size_t j = 0)
+{
+  if (j < mi.size()) {
+    test.check(mi[j] < cd.size(), "mi[j] < cd.size");
+    auto size = Dune::Hybrid::size(cd);
+    Dune::Hybrid::switchCases(Dune::range(size), mi[j],
+      [&](auto jj) { checkMultiIndex(test,cd[jj],mi,j+1); });
+  }
+}
+
+// check that all multi-indices of a global basis are within the range of the container descriptor
+template <class ContainerDescriptor, class Basis>
+void checkMultiIndices (Dune::TestSuite& test, const ContainerDescriptor& cd, const Basis& basis)
+{
+  auto localView = basis.localView();
+  for (auto const& e : elements(basis.gridView()))
+  {
+    localView.bind(e);
+    for (std::size_t i = 0; i < localView.size(); ++i) {
+      auto mi = localView.index(i);
+      checkMultiIndex(test,cd,mi);
+    }
+  }
+}
 
 void checkHierarchic (Dune::TestSuite& test)
 {
@@ -111,6 +229,16 @@ void checkConstructors (Dune::TestSuite& test)
   static_assert(std::is_same_v<decltype(cd6d), decltype(cd6a)>);
 }
 
+template <class BasisFactory>
+void checkBasis(Dune::TestSuite& test, const BasisFactory& bf)
+{
+  using Grid = Dune::YaspGrid<2>;
+  Grid grid({1.0, 1.0}, {2, 2});
+  auto basis = makeBasis(grid.leafGridView(), bf);
+  checkSize(test, containerDescriptor(basis.preBasis()), basis);
+  checkMultiIndices(test, containerDescriptor(basis.preBasis()), basis);
+}
+
 int main (int argc, char *argv[])
 {
   Dune::MPIHelper::instance(argc, argv);
@@ -118,6 +246,36 @@ int main (int argc, char *argv[])
   Dune::TestSuite test;
   checkConstructors(test);
   checkHierarchic(test);
+
+
+  using namespace Dune::Functions::BasisFactory;
+
+  checkBasis(test, lagrange<1>() );
+  checkBasis(test, power<2>(lagrange<1>(), blockedLexicographic()) );
+  checkBasis(test, composite(lagrange<1>(),lagrange<2>()) );
+  checkBasis(test, power<2>(power<2>(lagrange<2>(), blockedLexicographic()), blockedLexicographic()) );
+
+  checkBasis(test, power<2>(
+        composite(
+          power<1>(power<1>(lagrange<1>(), blockedLexicographic()), blockedLexicographic()),
+          power<2>(lagrange<1>(), blockedLexicographic()),
+          power<3>(lagrange<1>(), blockedLexicographic())
+        ), blockedLexicographic()
+      )
+  );
+
+  checkBasis(test, composite(
+      composite(
+        power<2>(lagrange<1>(), blockedLexicographic()),
+        power<1>(power<2>(lagrange<1>(), blockedLexicographic()), blockedLexicographic())
+      ),
+      composite(
+        power<1>(power<1>(lagrange<1>(), blockedLexicographic()), blockedLexicographic()),
+        power<2>(lagrange<1>(), blockedLexicographic()),
+        power<3>(lagrange<1>(), blockedLexicographic())
+      )
+    )
+  );
 
   return test.exit();
 }

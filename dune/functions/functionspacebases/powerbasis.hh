@@ -13,6 +13,7 @@
 #include <dune/functions/functionspacebases/dynamicpowerbasis.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/containerdescriptors.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 
@@ -106,6 +107,12 @@ public:
   It indices(const NodeType& node, It it) const
   {
     return Base::indicesImpl(node, it, children, IndexMergingStrategy{});
+  }
+
+  //! Return the associated container descriptor
+  auto containerDescriptor() const
+  {
+    return Base::containerDescriptorImpl(children);
   }
 };
 

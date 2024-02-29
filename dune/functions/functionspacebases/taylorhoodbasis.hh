@@ -196,6 +196,25 @@ public:
     return indicesImp<useHybridIndices>(node, it);
   }
 
+  /**
+   * \brief Return an container descriptor depending on the flag `HI`.
+   * Either return a `Tuple` if hybrid indices should be used,
+   * otherwise return an `Array`.
+   **/
+  auto containerDescriptor() const
+  {
+    namespace CD = Dune::Functions::ContainerDescriptors;
+    if constexpr(HI)
+      return CD::makeDescriptor(
+        CD::makeUniformDescriptor(pq2PreBasis_.size(),
+          CD::FlatArray<GV::dimension>{}),
+        CD::FlatVector{pq1PreBasis_.size()});
+    else
+      return CD::Array<CD::FlatVector,2>{
+        CD::FlatVector{GV::dimension * pq2PreBasis_.size()},
+        CD::FlatVector{pq1PreBasis_.size()} };
+  }
+
 protected:
 
   template<class MultiIndex>

@@ -13,6 +13,8 @@
 #include <dune/common/tuplevector.hh>
 #include <dune/common/typeutilities.hh>
 
+#include <dune/functions/common/type_traits.hh>
+#include <dune/functions/functionspacebases/basistags.hh>
 
 /**
  * \file containerdescriptor.hh
@@ -37,11 +39,40 @@
  * Size is either a static property, or a runtime value.
  **/
 
-namespace Dune::Functions::ContainerDescriptors {
+namespace Dune::Functions {
+namespace ContainerDescriptors {
 
 //! Fallback container descriptor if nothing else fits
 struct Unknown {};
 
+} // end namespace ContainerDescriptors
+
+namespace Impl {
+
+template<class PreBasis>
+auto containerDescriptorImpl(const PreBasis& preBasis, Dune::PriorityTag<1>)
+  -> decltype(preBasis.containerDescriptor())
+{
+  return preBasis.containerDescriptor();
+}
+
+template<class PreBasis>
+auto containerDescriptorImpl(const PreBasis& preBasis, Dune::PriorityTag<0>)
+{
+  return ContainerDescriptors::Unknown{};
+}
+
+} // end namespace Impl
+
+//! Return the container descriptor of the pre-basis, if defined, otherwise ContainerDescriptor::Unknown
+template<class PreBasis>
+auto containerDescriptor(const PreBasis& preBasis)
+{
+  return Impl::containerDescriptorImpl(preBasis, Dune::PriorityTag<2>{});
+}
+
+
+namespace ContainerDescriptors {
 
 //! The node in the descriptor tree representing a value placeholder
 struct Value
@@ -167,6 +198,7 @@ auto makeUniformDescriptor (std::size_t n, Child child)
   return UniformVector<Child>{n,std::move(child)};
 }
 
-} // end namespace Dune::Functions::ContainerDescriptors
+} // end namespace ContainerDescriptors
+} // end namespace Dune::Functions
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_CONTAINERDESCRIPTORS_HH
