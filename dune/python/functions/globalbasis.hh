@@ -122,8 +122,6 @@ namespace Dune
       cls.def( pybind11::init( constructCall ), pybind11::keep_alive< 1, 2 >() );
       cls.def( "__len__", [](const GlobalBasis& self) { return self.dimension(); } );
 
-      cls.def_property_readonly( "dimRange", [] ( pybind11::handle self ) { return pybind11::int_( dimRange ); } );
-
       if constexpr (hasUpdate)
       {
         cls.def_property( "gridView",
