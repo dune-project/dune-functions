@@ -157,7 +157,9 @@ namespace Dune
       }
       else if constexpr (GlobalBasis::LocalView::Tree::isLeaf or GlobalBasis::LocalView::Tree::isPower)
       {
-        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, FieldVector<double,dimRange> > );
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, double, FieldVector<double,dimRange> > );
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, bool, std::array<bool,dimRange> > );
+        cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, int, FieldVector<int,dimRange> > );
       }
 
       // Register various grid function types
