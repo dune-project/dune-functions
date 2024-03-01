@@ -33,6 +33,11 @@ def test(dimension):
     interpolatetest.checkConstantInterpolation(basis2, 0)
     interpolatetest.checkConstantInterpolation(basisPower, np.zeros(dimension))
 
+    # Test interpolation of all basis functions
+    interpolatetest.checkBasisFunctionInterpolation(basis1)
+    interpolatetest.checkBasisFunctionInterpolation(basis2)
+    interpolatetest.checkBasisFunctionInterpolation(basisPower)
+
 # Run tests for grids of dimension 2 and 3
 test(2)
 test(3)
