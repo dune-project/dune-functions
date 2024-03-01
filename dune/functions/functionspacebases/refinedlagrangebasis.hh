@@ -38,9 +38,9 @@ class RefinedLagrangeNode;
  */
 template <typename GV, int k, typename R = double>
 class RefinedLagrangePreBasis :
-  public LeafPreBasisMapperMixIn< GV >
+  public LeafPreBasisMapperMixin< GV >
 {
-  using Base = LeafPreBasisMapperMixIn< GV >;
+  using Base = LeafPreBasisMapperMixin< GV >;
 
   static const int dim = GV::dimension;
 
