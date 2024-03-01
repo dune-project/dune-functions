@@ -24,7 +24,7 @@ def asStdFunction(f):
     return dune.generator.algorithm.run("run",StringIO(code), f)
 
 
-# Check if indivudual basis functions are interpolated correctly
+# Check if individual basis functions are interpolated correctly
 def checkBasisFunctionInterpolation(basis):
     coeffTol = 1e-10;
     ei = np.zeros(len(basis))
