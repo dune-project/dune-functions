@@ -68,6 +68,11 @@ def checkLocalView(basis, localView):
     if (localView.size() > localView.maxSize()):
         raise ValueError("localView.size() is " + str(localView.size()) + " but localView.maxSize() is " + str(localView.maxSize()))
 
+    tree1 = localView.tree()
+    tree2 = localView.tree()
+    if (tree1 != tree2):
+        raise ValueError("Multiple calls to localView.tree() do not hand out the same tree.")
+
     # TODO: Implement the rest
 
 
