@@ -94,7 +94,7 @@ def checkBasis(basis):
     # Check the basis
     checkConstBasis(basis)
 
-    # Check whether the basis can be copie
+    # Check whether the basis can be copied
     copiedBasis = basis
     checkConstBasis(copiedBasis)
 

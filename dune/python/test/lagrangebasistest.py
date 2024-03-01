@@ -1,7 +1,10 @@
+import numpy as np
+
 import dune.grid
 import dune.functions as functions
 
-import basistest   # The general test suite for function space bases
+import basistest        # The general test suite for function space bases
+import interpolatetest  # The general test suite for interpolation into bases
 
 
 # Test all currently supported global bases in dimension `dimension`.
@@ -25,6 +28,15 @@ def test(dimension):
     basisPower = functions.defaultGlobalBasis(grid, functions.Power(functions.Lagrange(order=1),exponent=dimension))
     basistest.checkBasis(basisPower)
 
+    # Test interpolation of constant functions
+    interpolatetest.checkConstantInterpolation(basis1, 0)
+    interpolatetest.checkConstantInterpolation(basis2, 0)
+    interpolatetest.checkConstantInterpolation(basisPower, np.zeros(dimension))
+
+    # Test interpolation of all basis functions
+    interpolatetest.checkBasisFunctionInterpolation(basis1)
+    interpolatetest.checkBasisFunctionInterpolation(basis2)
+    interpolatetest.checkBasisFunctionInterpolation(basisPower)
 
 # Run tests for grids of dimension 2 and 3
 test(2)
