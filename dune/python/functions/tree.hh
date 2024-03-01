@@ -37,6 +37,10 @@ void registerTreeCommon(pybind11::class_<Tree>& cls)
   cls.def_property_readonly_static("isLeaf", [](pybind11::object) { return Tree::isLeaf; });
   cls.def_property_readonly_static("isPower", [](pybind11::object) { return Tree::isPower; });
   cls.def_property_readonly_static("degree", [](pybind11::object) { return Tree::degree(); });
+  cls.def( "__len__", [] (const Tree& self) -> int { return self.size(); } );
+  cls.def( "size", [] (const Tree& self) -> int { return self.size(); } );
+  cls.def("localIndex", [](const Tree& self, unsigned int index) { return self.localIndex(index); });
+  cls.def("treeIndex", [](const Tree& self, unsigned int index) { return self.treeIndex(); });
 }
 
 template<typename Tree, std::size_t i>
@@ -126,8 +130,6 @@ void registerTree_(pybind11::handle scope, const char* name)
     pybind11::class_< Tree > cls(scope, name);
     registerTreeCommon(cls);
     registerFiniteElementProperty(cls);
-    // register localIndex
-    cls.def("localIndex", [](Tree& tree, unsigned int index) { return tree.localIndex(index); });
   }
 }
 

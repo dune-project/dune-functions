@@ -110,22 +110,30 @@ namespace Dune
       static void registerRange(pybind11::module scope) {} // nothing to register, as K is a basic type
     };
 
-    template< class GlobalBasis, class... options >
-    DUNE_EXPORT void registerGlobalBasis ( pybind11::module module, pybind11::class_< GlobalBasis, options... > &cls )
+    template< class GlobalBasis, class... options, class ConstructCall, bool hasUpdate>
+    void registerBasisType ( pybind11::module module, pybind11::class_< GlobalBasis, options... > &cls, ConstructCall constructCall, std::bool_constant<hasUpdate>)
     {
       using pybind11::operator""_a;
       using GridView = typename GlobalBasis::GridView;
 
-      const std::size_t dimRange = DimRange< typename GlobalBasis::PreBasis::Node >::value;
+      const std::size_t dimRange = DimRange< typename GlobalBasis::LocalView::Tree >::value;
       const std::size_t dimWorld = GridView::dimensionworld;
 
-      cls.def( pybind11::init( [] ( const GridView &gridView ) { return new GlobalBasis( gridView ); } ), pybind11::keep_alive< 1, 2 >() );
+      cls.def( pybind11::init( constructCall ), pybind11::keep_alive< 1, 2 >() );
       cls.def( "__len__", [](const GlobalBasis& self) { return self.dimension(); } );
 
       cls.def_property_readonly( "dimRange", [] ( pybind11::handle self ) { return pybind11::int_( dimRange ); } );
-      cls.def_property( "gridView",
-                        [](const GlobalBasis& basis) { return basis.gridView(); },
-                        [](GlobalBasis& basis, const GridView& gridView) { basis.update(gridView); });
+
+      if constexpr (hasUpdate)
+      {
+        cls.def_property( "gridView",
+                          [](const GlobalBasis& basis) { return basis.gridView(); },
+                          [](GlobalBasis& basis, const GridView& gridView) { basis.update(gridView); });
+      }
+      else
+      {
+        cls.def_property_readonly( "gridView", [](const GlobalBasis& basis) { return basis.gridView(); });
+      }
 
       typedef LocalViewWrapper< GlobalBasis > LocalView;
       auto includes = IncludeFiles{"dune/python/functions/globalbasis.hh"};
@@ -142,7 +150,7 @@ namespace Dune
       Functions::registerTree<typename LocalView::Tree>(lv);
       lv.def("tree", [](const LocalView& view) { return view.tree(); });
 
-      cls.def( "localView", [] ( const GlobalBasis &self ) -> LocalView { return LocalView( self ); }, pybind11::keep_alive< 0, 1 >() );
+      cls.def( "localView", [] ( const GlobalBasis &self ) -> LocalView { return self.localView(); }, pybind11::keep_alive< 0, 1 >() );
       cls.def_property_readonly( "dimension", [] ( const GlobalBasis &self ) -> int { return self.dimension(); } );
 
       // Register the 'interpolate' method
@@ -204,6 +212,15 @@ namespace Dune
           }, pybind11::keep_alive< 0, 1 >(), pybind11::keep_alive< 0, 2 >(), "dofVector"_a );
       }
     }
+
+    template< class GlobalBasis, class... options >
+    DUNE_EXPORT void registerGlobalBasis ( pybind11::module module, pybind11::class_< GlobalBasis, options... > &cls )
+    {
+      using GridView = typename GlobalBasis::GridView;
+      auto construct = [] ( const GridView &gridView ) { return new GlobalBasis( gridView ); };
+      registerBasisType ( module, cls, construct, std::true_type{} );
+    }
+
 
   } // namespace Python
 

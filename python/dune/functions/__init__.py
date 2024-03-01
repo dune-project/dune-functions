@@ -3,6 +3,7 @@ from dune.common.hashit import hashIt
 from dune.common.checkconfiguration import assertHave, ConfigurationError
 
 from .globalbasis import defaultGlobalBasis
+from .subspacebasis import subspaceBasis
 from .tree import *
 
 registry = dict()
