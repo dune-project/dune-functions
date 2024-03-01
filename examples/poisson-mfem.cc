@@ -7,6 +7,7 @@
 
 #include <dune/common/bitsetvector.hh>
 #include <dune/common/indices.hh>
+#include <dune/common/rangeutilities.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -41,7 +42,7 @@ template <class LocalView, class MatrixType>
 void getLocalMatrix(const LocalView& localView,
                     MatrixType& elementMatrix)
 {
-  // Get the grid element from the local FE basis view (use test space)
+  // Get the grid element from the local FE basis view
   typedef typename LocalView::Element Element;
   const Element& element = localView.element();
 
@@ -386,9 +387,9 @@ int main (int argc, char *argv[])
   //   Stiffness matrix and right hand side vector
   /////////////////////////////////////////////////////////
 
-  using MatrixType = Matrix<BCRSMatrix<FieldMatrix<double,1,1> > >;
-  using VectorType = BlockVector<BlockVector<FieldVector<double,1> > >;
-  using BitVectorType = BlockVector<BlockVector<FieldVector<char,1> > >;
+  using MatrixType = Matrix<BCRSMatrix<double> >;
+  using VectorType = BlockVector<BlockVector<double> >;
+  using BitVectorType = BlockVector<BlockVector<char> >;
 
   using Functions::istlVectorBackend;
 
@@ -443,14 +444,11 @@ int main (int argc, char *argv[])
   {
     if (isDirichlet[0][i])
     {
-      // Lower right matrix block
-      auto cIt    = stiffnessMatrix[0][0][i].begin();
-      auto cEndIt = stiffnessMatrix[0][0][i].end();
-      // loop over nonzero matrix entries in current row
-      for (; cIt!=cEndIt; ++cIt)
-        *cIt = (i==cIt.index()) ? 1. : 0.;
+      // Upper left matrix block
+      for (auto&& [entry, idx] : sparseRange(stiffnessMatrix[0][0][i]))
+        entry = (i==idx) ? 1.0 : 0.0;
 
-      // Lower left matrix block
+      // Upper right matrix block
       for (auto&& entry: stiffnessMatrix[0][1][i])
         entry = 0.0;
     }
