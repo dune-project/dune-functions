@@ -5,6 +5,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <memory>
 
 // for void_t, in <type_traits> for C++17
 #include <dune/common/typetraits.hh>
@@ -30,7 +31,7 @@ template<typename Tree, std::enable_if_t< Tree::isPower, int > = 0>
 void registerTree_(pybind11::handle scope, const char* name = "Tree");
 
 template<typename Tree>
-void registerTreeCommon(pybind11::class_<Tree>& cls)
+void registerTreeCommon(pybind11::class_<Tree, std::shared_ptr<Tree>>& cls)
 {
   /* dune-typetree properties */
   cls.def_property_readonly_static("isComposite", [](pybind11::object) { return Tree::isComposite; });
@@ -60,7 +61,7 @@ childAccessors(std::index_sequence<I...>)
 }
 
 template<typename Tree>
-void registerTreeChildAccessor(pybind11::class_<Tree>& cls)
+void registerTreeChildAccessor(pybind11::class_<Tree, std::shared_ptr<Tree>>& cls)
 {
   const auto accessors = childAccessors<Tree>(std::make_index_sequence<Tree::degree()>{});
   cls.def(
@@ -74,7 +75,7 @@ void registerTree_(pybind11::handle scope, const char* name)
 {
   if( !pybind11::already_registered< Tree >() )
   {
-    pybind11::class_<Tree> cls(scope, name);
+    pybind11::class_<Tree, std::shared_ptr<Tree>> cls(scope, name);
     registerTreeCommon(cls);
 
     // static variable cls is captured automatically - explicit capture fails with clang:
@@ -100,13 +101,13 @@ struct hasFiniteElement<Tree, void_t<typename Tree::FiniteElement>>
 {};
 
 template< typename Tree, std::enable_if_t< !hasFiniteElement<Tree>::value, int > = 0>
-void registerFiniteElementProperty(pybind11::class_< Tree >&)
+void registerFiniteElementProperty(pybind11::class_< Tree, std::shared_ptr<Tree> >&)
 {
   /* Nothing. */
 }
 
 template< typename Tree, std::enable_if_t< hasFiniteElement<Tree>::value, int > = 0>
-void registerFiniteElementProperty(pybind11::class_< Tree >& cls)
+void registerFiniteElementProperty(pybind11::class_< Tree, std::shared_ptr<Tree> >& cls)
 {
   // this should probably be fixed in dune-localfunctions
   if (!pybind11::already_registered< typename Tree::FiniteElement >())
@@ -127,7 +128,7 @@ void registerTree_(pybind11::handle scope, const char* name)
 {
   if( !pybind11::already_registered< Tree >() )
   {
-    pybind11::class_< Tree > cls(scope, name);
+    pybind11::class_< Tree, std::shared_ptr<Tree> > cls(scope, name);
     registerTreeCommon(cls);
     registerFiniteElementProperty(cls);
   }
@@ -138,7 +139,7 @@ void registerTree_(pybind11::handle scope, const char* name)
 {
   if( !pybind11::already_registered< Tree >() )
   {
-    pybind11::class_< Tree > cls(scope, name);
+    pybind11::class_< Tree, std::shared_ptr<Tree> > cls(scope, name);
     registerTreeCommon(cls);
     registerTree_<typename Tree::ChildType>(cls);
     registerTreeChildAccessor(cls);

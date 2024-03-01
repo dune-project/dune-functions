@@ -8,6 +8,7 @@
 #include <utility>
 
 #include <dune/common/classname.hh>
+#include <dune/common/shared_ptr.hh>
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
@@ -135,7 +136,9 @@ namespace Dune
         cls.def_property_readonly( "gridView", [](const GlobalBasis& basis) { return basis.gridView(); });
       }
 
-      typedef LocalViewWrapper< GlobalBasis > LocalView;
+      using LocalView = LocalViewWrapper< GlobalBasis >;
+      using Tree = typename LocalView::Tree;
+
       auto includes = IncludeFiles{"dune/python/functions/globalbasis.hh"};
       auto lv = insertClass< LocalView >( module, "LocalView",
           GenerateTypeName("Dune::Python::LocalViewWrapper", MetaType<GlobalBasis>()),
@@ -147,8 +150,8 @@ namespace Dune
       lv.def( "size", [] ( LocalView &self ) -> int { return self.size(); } );
       lv.def( "maxSize", [] ( LocalView &self ) -> int { return self.maxSize(); } );
 
-      Functions::registerTree<typename LocalView::Tree>(lv);
-      lv.def("tree", [](const LocalView& view) { return view.tree(); });
+      Functions::registerTree<Tree>(lv);
+      lv.def("tree", [](const LocalView& view) { return Dune::stackobject_to_shared_ptr(view.tree()); });
 
       cls.def( "localView", [] ( const GlobalBasis &self ) -> LocalView { return self.localView(); }, pybind11::keep_alive< 0, 1 >() );
       cls.def_property_readonly( "dimension", [] ( const GlobalBasis &self ) -> int { return self.dimension(); } );
