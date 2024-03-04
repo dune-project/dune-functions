@@ -20,13 +20,7 @@ def checkBasisSizeConsistency(basis, multiIndexSet):
     # index tree is consistent with basis.size(prefix).
     for prefix, size in prefixSet.items():
 
-        # TODO: The following should be
-        #   prefixSize = basis.size(prefix);
-        # but this size method is not exposed by the Python interface yet.
-        if len(prefix)==0:
-            prefixSize = len(basis)
-        else:
-            prefixSize = 0
+        prefixSize = basis.size(prefix);
 
         if prefixSize != size:
             raise IndexError("basis.size(" + str(prefix) + ") = " + str(prefixSize) + ", but should be " + str(size))
