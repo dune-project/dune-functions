@@ -8,6 +8,7 @@
 #include <utility>
 
 #include <dune/common/classname.hh>
+#include <dune/common/reservedvector.hh>
 #include <dune/common/shared_ptr.hh>
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
@@ -24,6 +25,22 @@
 #include <dune/python/pybind11/complex.h>
 #include <dune/python/pybind11/pybind11.h>
 #include <dune/python/pybind11/stl.h>
+
+namespace PYBIND11_NAMESPACE
+{
+  namespace detail
+  {
+    /** \brief Implement type_caster for Dune::ReservedVector
+     *
+     * This uses the standard array_caster implementation for resizeable types.
+     *
+     * \warning array_caster is not documented officially. But as long as we have
+     * a copy of pybind11 vendored in dune-common using it should be fine.
+     */
+    template<class T, int n>
+    struct type_caster<Dune::ReservedVector<T, n> > : array_caster<Dune::ReservedVector<T, n>, T, true> {};
+  }
+}
 
 namespace Dune
 {
@@ -122,6 +139,12 @@ namespace Dune
 
       cls.def( pybind11::init( constructCall ), pybind11::keep_alive< 1, 2 >() );
       cls.def( "__len__", [](const GlobalBasis& self) { return self.dimension(); } );
+      cls.def("size",
+               pybind11::overload_cast<>(&GlobalBasis::size, pybind11::const_),
+               "Return number of possible values for next position in empty multi index" );
+      cls.def("size",
+              pybind11::overload_cast<const typename GlobalBasis::SizePrefix&>(&GlobalBasis::size, pybind11::const_),
+              "Return number of possible values for next position in multi index");
 
       cls.def_property_readonly( "dimRange", [] ( pybind11::handle self ) { return pybind11::int_( dimRange ); } );
 
