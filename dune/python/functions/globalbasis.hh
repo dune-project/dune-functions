@@ -168,6 +168,7 @@ namespace Dune
           includes).first;
       lv.def( "bind", &LocalView::bind );
       lv.def( "unbind", &LocalView::unbind );
+      lv.def( "element", &LocalView::element );
       lv.def( "index", [] ( const LocalView &localView, int index ) { return localView.index( index ); });
       lv.def( "__len__", [] ( LocalView &self ) -> int { return self.size(); } );
       lv.def( "size", [] ( LocalView &self ) -> int { return self.size(); } );
