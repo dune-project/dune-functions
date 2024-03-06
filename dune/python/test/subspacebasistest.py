@@ -2,7 +2,7 @@ import numpy as np
 
 import dune.grid
 import dune.functions as functions
-from dune.functions import defaultGlobalBasis, subspaceBasis, Lagrange, Power, Composite
+from dune.functions import defaultGlobalBasis, subspaceBasis, Lagrange, Power, RaviartThomas, Composite
 
 import basistest        # The general test suite for function space bases
 import interpolatetest  # The general test suite for interpolation into bases
@@ -56,6 +56,18 @@ def test(dimension):
       basistest.checkBasis(velocityBasis_i)
       interpolatetest.checkConstantInterpolation(velocityBasis_i, 0)
       interpolatetest.checkBasisFunctionInterpolation(velocityBasis_i)
+
+
+    # Test with the basis tree used for the mixed Poisson problem
+    # (This involves a basis of vector-valued functions.)
+    mixedPoissonBasis = defaultGlobalBasis(grid, Composite(RaviartThomas(order=0),
+                                                           Lagrange(order=0)))
+
+    for i in (0,1):
+      subBasis = functions.subspaceBasis(mixedPoissonBasis, i)
+      basistest.checkBasis(subBasis)
+      interpolatetest.checkBasisFunctionInterpolation(subBasis)
+
 
 # Run tests for grids of dimension 2
 test(2)
