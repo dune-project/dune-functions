@@ -96,6 +96,8 @@ namespace Dune::Functions::Impl
       const Function& f_;
       const Element& element_;
 
+      using LocalValue = LocalCoordinate;
+
     public:
 
       LocalValuedFunction(const Function& f, const Element& element)
@@ -110,7 +112,7 @@ namespace Dune::Functions::Impl
         auto jacobianInverseTransposed = element_.geometry().jacobianInverseTransposed(xi);
         auto integrationElement = element_.geometry().integrationElement(xi);
 
-        auto localValue = globalValue;
+        auto localValue = LocalValue{};
         jacobianInverseTransposed.mtv(globalValue, localValue);
         localValue *= integrationElement;
 
