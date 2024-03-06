@@ -79,6 +79,12 @@ def checkConstBasis(basis):
 
     for element in gridView.elements:
         localView.bind(element)
+
+        # Check the 'element' method
+        boundElement = localView.element()
+        if boundElement != element:
+            raise ValueError("LocalView object does not yield the element it is bound to.")
+
         checkLocalView(basis,localView)
 
     # Perform global index tests
