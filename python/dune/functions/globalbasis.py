@@ -11,12 +11,7 @@ def indexMergingStrategy(blocked, layout):
 def preBasisTypeName(tree, gridViewTypeName):
     assert isinstance(tree, Tree)
     if isinstance(tree, Lagrange):
-        scalarPreBasis = "Dune::Functions::LagrangePreBasis< " + gridViewTypeName + " , " + str(tree.order) + " >"
-        if tree.dimRange != 1:
-            IMS = indexMergingStrategy(False, "interleaved")
-            return "Dune::Functions::PowerPreBasis< " + IMS + " , " + scalarPreBasis + " , " + str(tree.dimRange) + " >"
-        else:
-            return scalarPreBasis
+        return "Dune::Functions::LagrangePreBasis< " + gridViewTypeName + " , " + str(tree.order) + " >"
     elif isinstance(tree, DG):
         raise Exception(repr(tree) + " not supported by dune-functions.")
     elif isinstance(tree, Nedelec):
