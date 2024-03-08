@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 from .tree import Composite, DG, Lagrange, Nedelec, Power, RaviartThomas, Tree
 
 duneFunctionsLayouts = {"lexicographic": "Lexicographic", "interleaved": "Interleaved"}
