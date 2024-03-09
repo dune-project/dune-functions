@@ -37,7 +37,7 @@ void registerTreeCommon(pybind11::class_<Tree, std::shared_ptr<Tree>>& cls)
   cls.def_property_readonly_static("isComposite", [](pybind11::object) { return Tree::isComposite; });
   cls.def_property_readonly_static("isLeaf", [](pybind11::object) { return Tree::isLeaf; });
   cls.def_property_readonly_static("isPower", [](pybind11::object) { return Tree::isPower; });
-  cls.def_property_readonly_static("degree", [](pybind11::object) -> std::size_t { return Tree::degree(); });
+  cls.def("degree", [](pybind11::object) -> std::size_t { return Tree::degree(); });
   cls.def( "__len__", [] (const Tree& self) -> int { return self.size(); } );
   cls.def( "size", [] (const Tree& self) -> int { return self.size(); } );
   cls.def("localIndex", [](const Tree& self, unsigned int index) { return self.localIndex(index); });

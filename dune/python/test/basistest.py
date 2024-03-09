@@ -71,7 +71,7 @@ def checkTreeNode(node):
         # TODO: Test features of non-leaf nodes
 
         # Recursively test the children
-        for i in range(node.degree):
+        for i in range(node.degree()):
             checkTreeNode(node[i])
 
     else:
