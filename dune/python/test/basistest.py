@@ -57,6 +57,27 @@ def checkBasisIndices(basis):
         raise ValueError("basis.dimension() does not equal the total number of basis functions.")
 
 
+# Check the methods of individual nodes of a function bases tree
+# This method calls itself recursively to traverse the entire tree.
+def checkTreeNode(node):
+
+    if node.isLeaf:
+        # TODO: Do more testing here
+        if node.size() < 0:
+            raise ValueError("Leaf tree node reports negative size!")
+
+    elif node.isPower or node.isComposite:
+
+        # TODO: Test features of non-leaf nodes
+
+        # Recursively test the children
+        for i in range(node.degree):
+            checkTreeNode(node[i])
+
+    else:
+        raise NotImplementedError("Found an unsupported node type")
+
+
 def checkLocalView(basis, localView):
 
     if (localView.size() > localView.maxSize()):
@@ -67,7 +88,14 @@ def checkLocalView(basis, localView):
     if (tree1 != tree2):
         raise ValueError("Multiple calls to localView.tree() do not hand out the same tree.")
 
-    # TODO: Implement the rest
+    if (tree1.isLeaf and tree1.isPower):
+        raise ValueError("Tree claims to be both 'leaf' and 'power'.")
+
+    if (tree1.isLeaf and tree1.isComposite):
+        raise ValueError("Tree claims to be both 'leaf' and 'composite'.")
+
+    # Recursively test all nodes in the tree
+    checkTreeNode(tree1)
 
 
 # Perform tests that don't modify the basis
