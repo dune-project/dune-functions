@@ -46,8 +46,7 @@ def checkBasisIndices(basis):
             multiIndex = localView.index(i)
             for digit in multiIndex:
                 if digit < 0:
-                    # TODO: Print an element identifier, as in the C++ test
-                    raise IndexError("Global multi-index contains negative entry for shape function " + str(i))
+                    raise IndexError(str(element) + ": Global multi-index contains negative entry for shape function " + str(i))
 
             multiIndexSet.add(tuple(multiIndex))
 
