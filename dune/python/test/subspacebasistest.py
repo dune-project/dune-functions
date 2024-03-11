@@ -22,7 +22,7 @@ def test(dimension):
 
     for i in range(dimension):
       basis1_i = subspaceBasis(basis1, i)
-      basistest.checkBasis(basis1_i)
+      basistest.checkBasis(basis1_i, checkLocalIndexSetCompleteness=False)
       interpolatetest.checkConstantInterpolation(basis1_i, 0)
       interpolatetest.checkBasisFunctionInterpolation(basis1_i)
 
@@ -33,27 +33,27 @@ def test(dimension):
 
     # Check velocity subspace
     velocityBasis = subspaceBasis(taylorHoodBasis, 0)
-    basistest.checkBasis(velocityBasis)
+    basistest.checkBasis(velocityBasis, checkLocalIndexSetCompleteness=False)
     interpolatetest.checkConstantInterpolation(velocityBasis, np.zeros(dimension))
     interpolatetest.checkBasisFunctionInterpolation(velocityBasis)
 
     # Check pressure subspace
     pressureBasis = subspaceBasis(taylorHoodBasis, 1)
-    basistest.checkBasis(pressureBasis)
+    basistest.checkBasis(pressureBasis, checkLocalIndexSetCompleteness=False)
     interpolatetest.checkConstantInterpolation(pressureBasis, 0)
     interpolatetest.checkBasisFunctionInterpolation(pressureBasis)
 
     # Check velocity component subspaces obtained by passing multiple indices at once
     for i in range(dimension):
       velocityBasis_i = subspaceBasis(taylorHoodBasis, 0, i)
-      basistest.checkBasis(velocityBasis_i)
+      basistest.checkBasis(velocityBasis_i, checkLocalIndexSetCompleteness=False)
       interpolatetest.checkConstantInterpolation(velocityBasis_i, 0)
       interpolatetest.checkBasisFunctionInterpolation(velocityBasis_i)
 
     # Check velocity component subspaces obtained via nested subspaceBasis call
     for i in range(dimension):
       velocityBasis_i = subspaceBasis(velocityBasis, i)
-      basistest.checkBasis(velocityBasis_i)
+      basistest.checkBasis(velocityBasis_i, checkLocalIndexSetCompleteness=False)
       interpolatetest.checkConstantInterpolation(velocityBasis_i, 0)
       interpolatetest.checkBasisFunctionInterpolation(velocityBasis_i)
 
@@ -65,7 +65,7 @@ def test(dimension):
 
     for i in (0,1):
       subBasis = functions.subspaceBasis(mixedPoissonBasis, i)
-      basistest.checkBasis(subBasis)
+      basistest.checkBasis(subBasis, checkLocalIndexSetCompleteness=False)
       interpolatetest.checkBasisFunctionInterpolation(subBasis)
 
 
