@@ -65,7 +65,7 @@ void registerTreeChildAccessor(pybind11::class_<Tree, std::shared_ptr<Tree>>& cl
 {
   const auto accessors = childAccessors<Tree>(std::make_index_sequence<Tree::degree()>{});
   cls.def(
-    "__getitem__",
+    "child",
     [accessors](Tree& tree, std::size_t i) { return accessors.at(i)(tree); },
     pybind11::arg("i"));
 }

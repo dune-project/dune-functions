@@ -72,7 +72,7 @@ def checkTreeNode(node):
 
         # Recursively test the children
         for i in range(node.degree()):
-            checkTreeNode(node[i])
+            checkTreeNode(node.child(i))
 
     else:
         raise NotImplementedError("Found an unsupported node type")
