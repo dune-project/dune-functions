@@ -64,7 +64,7 @@ def checkTreeNode(node, localIndices):
 
     if node.isLeaf:
 
-        if node.size() != node.finiteElement.size():
+        if node.size() != node.finiteElement().size():
             raise ValueError("Size of leaf node and finite element are different.")
 
         for i in range(node.size()):
