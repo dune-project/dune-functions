@@ -14,16 +14,12 @@ class Tree(object):
 
 
 class Lagrange(Tree):
-    def __init__(self, order, dimRange=1):
+    def __init__(self, order):
         Tree.__init__(self, "Lagrange")
         self.order = order
-        self.dimRange = dimRange
 
     def __repr__(self):
-        if self.dimRange == 1:
-            return "Lagrange<" + str(self.order) + ">"
-        else:
-            return "Lagrange<" + str(self.order) + ">^" + str(self.dimRange)
+        return "Lagrange<" + str(self.order) + ">"
 
 
 class DG(Tree):
