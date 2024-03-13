@@ -6,7 +6,6 @@
 #include <dune/typetree/treepath.hh>
 
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
-#include <dune/functions/functionspacebases/defaultnodetorangemap.hh>
 
 #include <dune/python/common/pythonvector.hh>
 #include <dune/python/grid/function.hh>
