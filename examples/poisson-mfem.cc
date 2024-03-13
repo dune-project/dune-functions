@@ -134,7 +134,7 @@ void getLocalMatrix(const LocalView& localView,
         size_t pressureIndex = localView.tree().child(_1).localIndex(j);
 
         // Pre-compute matrix contribution
-        double tmp = - (fluxDivergence[i] * pressureValues[j]) * quadPoint.weight() * integrationElement;
+        double tmp = (fluxDivergence[i] * pressureValues[j]) * quadPoint.weight() * integrationElement;
 
         elementMatrix[fluxIndex][pressureIndex] += tmp;
         elementMatrix[pressureIndex][fluxIndex] += tmp;
