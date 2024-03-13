@@ -35,9 +35,8 @@ namespace Dune
       // registerDiscreteFunctionConstructor
       // -----------------------------------
 
-      template< class Basis, class TreePath, class K, class Range, class... options >
-      inline static std::enable_if_t< std::is_constructible_v< TreePath > >
-      registerDiscreteFunctionConstructor ( pybind11::class_< Dune::Functions::DiscreteGlobalBasisFunction< Basis, HierarchicPythonVector< K >, Dune::Functions::HierarchicNodeToRangeMap, Range >, options... > &cls, PriorityTag< 1 > )
+      template< class Basis, class K, class Range, class... options >
+      inline static void registerDiscreteFunctionConstructor ( pybind11::class_< Dune::Functions::DiscreteGlobalBasisFunction< Basis, HierarchicPythonVector< K >, Dune::Functions::HierarchicNodeToRangeMap, Range >, options... > &cls, PriorityTag< 1 > )
       {
         using pybind11::operator""_a;
 
@@ -47,11 +46,10 @@ namespace Dune
 
         cls.def( pybind11::init( [] ( const Basis &basis, pybind11::buffer dofVector ) {
               auto nodeToRangeMapPtr =
-                std::make_shared<const NodeToRangeMap>(makeDefaultNodeToRangeMap(basis, TreePath()));
+                std::make_shared<const NodeToRangeMap>();
               std::shared_ptr<const Basis> basisPtr = Dune::wrap_or_move( basis );
               auto vectorPtr = std::make_shared< const Vector >( dofVector );
               return new DiscreteFunction( basisPtr,
-                                           TreePath(),
                                            vectorPtr,
                                            nodeToRangeMapPtr );
             } ), pybind11::keep_alive< 1, 2 >(), pybind11::keep_alive< 1, 3 >(), "basis"_a, "dofVector"_a );
