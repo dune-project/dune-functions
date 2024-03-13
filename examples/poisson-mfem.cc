@@ -134,7 +134,7 @@ void getLocalMatrix(const LocalView& localView,
         size_t pressureIndex = localView.tree().child(_1).localIndex(j);
 
         // Pre-compute matrix contribution
-        double tmp = - (fluxDivergence[i] * pressureValues[j]) * quadPoint.weight() * integrationElement;
+        double tmp = (fluxDivergence[i] * pressureValues[j]) * quadPoint.weight() * integrationElement;
 
         elementMatrix[fluxIndex][pressureIndex] += tmp;
         elementMatrix[pressureIndex][fluxIndex] += tmp;
@@ -403,7 +403,7 @@ int main (int argc, char *argv[])
 
   assembleMixedPoissonMatrix(basis, stiffnessMatrix);
 
-  auto rightHandSide = [] (const Domain& x) { return 10; };
+  auto rightHandSide = [] (const Domain& x) { return 2; };
 
   assembleMixedPoissonRhs(basis, rhs, rightHandSide);
 
@@ -416,7 +416,7 @@ int main (int argc, char *argv[])
   auto normal = Dune::Functions::FaceNormalGridFunction(gridView);
   auto fluxDirichletValues = Dune::Functions::makeComposedGridFunction(
     [pi = std::acos(-1.0)](const auto& x, const auto& normal) {
-      return (-0.05 * (1. - x[0]) * std::sin(2.*pi*x[0])) * normal;
+      return std::sin(2.*pi*x[0]) * normal;
     },
     coordinate,
     normal);
