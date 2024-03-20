@@ -112,9 +112,9 @@ void registerFiniteElementProperty(pybind11::class_< Tree, std::shared_ptr<Tree>
   // this should probably be fixed in dune-localfunctions
   if (!pybind11::already_registered< typename Tree::FiniteElement >())
     registerLocalFiniteElement<typename Tree::FiniteElement>(cls);
-  cls.def_property_readonly(
+  cls.def(
     "finiteElement",
-    [](const Tree& tree) { return &tree.finiteElement(); },
+    &Tree::finiteElement,
     pybind11::return_value_policy::reference_internal
     );
 }

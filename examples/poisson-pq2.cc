@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include <dune/common/bitsetvector.hh>
+#include <dune/common/rangeutilities.hh>
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -29,7 +30,7 @@ using namespace Dune;
 
 // Compute the stiffness matrix for a single element
 template <class LocalView, class MatrixType>
-void getLocalMatrix( const LocalView& localView, MatrixType& elementMatrix)
+void getLocalMatrix(const LocalView& localView, MatrixType& elementMatrix)
 {
   // Get the grid element from the local FE basis view
   typedef typename LocalView::Element Element;
@@ -167,8 +168,8 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
 /** \brief Assemble the Laplace stiffness matrix on the given grid view */
 template <class FEBasis, class VolumeTerm>
 void assembleLaplaceMatrix(const FEBasis& feBasis,
-                           BCRSMatrix<FieldMatrix<double,1,1> >& matrix,
-                           BlockVector<FieldVector<double,1> >& rhs,
+                           BCRSMatrix<double>& matrix,
+                           BlockVector<double>& rhs,
                            VolumeTerm&& volumeTerm)
 {
   // Get the grid view from the finite element basis
@@ -244,10 +245,11 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
 }
 
 
-// This method marks all vertices on the boundary of the grid.
-// In our problem these are precisely the Dirichlet nodes.
+// This method marks all Lagrange nodes on the boundary of the grid.
+// In our problem we want to use them as the Dirichlet nodes.
 // The result can be found in the 'dirichletNodes' variable.  There, a bit
-// is set precisely when the corresponding vertex is on the grid boundary.
+// is set precisely when the corresponding Lagrange node is on the grid boundary.
+//
 // Since interpolating into a vector<bool> is currently not supported,
 // we use a vector<char> which, in contrast to vector<bool>
 // is a real container.
@@ -274,7 +276,7 @@ auto createMixedGrid()
   factory.insertElement(Dune::GeometryTypes::simplex(2), {4, 7, 6});
   factory.insertElement(Dune::GeometryTypes::simplex(2), {4, 5, 7});
   factory.insertElement(Dune::GeometryTypes::simplex(2), {5, 8, 7});
-  return std::unique_ptr<Grid>{factory.createGrid()};
+  return factory.createGrid();
 }
 
 int main (int argc, char *argv[]) try
@@ -286,12 +288,11 @@ int main (int argc, char *argv[]) try
   //   Generate the grid
   ///////////////////////////////////
 
-  auto gridPtr = createMixedGrid();
+  auto grid = createMixedGrid();
 
-  auto& grid = *gridPtr;
-  grid.globalRefine(4);
+  grid->globalRefine(4);
 
-  auto gridView = grid.leafGridView();
+  auto gridView = grid->leafGridView();
   using GridView = decltype(gridView);
 
   /////////////////////////////////////////////////////////
@@ -305,8 +306,8 @@ int main (int argc, char *argv[]) try
   //   Stiffness matrix and right hand side vector
   /////////////////////////////////////////////////////////
 
-  typedef BlockVector<FieldVector<double,1> > VectorType;
-  typedef BCRSMatrix<FieldMatrix<double,1,1> > MatrixType;
+  using VectorType = BlockVector<double>;
+  using MatrixType = BCRSMatrix<double>;
 
   VectorType rhs;
   MatrixType stiffnessMatrix;
@@ -343,7 +344,7 @@ int main (int argc, char *argv[]) try
   interpolate(feBasis, x, dirichletValueFunction, dirichletNodes);
 
   //////////////////////////////////////////////////////
-  //   Incorporate dirichlet values in a symmetric way
+  //   Incorporate Dirichlet values in a symmetric way
   //////////////////////////////////////////////////////
 
   // Compute residual for non-homogeneous Dirichlet values
@@ -355,19 +356,15 @@ int main (int argc, char *argv[]) try
   for (size_t i=0; i<stiffnessMatrix.N(); i++) {
     if (dirichletNodes[i]) {
       rhs[i] = x[i];
-      auto cIt    = stiffnessMatrix[i].begin();
-      auto cEndIt = stiffnessMatrix[i].end();
       // loop over nonzero matrix entries in current row
-      for (; cIt!=cEndIt; ++cIt)
-        *cIt = (i==cIt.index()) ? 1 : 0;
+      for (auto&& [entry, idx] : sparseRange(stiffnessMatrix[i]))
+        entry = (i==idx) ? 1.0 : 0.0;
     }
     else {
-      auto cIt    = stiffnessMatrix[i].begin();
-      auto cEndIt = stiffnessMatrix[i].end();
       // loop over nonzero matrix entries in current row
-      for (; cIt!=cEndIt; ++cIt)
-        if (dirichletNodes[cIt.index()])
-          *cIt = 0;
+      for (auto&& [entry, idx] : sparseRange(stiffnessMatrix[i]))
+        if (dirichletNodes[idx])
+          entry = 0.0;
     }
   }
 

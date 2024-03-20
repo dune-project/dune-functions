@@ -90,7 +90,7 @@ private:
 
 
 // This helper function implements caching of the derivative for local functions.
-// When using an algorithm that gets a LocalFunction and calls it's derivative
+// When using an algorithm that gets a LocalFunction and calls its derivative
 // on each element, this leads to a costly call of derivative(f). E.g. for a
 // DiscreteGlobalBasisFunction, this will allocate several buffer.
 // To avoid this, this helper function caches the derivative and hands
