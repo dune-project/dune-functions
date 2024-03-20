@@ -23,6 +23,39 @@
 
 #include <dune/functions/functionspacebases/test/basistest.hh>
 
+
+
+// This wrapper will hide the derivative() of an existing GridFunction
+// making it non-differentiable for testing.
+template<class GlobalBase>
+class NonDifferentiableGridFunction : protected GlobalBase
+{
+  using LocalBase = std::decay_t<decltype(localFunction(std::declval<GlobalBase>()))>;
+
+  class LocalFunction : private LocalBase
+  {
+  public:
+    LocalFunction(const LocalBase& base) : LocalBase(base) {}
+    LocalFunction(LocalBase&& base) : LocalBase(base) {}
+    using LocalBase::operator();
+    using LocalBase::bind;
+    using LocalBase::unbind;
+    using LocalBase::bound;
+    using LocalBase::localContext;
+  };
+
+public:
+  NonDifferentiableGridFunction(GlobalBase&& base) : GlobalBase(base) {}
+  using GlobalBase::operator();
+  using GlobalBase::entitySet;
+  friend LocalFunction localFunction(const NonDifferentiableGridFunction& f)
+  {
+    return LocalFunction(localFunction(static_cast<const GlobalBase&>(f)));
+  }
+};
+
+
+
 int main (int argc, char* argv[])
 {
   Dune::MPIHelper::instance(argc, argv);
@@ -74,6 +107,15 @@ int main (int argc, char* argv[])
   };
 
   Dune::Functions::interpolate(basis, x, f);
+
+  for(const auto& xi : x)
+    for(const auto& xij : xi)
+      test.require(std::abs(xij - 1.0) < 1e-10)
+        << "Coefficient of interpolated 1-function does not match";
+
+  // Now check the same but provide f as non-differentiable GridFunction
+  auto nonDiffF = NonDifferentiableGridFunction(Dune::Functions::makeAnalyticGridViewFunction(f, basis.gridView()));
+  Dune::Functions::interpolate(basis, x, nonDiffF);
 
   for(const auto& xi : x)
     for(const auto& xij : xi)

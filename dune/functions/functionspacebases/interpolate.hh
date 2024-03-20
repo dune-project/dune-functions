@@ -167,6 +167,12 @@ void interpolateLocal(VectorBackend& vector, const BitVectorBackend& bitVector, 
 }
 
 
+struct HasDerivative
+{
+  template<class F>
+  auto require(F&& f) -> decltype(derivative(f));
+};
+
 } // namespace Imp
 
 
@@ -227,9 +233,15 @@ void interpolate(const B& basis, C&& coeff, const F& f, const BV& bv, const NTRE
 
   // Obtain a local view of f
   // To avoid costly reconstruction of the derivative on each element,
-  // we use the CachedDerivativeLocalFunction wrapper that will handout
+  // we use the CachedDerivativeLocalFunction wrapper if the function
+  // is differentiable. This wrapper will handout
   // a reference to a single cached derivative object.
-  auto localF = Imp::CachedDerivativeLocalFunction(localFunction(gf));
+  auto localF = [&](){
+    if constexpr (models<Imp::HasDerivative, decltype(localFunction(gf))>())
+      return Imp::CachedDerivativeLocalFunction(localFunction(gf));
+    else
+      return localFunction(gf);
+  }();
 
   auto localView = basis.localView();
 
