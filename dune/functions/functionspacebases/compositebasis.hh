@@ -19,6 +19,7 @@
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/containerdescriptors.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 
@@ -252,11 +253,33 @@ public:
     return std::get<i>(subPreBases_);
   }
 
+  //! Const access to the stored prebases tuple
+  const auto& subPreBases() const
+  {
+    return subPreBases_;
+  }
+
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   template<typename It>
   It indices(const Node& node, It it) const
   {
     return indices(node, it, IndexMergingStrategy{});
+  }
+
+  //! Return the associated container descriptor
+  auto containerDescriptor() const
+  {
+    namespace CD = Dune::Functions::ContainerDescriptors;
+    if constexpr(std::is_same_v<IMS, BasisFactory::BlockedLexicographic>) {
+      return std::apply([&](auto const&... spb) {
+        return CD::makeDescriptor(Dune::Functions::containerDescriptor(spb)...);
+      }, subPreBases_);
+    }
+    else if constexpr(std::is_same_v<IMS, BasisFactory::FlatLexicographic>) {
+      return CD::Unknown{}; // Not yet implemented
+    }
+    else
+      return CD::Unknown{};
   }
 
 private:

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/containerdescriptors.hh>
 #include <dune/functions/functionspacebases/transformedindexbasis.hh>
 
 
@@ -114,6 +115,13 @@ public:
   auto dimension(const PreBasis& preBasis) const
   {
     return numIndices_;
+  }
+
+  //! Return a flat container descriptor for this preBasis
+  template<class PreBasis>
+  auto containerDescriptor(const PreBasis& preBasis) const
+  {
+    return Dune::Functions::containerDescriptor(preBasis);
   }
 
 private:

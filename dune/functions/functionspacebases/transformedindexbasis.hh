@@ -127,6 +127,12 @@ public:
     return transformation_.size(prefix, rawPreBasis_);
   }
 
+  //! Return the container descriptor of the transformed pre-basis
+  auto containerDescriptor() const
+  {
+    return transformation_.containerDescriptor(rawPreBasis_);
+  }
+
   //! Get the total dimension of the space spanned by this basis
   size_type dimension() const
   {
@@ -226,7 +232,7 @@ auto transformIndices(
  * \tparam minIS Minimal multi-index size
  * \tparam maxIS Maximal multi-index size. Notice that this has to large enough to also store the untransformed indices.
  */
-template<class IndexTransformation, class SizeImplementation, std::size_t minIS, std::size_t maxIS>
+template<class IndexTransformation, class SizeImplementation, class ContainerDescriptorImplementation, std::size_t minIS, std::size_t maxIS>
 class GenericIndexingTransformation
 {
 public:
@@ -234,10 +240,11 @@ public:
   static constexpr std::size_t minIndexSize = minIS;
   static constexpr std::size_t maxIndexSize = maxIS;
 
-  template<class IT_R, class SI_R>
-  GenericIndexingTransformation(IT_R&& indexTransformation, SI_R&& sizeImplementation) :
+  template<class IT_R, class SI_R, class CD_R>
+  GenericIndexingTransformation(IT_R&& indexTransformation, SI_R&& sizeImplementation, CD_R&& containerDescriptorImplementation) :
     indexTransformation_(std::forward<IT_R>(indexTransformation)),
-    sizeImplementation_(std::forward<SI_R>(sizeImplementation))
+    sizeImplementation_(std::forward<SI_R>(sizeImplementation)),
+    containerDescriptorImplementation_(std::forward<CD_R>(containerDescriptorImplementation))
   {}
 
   template<class MultiIndex, class PreBasis>
@@ -258,9 +265,16 @@ public:
     return preBasis.dimension();
   }
 
+  template<class PreBasis>
+  auto containerDescriptor(const PreBasis& preBasis) const
+  {
+    return containerDescriptorImplementation_(preBasis);
+  }
+
 private:
   IndexTransformation indexTransformation_;
   SizeImplementation sizeImplementation_;
+  ContainerDescriptorImplementation containerDescriptorImplementation_;
 };
 
 
@@ -280,20 +294,39 @@ private:
  *
  * \tparam IndexTransformation Callback type for transforming multi-indices
  * \tparam SizeImplementation Callback type for implementation of size(prefix)
+ * \tparam ContainerDescriptorImplementation Callback type for implementation of containerDescriptor()
  * \tparam minIS Minimal multi-index size
  * \tparam maxIS Maximal multi-index size. Notice that this has to be large enough to also store the untransformed indices.
  */
-template<class IndexTransformation, class SizeImplementation, std::size_t minIndexSize, std::size_t maxIndexSize>
-auto indexTransformation(IndexTransformation&& indexTransformation, SizeImplementation&& sizeImplementation, Dune::index_constant<minIndexSize>, Dune::index_constant<maxIndexSize>)
+template<class IndexTransformation, class SizeImplementation, class ContainerDescriptorImplementation, std::size_t minIndexSize, std::size_t maxIndexSize>
+auto indexTransformation(IndexTransformation&& indexTransformation,
+                         SizeImplementation&& sizeImplementation,
+                         ContainerDescriptorImplementation&& containerDescriptorImplementation,
+                         Dune::index_constant<minIndexSize>,
+                         Dune::index_constant<maxIndexSize>)
 {
   return GenericIndexingTransformation<
     std::decay_t<IndexTransformation>,
     std::decay_t<SizeImplementation>,
+    std::decay_t<ContainerDescriptorImplementation>,
     minIndexSize, maxIndexSize>(
         std::forward<IndexTransformation>(indexTransformation),
-        std::forward<SizeImplementation>(sizeImplementation));
+        std::forward<SizeImplementation>(sizeImplementation),
+        std::forward<ContainerDescriptorImplementation>(containerDescriptorImplementation));
 }
 
+//! Fallback implementation if no container descriptor argument is given.
+template<class IndexTransformation, class SizeImplementation,
+         std::size_t minIndexSize, std::size_t maxIndexSize>
+auto indexTransformation(IndexTransformation&& indexTrafo,
+                         SizeImplementation&& sizeImpl,
+                         Dune::index_constant<minIndexSize> minSize,
+                         Dune::index_constant<maxIndexSize> maxSize)
+{
+  return indexTransformation(indexTrafo, sizeImpl,
+    [](auto&&) { return Dune::Functions::ContainerDescriptors::Unknown{}; },
+    minSize, maxSize);
+}
 
 } // end namespace Experimental
 } // end namespace BasisFactory

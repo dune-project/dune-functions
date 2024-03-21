@@ -10,6 +10,7 @@
 #include <dune/functions/common/utility.hh>
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
+#include <dune/functions/functionspacebases/containerdescriptors.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
 
@@ -245,6 +246,12 @@ public:
     return indicesImpl(node, it, children_, IndexMergingStrategy{});
   }
 
+  //! Return the associated container descriptor
+  auto containerDescriptor() const
+  {
+    return containerDescriptorImpl(children_);
+  }
+
 protected:
 
   template<class NodeType, typename It, class Children>
@@ -355,6 +362,22 @@ protected:
       }
     }
     return next;
+  }
+
+  template<class Children>
+  auto containerDescriptorImpl(Children children) const
+  {
+    auto subTree = Dune::Functions::containerDescriptor(subPreBasis_);
+    if constexpr(std::is_same_v<IMS, BasisFactory::FlatInterleaved>)
+      return ContainerDescriptors::Unknown{}; // Not yet implemented
+    else if constexpr(std::is_same_v<IMS, BasisFactory::FlatLexicographic>)
+      return ContainerDescriptors::Unknown{}; // Not yet implemented
+    else if constexpr(std::is_same_v<IMS, BasisFactory::BlockedLexicographic>)
+      return ContainerDescriptors::makeUniformDescriptor(children,std::move(subTree));
+    else if constexpr(std::is_same_v<IMS, BasisFactory::BlockedInterleaved>)
+      return ContainerDescriptors::Unknown{}; // Not yet implemented
+    else
+      return ContainerDescriptors::Unknown{};
   }
 
 protected:

@@ -34,6 +34,9 @@ corresponding version of the Dune core modules.
 - Add mixin class `LFEPreBasisMixin` to create leaf pre-bases based on a local finite-element and a layout.
 - The class `LeafPreBasisMapperMixIn` is renamed into `LeafPreBasisMapperMixin`.
 - Add data structures for container descriptors in namespace `Dune::Functions::ContainerDescriptors`.
+- Introduce a new member-function `.containerDescriptor()` for all pre-bases that return an instance of
+  one of the container descriptors to represent a container that can be indexed by the multi-indices of that
+  pre-basis.
 
 ### Python
 

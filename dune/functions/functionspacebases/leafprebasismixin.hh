@@ -7,6 +7,8 @@
 #include <cstddef>
 #include <type_traits>
 
+#include <dune/functions/functionspacebases/containerdescriptors.hh>
+
 namespace Dune::Functions {
 
 /**
@@ -54,6 +56,12 @@ public:
   size_type size() const
   {
     return derived().dimension();
+  }
+
+  //! Return a flat container-descriptor
+  auto containerDescriptor() const
+  {
+    return ContainerDescriptors::FlatVector{size()};
   }
 
 private:
