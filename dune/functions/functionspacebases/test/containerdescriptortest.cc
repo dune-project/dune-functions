@@ -257,7 +257,7 @@ int main (int argc, char *argv[])
   checkBasis(test, lagrange<1>() );
   checkBasis(test, power<2>(lagrange<1>(), blockedLexicographic()) );
   checkBasis(test, composite(lagrange<1>(),lagrange<2>()) );
-  checkBasis(test, power<2>(power<2>(lagrange<2>(), blockedLexicographic()), blockedLexicographic()) );
+  checkBasis(test, power<2>(power<2>(lagrange<2>(), blockedInterleaved()), blockedInterleaved()) );
 
   checkBasis(test, power<2>(
         composite(

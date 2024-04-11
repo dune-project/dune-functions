@@ -202,6 +202,93 @@ auto makeUniformDescriptor (std::size_t n, Child child)
   return UniformVector<Child>{n,std::move(child)};
 }
 
+namespace Impl {
+
+template<class InnerFunc, class LeafFunc>
+struct TreeTransform
+{
+  TreeTransform (const InnerFunc& innerFunc, const LeafFunc& leafFunc)
+    : innerFunc_(innerFunc)
+    , leafFunc_(leafFunc)
+  {}
+
+  Unknown operator() (const Unknown& tree) const
+  {
+    return tree;
+  }
+
+  auto operator() (const Value& tree) const
+  {
+    return leafFunc_(tree);
+  }
+
+  template<class... V>
+  auto operator() (const Tuple<V...>& tree) const
+  {
+    return unpackIntegerSequence([&](auto... ii) {
+      return Tuple{innerFunc_(tree,ii)...};
+    }, std::make_index_sequence<sizeof...(V)>());
+  }
+
+  template<class V, std::size_t n>
+  auto operator() (const Array<V,n>& tree) const
+  {
+    return unpackIntegerSequence([&](auto... ii) {
+      return Array{innerFunc_(tree,ii)...};
+    }, std::make_index_sequence<n>());
+  }
+
+  template<class V>
+  auto operator() (const Vector<V>& tree) const
+  {
+    using W = decltype(innerFunc_(tree,0));
+    Vector<W> result;
+    result.reserve(tree.size());
+    for (std::size_t i = 0; i < tree.size(); ++i)
+      result.emplace_back(innerFunc_(tree,i));
+    return result;
+  }
+
+  template<class V, std::size_t n>
+  auto operator() (const UniformArray<V,n>& tree) const
+  {
+    using W = decltype(innerFunc_(tree,Indices::_0));
+    return UniformArray<W,n>(innerFunc_(tree,Indices::_0));
+  }
+
+  template<class V>
+  auto operator() (const UniformVector<V>& tree) const
+  {
+    using W = decltype(innerFunc_(tree,0));
+    return UniformVector<W>(tree.size(), innerFunc_(tree,0));
+  }
+
+private:
+  InnerFunc innerFunc_;
+  LeafFunc leafFunc_;
+};
+
+
+/**
+  * Append a size to the inner-most node of the tree
+  *
+  * This transf of the given tree is used to implement
+  * a blocked-interleaved index-merging strategy in a power-basis.
+  *
+  * Examples:
+  * append( Flat[Container] it, size ) -> Uniform[Container]( it.size(), Flat[Container](size) )
+  * append( Descriptor(child...), size ) -> Descriptor( append(child, size)... )
+  */
+template<class T, class Size>
+auto appendToTree (const T& tree, Size s)
+{
+  auto transform = TreeTransform(
+    [s](auto&& node, auto i) { return appendToTree(node[i], s); },
+    [s](auto&& node) { return makeUniformDescriptor(s, node); });
+  return transform(tree);
+}
+
+} // end namespace Impl
 } // end namespace ContainerDescriptors
 } // end namespace Dune::Functions
 
