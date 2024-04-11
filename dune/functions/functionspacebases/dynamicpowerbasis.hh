@@ -379,7 +379,7 @@ protected:
     else if constexpr(std::is_same_v<IMS, BasisFactory::BlockedLexicographic>)
       return ContainerDescriptors::makeUniformDescriptor(children,std::move(subTree));
     else if constexpr(std::is_same_v<IMS, BasisFactory::BlockedInterleaved>)
-      return ContainerDescriptors::Impl::appendToTree(subTree,children);
+      return ContainerDescriptors::Impl::appendToTree(children,std::move(subTree));
     else
       return ContainerDescriptors::Unknown{};
   }

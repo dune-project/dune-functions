@@ -226,7 +226,7 @@ struct TreeTransform
   auto operator() (const Tuple<V...>& tree) const
   {
     return unpackIntegerSequence([&](auto... ii) {
-      return Tuple{innerFunc_(tree,ii)...};
+      return makeDescriptor(innerFunc_(tree[ii])...);
     }, std::make_index_sequence<sizeof...(V)>());
   }
 
@@ -234,33 +234,31 @@ struct TreeTransform
   auto operator() (const Array<V,n>& tree) const
   {
     return unpackIntegerSequence([&](auto... ii) {
-      return Array{innerFunc_(tree,ii)...};
+      return makeDescriptor(innerFunc_(tree[ii])...);
     }, std::make_index_sequence<n>());
   }
 
   template<class V>
   auto operator() (const Vector<V>& tree) const
   {
-    using W = decltype(innerFunc_(tree,0));
+    using W = decltype(innerFunc_(tree[0]));
     Vector<W> result;
     result.reserve(tree.size());
     for (std::size_t i = 0; i < tree.size(); ++i)
-      result.emplace_back(innerFunc_(tree,i));
+      result.emplace_back(innerFunc_(tree[i]));
     return result;
   }
 
   template<class V, std::size_t n>
   auto operator() (const UniformArray<V,n>& tree) const
   {
-    using W = decltype(innerFunc_(tree,Indices::_0));
-    return UniformArray<W,n>(innerFunc_(tree,Indices::_0));
+    return makeUniformDescriptor(Dune::index_constant<n>{}, innerFunc_(tree[0]));
   }
 
   template<class V>
   auto operator() (const UniformVector<V>& tree) const
   {
-    using W = decltype(innerFunc_(tree,0));
-    return UniformVector<W>(tree.size(), innerFunc_(tree,0));
+    return makeUniformDescriptor(tree.size(), innerFunc_(tree[0]));
   }
 
 private:
@@ -270,20 +268,20 @@ private:
 
 
 /**
-  * Append a size to the inner-most node of the tree
+  * Append a size to the leaf-nodes of the tree
   *
-  * This transf of the given tree is used to implement
+  * This transform of the given tree is used to implement
   * a blocked-interleaved index-merging strategy in a power-basis.
   *
   * Examples:
-  * append( Flat[Container] it, size ) -> Uniform[Container]( it.size(), Flat[Container](size) )
+  * append( Flat[Container] c, size ) -> Uniform[Container]( c.size(), Flat[Container](size) )
   * append( Descriptor(child...), size ) -> Descriptor( append(child, size)... )
   */
-template<class T, class Size>
-auto appendToTree (const T& tree, Size s)
+template<class Size, class T>
+auto appendToTree (Size s, const T& tree)
 {
   auto transform = TreeTransform(
-    [s](auto&& node, auto i) { return appendToTree(node[i], s); },
+    [s](auto&& node) { return appendToTree(s, node); },
     [s](auto&& node) { return makeUniformDescriptor(s, node); });
   return transform(tree);
 }
