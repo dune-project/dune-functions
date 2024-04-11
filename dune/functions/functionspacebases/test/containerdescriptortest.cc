@@ -254,15 +254,22 @@ int main (int argc, char *argv[])
 
   using namespace Dune::Functions::BasisFactory;
 
+  // test default index-merging strategies
   checkBasis(test, lagrange<1>() );
-  checkBasis(test, power<2>(lagrange<1>(), blockedLexicographic()) );
+  checkBasis(test, power<2>(lagrange<1>()) );
   checkBasis(test, composite(lagrange<1>(),lagrange<2>()) );
-  checkBasis(test, power<2>(power<2>(lagrange<2>(), blockedInterleaved()), blockedInterleaved()) );
 
+  // test combinations of blocked-interleaved and blocked-lexicographic
+  checkBasis(test, power<2>(power<3>(lagrange<2>(), blockedInterleaved()), blockedInterleaved()) );
+  checkBasis(test, power<2>(power<3>(lagrange<2>(), blockedInterleaved()), blockedLexicographic()) );
+  checkBasis(test, power<2>(power<3>(lagrange<2>(), blockedLexicographic()), blockedInterleaved()) );
+  checkBasis(test, power<2>(power<3>(lagrange<2>(), blockedLexicographic()), blockedLexicographic()) );
+
+  // test more complicated bases
   checkBasis(test, power<2>(
         composite(
-          power<1>(power<1>(lagrange<1>(), blockedLexicographic()), blockedLexicographic()),
-          power<2>(lagrange<1>(), blockedLexicographic()),
+          power<1>(power<1>(lagrange<1>(), blockedInterleaved()), blockedLexicographic()),
+          power<2>(lagrange<1>(), blockedInterleaved()),
           power<3>(lagrange<1>(), blockedLexicographic())
         ), blockedLexicographic()
       )
@@ -270,12 +277,12 @@ int main (int argc, char *argv[])
 
   checkBasis(test, composite(
       composite(
-        power<2>(lagrange<1>(), blockedLexicographic()),
+        power<2>(lagrange<1>(), blockedInterleaved()),
         power<1>(power<2>(lagrange<1>(), blockedLexicographic()), blockedLexicographic())
       ),
       composite(
-        power<1>(power<1>(lagrange<1>(), blockedLexicographic()), blockedLexicographic()),
-        power<2>(lagrange<1>(), blockedLexicographic()),
+        power<1>(power<1>(lagrange<1>(), blockedLexicographic()), blockedInterleaved()),
+        power<2>(lagrange<1>(), blockedInterleaved()),
         power<3>(lagrange<1>(), blockedLexicographic())
       )
     )
