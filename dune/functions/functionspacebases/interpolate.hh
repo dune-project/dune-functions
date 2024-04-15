@@ -76,7 +76,7 @@ public:
     // using forwardCapture for perfect forwarding capture. If the function caches its
     // derivative, this saves a potentially costly copy.
     auto&& df = derivative(Dune::resolveRef(cf.f_));
-    return [&, df=forwardCapture(std::forward<decltype(df)>(df))](const auto&& x) {
+    return [&, df=forwardCapture(std::forward<decltype(df)>(df))](auto&& x) {
       return cf.restriction_(df.forward()(x));
     };
   }
