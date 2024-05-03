@@ -27,7 +27,7 @@ def localAssembler(localView, volumeTerm):
     localB = np.zeros(n)
 
     # choose a high enough quadrature order
-    quadOrder = 3
+    quadOrder = 4
 
     # create a quadrature rule and integrate
     quadRule = dune.geometry.quadratureRule(element.type, quadOrder)
