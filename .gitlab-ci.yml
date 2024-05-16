@@ -30,3 +30,14 @@ code-spelling-check:
   script:
   - codespell
     --ignore-words-list ans,nd,ba,ser,elemente
+
+# Check SPDX compliance of license information
+reuse:
+  stage: .pre
+  image:
+    name: docker.io/fsfe/reuse:latest
+    entrypoint: [""]
+  tags: [duneci]
+  before_script: ""
+  script:
+    - reuse lint
