@@ -49,7 +49,7 @@ resulting tensor multiplication expressions can be interpreted as rooted trees.
 For example, the tree for the three-dimensional Taylor-Hood basis is shown below.
 This tree structure is directly exposed in the _dune-functions_ interface.
 
-<img src="doc/gfx/dune-functions-taylor-hood-tree.svg" alt="Taylor-Hood space in tree representation" width="400" height="300">
+![Sketch of a Taylor-Hood space in tree representation](doc/gfx/dune-functions-taylor-hood-tree.svg "Taylor-Hood space")
 
 ### Implementations of Function Space Bases
 
