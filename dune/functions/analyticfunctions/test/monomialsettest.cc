@@ -92,6 +92,37 @@ Dune::TestSuite testMonomialSet(unsigned long n, double tol)
     }
   }
 
+  auto H_monomials = derivative(derivative(monomials));
+  for(auto x : samplePoints<F, dim>(n))
+  {
+    auto y = H_monomials(x);
+    suite.check(y.size() == size)<<"Wrong Size";
+    suite.check(y[0].M() == dim)<<"Wrong M";
+    suite.check(y[0].N() == dim)<<"Wrong N";
+
+    for(auto i : Dune::range(size))
+    {
+      for(auto j : Dune::range(dim))
+      {
+        for (auto l: Dune::range(dim)){
+          auto yy = F(1.0);
+          for(auto k : Dune::range(dim))
+          {
+            if (p[i][k]-(k==j)-(k==l) > 0)
+              yy *= std::pow(x[k], p[i][k] - int(k == j) - int(k == l));
+          }
+          if (j == l)
+            yy *= p[i][j] * (int(p[i][j]) - 1.);
+          else
+            yy *= p[i][j] * p[i][l];
+
+          suite.check(std::fabs(y[i][j][l] - yy) < tol)
+            << "Monomial(dim=" << dim << ",maxOrder=" << maxOrder << ",index=" << i << ", exponents= "<< p[i][0] << p[i][1]<<") hessian component ["<<l<<","<<j<<"] was "<<y[i][j][l]<<" but "<<yy<<" was expected.";
+        }
+      }
+    }
+  }
+
   return suite;
 }
 
@@ -116,5 +147,11 @@ int main(int argc, char* argv[])
   suite.subTest(testMonomialSet<double, 2, 4>(10, 1e-14));
   suite.subTest(testMonomialSet<double, 2, 5>(10, 1e-14));
 
+  suite.subTest(testMonomialSet<double, 3, 0>(10, 1e-14));
+  suite.subTest(testMonomialSet<double, 3, 1>(10, 1e-14));
+  suite.subTest(testMonomialSet<double, 3, 2>(10, 1e-14));
+  suite.subTest(testMonomialSet<double, 3, 3>(10, 1e-14));
+  suite.subTest(testMonomialSet<double, 3, 4>(10, 1e-14));
+  suite.subTest(testMonomialSet<double, 3, 5>(10, 1e-14));
   return suite.exit();
 }
