@@ -15,8 +15,6 @@
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/io/file/gmshreader.hh>
 
-#include <dune/localfunctions/test/test-localfe.hh>
-
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/lagrangedgbasis.hh>
@@ -30,13 +28,11 @@ using namespace Dune::Functions;
 /** \param disableInterpolate Not all bases can correctly represent the linear function
  *      that we use to test whether integrating over a given function gives the correct
  *      value (e.g. basis without dofs on the boundary).  Therefore we allow to disable this test.
- *  \param disabledLocalTests Allows to disable certain local tests (see dune-localfunctions/dune/localfunctions/test/test-localfe.hh)
  */
 template <typename Basis>
 void testScalarBasisConst(const Basis& feBasis,
                      bool isPartitionOfUnity,
-                     bool disableInterpolate = false,
-                     char disabledLocalTests = DisableNone)
+                     bool disableInterpolate = false)
 {
   static const int dim = Basis::GridView::dimension;
 
@@ -194,11 +190,10 @@ void testScalarBasisConst(const Basis& feBasis,
 template <typename Basis, typename GV>
 void testScalarBasis(Basis& feBasis, GV gv,
                      bool isPartitionOfUnity,
-                     bool disableInterpolate = false,
-                     char disabledLocalTests = DisableNone)
+                     bool disableInterpolate = false)
 {
   feBasis.update(gv);
-  testScalarBasisConst(feBasis, isPartitionOfUnity, disableInterpolate, disabledLocalTests);
+  testScalarBasisConst(feBasis, isPartitionOfUnity, disableInterpolate);
 }
 
 template <int dim>
@@ -261,8 +256,8 @@ void testOnStructuredGrid()
     BSplineBasis<GridView> bSplineBasis(gridView, knotVector, order);
     testScalarBasisConst(bSplineBasis,
                     true,
-                    true,      // Don't interpolate a given function and try to integrate over it
-                    DisableLocalInterpolation);
+                    true);      // Don't interpolate a given function and try to integrate over it
+
   }
 
   // Testing B-spline basis with non-open knot vectors
@@ -274,8 +269,8 @@ void testOnStructuredGrid()
     BSplineBasis<GridView> bSplineBasis(gridView, knotVector, order, false);
     testScalarBasisConst(bSplineBasis,
                     order==0,   // only zero-order B-splines for a partition of unity
-                    true,      // Don't interpolate a given function and try to integrate over it
-                    DisableLocalInterpolation);
+                    true);      // Don't interpolate a given function and try to integrate over it
+
   }
 }
 
