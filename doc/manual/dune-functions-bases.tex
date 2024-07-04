@@ -2917,7 +2917,7 @@ There are two unknowns in this problem: a stationary
 fluid velocity field $\mathbf{u} : \Omega \to \R^d$, and the fluid pressure $p : \Omega \to \R$.
 Together, they have to solve the boundary value problem
 \begin{alignat*}{2}
- -\Delta \mathbf{u} - \nabla p & = 0  & \qquad & \text{in $\Omega$}, \\
+ -\Delta \mathbf{u} + \nabla p & = 0  & \qquad & \text{in $\Omega$}, \\
  \div \mathbf{u} & = 0                &        & \text{in $\Omega$}, \\
                     \mathbf{u} & = \mathbf{g}  &        & \text{on $\partial \Omega$},
 \end{alignat*}
@@ -2937,7 +2937,7 @@ and the bilinear forms
 \begin{equation*}
  a(\mathbf{u},\mathbf{v}) \colonequals \int_\Omega \nabla \mathbf{u} \nabla \mathbf{v} \,dx,
  \qquad \text{and} \qquad
- b(\mathbf{v},q) \colonequals \int_\Omega \div \mathbf{v} \cdot q \,dx.
+ b(\mathbf{v},q) \colonequals -\int_\Omega \div \mathbf{v} \cdot q \,dx.
 \end{equation*}
 Then the weak form of the Stokes equation is: Find $(\mathbf{u},p) \in \mathbf{H}_{\mathbf{g}}^1(\Omega) \times L_{2,0}(\Omega)$ such that
 \begin{alignat*}{2}
@@ -3367,13 +3367,13 @@ to compute
 \begin{equation*}
  b_e(\bm{\varphi}_i^k,\theta_j)
  \colonequals
- \int_e \operatorname{div} \bm{\varphi}_i^k \cdot \theta_j\,dx
+ -\int_e \operatorname{div} \bm{\varphi}_i^k \cdot \theta_j\,dx
  =
- \int_e \sum_{l=1}^d \frac{\partial (\bm{\varphi}_i^k)_l}{\partial x_l} \cdot \theta_j\,dx
+ -\int_e \sum_{l=1}^d \frac{\partial (\bm{\varphi}_i^k)_l}{\partial x_l} \cdot \theta_j\,dx
  =
- \int_e \frac{\partial \varphi_i}{\partial x_k} \cdot \theta_j\,dx
+ -\int_e \frac{\partial \varphi_i}{\partial x_k} \cdot \theta_j\,dx
  =
- \int_e (\nabla \varphi_i)_k \cdot \theta_j\,dx.
+ -\int_e (\nabla \varphi_i)_k \cdot \theta_j\,dx.
 \end{equation*}
 At this point in the code the value of $\nabla \varphi_i$ at the current quadrature point
 has been computed already, but value of $\theta_i$ is still unknown.
