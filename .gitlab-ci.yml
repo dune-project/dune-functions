@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
+# SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0-or-later
+
 ---
 include:
   - project: 'core/ci-config'
@@ -27,3 +30,14 @@ code-spelling-check:
   script:
   - codespell
     --ignore-words-list ans,nd,ba,ser,elemente
+
+# Check SPDX compliance of license information
+reuse:
+  stage: .pre
+  image:
+    name: docker.io/fsfe/reuse:latest
+    entrypoint: [""]
+  tags: [duneci]
+  before_script: ""
+  script:
+    - reuse lint

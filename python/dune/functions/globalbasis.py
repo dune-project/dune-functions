@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
+# SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0-or-later
+
 from .tree import Composite, DG, Lagrange, Nedelec, Power, RaviartThomas, Tree
 
 duneFunctionsLayouts = {"lexicographic": "Lexicographic", "interleaved": "Interleaved"}

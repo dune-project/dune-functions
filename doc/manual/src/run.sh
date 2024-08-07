@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
+# SPDX-License-Identifier: CC-BY-ND-4.0
 
 
 ################################################################################

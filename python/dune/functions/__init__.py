@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
+# SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0-or-later
+
 from dune.generator.generator import SimpleGenerator
 from dune.common.hashit import hashIt
 from dune.common.checkconfiguration import assertHave, ConfigurationError
