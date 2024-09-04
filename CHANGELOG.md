@@ -42,6 +42,7 @@ corresponding version of the Dune core modules.
 - Introduce a new member-function `.containerDescriptor()` for all pre-bases that return an instance of
   one of the container descriptors to represent a container that can be indexed by the multi-indices of that
   pre-basis.
+- Container descriptor for power bases with blocked-interleaved index-merging-strategy added.
 
 ### Python
 
