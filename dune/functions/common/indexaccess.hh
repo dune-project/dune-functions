@@ -336,7 +336,7 @@ namespace Imp {
   template<class C, class MultiIndex>
   constexpr decltype(auto) resolveStaticMultiIndex(C&& c, const MultiIndex& multiIndex)
   {
-    auto isExhausted = Hybrid::equals(Hybrid::size(multiIndex), Dune::Indices::_0);
+    auto isExhausted = Hybrid::equal_to(Hybrid::size(multiIndex), Dune::Indices::_0);
     return Hybrid::ifElse(isExhausted, [&, c = forwardCapture(std::forward<C>(c))](auto) -> decltype(auto) {
       return c.forward();
     }, [&](auto id) -> decltype(auto) {
