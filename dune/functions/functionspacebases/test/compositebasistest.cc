@@ -10,14 +10,32 @@
 #include <dune/common/test/testsuite.hh>
 
 #include <dune/grid/yaspgrid.hh>
+#include <dune/grid/concepts/archetypes/entity.hh>
 
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
+#include <dune/functions/functionspacebases/nodes.hh>
 
 #include <dune/functions/functionspacebases/test/basistest.hh>
 
 using namespace Dune;
+
+struct MyLeafBasisNode : Dune::Functions::LeafBasisNode
+{
+  using Element = Dune::Concept::Archetypes::Entity<2,0>;
+  MyLeafBasisNode () = default;
+};
+
+void testCompositeBasisNode ()
+{
+  MyLeafBasisNode leaf{};
+
+  Dune::Functions::CompositeBasisNode<MyLeafBasisNode> compositenode1{};
+  Dune::Functions::CompositeBasisNode<MyLeafBasisNode> compositenode2{leaf};
+  // Dune::Functions::CompositeBasisNode compositenode3{leaf};
+  Dune::Functions::CompositeBasisNode compositenode4{leaf, leaf};
+}
 
 int main (int argc, char *argv[]) try
 {
