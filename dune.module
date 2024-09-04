@@ -4,8 +4,8 @@
 # Dune module information file
 
 Module: dune-functions
-Version: 2.10-git
+Version: 2.11-git
 Maintainer: dune-functions@lists.dune-project.org
 Python-Requires: scipy
-Depends:  dune-localfunctions (>= 2.10) dune-grid (>= 2.10) dune-istl (>= 2.10) dune-typetree (>= 2.10) dune-uggrid (>= 2.10)
+Depends:  dune-localfunctions (>= 2.11) dune-grid (>= 2.11) dune-istl (>= 2.11) dune-typetree (>= 2.11) dune-uggrid (>= 2.11)
 Whitespace-Hook: Yes
