@@ -12,6 +12,9 @@ corresponding version of the Dune core modules.
 
 ## Release 2.10
 
+- The new class `MonomialSet<K,dim,n>` implements a vector-valued
+  differentiable function containing all `dim`-variate monomials up to order `n`
+  as components.
 - The module dune-uggrid is now officially a hard dependency of dune-functions.
 - Added a constructor for `LocalViewWrapper` from a `LocalView` object and added
   accessor to base class for python bindings.
