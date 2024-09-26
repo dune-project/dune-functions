@@ -18,6 +18,7 @@ install(FILES
         flatmultiindex.hh
         flatvectorview.hh
         globalvaluedlocalfiniteelement.hh
+        hermitebasis.hh
         hierarchicallagrangebasis.hh
         hierarchicnodetorangemap.hh
         hierarchicvectorwrapper.hh
