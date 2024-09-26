@@ -23,6 +23,7 @@
 #include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/transformedfiniteelementmixin.hh>
+#include <dune/functions/functionspacebases/functionaldescriptor.hh>
 #include <dune/functions/analyticfunctions/monomialset.hh>
 
 
@@ -341,8 +342,56 @@ namespace Functions
       static constexpr unsigned int coeffSize = (dim == 1)   ? 4
                                                 : (dim == 2) ? ((reduced) ? 9 : 10)
                                                             : 20;
+
+      using FunctionalDescriptor = Dune::Functions::Impl::FunctionalDescriptor<dim>;
+
     public:
-      HermiteLocalInterpolation(){}
+      HermiteLocalInterpolation() {
+        if constexpr (dim==1)
+        {
+          descriptors_[0] = FunctionalDescriptor();
+          descriptors_[1] = FunctionalDescriptor({1});
+          descriptors_[2] = FunctionalDescriptor();
+          descriptors_[3] = FunctionalDescriptor({1});
+        }
+        if constexpr (dim==2)
+        {
+          descriptors_[0] = FunctionalDescriptor();
+          descriptors_[1] = FunctionalDescriptor({1,0});
+          descriptors_[2] = FunctionalDescriptor({0,1});
+          descriptors_[3] = FunctionalDescriptor();
+          descriptors_[4] = FunctionalDescriptor({1,0});
+          descriptors_[5] = FunctionalDescriptor({0,1});
+          descriptors_[6] = FunctionalDescriptor();
+          descriptors_[7] = FunctionalDescriptor({1,0});
+          descriptors_[8] = FunctionalDescriptor({0,1});
+          if (not reduced)
+            descriptors_[9] = FunctionalDescriptor();
+        }
+        if constexpr (dim==3)
+        {
+          descriptors_[0]  = FunctionalDescriptor();
+          descriptors_[1]  = FunctionalDescriptor({1,0,0});
+          descriptors_[2]  = FunctionalDescriptor({0,1,0});
+          descriptors_[3]  = FunctionalDescriptor({0,0,1});
+          descriptors_[4]  = FunctionalDescriptor();
+          descriptors_[5]  = FunctionalDescriptor({1,0,0});
+          descriptors_[6]  = FunctionalDescriptor({0,1,0});
+          descriptors_[7]  = FunctionalDescriptor({0,0,1});
+          descriptors_[8]  = FunctionalDescriptor();
+          descriptors_[9]  = FunctionalDescriptor({1,0,0});
+          descriptors_[10] = FunctionalDescriptor({0,1,0});
+          descriptors_[11] = FunctionalDescriptor({0,0,1});
+          descriptors_[12] = FunctionalDescriptor();
+          descriptors_[13] = FunctionalDescriptor({1,0,0});
+          descriptors_[14] = FunctionalDescriptor({0,1,0});
+          descriptors_[15] = FunctionalDescriptor({0,0,1});
+          descriptors_[16] = FunctionalDescriptor();
+          descriptors_[17] = FunctionalDescriptor();
+          descriptors_[18] = FunctionalDescriptor();
+          descriptors_[19] = FunctionalDescriptor();
+        }
+      }
 
       /** \brief bind the Interpolation to an element and a localState.
       */
@@ -383,6 +432,10 @@ namespace Functions
           }
       }
 
+      const FunctionalDescriptor& functionalDescriptor(size_type i) const {
+        return descriptors_[i];
+      }
+
     protected:
       template<class DerivativeType, class FieldType>
       FieldType getPartialDerivative(DerivativeType const &df, std::size_t i) const
@@ -410,6 +463,7 @@ namespace Functions
       }
 
       std::vector<D> const* localState_;
+      std::array<FunctionalDescriptor, coeffSize> descriptors_;
   };
 
 

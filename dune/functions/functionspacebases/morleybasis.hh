@@ -22,6 +22,7 @@
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
+#include <dune/functions/functionspacebases/functionaldescriptor.hh>
 
 #include <dune/functions/functionspacebases/transformedfiniteelementmixin.hh>
 #include <dune/functions/analyticfunctions/monomialset.hh>
@@ -209,8 +210,19 @@ namespace Functions
     class MorleyLocalInterpolation
     {
       using size_type = std::size_t;
+
+      using FunctionalDescriptor = Dune::Functions::Impl::FunctionalDescriptor<2>;
+
     public:
-      MorleyLocalInterpolation(){}
+      MorleyLocalInterpolation(){
+        descriptors_[0] = FunctionalDescriptor();
+        descriptors_[1] = FunctionalDescriptor();
+        descriptors_[2] = FunctionalDescriptor();
+        descriptors_[3] = FunctionalDescriptor(1);
+        descriptors_[4] = FunctionalDescriptor(1);
+        descriptors_[5] = FunctionalDescriptor(1);
+      }
+
       template <class Element>
       void bind(const Element &element, const std::bitset<3> &edgeOrientation)
       {
@@ -255,10 +267,15 @@ namespace Functions
         }
       }
 
+      const FunctionalDescriptor& functionalDescriptor(size_type i) const {
+        return descriptors_[i];
+      }
+
     protected:
       std::array<Dune::FieldVector<D, 2>, 3> globalNormals_;
       std::array<Dune::FieldVector<D, 2>, 3> localMidpoints_;
       std::array<Dune::FieldVector<D, 2>, 3> localVertices_;
+      std::array<FunctionalDescriptor, 6> descriptors_;
 
         /**
         * @brief Implements the "downgrade" from a 1xN matrix to a vector. Noop if applied to a vector.
