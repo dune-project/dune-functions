@@ -17,6 +17,7 @@ install(FILES
         dynamicpowerbasis.hh
         flatmultiindex.hh
         flatvectorview.hh
+        functionaldescriptor.hh
         globalvaluedlocalfiniteelement.hh
         hermitebasis.hh
         hierarchicallagrangebasis.hh
