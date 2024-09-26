@@ -28,6 +28,7 @@ install(FILES
         leafprebasismappermixin.hh
         leafprebasismixin.hh
         lfeprebasismixin.hh
+        morleybasis.hh
         nedelecbasis.hh
         periodicbasis.hh
         powerbasis.hh
