@@ -7,43 +7,46 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_TRANSFORMEDFINITEELEMENTMIXIN_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_TRANSFORMEDFINITEELEMENTMIXIN_HH
 
-namespace Dune::Functions::Impl{
-/** \brief Implementation of a dune-localfunctions LocalBasis that applies a
- * linear transformation
+namespace Dune::Functions::Impl {
+
+/**
+ * \brief Implementation of a dune-localfunctions LocalBasis that applies a
+ * linear basis transformation
  *
- * \tparam FE The Finite Element
+ * \tparam FEImplementation The finite element implementation
+ * \tparam ReferenceLocalBasisTraits LocalBasisTraits of the reference local basis
  */
-template<class FE, class ReferenceLocalBasisTraits>
+template<class FEImplementation, class ReferenceLocalBasisTraits>
 class TransformedLocalBasis
 {
-
   public:
     using Traits = ReferenceLocalBasisTraits;
 
-    TransformedLocalBasis(FE const& fe_impl) : fe_impl_(&fe_impl) {}
+    TransformedLocalBasis(FEImplementation const& feImpl)
+      : feImpl_(&feImpl)
+    {}
 
   public:
-    /** \brief Number of shape functions
-        This does generally not equal the size of the underlying local finite
-       element.
+    /**
+     * \brief Number of shape functions
+     * This need not to be equal to the size of the reference local basis
      */
     auto size() const
     {
-      return fe_impl_->size();
+      return feImpl_->size();
     }
 
     //! \brief Evaluate all shape functions
     void evaluateFunction(const typename Traits::DomainType &x,
                           std::vector<typename Traits::RangeType> &out) const
     {
-
-      rangeBuffer_.resize(fe_impl_->size());
-      fe_impl_->referenceLocalBasis().evaluateFunction(x, rangeBuffer_);
+      feImpl_->referenceLocalBasis().evaluateFunction(x, rangeBuffer_);
       out.resize(size());
-      fe_impl_->transform(rangeBuffer_, out);
+      feImpl_->transform(rangeBuffer_, out);
     }
 
-    /** \brief Evaluate Jacobian of all shape functions
+    /**
+     * \brief Evaluate Jacobian of all shape functions
      *
      * \param x Point in the reference element where to evaluation the Jacobians
      * \param[out] out The Jacobians of all shape functions at the point x
@@ -51,35 +54,35 @@ class TransformedLocalBasis
     void evaluateJacobian(const typename Traits::DomainType &x,
                           std::vector<typename Traits::JacobianType> &out) const
     {
-
-      jacobianBuffer_.resize(fe_impl_->size());
-      fe_impl_->referenceLocalBasis().evaluateJacobian(x, jacobianBuffer_);
+      feImpl_->referenceLocalBasis().evaluateJacobian(x, jacobianBuffer_);
       out.resize(size());
-      fe_impl_->transform(jacobianBuffer_, out);
+      feImpl_->transform(jacobianBuffer_, out);
     }
 
-    /** \brief Evaluate Hessian of all shape functions
-     *   \note Sfinae protected: this method is only available, if the wrapped
-     * LocalBasis 1. exports a <HessianType> and 2. provides a evaluateHessian
-     * method with a corresponding signature \param x Point in the reference
-     * element where to evaluation the Hessians \param[out] out The Hessians of
-     * all shape functions at the point x
+    /**
+     * \brief Evaluate Hessian of all shape functions
+     *
+     * \note SFINA protected: this method is only available, if the wrapped LocalBasis
+     * 1. exports a <HessianType> and
+     * 2. provides a evaluateHessian() method with a corresponding signature
+     *
+     * \param x Point in the reference element where to evaluation the Hessians
+     * \param[out] out The Hessians of all shape functions at the point x
      */
     template<class TT,
              std::enable_if_t<std::is_same_v<TT, typename Traits::HessianType>, int> = 0>
     void evaluateHessian(const typename Traits::DomainType &x,
                          std::vector<TT> &out) const
     {
-      hessianBuffer_.resize(fe_impl_->size());
-      fe_impl_->referenceLocalBasis().evaluateHessian(x, hessianBuffer_);
+      feImpl_->referenceLocalBasis().evaluateHessian(x, hessianBuffer_);
       out.resize(size());
-      fe_impl_->transform(hessianBuffer_, out);
+      feImpl_->transform(hessianBuffer_, out);
     }
 
-    /** \brief Evaluate partial derivatives of any order of all shape functions
+    /**
+     * \brief Evaluate partial derivatives of any order of all shape functions
      *
-     * \param order Order of the partial derivatives, in the classic multi-index
-     * notation
+     * \param order Order of the partial derivatives, in the classic multi-index notation
      * \param in Position where to evaluate the derivatives
      * \param[out] out The desired partial derivatives
      */
@@ -87,71 +90,80 @@ class TransformedLocalBasis
                  const typename Traits::DomainType &x,
                  std::vector<typename Traits::RangeType> &out) const
     {
-
-      rangeBuffer_.resize(fe_impl_->size());
-      fe_impl_->referenceLocalBasis().partial(order, x, rangeBuffer_);
+      feImpl_->referenceLocalBasis().partial(order, x, rangeBuffer_);
       out.resize(size());
-      fe_impl_->transform(rangeBuffer_, out);
+      feImpl_->transform(rangeBuffer_, out);
     }
 
     //! \brief Polynomial order of the shape functions
-    auto order() const { return fe_impl_->referenceLocalBasis().order(); }
-
-    //Transformator const &transformator() const { return *transformator_; }
-
-    // auto const &cacheable() const { return fe_impl_->referenceBasis(); }
+    auto order() const { return feImpl_->referenceLocalBasis().order(); }
 
   private:
-    FE const* fe_impl_;
+    FEImplementation const* feImpl_;
     mutable std::vector<typename Traits::RangeType> rangeBuffer_;
     mutable std::vector<typename Traits::JacobianType> jacobianBuffer_;
     mutable std::vector<typename Traits::HessianType> hessianBuffer_;
 };
 
 
-template<class FE, class ReferenceLocalBasisTraits>
+
+/**
+ * \brief A mixin for implementing a LocalFiniteElement using a
+ * linear basis transformation
+ *
+ * \tparam FEImplementation The finite element implementation
+ * \tparam ReferenceLocalBasisTraits LocalBasisTraits of the reference local basis
+ *
+ * The derived class should implement localCoefficients() and localInterpolation()
+ * manually and provide transform() and referenceLocalBasis() as below:
+ *
+ * \code{.cpp}
+ * template<class ReferenceLocalBasisTraits>
+ * class TransformedFEExample : TransformedFiniteElementMixin<TransformedFEExample<ReferenceLocalBasisTraits>, ReferenceLocalBasisTraits>
+ * {
+ *     friend class TransformedLocalBasis<TransformedFEExample, ReferenceLocalBasisTraits>;
+ *
+ *   protected:
+ *
+ *     auto const& referenceLocalBasis();
+ *
+ *     template<class InputValues, class OutputValues>
+ *     void transform(InputValues const &inValues, OutputValues &outValues) const;
+ *
+ *   public:
+ *     auto localCoefficients();
+ *     auto localInterpolation();
+ *     auto size();
+ *
+ * };
+ * \endcode
+ */
+template<class FEImplementation, class ReferenceLocalBasisTraits>
 class TransformedFiniteElementMixin
 {
   public:
     TransformedFiniteElementMixin()
-    : tlb_(this->as_impl()){}
+      : tlb_(this->asImpl())
+    {}
 
     TransformedFiniteElementMixin(TransformedFiniteElementMixin const& other)
-    : TransformedFiniteElementMixin(){}
+    : TransformedFiniteElementMixin()
+    {}
 
-    FE  const& as_impl() const { return *(static_cast<FE const*>(this));}
+    const FEImplementation& asImpl() const
+    {
+      return *(static_cast<FEImplementation const*>(this));
+    }
 
-    auto const& localBasis() const{ return tlb_;}
+    auto const& localBasis() const
+    {
+      return tlb_;
+    }
 
   protected:
-    TransformedLocalBasis<FE, ReferenceLocalBasisTraits> tlb_;
+    TransformedLocalBasis<FEImplementation, ReferenceLocalBasisTraits> tlb_;
 };
 
+} // end namespace Dune::Functions::Impl
 
-// Example Usage
-template<class ReferenceLocalBasisTraits>
-class TransformedFEExample : TransformedFiniteElementMixin<TransformedFEExample<ReferenceLocalBasisTraits>, ReferenceLocalBasisTraits>
-{
-    friend class TransformedLocalBasis<TransformedFEExample, ReferenceLocalBasisTraits>;
-    using ReferenceRangeType = double;
-    using RangeType = double;
-    protected:
-        auto const& referenceLocalBasis(){/* return the basis that is to be transformed*/}
-        void transform(std::vector<ReferenceRangeType> const& in, std::vector<RangeType>& out){
-            // apply transformation
-        }
-    public:
-        auto localCoefficients(){ /* return local Coefficients of the transformed FE*/}
-        auto localInterpolation(){ /* return local Interpolation fitting to the transformed FE(, i.e. the push forwards of the global DoFs onto the reference Element*/}
-        auto size(){ /* return the size of the finite element after transformation)*/}
-
-        template<class Element>
-        void bind(Element const& e){
-            // calculate transformation T
-            // get local state if needed
-        }
-
-
-};
-} // namespace Dune::Functions::Impl
 #endif
