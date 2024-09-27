@@ -22,6 +22,7 @@
 #include <dune/geometry/quadraturerules.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/test/enabledifferentiabilitycheck.hh>
 
 struct CheckBasisFlag {};
 struct AllowZeroBasisFunctions {};
@@ -29,8 +30,6 @@ struct AllowZeroBasisFunctions {};
 template<class T, class... S>
 struct IsContained : public std::disjunction<std::is_same<T,S>...>
 {};
-
-
 
 /*
  * Get string identifier of element
@@ -432,6 +431,61 @@ struct EnableCenterContinuityCheck : public EnableContinuityCheck
   }
 };
 
+  // Flag to enable a vertex continuity check for checking continuity at the vertices
+  // of an intersection within checkBasisContinuity().
+  //
+  // For each inside basis function this will compute the jump against
+  // zero or the corresponding inside basis function. The latter is then
+  // checked for being (up to a tolerance) zero in the vertices of mass
+  // of the intersection.
+
+  struct EnableVertexContinuityCheck: public EnableContinuityCheck
+  {
+    template <class JumpEvaluator>
+    auto localJumpVertexContinuityCheck(const JumpEvaluator &jumpEvaluator, double tol) const
+    {
+      return [=](const auto &intersection, const auto &treePath, const auto &insideNode,
+                 const auto &outsideNode, const auto &insideToOutside)
+      {
+        using Node = std::decay_t<decltype(insideNode)>;
+        using Range = typename Node::FiniteElement::Traits::LocalBasisType::Traits::RangeType;
+
+        std::vector<int> isContinuous(insideNode.size(), true);
+        std::vector<Range> insideValues;
+        std::vector<Range> outsideValues;
+
+        std::vector<typename std::decay_t<decltype(intersection)>::LocalCoordinate> vertices;
+
+        for (int i = 0; i < intersection.geometry().corners(); ++i)
+          vertices.push_back(intersection.geometry().local(intersection.geometry().corner(i)));
+
+        for (auto const &vertex : vertices)
+        {
+
+          insideNode.finiteElement().localBasis().evaluateFunction(
+              intersection.geometryInInside().global(vertex), insideValues);
+          outsideNode.finiteElement().localBasis().evaluateFunction(
+              intersection.geometryInOutside().global(vertex), outsideValues);
+          // Check jump against outside basis function or zero.
+          for (std::size_t i = 0; i < insideNode.size(); ++i)
+          {
+            auto jump = insideValues[i];
+            if (insideToOutside[i].has_value())
+              jump -= outsideValues[insideToOutside[i].value()];
+            isContinuous[i] = isContinuous[i] and (jumpEvaluator(jump, intersection, vertex) < tol);
+          }
+        }
+        return isContinuous;
+      };
+    }
+
+    auto localContinuityCheck() const
+    {
+      auto jumpNorm = [](auto &&jump, auto &&intersection, auto &&x) -> double
+      { return jump.infinity_norm(); };
+      return localJumpVertexContinuityCheck(jumpNorm, tol_);
+    }
+  };
 
 /*
  * Check if basis functions are continuous across faces.
@@ -531,6 +585,8 @@ Dune::TestSuite checkConstBasis(const Basis& basis, Flags... flags)
     using Flag = std::decay_t<decltype(flag)>;
     if constexpr (std::is_base_of_v<EnableContinuityCheck, Flag>)
       test.subTest(checkBasisContinuity(basis, flag.localContinuityCheck()));
+    else if constexpr (std::is_base_of_v<EnableDifferentiabilityCheck, Flag>)
+      test.subTest(checkBasisDifferentiability(basis, flag));
   });
 
   return test;
