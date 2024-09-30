@@ -12,6 +12,7 @@
 #include <dune/common/timer.hh>
 
 #include <dune/grid/uggrid.hh>
+#include <dune/grid/uggrid/uggridfactory.hh>
 #include <dune/grid/onedgrid.hh>
 #include <dune/grid/albertagrid.hh>
 #include <dune/grid/utility/structuredgridfactory.hh>
@@ -106,7 +107,15 @@ int main(int argc, char *argv[])
   { // 2d
     std::cout << "Hermite test in 2d" << std::endl;
 
-    auto grid = StructuredGridFactory<UGGrid<2>>::createSimplexGrid({0., 0.}, {1., 1.}, {{5, 5}});
+    auto factory = Dune::GridFactory<Dune::UGGrid<2>>{};
+    factory.insertVertex({0,0});
+    factory.insertVertex({0,1});
+    factory.insertVertex({2,0});
+    factory.insertVertex({1,4});
+    factory.insertElement(Dune::GeometryTypes::simplex(2), {0,1,2});
+    factory.insertElement(Dune::GeometryTypes::simplex(2), {1,2,3});
+    auto grid = factory.createGrid();
+    grid->globalRefine(2);
 
     auto gridView = grid->leafGridView();
     std::cout << "Grid has " << gridView.size(0) << " elementes and " << gridView.size(1)
@@ -135,7 +144,15 @@ int main(int argc, char *argv[])
   { // 2d  reduced
     std::cout << "reduced Hermite test in 2d" << std::endl;
 
-    auto grid = StructuredGridFactory<UGGrid<2>>::createSimplexGrid({0., 0.}, {1., 1.}, {{2, 2}});
+    auto factory = Dune::GridFactory<Dune::UGGrid<2>>{};
+    factory.insertVertex({0,0});
+    factory.insertVertex({0,1});
+    factory.insertVertex({2,0});
+    factory.insertVertex({1,4});
+    factory.insertElement(Dune::GeometryTypes::simplex(2), {0,1,2});
+    factory.insertElement(Dune::GeometryTypes::simplex(2), {1,2,3});
+    auto grid = factory.createGrid();
+    grid->globalRefine(2);
 
     auto gridView = grid->leafGridView();
     std::cout << "Grid has " << gridView.size(0) << " elementes and " << gridView.size(1)

@@ -13,6 +13,7 @@ install(FILES
         interfaces.hh
         localfunction.hh
         localfunction_imp.hh
+        mapperutilities.hh
         multiindex.hh
         overflowarray.hh
         polymorphicsmallobject.hh

@@ -7,143 +7,265 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_HERMITEBASIS_HH
 
 #include <algorithm>
-#include <dune/common/exceptions.hh>
-#include <dune/common/fvector.hh>
+#include <array>
 #include <type_traits>
+#include <vector>
+
+#include <dune/common/exceptions.hh>
+#include <dune/common/fmatrix.hh>
+#include <dune/common/fvector.hh>
+#include <dune/common/rangeutilities.hh>
 
 #include <dune/grid/common/mcmgmapper.hh>
-#include <dune/grid/common/rangegenerators.hh>
 
 #include <dune/localfunctions/common/localbasis.hh>
-#include <dune/localfunctions/common/localkey.hh>
 #include <dune/localfunctions/common/localfiniteelementtraits.hh>
+#include <dune/localfunctions/common/localkey.hh>
 
+#include <dune/functions/common/mapperutilities.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
+#include <dune/functions/functionspacebases/functionaldescriptor.hh>
 #include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/transformedfiniteelementmixin.hh>
-#include <dune/functions/functionspacebases/functionaldescriptor.hh>
+
+
+
 #include <dune/functions/analyticfunctions/monomialset.hh>
 
+//////////////////////////////////////////////////////////////////////////////////////
+///   This file provides an implementation of the cubic Hermite finite element
+///    in 1 to 3 dimensions.
+///   For reference, see[Ciarlet, The Finite Element Method for Elliptic Problems, 2002].
+///   It contains in the following order:
+///       - A GlobalBasis typedef HermiteBasis
+///       - A template H2LocalBasisTraits, extending the dune-localfunctions
+///         LocalBasisTraits by an exported Hessiantype
+///       - A template HermiteLocalFiniteElement providing an implementation
+///         of the LocalFiniteElement interface, along with its subparts (Impl namespace)
+///       - A template HermiteNode
+///       - A template HermitePreBasis
+///       - Two factories hermite() and reducedHermite() in the BasisFactory namespace
+//////////////////////////////////////////////////////////////////////////////////////
+namespace Dune::Functions
+{
 
-namespace Dune
-{
-namespace Functions
-{
+  template<class GV, class R, bool reduced>
+  struct HermitePreBasis;
+
+  /** \brief Nodal basis of a scalar cubic Hermite finite element space
+   *
+   * \ingroup FunctionSpaceBasesImplementations
+   *
+   * \note This only works for simplex grids. The Hermite basis is only implemented for degree 3.
+   * \note The Hermite Finite element has the following properties:
+   *   - Its global space is in \f$ C^1 \f$ if 1d otherwise in \f$ H^1 \f$.
+   *   - The reduced version (only 2d) is part of the Discrete Kirchhoff Triangle.
+   *   - Its interpolation evaluates derivatives, i.e. you cannot interpolate into a lambda function.
+   *   - Strongly enforcing boundary conditions is not as simple as with langrange bases
+   *   - It global space is not nested, i.e. the space on a refined grid is not a subspace of the
+   *     space on the coarser grid.
+   * All arguments passed to the constructor will be forwarded to the constructor
+   * of HermitePreBasis.
+   *
+   * \tparam GV The GridView that the space is defined on
+   * \tparam reduced whether to use the reduced Hermite finite element (only in 2d).
+   * \tparam R The range type of the local basis
+   */
+  template<class GV,bool reduced = false, class R = double>
+  using HermiteBasis = DefaultGlobalBasis<HermitePreBasis<GV, R, reduced> >;
+
   template<class DF, int n, class D, class RF, int m, class R, class J, class H>
-  struct H2LocalBasisTraits : public LocalBasisTraits<DF, n, D, RF, m, R, J> {
-      /** \brief Type to represent the Hessian
-       *  When \f$ \hat\phi : \mbox{IR}^n \to \mbox{IR}\f$ then HessianType
-       *  is an 2D-array of m x m components where entry H[i][j] contains
-       *  the derivative  \f$\partial_i \partial_j \hat\phi \f$.
-       */
-      using HessianType = H;
+  struct H2LocalBasisTraits
+    : public LocalBasisTraits<DF, n, D, RF, m, R, J>
+  {
+    /** \brief Type to represent the Hessian
+     *  When \f$ \hat\phi : \mbox{IR}^n \to \mbox{IR}\f$ then HessianType
+     *  is an 2D-array of m x m components where entry H[i][j] contains
+     *  the derivative  \f$\partial_i \partial_j \hat\phi \f$.
+     */
+    using HessianType = H;
   };
 
   namespace Impl
   {
 
-  // *****************************************************************************
-  // * Some helper functions for building polynomial bases from monomials
-  // *****************************************************************************
-  /**
-   * \brief Multiply the evaluations of the monomialSet (see dune/functions/analyticfunctions/monomialset.hh) with a coefficient matrix, here FieldMatrix.
-   * \tparam KCoeff The Field type of the coefficient matrix.
-   * \tparam KMonom The range type of the monomials.
-   * \tparam sizePolynom The number of polynomials to evaluate
-   * \tparam sizeMonom The number of monomials handed as input.
-   * \note This function also turns the return types from the dune-functions::DifferentiableFunction interface into those of the dune-localfunctions::LocalBasis interface.
-   */
-  template<class KCoeff, int sizePolynom, class KMonom, int sizeMonom>
-  void multiplyWithCoefficentMatrix(Dune::FieldMatrix<KCoeff, sizePolynom, sizeMonom> const& coefficients,
-                                   Dune::FieldVector<KMonom, sizeMonom> const& monomialValues,
-                                   std::vector<Dune::FieldVector<typename Dune::PromotionTraits<KCoeff, KMonom>::PromotedType, 1>>& polynomialValues)
-  {
+    // *****************************************************************************
+    // * Some helper functions for building polynomial bases from monomials
+    // *****************************************************************************
 
-    polynomialValues.resize(sizePolynom);
-    std::fill(std::begin(polynomialValues), std::end(polynomialValues), 0.);
-    for (auto&& i : Dune::range(sizePolynom))
-      for (auto&& j : Dune::range(sizeMonom))
-        polynomialValues[i][0] += coefficients[i][j]*monomialValues[j];
-  }
+    /** \brief Remove empty axes, i.e. Dune::FieldVector<K,1> -> F and Dune::FieldMatrix<K,1,n> ->Dune::FieldVector<F,n>
+     * const overload for 1-dimensional vectors
+     */
+    template<class K>
+    constexpr K const& squeeze(Dune::FieldVector<K,1> const& v){ return v[0]; }
 
-  template<class KCoeff, int sizePolynom, class KMonom, int sizeMonom, int dim>
-  void multiplyWithCoefficentMatrix(Dune::FieldMatrix<KCoeff, sizePolynom, sizeMonom> const& coefficients,
-                                   Dune::FieldMatrix<KMonom, sizeMonom, dim> const& monomialJacobians,
-                                   std::vector<Dune::FieldMatrix<typename Dune::PromotionTraits<KCoeff, KMonom>::PromotedType, 1,dim>>& polynomialJacobians)
-  {
-    polynomialJacobians.resize(sizePolynom);
-    std::fill(std::begin(polynomialJacobians), std::end(polynomialJacobians), 0.);
-    for (auto&& i : Dune::range(sizePolynom))
-      for (auto&& j : Dune::range(sizeMonom))
-        polynomialJacobians[i][0] += coefficients[i][j]*monomialJacobians[j];
-  }
+    /** \brief mutable overload for 1-dimensional vectors of \ref squeeze
+     */
+    template<class K>
+    constexpr K& squeeze(Dune::FieldVector<K,1>& v){ return v[0]; }
 
-  template<class KCoeff, int sizePolynom, class KMonom, int sizeMonom, std::size_t sizeMonom2, int dim>
-  void multiplyWithCoefficentMatrix(Dune::FieldMatrix<KCoeff, sizePolynom, sizeMonom> const& coefficients,
-                                   std::array<Dune::FieldMatrix<KMonom, dim, dim>, sizeMonom2> const& monomialHessians,
-                                   std::vector<Dune::FieldMatrix<typename Dune::PromotionTraits<KCoeff, KMonom>::PromotedType, dim, dim>>& polynomialHessians)
-  {
-    polynomialHessians.resize(sizePolynom);
-    std::fill(std::begin(polynomialHessians), std::end(polynomialHessians), 0.);
-    for (auto&& i : Dune::range(sizePolynom))
-      for (auto&& j : Dune::range(sizeMonom))
-        polynomialHessians[i] += coefficients[i][j]*monomialHessians[j];
-  }
+    /** \brief const overload for 1,N-dimensional matrices of \ref squeeze
+     */
+    template<class K, int N>
+    constexpr Dune::FieldVector<K, N> const& squeeze(Dune::FieldMatrix<K,1,N> const& m){ return m[0]; }
 
-  /**
-   * \brief Implementation of hermite Polynomials
-   * \tparam D Type to represent the field in the domain
-   * \tparam R Type to represent the field in the range
-   * \tparam dim Dimension of the domain simplex
-   */
-  template<class D, class R, int dim, bool reduced>
-  class HermiteLocalBasis
-  {
+    /** \brief mutable overload for 1,N-dimensional matrices of \ref squeeze
+     */
+    template<class K, int N>
+    constexpr Dune::FieldVector<K, N>& squeeze(Dune::FieldMatrix<K,1,N>& m){ return m[0]; }
+
+    /** \brief Default mutable overload returning unchanged objects.
+     */
+    template<class Object>
+    constexpr Object& squeeze(Object& o){ return o; }
+
+    /** \brief Default const overload returning unchanged objects.
+     */
+    template<class Object>
+    constexpr Object const& squeeze(Object const& o){ return o; }
+
+    /** \brief Multiply the evaluations of the monomialSet (see dune/functions/analyticfunctions/monomialset.hh) with a coefficient matrix, here FieldMatrix.
+     * \tparam KCoeff The Field type of the coefficient matrix.
+     * \tparam sizePolynom The number of polynomials to evaluate.
+     * \tparam sizeMonom The number of monomials handed as input.
+     * \tparam In input vector. We only assume container access and a correct size.
+     * \tparam Out Output vector. We only assume container access and a correct size.
+     * \note This function may be used to turn the return types from the dune-functions::DifferentiableFunction
+     * interface into those of the dune-localfunctions::LocalBasis interface.
+     */
+    template<class KCoeff, int sizePolynom, int sizeMonom, class In, class Out>
+    void multiplyWithCoefficentMatrix(Dune::FieldMatrix<KCoeff, sizePolynom, sizeMonom> const& coefficients,
+                                    In const& monomialValues,
+                                    Out& polynomialValues)
+    {
+      for (int i = 0; i < sizePolynom; ++i)
+      {
+        squeeze(polynomialValues[i]) = 0;
+        for (int j = 0; j < sizeMonom; ++j)
+          squeeze(polynomialValues[i]) += coefficients[i][j]*monomialValues[j];
+      }
+    }
+
+    /** \brief Associations of the Hermite degrees of freedom to subentities of the
+     * reference simplex
+     *
+     * \tparam dim Dimension of the reference simplex
+     */
+    template<int dim, bool reduced>
+    class HermiteLocalCoefficients
+    {
+    public:
+      using size_type = std::size_t;
+
+      HermiteLocalCoefficients()
+        : localKeys_(size())
+      {
+        static_assert((dim > 0) and (dim <= 3), "HermiteLocalCoefficients only implemented for dim=1,2,3");
+        static_assert((not reduced) or (dim == 2), "Reduced version of HermiteLocalCoefficients only implemented for dim=2");
+        for (size_type i = 0; i < (dim +1); ++i)
+        {
+          // dim derivatives + 1 evaluation dofs per vertex
+          for (size_type k = 0; k < (dim +1); ++k)
+            localKeys_[(dim +1) * i + k] = LocalKey(i, dim, k);
+        }
+        if constexpr (not reduced)
+        {
+          // 1 evaluation per element (2d) / facets (3d)
+          for (size_type i = 0; i < (dim - 1) * (dim - 1); ++i)
+            localKeys_[(dim +1) * (dim +1) + i] = LocalKey(i, (dim == 2) ? 0 : 1, 0); // inner dofs
+        }
+      }
+
+      /** \brief number of coefficients
+       */
+      static constexpr size_type size()
+      {
+        if constexpr (dim==1)
+          return 4;
+        if constexpr ((dim==2) and (reduced))
+          return 9;
+        if constexpr ((dim==2) and (not reduced))
+          return 10;
+        if constexpr (dim==3)
+          return 20;
+        return 0;
+      }
+
+      /** \brief get i'th index
+       */
+      LocalKey const &localKey(size_type i) const
+      {
+        return localKeys_[i];
+      }
+
+    private:
+      std::vector<LocalKey> localKeys_;
+    };
+
+
+    /** \brief Implementation of hermite Polynomials
+     * \tparam D Type to represent the field in the domain
+     * \tparam R Type to represent the field in the range
+     * \tparam dim Dimension of the domain simplex
+     */
+    template<class D, class R, int dim, bool reduced>
+    class HermiteReferenceLocalBasis
+    {
     public:
       using Traits = H2LocalBasisTraits<D, dim, FieldVector<D, dim>, R, 1, FieldVector<R, 1>,
                                         FieldMatrix<R, 1, dim>, FieldMatrix<R, dim, dim>>;
 
     private:
+
       /**
-       * @brief Get the Hermite Coefficients Matrix
-       * @return FieldMatrix<F, (possibly reduced) size, size>
+       * \brief Get the Hermite Coefficients Matrix
+       * \return FieldMatrix<F, (possibly reduced) size, size>
        *  where size is the dimension of the cubic polynomial space
+       *
+       * This returns the basis transformation matrix from a monomial
+       * basis to the Hermite basis on the reference domain.
+       * I.e. the i-th row of the returned matrix contains the
+       * coefficients of the i-th Hermite basis function with respect to a
+       * monomial basis. The monomials are enumerated as in the
+       * MonomialSet of the corresponding dimension and order.
        */
       static constexpr auto getHermiteCoefficients()
       {
-        static_assert(dim > 0 and dim < 4 and not(reduced and dim != 2));
-
-        if constexpr (dim == 1) {
+        if constexpr (dim == 1)
           return Dune::FieldMatrix<D, 4, 4>({{1, 0, -3, 2}, {0, 1, -2, 1}, {0, 0, 3, -2}, {0, 0, -1, 1}});
-        } else if constexpr (dim == 2) {
+        else if constexpr (dim == 2)
+        {
           if constexpr (reduced) {
             auto w = std::array<D, 9>{1. / 3,  1. / 18, 1. / 18, 1. / 3, -1. / 9,
                                       1. / 18, 1. / 3,  1. / 18, -1. / 9};
             return Dune::FieldMatrix<D, 9, 10>({
-                {1, 0, 0, -3, -13 + w[0] * 27, -3, 2, 13 - w[0] * 27, 13 - w[0] * 27, 2},
-                {0, 1, 0, -2, -3 + w[1] * 27, 0, 1, 3 - w[1] * 27, 2 - w[1] * 27, 0},
-                {0, 0, 1, 0, -3 + w[2] * 27, -2, 0, 2 - w[2] * 27, 3 - w[2] * 27, 1},
-                {0, 0, 0, 3, -7 + w[3] * 27, 0, -2, 7 - w[3] * 27, 7 - w[3] * 27, 0},
-                {0, 0, 0, -1, 2 + w[4] * 27, 0, 1, -2 - w[4] * 27, -2 - w[4] * 27, 0},
-                {0, 0, 0, 0, -1 + w[5] * 27, 0, 0, 2 - w[5] * 27, 1 - w[5] * 27, 0},
-                {0, 0, 0, 0, -7 + w[6] * 27, 3, 0, 7 - w[6] * 27, 7 - w[6] * 27, -2},
-                {0, 0, 0, 0, -1 + w[7] * 27, 0, 0, 1 - w[7] * 27, 2 - w[7] * 27, 0},
-                {0, 0, 0, 0, 2 + w[8] * 27, -1, 0, -2 - w[8] * 27, -2 - w[8] * 27, 1},
+                {1, 0, 0, -3, -13 + w[0] * 27, -3,  2, 13 - w[0] * 27, 13 - w[0] * 27,  2},
+                {0, 1, 0, -2,  -3 + w[1] * 27,  0,  1,  3 - w[1] * 27,  2 - w[1] * 27,  0},
+                {0, 0, 1,  0,  -3 + w[2] * 27, -2,  0,  2 - w[2] * 27,  3 - w[2] * 27,  1},
+                {0, 0, 0,  3,  -7 + w[3] * 27,  0, -2,  7 - w[3] * 27,  7 - w[3] * 27,  0},
+                {0, 0, 0, -1,   2 + w[4] * 27,  0,  1, -2 - w[4] * 27, -2 - w[4] * 27,  0},
+                {0, 0, 0,  0,  -1 + w[5] * 27,  0,  0,  2 - w[5] * 27,  1 - w[5] * 27,  0},
+                {0, 0, 0,  0,  -7 + w[6] * 27,  3,  0,  7 - w[6] * 27,  7 - w[6] * 27, -2},
+                {0, 0, 0,  0,  -1 + w[7] * 27,  0,  0,  1 - w[7] * 27,  2 - w[7] * 27,  0},
+                {0, 0, 0,  0,   2 + w[8] * 27, -1,  0, -2 - w[8] * 27, -2 - w[8] * 27,  1},
             });
-          } else
-            return Dune::FieldMatrix<D, 10,10>({{1, 0, 0, -3, -13, -3, 2, 13, 13, 2},
-                                        {0, 1, 0, -2, -3, 0, 1, 3, 2, 0},
-                                        {0, 0, 1, 0, -3, -2, 0, 2, 3, 1}, // l_2
-                                        {0, 0, 0, 3, -7, 0, -2, 7, 7, 0},
-                                        {0, 0, 0, -1, 2, 0, 1, -2, -2, 0},
-                                        {0, 0, 0, 0, -1, 0, 0, 2, 1, 0},
-                                        {0, 0, 0, 0, -7, 3, 0, 7, 7, -2}, // l_6
-                                        {0, 0, 0, 0, -1, 0, 0, 1, 2, 0},
-                                        {0, 0, 0, 0, 2, -1, 0, -2, -2, 1},
-                                        {0, 0, 0, 0, 27, 0, 0, -27, -27, 0}}); // l_9, inner dof
-        } else if constexpr (dim == 3) {
+          }
+          else
+            return Dune::FieldMatrix<D, 10,10>({
+                                        {1, 0, 0, -3, -13, -3,  2,  13,  13,  2},
+                                        {0, 1, 0, -2,  -3,  0,  1,   3,   2,  0},
+                                        {0, 0, 1,  0,  -3, -2,  0,   2,   3,  1}, // l_2
+                                        {0, 0, 0,  3,  -7,  0, -2,   7,   7,  0},
+                                        {0, 0, 0, -1,   2,  0,  1,  -2,  -2,  0},
+                                        {0, 0, 0,  0,  -1,  0,  0,   2,   1,  0},
+                                        {0, 0, 0,  0,  -7,  3,  0,   7,   7, -2}, // l_6
+                                        {0, 0, 0,  0,  -1,  0,  0,   1,   2,  0},
+                                        {0, 0, 0,  0,   2, -1,  0,  -2,  -2,  1},
+                                        {0, 0, 0,  0,  27,  0,  0, -27, -27,  0}}); // l_9, inner dof
+        }
+        else if constexpr (dim == 3)
+        {
           return Dune::FieldMatrix<D, 20,20>({{1, 0,  0,  0, -3, -13, -3, -13, -13, -3, // deg 0 to 2
                                       2, 13, 13, 2, 13, 33,  13, 13,  13,  2}, // deg 3
                                       {0, 1, 0, 0,/*xx*/ -2, /*xy*/-3,/*yy*/ 0,/*xz*/ -3,/*yz*/ 0,/*zz*/ 0, 1, 3, 2, 0, 3, 4, 0, 2, 0, 0},
@@ -177,26 +299,29 @@ namespace Functions
       }
 
       static constexpr auto referenceBasisCoefficients = getHermiteCoefficients();
-      MonomialSet<typename Traits::RangeFieldType, dim, 3> monomials;
+      static constexpr MonomialSet<typename Traits::RangeFieldType, dim, 3> monomials = {};
 
     public:
-      static_assert(not reduced || dim == 2, "Reduced Hermite element only implemented for 2d");
-      static constexpr int coeffSize = (dim == 1)   ? 4
-                                                : (dim == 2) ? ((reduced) ? 9 : 10)
-                                                            : 20;
-      HermiteLocalBasis()
+
+      HermiteReferenceLocalBasis()
       {
-        if (not (dim <= 3))
-          DUNE_THROW(Dune::NotImplemented, "only implemented for dim <= 3");
+        static_assert((dim > 0) and (dim <= 3), "HermiteReferenceLocalBasis only implemented for dim=1,2,3");
+        static_assert((not reduced) or (dim == 2), "Reduced version of HermiteReferenceLocalBasis only implemented for dim=2");
       }
 
       /** The number of basis functions in the basis
        */
-      static constexpr unsigned int size() { return coeffSize; }
+      static constexpr unsigned int size()
+      {
+        return HermiteLocalCoefficients<dim,reduced>::size();
+      }
 
       /** The polynomial order of the basis
        */
-      unsigned int order() const { return 3; }
+      unsigned int order() const
+      {
+        return 3;
+      }
 
       /** \brief Evaluate function values of all shape functions at a given point
        *
@@ -230,7 +355,7 @@ namespace Functions
        * \param[out] out Hessians of all shape functions at that point
        */
       void evaluateHessian(const typename Traits::DomainType &in,
-                            std::vector<typename Traits::HessianType> &out) const
+          std::vector<typename Traits::HessianType> &out) const
       {
         out.resize(size());
         auto monomialValues = derivative(derivative(monomials))(in);
@@ -250,19 +375,22 @@ namespace Functions
         auto totalOrder = std::accumulate(order.begin(), order.end(), 0);
         if (totalOrder == 0)
           evaluateFunction(in, out);
-        else if (totalOrder == 1){
+        else if (totalOrder == 1)
+        {
           evaluateJacobian(in,jacobiansBuffer_);
           std::size_t which = std::max_element(order.begin(), order.end()) - order.begin();
           for (auto i : Dune::range(size()))
             out[i] = jacobiansBuffer_[i][0][which];
         }
-        else if (totalOrder == 2){
+        else if (totalOrder == 2)
+        {
           evaluateHessian(in, hessianBuffer_);
           std::size_t first, second;
           first = std::max_element(order.begin(), order.end()) - order.begin();
-          if (order[first] == 2){
+          if (order[first] == 2)
             second = first;
-          } else {
+          else
+          {
             order[first] = 0;
             second = std::max_element(order.begin(), order.end()) - order.begin();
           }
@@ -273,60 +401,13 @@ namespace Functions
           DUNE_THROW(RangeError, "partial() not implemented for given order");
       }
 
-      private:
+    private:
       mutable std::vector<typename Traits::JacobianType> jacobiansBuffer_;
       mutable std::vector<typename Traits::HessianType> hessianBuffer_;
+    };
 
-  };
 
-  /** \brief Associations of the Hermite degrees of freedom to subentities of the
-   * reference simplex
-   *
-   * \tparam dim Dimension of the reference simplex
-   */
-  template<unsigned int dim, bool reduced>
-  class HermiteLocalCoefficients
-  {
-    public:
-      using size_type = std::size_t;
-
-    private:
-      static constexpr size_type innerDofCodim = (dim == 2) ? 0 : 1;
-
-    public:
-      HermiteLocalCoefficients() : localKeys_(size())
-      {
-        static_assert(dim <= 3, "HermiteLocalCoefficients only implemented for dim<=3!");
-        size_type numberOfVertices = dim + 1;
-        size_type numberOfInnerDofs = (dim - 1) * (dim - 1); // probably incorrect for dim > 3
-        for (size_type i = 0; i < numberOfVertices; ++i)     // subentities: vertices
-        {
-          for (size_type k = 0; k < numberOfVertices; ++k) // dim + 1 dofs per subentity
-            localKeys_[numberOfVertices * i + k] = LocalKey(i, dim, k);
-        }
-        if constexpr (not reduced)
-          for (size_type i = 0; i < numberOfInnerDofs; ++i) // subentities: element
-            localKeys_[numberOfVertices * numberOfVertices + i] =
-                LocalKey(i, innerDofCodim, 0); // inner dofs
-      }
-
-      /** number of coefficients
-       */
-      static constexpr size_type size()
-      {
-        return dim == 1 ? 4 : dim == 2 ? ((reduced) ? 9 : 10) : 20;
-      }
-
-      /** get i'th index
-       */
-      LocalKey const &localKey(size_type i) const { return localKeys_[i]; }
-
-    private:
-      std::vector<LocalKey> localKeys_;
-  };
-
-    /**
-     * \brief Class that evaluates the push forwards of the global nodes of a
+    /** \brief Class that evaluates the push forwards of the global nodes of a
      * LocalFunction. It stretches the LocalInterpolation interface, because we
      * evaluate the derivatives of f.
      *
@@ -335,18 +416,20 @@ namespace Functions
     class HermiteLocalInterpolation
     {
       using size_type = std::size_t;
-      static constexpr size_type numberOfVertices = dim + 1;
-      static constexpr size_type innerDofCodim = (dim == 2) ? 0 : 1; // probably wrong for dim > 3
-      static constexpr size_type numberOfInnerDofs =
-          (dim - 1) * (dim - 1); // probably wrong for dim > 3
-      static constexpr unsigned int coeffSize = (dim == 1)   ? 4
-                                                : (dim == 2) ? ((reduced) ? 9 : 10)
-                                                            : 20;
+
+      static constexpr unsigned int size()
+      {
+        return HermiteLocalCoefficients<dim,reduced>::size();
+      }
 
       using FunctionalDescriptor = Dune::Functions::Impl::FunctionalDescriptor<dim>;
 
     public:
-      HermiteLocalInterpolation() {
+
+      HermiteLocalInterpolation()
+      {
+        static_assert((dim > 0) and (dim <= 3), "HermiteLocalInterpolation only implemented for dim=1,2,3");
+        static_assert((not reduced) or (dim == 2), "Reduced version of HermiteLocalInterpolation only implemented for dim=2");
         if constexpr (dim==1)
         {
           descriptors_[0] = FunctionalDescriptor();
@@ -393,84 +476,61 @@ namespace Functions
         }
       }
 
-      /** \brief bind the Interpolation to an element and a localState.
-      */
+      /** \brief bind the Interpolation to an element and a local state.
+       */
       template<class Element>
-      void bind( Element const &element, std::vector<D>const& localState)
+      void bind( Element const &element, std::array<D, dim+1>const& averageVertexMeshSize)
       {
-          localState_ = &localState;
+        averageVertexMeshSize_ = &averageVertexMeshSize;
       }
 
       /** \brief Evaluate a given function and its derivatives at the nodes
-      *
-      * \tparam F Type of function to evaluate
-      * \tparam C Type used for the values of the function
-      * \param[in] f Function to evaluate
-      * \param[out] out Array of function values
-      */
-      template<typename F, typename C>
+       *
+       * \tparam F Type of function to evaluate
+       * \tparam C Type used for the values of the function
+       * \param[in] f Function to evaluate
+       * \param[out] out Array of function values
+       */
+      template<class F, class C>
       void interpolate(const F &f, std::vector<C> &out) const
       {
-          auto df = derivative(f);
-          out.resize(coeffSize);
+        out.resize(size());
+        auto df = derivative(f);
+        auto const &refElement = Dune::ReferenceElements<D, dim>::simplex();
 
-          auto const &refElement = Dune::ReferenceElements<D, dim>::simplex();
-          // Iterate over vertices, dim +1 dofs per vertex
-          for (int i = 0; i < dim + 1; ++i) {
+        // Iterate over vertices, dim derivative +1 evaluation dofs per vertex
+        for (int i = 0; i < (dim+1); ++i)
+        {
           auto x = refElement.position(i, dim);
-
-          auto derivativeValue = df(x);
-          out[i * numberOfVertices] = f(x);
+          auto&& derivativeValue = df(x);
+          out[i * (dim +1)] = f(x);
           for (int d = 0; d < dim; ++d)
-              out[i * numberOfVertices + d + 1] = getPartialDerivative(derivativeValue,d) * (*localState_)[i];
-          }
+            out[i * (dim+1) + d + 1] = squeeze(derivativeValue)[d] * (*averageVertexMeshSize_)[i];
+        }
 
-          if constexpr (not reduced)
-          for (size_type i = 0; i < numberOfInnerDofs; ++i) {
-              out[numberOfVertices * numberOfVertices + i] =
-                  f(refElement.position(i, innerDofCodim));
-          }
+        if constexpr (not reduced)
+        {
+          for (size_type i = 0; i < (dim - 1) * (dim - 1); ++i)
+            out[(dim +1) * (dim +1) + i] = f(refElement.position(i, (dim == 2) ? 0 : 1));
+        }
       }
 
-      const FunctionalDescriptor& functionalDescriptor(size_type i) const {
+      /**
+       * \brief Get the object that describes which type of evaluations is performed by the dual basis
+       */
+      const FunctionalDescriptor& functionalDescriptor(size_type i) const
+      {
         return descriptors_[i];
       }
 
     protected:
-      template<class DerivativeType, class FieldType>
-      FieldType getPartialDerivative(DerivativeType const &df, std::size_t i) const
-      {
-          DUNE_THROW(Dune::NotImplemented, "Derivative Type is neither FieldMatrix<double,1,d> nor "
-                                          "FieldVector<double,d>");
-      }
+      std::array<D, dim+1> const* averageVertexMeshSize_;
+      std::array<FunctionalDescriptor, size()> descriptors_;
+    };
 
-      template<class FieldType, int d>
-      FieldType getPartialDerivative(Dune::FieldVector<FieldType, d> const &df, std::size_t i) const
-      {
-          return df[i];
-      }
+  } // end namespace Impl
 
-      template<class FieldType, int d>
-      FieldType getPartialDerivative(Dune::FieldMatrix<FieldType, 1, d> const &df,
-                                      std::size_t i) const
-      {
-        if (df.N() == 1)
-          return df[0][i];
-        else if (df.M() == 1)
-          return df[i][0];
-        else
-          DUNE_THROW(Dune::NotImplemented, "Derivative of scalar function is a matrix!");
-      }
-
-      std::vector<D> const* localState_;
-      std::array<FunctionalDescriptor, coeffSize> descriptors_;
-  };
-
-
-
-  } // namespace Impl
-
-  template<class D, class R, unsigned int dim , bool reduced>
+  template<class D, class R, int dim , bool reduced>
   struct HermiteLocalBasisTraits
     : public H2LocalBasisTraits<D, dim, Dune::FieldVector<D,dim>, R, 1,
             Dune::FieldVector<R,1>, Dune::FieldMatrix<R,1,dim>, Dune::FieldMatrix<R,dim,dim>>
@@ -484,25 +544,24 @@ namespace Functions
    * \tparam R Type used for function values
    * \tparam dim dimension of the reference element
    */
-  template<class D, class R, unsigned int dim, bool reduced = false>
-  class HermiteLocalFiniteElement: public Impl::TransformedFiniteElementMixin<HermiteLocalFiniteElement<D,R,dim,reduced>, HermiteLocalBasisTraits<D, R, dim, reduced>>
+  template<class D, class R, int dim, bool reduced = false>
+  class HermiteLocalFiniteElement
+    : public Impl::TransformedFiniteElementMixin<HermiteLocalFiniteElement<D,R,dim,reduced>, HermiteLocalBasisTraits<D, R, dim, reduced>>
   {
     using Base = Impl::TransformedFiniteElementMixin< HermiteLocalFiniteElement<D,R,dim,reduced>, HermiteLocalBasisTraits<D, R, dim, reduced>>;
     friend class Impl::TransformedLocalBasis<HermiteLocalFiniteElement<D,R,dim,reduced>, HermiteLocalBasisTraits<D, R, dim, reduced>>;
 
-    static_assert(dim > 0 && dim < 4);
-    static_assert(!(reduced && (dim != 2)));
-    static constexpr std::size_t numberOfVertices = dim + 1;
-    static constexpr std::size_t numberOfInnerDofs = reduced ? 0 : (dim - 1) * (dim - 1);
-    static constexpr std::size_t numberOfVertexDofs = numberOfVertices * numberOfVertices;
   public:
 
     HermiteLocalFiniteElement()
-      :Base()
-      {}
+      : Base()
+    {
+      static_assert((dim > 0) and (dim <= 3), "HermiteLocalFiniteElement only implemented for dim=1,2,3");
+      static_assert((not reduced) or (dim == 2), "Reduced version of HermiteLocalFiniteElement only implemented for dim=2");
+    }
+
     /** \brief Export number types, dimensions, etc.
      */
-    using LocalState = typename std::vector<D>;
     using size_type = std::size_t;
     using Traits = LocalFiniteElementTraits<
         Impl::TransformedLocalBasis<HermiteLocalFiniteElement<D,R,dim,reduced>, HermiteLocalBasisTraits<D, R, dim, reduced>>,
@@ -526,56 +585,68 @@ namespace Functions
 
     /** \brief The reference element that the local finite element is defined on
      */
-    static constexpr GeometryType type() { return GeometryTypes::simplex(dim); }
+    static constexpr GeometryType type()
+    {
+      return GeometryTypes::simplex(dim);
+    }
 
     /** The size of the transformed finite element.
      */
     static constexpr size_type size()
     {
-      if constexpr (dim == 1)
-        return 4;
-      else if constexpr (dim == 2) {
-        if constexpr (reduced)
-          return 9;
-        else
-          return 10;
-      } else // dim == 3
-        return 20;
+      return Impl::HermiteLocalCoefficients<dim,reduced>::size();
     }
 
     /** Binds the Finite Element to an element.
-      */
+     */
     template<class Mapper, class Element>
-    void bind(Mapper const& mapper, std::vector<D> const& data, Element const &e)
+    void bind(Mapper const& vertexMapper, std::vector<D> const& globalAverageVertexMeshSize, Element const &e)
     {
-      for (auto const &index : range(e.subEntities(dim)))
-        localState_.push_back(data[mapper.subIndex(e, index, dim)]);
+      // Cache average mesh size for each vertex
+      for (auto i : range(dim+1))
+        averageVertexMeshSize_[i] = globalAverageVertexMeshSize[vertexMapper.subIndex(e, i, dim)];
 
-      fillMatrix(e.geometry(), localState_);
-      interpolation_.bind(e, localState_);
+      // Bind LocalInterpolation to updated local state
+      interpolation_.bind(e, averageVertexMeshSize_);
+
+      // Compute local transformation matrices for each vertex
+      const auto& geometry = e.geometry();
+      const auto& refElement = Dune::ReferenceElements<typename Element::Geometry::ctype, dim>::simplex();
+      for (auto i : range(dim+1))
+      {
+        scaledVertexJacobians_[i] = geometry.jacobian(refElement.position(i, dim));
+        scaledVertexJacobians_[i] /= averageVertexMeshSize_[i];
+      }
     }
+
   protected:
+
     /** \brief Returns the local basis, i.e., the set of shape functions
      */
-    Impl::HermiteLocalBasis<D, R, dim, reduced> const&referenceLocalBasis() const { return basis_; }
+    Impl::HermiteReferenceLocalBasis<D, R, dim, reduced> const& referenceLocalBasis() const
+    {
+      return basis_;
+    }
 
     /** Applies the transformation. Note that we do not distinguish for
-      * Scalar/Vector/Matrix Type,
-      * but only assume the Values to be Elements of a Vectorspace.
-      * We assume random access containers. */
-    template<typename InputValues, typename OutputValues>
+     * Scalar/Vector/Matrix Type, but only assume the Values to be Elements of a Vectorspace.
+     * We assume containers with random access iterators.
+     */
+    template<class InputValues, class OutputValues>
     void transform(InputValues const &inValues, OutputValues &outValues) const
     {
-      assert(inValues.size() == numberOfVertexDofs + numberOfInnerDofs);
-      assert(reduced || (outValues.size() == inValues.size()));
+      assert(inValues.size() == size());
+      assert(outValues.size() == inValues.size());
       auto inIt = inValues.begin();
       auto outIt = outValues.begin();
 
-      for (auto vertex : Dune::range(numberOfVertices)) {
+      for (auto vertex : Dune::range((dim +1)))
+      {
         *outIt = *inIt; // value dof is not transformed
         outIt++, inIt++;
         // transform the gradient dofs together
-        for (auto &&[row_i, i] : sparseRange(subMatrices_[vertex])) {
+        for (auto &&[row_i, i] : sparseRange(scaledVertexJacobians_[vertex]))
+        {
           outIt[i] = 0.;
           for (auto &&[val_i_j, j] : sparseRange(row_i))
             outIt[i] += val_i_j * inIt[j];
@@ -584,138 +655,77 @@ namespace Functions
         outIt += dim, inIt += dim;
       }
 
-      if constexpr (not reduced)
-        // copy all remaining inner dofs
+      // For the non-reduced case: Copy all remaining inner dofs
+      if constexpr (dim > 1 and (not reduced))
         std::copy(inIt, inValues.end(), outIt);
     }
 
   private:
-    /**
-      * \brief Fill the transformationmatrix m
-      *
-      * \tparam Geometry  the Geometry class
-      * \param geometry   the geometry of the element we are bound to
-      *
-      *
-      *      |1          0|} repeat for each vertex
-      * m =  |  J/h       |}
-      *      |0          1|} repeat for each inner dof i.e. (dim-1)^2 times
-      *  where h is the mesh size average over the local vertex patch
-      */
-    template<class Geometry>
-    void fillMatrix(Geometry const &geometry, LocalState const &averageSubEntityMeshSize)
-    {
-      auto const &refElement = Dune::ReferenceElements<typename Geometry::ctype, dim>::simplex();
-      for (std::size_t i = 0; i < numberOfVertices; ++i) // dim + 1 vertices
-      {
-        subMatrices_[i] = geometry.jacobian(refElement.position(i, dim));
-        subMatrices_[i] /= averageSubEntityMeshSize[i];
-      }
-    }
 
-    // a finite element consists of a basis, coeffiecents and an interpolation
-    typename Impl::HermiteLocalBasis<D, R, dim, reduced> basis_;
+    typename Impl::HermiteReferenceLocalBasis<D, R, dim, reduced> basis_;
     typename Traits::LocalCoefficientsType coefficients_;
     typename Traits::LocalInterpolationType interpolation_;
     // the transformation to correct the lack of affine equivalence boils down to
     // one transformation matrix per vertex
-    std::array<Dune::FieldMatrix<R, dim, dim>, numberOfVertices> subMatrices_;
+    std::array<Dune::FieldMatrix<R, dim, dim>, dim+1> scaledVertexJacobians_;
     // the local state, i.e. a collection of global information restricted to this element
-    LocalState localState_;
+    std::array<D, dim+1> averageVertexMeshSize_;
 
   };
 
 
-  namespace Impl
+
+  // *****************************************************************************
+  // This is the reusable part of the basis. It contains
+  //
+  //   HermitePreBasis
+  //   HermiteNode
+  //
+  // The pre-basis allows to create the others and is the owner of possible shared
+  // state. These components do _not_ depend on the global basis and local view
+  // and can be used without a global basis.
+  // *****************************************************************************
+
+  template<class GV, class R, bool reduced>
+  class HermiteNode
+    : public LeafBasisNode
   {
-
-    // Helper function returning an unordered range
-    // of global indices associated to the element.
-    // This could be implemented cheaper internally in
-    // the MCMGMapper by storing a precomputed
-    // container of all subsentities addressed by the layout.
-    template<class GridView>
-    auto subIndexSet(Dune::MultipleCodimMultipleGeomTypeMapper<GridView> const &mapper,
-                    const typename GridView::template Codim<0>::Entity &element)
-    {
-      using Mapper = Dune::MultipleCodimMultipleGeomTypeMapper<GridView>;
-      using Index = typename Mapper::Index;
-      constexpr auto dimension = GridView::dimension;
-      auto subIndices = std::vector<Index>();
-      auto referenceElement = Dune::referenceElement<double, dimension>(element.type());
-      for (auto codim : Dune::range(dimension + 1)) {
-        for (auto subEntity : Dune::range(referenceElement.size(codim))) {
-          std::size_t c = mapper.layout()(referenceElement.type(subEntity, codim), dimension);
-          if (c > 0) {
-            std::size_t firstIndex = mapper.subIndex(element, subEntity, codim);
-            for (auto j : Dune::range(firstIndex, firstIndex + c)) {
-              subIndices.push_back(j);
-            }
-          }
-        }
-      }
-      return subIndices;
-    }
-
-    // Helper function computing an average mesh size per subentity
-    // by averaging over the adjacent elements. This only considers
-    // the subentities handled by the given mapper and returns a
-    // vector of mesh sizes indixed according to the mapper.
-    template<class FieldType = double, class Mapper>
-    auto computeAverageSubEntityMeshSize(const Mapper& mapper)
-    {
-      constexpr auto dimension = Mapper::GridView::dimension;
-
-      std::vector<unsigned int> adjacentElements(mapper.size(), 0);
-      std::vector<FieldType> subEntityMeshSize(mapper.size(), 0.0);
-      for(const auto& element : Dune::elements(mapper.gridView()))
-      {
-        auto A = element.geometry().volume();
-        for(auto i : Impl::subIndexSet(mapper, element))
-        {
-          subEntityMeshSize[i] += A;
-          ++(adjacentElements[i]);
-        }
-      }
-      for(auto i : Dune::range(mapper.size()))
-        subEntityMeshSize[i] = std::pow(subEntityMeshSize[i]/adjacentElements[i], 1./dimension);
-      return subEntityMeshSize;
-    }
-
-  } // namespace Impl
-
-template<typename GV, class R, bool reduced>
-class HermiteNode : public LeafBasisNode
-{
     using Mapper = Dune::MultipleCodimMultipleGeomTypeMapper<GV>;
+
   public:
     using size_type = std::size_t;
     using Element = typename GV::template Codim<0>::Entity;
-
     using FiniteElement = HermiteLocalFiniteElement<typename GV::ctype, R, GV::dimension, reduced>;
 
-
-    HermiteNode(Mapper const& m, std::vector<typename GV::ctype> const& data)
-    : mapper_(&m), data_(&data)
+    HermiteNode(Mapper const& m, std::vector<typename GV::ctype> const& averageVertexMeshSize)
+      : element_(nullptr)
+      , vertexMapper_(&m)
+      , averageVertexMeshSize_(&averageVertexMeshSize)
     {
       this->setSize(finiteElement_.size());
     }
 
     //! Return current element, throw if unbound
-    Element const &element() const { return *element_; }
+    Element const &element() const
+    {
+      return *element_;
+    }
 
     /** \brief Return the LocalFiniteElement for the element we are bound to
      *
      * The LocalFiniteElement implements the corresponding interfaces of the
      * dune-localfunctions module
      */
-    FiniteElement const &finiteElement() const { return finiteElement_; }
+    FiniteElement const &finiteElement() const
+    {
+      return finiteElement_;
+    }
 
     //! Bind to element.
     void bind(Element const &e)
     {
       element_ = &e;
-      finiteElement_.bind(*mapper_, *data_, *element_);
+      finiteElement_.bind(*vertexMapper_, *averageVertexMeshSize_, *element_);
     }
 
     //! The order of the local basis.
@@ -724,29 +734,30 @@ class HermiteNode : public LeafBasisNode
   protected:
     FiniteElement finiteElement_;
     Element const* element_;
-    Mapper const* mapper_;
-    std::vector<typename GV::ctype> const* data_;
-};
+    Mapper const* vertexMapper_;
+    std::vector<typename GV::ctype> const* averageVertexMeshSize_;
+  };
 
 
   /**
-  * \brief A pre-basis for a Hermitebasis
-  *
-  * \ingroup FunctionSpaceBasesImplementations
-  *
-  * \tparam GV  The grid view that the FE basis is defined on
-  * \tparam R   Range type used for shape function values
-  * \note This only works for simplex grids
-  */
-  template<typename GV, typename R, bool reduced = false>
-  class HermitePreBasis : public LeafPreBasisMapperMixin<GV>
+   * \brief A pre-basis for a Hermitebasis
+   *
+   * \ingroup FunctionSpaceBasesImplementations
+   *
+   * \tparam GV  The grid view that the FE basis is defined on
+   * \tparam R   Range type used for shape function values
+   * \note This only works for simplex grids
+   */
+  template<class GV, class R, bool reduced = false>
+  class HermitePreBasis
+    : public LeafPreBasisMapperMixin<GV>
   {
     using Base = LeafPreBasisMapperMixin<GV>;
     using SubEntityMapper = Dune::MultipleCodimMultipleGeomTypeMapper<GV>;
-
-    static const std::size_t dim = GV::dimension;
     using Element = typename GV::template Codim<0>::Entity;
     using D = typename GV::ctype;
+    static const std::size_t dim = GV::dimension;
+
     // helper methods to assign each subentity the number of dofs. Used by the LeafPreBasisMapperMixin.
     static constexpr auto cubicHermiteMapperLayout(Dune::GeometryType type, int gridDim)
     {
@@ -762,7 +773,6 @@ class HermiteNode : public LeafBasisNode
         return 0; // this case is only entered for the interior of the 3d element. There are no dofs.
     }
 
-
   public:
     //! The grid view that the FE basis is defined on
     using GridView = GV;
@@ -773,41 +783,38 @@ class HermiteNode : public LeafBasisNode
     //! Template mapping root tree path to type of created tree node
     using Node = HermiteNode<GridView, R,reduced>;
 
-    static constexpr size_type maxMultiIndexSize = 1;
-    static constexpr size_type minMultiIndexSize = 1;
-    static constexpr size_type multiIndexBufferSize = 1;
-
   public:
+
     //! Constructor for a given grid view object
     HermitePreBasis(const GV &gv)
-        : Base(gv, cubicHermiteMapperLayout), mapper_({gv, mcmgVertexLayout()})
+      : Base(gv, cubicHermiteMapperLayout)
+      , vertexMapper_({gv, mcmgVertexLayout()})
     {
-      updateState(gv);
-      if (dim > 3)
-        DUNE_THROW(Dune::NotImplemented, "HermitePreBasis only implemented for dim <= 3");
+      static_assert((dim > 0) and (dim <= 3), "HermitePreBasis only implemented for dim=1,2,3");
+      static_assert((not reduced) or (dim == 2), "Reduced version of HermitePreBasis only implemented for dim=2");
+      averageVertexMeshSize_ = Impl::computeAverageSubEntityMeshSize<D>(vertexMapper_);
     }
 
     //! Update the stored grid view, to be called if the grid has changed
     void update(GridView const &gv)
     {
       Base::update(gv);
-      updateState(gv);
+      vertexMapper_.update(this->gridView());
+      averageVertexMeshSize_ = Impl::computeAverageSubEntityMeshSize<D>(vertexMapper_);
     }
 
     /**
-    * \brief Create tree node
-    */
-    Node makeNode() const { return Node{mapper_, data_}; }
-
-  protected:
-    void updateState(GridView const &gridView)
+     * \brief Create tree node
+     */
+    Node makeNode() const
     {
-      mapper_.update(gridView);
-      data_ = Impl::computeAverageSubEntityMeshSize<D>(mapper_);
+      return Node{vertexMapper_, averageVertexMeshSize_};
     }
 
-    SubEntityMapper mapper_;
-    std::vector<D> data_;
+  protected:
+
+    SubEntityMapper vertexMapper_;
+    std::vector<D> averageVertexMeshSize_;
 
   }; // class HermitePreBasis
 
@@ -815,12 +822,13 @@ class HermiteNode : public LeafBasisNode
   {
 
     /**
-    * \brief construct a PreBasisFactory for the full cubic Hermite Finite Element
-    *
-    * \tparam R RangeFieldType
-    * \return the PreBasisFactory
-    */
-    template<typename R = double>
+     * \brief construct a PreBasisFactory for the full cubic Hermite Finite Element
+     *
+     * \tparam R RangeFieldType
+     * \return the PreBasisFactory
+     * \relates HermiteBasis
+     */
+    template<class R = double>
     auto hermite()
     {
       return [=](auto const &gridView) {
@@ -829,12 +837,13 @@ class HermiteNode : public LeafBasisNode
     }
 
     /**
-    * \brief construct a PreBasisFactory for the reduced cubic Hermite Finite Element
-    *
-    * \tparam R RangeFieldType
-    * \return the PreBasisFactory
-    */
-    template<typename R = double>
+     * \brief construct a PreBasisFactory for the reduced cubic Hermite Finite Element
+     *
+     * \tparam R RangeFieldType
+     * \return the PreBasisFactory
+     * \relates HermiteBasis
+     */
+    template<class R = double>
     auto reducedHermite()
     {
       return [=](auto const &gridView) {
@@ -842,9 +851,9 @@ class HermiteNode : public LeafBasisNode
       };
     }
 
-  } // namespace BasisFactory
+  } // end namespace BasisFactory
 
-} // namespace Functions
-} // namespace Dune
+
+} // end namespace Dune::Functions
 
 #endif
