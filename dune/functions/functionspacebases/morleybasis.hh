@@ -23,9 +23,9 @@
 #include <dune/localfunctions/common/localkey.hh>
 
 #include <dune/functions/analyticfunctions/monomialset.hh>
+#include <dune/functions/functionspacebases/cubichermitebasis.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/functionaldescriptor.hh>
-#include <dune/functions/functionspacebases/hermitebasis.hh>
 #include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/transformedfiniteelementmixin.hh>

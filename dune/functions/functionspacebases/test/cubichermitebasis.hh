@@ -22,7 +22,7 @@
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
-#include <dune/functions/functionspacebases/hermitebasis.hh>
+#include <dune/functions/common/mapperutilities.hh>
 
 namespace Dune {
 namespace Functions {

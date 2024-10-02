@@ -11,6 +11,7 @@ install(FILES
         compositebasis.hh
         concepts.hh
         containerdescriptors.hh
+        cubichermitebasis.hh
         defaultglobalbasis.hh
         defaultlocalview.hh
         defaultnodetorangemap.hh
@@ -19,7 +20,6 @@ install(FILES
         flatvectorview.hh
         functionaldescriptor.hh
         globalvaluedlocalfiniteelement.hh
-        hermitebasis.hh
         hierarchicallagrangebasis.hh
         hierarchicnodetorangemap.hh
         hierarchicvectorwrapper.hh

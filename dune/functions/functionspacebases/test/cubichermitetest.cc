@@ -18,8 +18,8 @@
 #include <dune/grid/utility/structuredgridfactory.hh>
 
 #include <dune/functions/functionspacebases/test/basistest.hh>
-#include <dune/functions/functionspacebases/hermitebasis.hh>
-#include <dune/functions/functionspacebases/test/cubichermitebasis.hh>
+#include <dune/functions/functionspacebases/cubichermitebasis.hh>
+//#include <dune/functions/functionspacebases/test/cubichermitebasis.hh>
 
 using namespace Dune;
 using namespace Dune::Functions;
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
   int repeat = 1000000;
 
   { // 1d
-    std::cout << "Hermite test in 1d" << std::endl;
+    std::cout << "CubicHermite test in 1d" << std::endl;
     auto grid = StructuredGridFactory<OneDGrid>::createSimplexGrid({0.}, {1.}, {10});
 
     auto gridView = grid->levelGridView(0);
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
       std::cout << "Grid has " << gridView.size(0) << " elementes and " << gridView.size(1)
                 << " facettes and " << gridView.size(2) << " vertices" << std::endl;
 
-      auto basis = makeBasis(gridView, hermite());
+      auto basis = makeBasis(gridView, cubicHermite());
       std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
 
       test_1d.subTest(checkBasis(basis, EnableContinuityCheck(), EnableDifferentiabilityCheck(),
@@ -80,8 +80,9 @@ int main(int argc, char *argv[])
     }
   }
 
-    { // 1d
-    std::cout << "Hermite test in 1d, Carstens implementation" << std::endl;
+#if 0
+  { // 1d
+    std::cout << "CubicHermite test in 1d, Carstens implementation" << std::endl;
     auto grid = StructuredGridFactory<OneDGrid>::createSimplexGrid({0.}, {1.}, {10});
 
     auto gridView = grid->levelGridView(0);
@@ -107,6 +108,7 @@ int main(int argc, char *argv[])
       }
     }
   }
+#endif
 
   { // 2d
     std::cout << "Hermite test in 2d" << std::endl;
@@ -127,7 +129,7 @@ int main(int argc, char *argv[])
     // using GridView = decltype(gridView);
     {
       using namespace Dune::Functions::BasisFactory;
-      auto basis = makeBasis(gridView, hermite());
+      auto basis = makeBasis(gridView, cubicHermite());
       std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
 
       test_2d.subTest(checkBasis(basis, EnableContinuityCheck(),
@@ -146,7 +148,7 @@ int main(int argc, char *argv[])
   }
 
   { // 2d  reduced
-    std::cout << "reduced Hermite test in 2d" << std::endl;
+    std::cout << "reduced CubicHermite test in 2d" << std::endl;
 
     auto factory = Dune::GridFactory<Dune::UGGrid<2>>{};
     factory.insertVertex({0,0});
@@ -164,7 +166,7 @@ int main(int argc, char *argv[])
     {
       using namespace Dune::Functions::BasisFactory;
 
-      auto basis = makeBasis(gridView, reducedHermite());
+      auto basis = makeBasis(gridView, reducedCubicHermite());
       std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
 
       test_2d.subTest(checkBasis(basis, EnableContinuityCheck(),
@@ -182,6 +184,7 @@ int main(int argc, char *argv[])
     }
   }
 
+#if 0
   { // 2d  reduced
     std::cout << "reduced Hermite test in 2d, Carstens Implementation" << std::endl;
 
@@ -211,9 +214,10 @@ int main(int argc, char *argv[])
       }
     }
   }
+#endif
 
   { // 3d
-    std::cout << "Hermite test in 3d" << std::endl;
+    std::cout << "CubicHermite test in 3d" << std::endl;
 
     auto grid = StructuredGridFactory<UGGrid<3>>::createSimplexGrid({0., 0., 0.}, {1., 1., 1.},
                                                                     {{3, 3, 3}});
@@ -224,7 +228,7 @@ int main(int argc, char *argv[])
               << " vertices " << std::endl;
     {
       using namespace Dune::Functions::BasisFactory;
-      auto basis = makeBasis(gridView, hermite());
+      auto basis = makeBasis(gridView, cubicHermite());
       std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
 
       test_3d.subTest(checkBasis(basis, EnableContinuityCheck(),

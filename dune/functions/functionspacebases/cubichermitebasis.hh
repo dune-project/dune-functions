@@ -3,8 +3,8 @@
 
 // SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0-or-later
-#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_HERMITEBASIS_HH
-#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_HERMITEBASIS_HH
+#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_CUBICHERMITEBASIS_HH
+#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_CUBICHERMITEBASIS_HH
 
 #include <algorithm>
 #include <array>
@@ -33,25 +33,26 @@
 
 #include <dune/functions/analyticfunctions/monomialset.hh>
 
-//////////////////////////////////////////////////////////////////////////////////////
-///   This file provides an implementation of the cubic Hermite finite element
-///    in 1 to 3 dimensions.
-///   For reference, see[Ciarlet, The Finite Element Method for Elliptic Problems, 2002].
-///   It contains in the following order:
-///       - A GlobalBasis typedef HermiteBasis
-///       - A template H2LocalBasisTraits, extending the dune-localfunctions
-///         LocalBasisTraits by an exported Hessiantype
-///       - A template HermiteLocalFiniteElement providing an implementation
-///         of the LocalFiniteElement interface, along with its subparts (Impl namespace)
-///       - A template HermiteNode
-///       - A template HermitePreBasis
-///       - Two factories hermite() and reducedHermite() in the BasisFactory namespace
-//////////////////////////////////////////////////////////////////////////////////////
+/**
+ * \file cubichermitebasis.hh
+ * \brief This file provides an implementation of the cubic Hermite finite element in 1 to 3 dimensions.
+ *
+ * For reference, see[Ciarlet, The Finite Element Method for Elliptic Problems, 2002].
+ * It contains in the following order:
+ *     - A GlobalBasis typedef CubicHermiteBasis
+ *     - A template H2LocalBasisTraits, extending the dune-localfunctions
+ *       LocalBasisTraits by an exported Hessiantype
+ *     - A template CubicHermiteLocalFiniteElement providing an implementation
+ *       of the LocalFiniteElement interface, along with its subparts (Impl namespace)
+ *     - A template CubicHermiteNode
+ *     - A template CubicHermitePreBasis
+ *     - Two factories hermite() and reducedHermite() in the BasisFactory namespace
+ */
 namespace Dune::Functions
 {
 
   template<class GV, class R, bool reduced>
-  struct HermitePreBasis;
+  struct CubicHermitePreBasis;
 
   /** \brief Nodal basis of a scalar cubic Hermite finite element space
    *
@@ -66,14 +67,14 @@ namespace Dune::Functions
    *   - It global space is not nested, i.e. the space on a refined grid is not a subspace of the
    *     space on the coarser grid.
    * All arguments passed to the constructor will be forwarded to the constructor
-   * of HermitePreBasis.
+   * of CubicHermitePreBasis.
    *
    * \tparam GV The GridView that the space is defined on
    * \tparam reduced whether to use the reduced Hermite finite element (only in 2d).
    * \tparam R The range type of the local basis
    */
   template<class GV,bool reduced = false, class R = double>
-  using HermiteBasis = DefaultGlobalBasis<HermitePreBasis<GV, R, reduced> >;
+  using CubicHermiteBasis = DefaultGlobalBasis<CubicHermitePreBasis<GV, R, reduced> >;
 
   template<class DF, int n, class D, class RF, int m, class R, class J, class H>
   struct H2LocalBasisTraits
@@ -153,16 +154,16 @@ namespace Dune::Functions
      * \tparam dim Dimension of the reference simplex
      */
     template<int dim, bool reduced>
-    class HermiteLocalCoefficients
+    class CubicHermiteLocalCoefficients
     {
     public:
       using size_type = std::size_t;
 
-      HermiteLocalCoefficients()
+      CubicHermiteLocalCoefficients()
         : localKeys_(size())
       {
-        static_assert((dim > 0) and (dim <= 3), "HermiteLocalCoefficients only implemented for dim=1,2,3");
-        static_assert((not reduced) or (dim == 2), "Reduced version of HermiteLocalCoefficients only implemented for dim=2");
+        static_assert((dim > 0) and (dim <= 3), "CubicHermiteLocalCoefficients only implemented for dim=1,2,3");
+        static_assert((not reduced) or (dim == 2), "Reduced version of CubicHermiteLocalCoefficients only implemented for dim=2");
         for (size_type i = 0; i < (dim +1); ++i)
         {
           // dim derivatives + 1 evaluation dofs per vertex
@@ -210,7 +211,7 @@ namespace Dune::Functions
      * \tparam dim Dimension of the domain simplex
      */
     template<class D, class R, int dim, bool reduced>
-    class HermiteReferenceLocalBasis
+    class CubicHermiteReferenceLocalBasis
     {
     public:
       using Traits = H2LocalBasisTraits<D, dim, FieldVector<D, dim>, R, 1, FieldVector<R, 1>,
@@ -230,7 +231,7 @@ namespace Dune::Functions
        * monomial basis. The monomials are enumerated as in the
        * MonomialSet of the corresponding dimension and order.
        */
-      static constexpr auto getHermiteCoefficients()
+      static constexpr auto getCubicHermiteCoefficients()
       {
         if constexpr (dim == 1)
           return Dune::FieldMatrix<D, 4, 4>({{1, 0, -3, 2}, {0, 1, -2, 1}, {0, 0, 3, -2}, {0, 0, -1, 1}});
@@ -298,22 +299,22 @@ namespace Dune::Functions
         }
       }
 
-      static constexpr auto referenceBasisCoefficients = getHermiteCoefficients();
+      static constexpr auto referenceBasisCoefficients = getCubicHermiteCoefficients();
       static constexpr MonomialSet<typename Traits::RangeFieldType, dim, 3> monomials = {};
 
     public:
 
-      HermiteReferenceLocalBasis()
+      CubicHermiteReferenceLocalBasis()
       {
-        static_assert((dim > 0) and (dim <= 3), "HermiteReferenceLocalBasis only implemented for dim=1,2,3");
-        static_assert((not reduced) or (dim == 2), "Reduced version of HermiteReferenceLocalBasis only implemented for dim=2");
+        static_assert((dim > 0) and (dim <= 3), "CubicHermiteReferenceLocalBasis only implemented for dim=1,2,3");
+        static_assert((not reduced) or (dim == 2), "Reduced version of CubicHermiteReferenceLocalBasis only implemented for dim=2");
       }
 
       /** The number of basis functions in the basis
        */
       static constexpr unsigned int size()
       {
-        return HermiteLocalCoefficients<dim,reduced>::size();
+        return CubicHermiteLocalCoefficients<dim,reduced>::size();
       }
 
       /** The polynomial order of the basis
@@ -413,23 +414,23 @@ namespace Dune::Functions
      *
      */
     template<class D, int dim, bool reduced = false>
-    class HermiteLocalInterpolation
+    class CubicHermiteLocalInterpolation
     {
       using size_type = std::size_t;
 
       static constexpr unsigned int size()
       {
-        return HermiteLocalCoefficients<dim,reduced>::size();
+        return CubicHermiteLocalCoefficients<dim,reduced>::size();
       }
 
       using FunctionalDescriptor = Dune::Functions::Impl::FunctionalDescriptor<dim>;
 
     public:
 
-      HermiteLocalInterpolation()
+      CubicHermiteLocalInterpolation()
       {
-        static_assert((dim > 0) and (dim <= 3), "HermiteLocalInterpolation only implemented for dim=1,2,3");
-        static_assert((not reduced) or (dim == 2), "Reduced version of HermiteLocalInterpolation only implemented for dim=2");
+        static_assert((dim > 0) and (dim <= 3), "CubicHermiteLocalInterpolation only implemented for dim=1,2,3");
+        static_assert((not reduced) or (dim == 2), "Reduced version of CubicHermiteLocalInterpolation only implemented for dim=2");
         if constexpr (dim==1)
         {
           descriptors_[0] = FunctionalDescriptor();
@@ -531,7 +532,7 @@ namespace Dune::Functions
   } // end namespace Impl
 
   template<class D, class R, int dim , bool reduced>
-  struct HermiteLocalBasisTraits
+  struct CubicHermiteLocalBasisTraits
     : public H2LocalBasisTraits<D, dim, Dune::FieldVector<D,dim>, R, 1,
             Dune::FieldVector<R,1>, Dune::FieldMatrix<R,1,dim>, Dune::FieldMatrix<R,dim,dim>>
   {};
@@ -545,28 +546,28 @@ namespace Dune::Functions
    * \tparam dim dimension of the reference element
    */
   template<class D, class R, int dim, bool reduced = false>
-  class HermiteLocalFiniteElement
-    : public Impl::TransformedFiniteElementMixin<HermiteLocalFiniteElement<D,R,dim,reduced>, HermiteLocalBasisTraits<D, R, dim, reduced>>
+  class CubicHermiteLocalFiniteElement
+    : public Impl::TransformedFiniteElementMixin<CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>
   {
-    using Base = Impl::TransformedFiniteElementMixin< HermiteLocalFiniteElement<D,R,dim,reduced>, HermiteLocalBasisTraits<D, R, dim, reduced>>;
-    friend class Impl::TransformedLocalBasis<HermiteLocalFiniteElement<D,R,dim,reduced>, HermiteLocalBasisTraits<D, R, dim, reduced>>;
+    using Base = Impl::TransformedFiniteElementMixin< CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>;
+    friend class Impl::TransformedLocalBasis<CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>;
 
   public:
 
-    HermiteLocalFiniteElement()
+    CubicHermiteLocalFiniteElement()
       : Base()
     {
-      static_assert((dim > 0) and (dim <= 3), "HermiteLocalFiniteElement only implemented for dim=1,2,3");
-      static_assert((not reduced) or (dim == 2), "Reduced version of HermiteLocalFiniteElement only implemented for dim=2");
+      static_assert((dim > 0) and (dim <= 3), "CubicHermiteLocalFiniteElement only implemented for dim=1,2,3");
+      static_assert((not reduced) or (dim == 2), "Reduced version of CubicHermiteLocalFiniteElement only implemented for dim=2");
     }
 
     /** \brief Export number types, dimensions, etc.
      */
     using size_type = std::size_t;
     using Traits = LocalFiniteElementTraits<
-        Impl::TransformedLocalBasis<HermiteLocalFiniteElement<D,R,dim,reduced>, HermiteLocalBasisTraits<D, R, dim, reduced>>,
-        Impl::HermiteLocalCoefficients<dim, reduced>,
-        Impl::HermiteLocalInterpolation<D, dim, reduced>>;
+        Impl::TransformedLocalBasis<CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>,
+        Impl::CubicHermiteLocalCoefficients<dim, reduced>,
+        Impl::CubicHermiteLocalInterpolation<D, dim, reduced>>;
 
     /** \brief Returns the assignment of the degrees of freedom to the element
      * subentities
@@ -594,7 +595,7 @@ namespace Dune::Functions
      */
     static constexpr size_type size()
     {
-      return Impl::HermiteLocalCoefficients<dim,reduced>::size();
+      return Impl::CubicHermiteLocalCoefficients<dim,reduced>::size();
     }
 
     /** Binds the Finite Element to an element.
@@ -623,7 +624,7 @@ namespace Dune::Functions
 
     /** \brief Returns the local basis, i.e., the set of shape functions
      */
-    Impl::HermiteReferenceLocalBasis<D, R, dim, reduced> const& referenceLocalBasis() const
+    Impl::CubicHermiteReferenceLocalBasis<D, R, dim, reduced> const& referenceLocalBasis() const
     {
       return basis_;
     }
@@ -662,7 +663,7 @@ namespace Dune::Functions
 
   private:
 
-    typename Impl::HermiteReferenceLocalBasis<D, R, dim, reduced> basis_;
+    typename Impl::CubicHermiteReferenceLocalBasis<D, R, dim, reduced> basis_;
     typename Traits::LocalCoefficientsType coefficients_;
     typename Traits::LocalInterpolationType interpolation_;
     // the transformation to correct the lack of affine equivalence boils down to
@@ -678,8 +679,8 @@ namespace Dune::Functions
   // *****************************************************************************
   // This is the reusable part of the basis. It contains
   //
-  //   HermitePreBasis
-  //   HermiteNode
+  //   CubicHermitePreBasis
+  //   CubicHermiteNode
   //
   // The pre-basis allows to create the others and is the owner of possible shared
   // state. These components do _not_ depend on the global basis and local view
@@ -687,7 +688,7 @@ namespace Dune::Functions
   // *****************************************************************************
 
   template<class GV, class R, bool reduced>
-  class HermiteNode
+  class CubicHermiteNode
     : public LeafBasisNode
   {
     using Mapper = Dune::MultipleCodimMultipleGeomTypeMapper<GV>;
@@ -695,9 +696,9 @@ namespace Dune::Functions
   public:
     using size_type = std::size_t;
     using Element = typename GV::template Codim<0>::Entity;
-    using FiniteElement = HermiteLocalFiniteElement<typename GV::ctype, R, GV::dimension, reduced>;
+    using FiniteElement = CubicHermiteLocalFiniteElement<typename GV::ctype, R, GV::dimension, reduced>;
 
-    HermiteNode(Mapper const& m, std::vector<typename GV::ctype> const& averageVertexMeshSize)
+    CubicHermiteNode(Mapper const& m, std::vector<typename GV::ctype> const& averageVertexMeshSize)
       : element_(nullptr)
       , vertexMapper_(&m)
       , averageVertexMeshSize_(&averageVertexMeshSize)
@@ -749,7 +750,7 @@ namespace Dune::Functions
    * \note This only works for simplex grids
    */
   template<class GV, class R, bool reduced = false>
-  class HermitePreBasis
+  class CubicHermitePreBasis
     : public LeafPreBasisMapperMixin<GV>
   {
     using Base = LeafPreBasisMapperMixin<GV>;
@@ -781,17 +782,17 @@ namespace Dune::Functions
     using size_type = std::size_t;
 
     //! Template mapping root tree path to type of created tree node
-    using Node = HermiteNode<GridView, R,reduced>;
+    using Node = CubicHermiteNode<GridView, R,reduced>;
 
   public:
 
     //! Constructor for a given grid view object
-    HermitePreBasis(const GV &gv)
+    CubicHermitePreBasis(const GV &gv)
       : Base(gv, cubicHermiteMapperLayout)
       , vertexMapper_({gv, mcmgVertexLayout()})
     {
-      static_assert((dim > 0) and (dim <= 3), "HermitePreBasis only implemented for dim=1,2,3");
-      static_assert((not reduced) or (dim == 2), "Reduced version of HermitePreBasis only implemented for dim=2");
+      static_assert((dim > 0) and (dim <= 3), "CubicHermitePreBasis only implemented for dim=1,2,3");
+      static_assert((not reduced) or (dim == 2), "Reduced version of CubicHermitePreBasis only implemented for dim=2");
       averageVertexMeshSize_ = Impl::computeAverageSubEntityMeshSize<D>(vertexMapper_);
     }
 
@@ -816,7 +817,7 @@ namespace Dune::Functions
     SubEntityMapper vertexMapper_;
     std::vector<D> averageVertexMeshSize_;
 
-  }; // class HermitePreBasis
+  }; // class CubicHermitePreBasis
 
   namespace BasisFactory
   {
@@ -826,13 +827,13 @@ namespace Dune::Functions
      *
      * \tparam R RangeFieldType
      * \return the PreBasisFactory
-     * \relates HermiteBasis
+     * \relates CubicHermiteBasis
      */
     template<class R = double>
-    auto hermite()
+    auto cubicHermite()
     {
       return [=](auto const &gridView) {
-        return HermitePreBasis<std::decay_t<decltype(gridView)>, R>(gridView);
+        return CubicHermitePreBasis<std::decay_t<decltype(gridView)>, R>(gridView);
       };
     }
 
@@ -841,13 +842,13 @@ namespace Dune::Functions
      *
      * \tparam R RangeFieldType
      * \return the PreBasisFactory
-     * \relates HermiteBasis
+     * \relates CubicHermiteBasis
      */
     template<class R = double>
-    auto reducedHermite()
+    auto reducedCubicHermite()
     {
       return [=](auto const &gridView) {
-        return HermitePreBasis<std::decay_t<decltype(gridView)>, R, true>(gridView);
+        return CubicHermitePreBasis<std::decay_t<decltype(gridView)>, R, true>(gridView);
       };
     }
 

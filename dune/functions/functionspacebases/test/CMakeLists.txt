@@ -14,7 +14,7 @@ dune_add_test(SOURCES containerdescriptortest.cc LABELS quick)
 
 dune_add_test(SOURCES hermitebasistest.cc LABELS quick)
 
-dune_add_test(SOURCES hermitetest.cc LABELS quick)
+dune_add_test(SOURCES cubichermitetest.cc LABELS quick)
 
 dune_add_test(SOURCES morleytest.cc LABELS quick)
 
