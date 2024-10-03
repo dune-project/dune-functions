@@ -232,7 +232,7 @@ auto makePolynomial(Coefficients coefficients)
  * \tparam K Scalar type. The polynomial will map K to K
  * \tparam C Coefficient type
  *
- * The initilizer list will be stored as std::vector
+ * The initializer list will be stored as std::vector
  * in the created object of type Polynomial<K,std::vector<C>>.
  */
 template<class K, class C>
