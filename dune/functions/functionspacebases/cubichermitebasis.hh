@@ -529,150 +529,150 @@ namespace Dune::Functions
       std::array<FunctionalDescriptor, size()> descriptors_;
     };
 
-  } // end namespace Impl
+    template<class D, class R, int dim , bool reduced>
+    struct CubicHermiteLocalBasisTraits
+      : public H2LocalBasisTraits<D, dim, Dune::FieldVector<D,dim>, R, 1,
+              Dune::FieldVector<R,1>, Dune::FieldMatrix<R,1,dim>, Dune::FieldMatrix<R,dim,dim>>
+    {};
 
-  template<class D, class R, int dim , bool reduced>
-  struct CubicHermiteLocalBasisTraits
-    : public H2LocalBasisTraits<D, dim, Dune::FieldVector<D,dim>, R, 1,
-            Dune::FieldVector<R,1>, Dune::FieldMatrix<R,1,dim>, Dune::FieldMatrix<R,dim,dim>>
-  {};
-
-  /** \brief Hermite finite element for simplices, as defined on the reference Element.
-   * Note, that this is a non affine-equivalent finite element, that requires an additional transformation to the relate reference basis with the pullbacks of global basis.
-   * For more Details, see <dune/functions/functionspacebases/hermitebasis.hh>.
-   *
-   * \tparam D Type used for domain coordinates
-   * \tparam R Type used for function values
-   * \tparam dim dimension of the reference element
-   */
-  template<class D, class R, int dim, bool reduced = false>
-  class CubicHermiteLocalFiniteElement
-    : public Impl::TransformedFiniteElementMixin<CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>
-  {
-    using Base = Impl::TransformedFiniteElementMixin< CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>;
-    friend class Impl::TransformedLocalBasis<CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>;
-
-  public:
-
-    CubicHermiteLocalFiniteElement()
-      : Base()
-    {
-      static_assert((dim > 0) and (dim <= 3), "CubicHermiteLocalFiniteElement only implemented for dim=1,2,3");
-      static_assert((not reduced) or (dim == 2), "Reduced version of CubicHermiteLocalFiniteElement only implemented for dim=2");
-    }
-
-    /** \brief Export number types, dimensions, etc.
+    /** \brief Hermite finite element for simplices, as defined on the reference Element.
+     * Note, that this is a non affine-equivalent finite element, that requires an additional transformation to the relate reference basis with the pullbacks of global basis.
+     * For more Details, see <dune/functions/functionspacebases/hermitebasis.hh>.
+     *
+     * \tparam D Type used for domain coordinates
+     * \tparam R Type used for function values
+     * \tparam dim dimension of the reference element
      */
-    using size_type = std::size_t;
-    using Traits = LocalFiniteElementTraits<
-        Impl::TransformedLocalBasis<CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>,
-        Impl::CubicHermiteLocalCoefficients<dim, reduced>,
-        Impl::CubicHermiteLocalInterpolation<D, dim, reduced>>;
-
-    /** \brief Returns the assignment of the degrees of freedom to the element
-     * subentities
-     */
-    const typename Traits::LocalCoefficientsType &localCoefficients() const
+    template<class D, class R, int dim, bool reduced = false>
+    class CubicHermiteLocalFiniteElement
+      : public Impl::TransformedFiniteElementMixin<CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>
     {
-      return coefficients_;
-    }
+      using Base = Impl::TransformedFiniteElementMixin< CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>;
+      friend class Impl::TransformedLocalBasis<CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>;
 
-    /** \brief Returns object that evaluates degrees of freedom
-     */
-    const typename Traits::LocalInterpolationType &localInterpolation() const
-    {
-      return interpolation_;
-    }
+    public:
 
-    /** \brief The reference element that the local finite element is defined on
-     */
-    static constexpr GeometryType type()
-    {
-      return GeometryTypes::simplex(dim);
-    }
-
-    /** The size of the transformed finite element.
-     */
-    static constexpr size_type size()
-    {
-      return Impl::CubicHermiteLocalCoefficients<dim,reduced>::size();
-    }
-
-    /** Binds the Finite Element to an element.
-     */
-    template<class Mapper, class Element>
-    void bind(Mapper const& vertexMapper, std::vector<D> const& globalAverageVertexMeshSize, Element const &e)
-    {
-      // Cache average mesh size for each vertex
-      for (auto i : range(dim+1))
-        averageVertexMeshSize_[i] = globalAverageVertexMeshSize[vertexMapper.subIndex(e, i, dim)];
-
-      // Bind LocalInterpolation to updated local state
-      interpolation_.bind(e, averageVertexMeshSize_);
-
-      // Compute local transformation matrices for each vertex
-      const auto& geometry = e.geometry();
-      const auto& refElement = Dune::ReferenceElements<typename Element::Geometry::ctype, dim>::simplex();
-      for (auto i : range(dim+1))
+      CubicHermiteLocalFiniteElement()
+        : Base()
       {
-        scaledVertexJacobians_[i] = geometry.jacobian(refElement.position(i, dim));
-        scaledVertexJacobians_[i] /= averageVertexMeshSize_[i];
+        static_assert((dim > 0) and (dim <= 3), "CubicHermiteLocalFiniteElement only implemented for dim=1,2,3");
+        static_assert((not reduced) or (dim == 2), "Reduced version of CubicHermiteLocalFiniteElement only implemented for dim=2");
       }
-    }
 
-  protected:
+      /** \brief Export number types, dimensions, etc.
+       */
+      using size_type = std::size_t;
+      using Traits = LocalFiniteElementTraits<
+          Impl::TransformedLocalBasis<CubicHermiteLocalFiniteElement<D,R,dim,reduced>, CubicHermiteLocalBasisTraits<D, R, dim, reduced>>,
+          Impl::CubicHermiteLocalCoefficients<dim, reduced>,
+          Impl::CubicHermiteLocalInterpolation<D, dim, reduced>>;
 
-    /** \brief Returns the local basis, i.e., the set of shape functions
-     */
-    Impl::CubicHermiteReferenceLocalBasis<D, R, dim, reduced> const& referenceLocalBasis() const
-    {
-      return basis_;
-    }
-
-    /** Applies the transformation. Note that we do not distinguish for
-     * Scalar/Vector/Matrix Type, but only assume the Values to be Elements of a Vectorspace.
-     * We assume containers with random access iterators.
-     */
-    template<class InputValues, class OutputValues>
-    void transform(InputValues const &inValues, OutputValues &outValues) const
-    {
-      assert(inValues.size() == size());
-      assert(outValues.size() == inValues.size());
-      auto inIt = inValues.begin();
-      auto outIt = outValues.begin();
-
-      for (auto vertex : Dune::range((dim +1)))
+      /** \brief Returns the assignment of the degrees of freedom to the element
+       * subentities
+       */
+      const typename Traits::LocalCoefficientsType &localCoefficients() const
       {
-        *outIt = *inIt; // value dof is not transformed
-        outIt++, inIt++;
-        // transform the gradient dofs together
-        for (auto &&[row_i, i] : sparseRange(scaledVertexJacobians_[vertex]))
+        return coefficients_;
+      }
+
+      /** \brief Returns object that evaluates degrees of freedom
+       */
+      const typename Traits::LocalInterpolationType &localInterpolation() const
+      {
+        return interpolation_;
+      }
+
+      /** \brief The reference element that the local finite element is defined on
+       */
+      static constexpr GeometryType type()
+      {
+        return GeometryTypes::simplex(dim);
+      }
+
+      /** The size of the transformed finite element.
+       */
+      static constexpr size_type size()
+      {
+        return Impl::CubicHermiteLocalCoefficients<dim,reduced>::size();
+      }
+
+      /** Binds the Finite Element to an element.
+       */
+      template<class Mapper, class Element>
+      void bind(Mapper const& vertexMapper, std::vector<D> const& globalAverageVertexMeshSize, Element const &e)
+      {
+        // Cache average mesh size for each vertex
+        for (auto i : range(dim+1))
+          averageVertexMeshSize_[i] = globalAverageVertexMeshSize[vertexMapper.subIndex(e, i, dim)];
+
+        // Bind LocalInterpolation to updated local state
+        interpolation_.bind(e, averageVertexMeshSize_);
+
+        // Compute local transformation matrices for each vertex
+        const auto& geometry = e.geometry();
+        const auto& refElement = Dune::ReferenceElements<typename Element::Geometry::ctype, dim>::simplex();
+        for (auto i : range(dim+1))
         {
-          outIt[i] = 0.;
-          for (auto &&[val_i_j, j] : sparseRange(row_i))
-            outIt[i] += val_i_j * inIt[j];
+          scaledVertexJacobians_[i] = geometry.jacobian(refElement.position(i, dim));
+          scaledVertexJacobians_[i] /= averageVertexMeshSize_[i];
         }
-        // increase pointer by size of gradient = dim
-        outIt += dim, inIt += dim;
       }
 
-      // For the non-reduced case: Copy all remaining inner dofs
-      if constexpr (dim > 1 and (not reduced))
-        std::copy(inIt, inValues.end(), outIt);
-    }
+    protected:
 
-  private:
+      /** \brief Returns the local basis, i.e., the set of shape functions
+       */
+      Impl::CubicHermiteReferenceLocalBasis<D, R, dim, reduced> const& referenceLocalBasis() const
+      {
+        return basis_;
+      }
 
-    typename Impl::CubicHermiteReferenceLocalBasis<D, R, dim, reduced> basis_;
-    typename Traits::LocalCoefficientsType coefficients_;
-    typename Traits::LocalInterpolationType interpolation_;
-    // the transformation to correct the lack of affine equivalence boils down to
-    // one transformation matrix per vertex
-    std::array<Dune::FieldMatrix<R, dim, dim>, dim+1> scaledVertexJacobians_;
-    // the local state, i.e. a collection of global information restricted to this element
-    std::array<D, dim+1> averageVertexMeshSize_;
+      /** Applies the transformation. Note that we do not distinguish for
+       * Scalar/Vector/Matrix Type, but only assume the Values to be Elements of a Vectorspace.
+       * We assume containers with random access iterators.
+       */
+      template<class InputValues, class OutputValues>
+      void transform(InputValues const &inValues, OutputValues &outValues) const
+      {
+        assert(inValues.size() == size());
+        assert(outValues.size() == inValues.size());
+        auto inIt = inValues.begin();
+        auto outIt = outValues.begin();
 
-  };
+        for (auto vertex : Dune::range((dim +1)))
+        {
+          *outIt = *inIt; // value dof is not transformed
+          outIt++, inIt++;
+          // transform the gradient dofs together
+          for (auto &&[row_i, i] : sparseRange(scaledVertexJacobians_[vertex]))
+          {
+            outIt[i] = 0.;
+            for (auto &&[val_i_j, j] : sparseRange(row_i))
+              outIt[i] += val_i_j * inIt[j];
+          }
+          // increase pointer by size of gradient = dim
+          outIt += dim, inIt += dim;
+        }
+
+        // For the non-reduced case: Copy all remaining inner dofs
+        if constexpr (dim > 1 and (not reduced))
+          std::copy(inIt, inValues.end(), outIt);
+      }
+
+    private:
+
+      typename Impl::CubicHermiteReferenceLocalBasis<D, R, dim, reduced> basis_;
+      typename Traits::LocalCoefficientsType coefficients_;
+      typename Traits::LocalInterpolationType interpolation_;
+      // the transformation to correct the lack of affine equivalence boils down to
+      // one transformation matrix per vertex
+      std::array<Dune::FieldMatrix<R, dim, dim>, dim+1> scaledVertexJacobians_;
+      // the local state, i.e. a collection of global information restricted to this element
+      std::array<D, dim+1> averageVertexMeshSize_;
+
+    };
+
+  } // end namespace Impl
 
 
 
@@ -696,7 +696,7 @@ namespace Dune::Functions
   public:
     using size_type = std::size_t;
     using Element = typename GV::template Codim<0>::Entity;
-    using FiniteElement = CubicHermiteLocalFiniteElement<typename GV::ctype, R, GV::dimension, reduced>;
+    using FiniteElement = typename Impl::CubicHermiteLocalFiniteElement<typename GV::ctype, R, GV::dimension, reduced>;
 
     CubicHermiteNode(Mapper const& m, std::vector<typename GV::ctype> const& averageVertexMeshSize)
       : element_(nullptr)

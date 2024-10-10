@@ -338,181 +338,181 @@ namespace Dune::Functions
 
     };
 
-  } // namespace Impl
+    template<class D, class R>
+    using MorleyLocalBasisTraits = typename Impl::MorleyReferenceLocalBasis<D, R>::Traits;
 
-  template<class D, class R>
-  using MorleyLocalBasisTraits = typename Impl::MorleyReferenceLocalBasis<D, R>::Traits;
-
-
-
-  /** \brief Morley finite element for simplices, as defined on the reference Element.
-   * Note, that this is a non affine-equivalent finite element, that requires an additional transformation to the relate reference basis with the pullbacks of global basis.
-   * For more Details, see <dune/functions/functionspacebases/morleybasis.hh>.
-   *
-   * \tparam D Type used for domain coordinates
-   * \tparam R Type used for function values
-   * \tparam dim dimension of the reference element
-   */
-  template<class D, class R>
-  class MorleyLocalFiniteElement
-    : public Impl::TransformedFiniteElementMixin<MorleyLocalFiniteElement<D,R>, MorleyLocalBasisTraits<D, R>>
-  {
-    using Base = Impl::TransformedFiniteElementMixin< MorleyLocalFiniteElement<D,R>, MorleyLocalBasisTraits<D, R>>;
-    friend class Impl::TransformedLocalBasis<MorleyLocalFiniteElement<D,R>, MorleyLocalBasisTraits<D, R>>;
-    static constexpr int dim = 2;
-  public:
-
-    /** \brief Export number types, dimensions, etc.
-     */
-    using size_type = std::size_t;
-    using Traits = LocalFiniteElementTraits<
-        Impl::TransformedLocalBasis<MorleyLocalFiniteElement<D,R>, MorleyLocalBasisTraits<D, R>>,
-        Impl::MorleyLocalCoefficients,
-        Impl::MorleyLocalInterpolation<D>>;
-
-    /** \brief Returns the assignment of the degrees of freedom to the element
-     * subentities
-     */
-    const typename Traits::LocalCoefficientsType &localCoefficients() const
-    {
-      return coefficients_;
-    }
-
-    /** \brief Returns object that evaluates degrees of freedom
-     */
-    const typename Traits::LocalInterpolationType &localInterpolation() const
-    {
-      return interpolation_;
-    }
-
-    /** \brief The reference element that the local finite element is defined on
-     */
-    static constexpr GeometryType type()
-    {
-      return GeometryTypes::simplex(dim);
-    }
-
-    /** The size of the transformed finite element.
-     */
-    static constexpr size_type size()
-    {
-      return 6;
-    }
-
-    /** Binds the Finite Element to an element.
-      */
-    template<class Element>
-    void bind(std::bitset<3> const& data, Element const &e)
-    {
-      edgeOrientation_ = data;
-
-      fillMatrix(e.geometry());
-      interpolation_.bind(e, edgeOrientation_);
-    }
-
-  protected:
-
-    /** \brief Returns the local basis, i.e., the set of shape functions
-     */
-    Impl::MorleyReferenceLocalBasis<D, R> const& referenceLocalBasis() const
-    {
-      return basis_;
-    }
-
-    /** Apply the transformation. Note that we do not distinguish for
-     * Scalar/Vector/Matrix Type,
-     * but only assume the Values to be Elements of a Vectorspace.
-     * We assume random access containers.
-     */
-    template<class InputValues, class OutputValues>
-    void transform(InputValues const& inValues, OutputValues& outValues) const
-    {
-      mat_.mv(inValues, outValues);
-    }
-
-  private:
-
-    /**
-     * \brief Fill the transformationmatrix \f$ M \f$
+    /** \brief Morley finite element for simplices, as defined on the reference Element.
+     * Note, that this is a non affine-equivalent finite element, that requires an additional transformation to the relate reference basis with the pullbacks of global basis.
+     * For more Details, see <dune/functions/functionspacebases/morleybasis.hh>.
      *
-     * \tparam Geometry  the Geometry class
-     * \param geometry   the geometry of the element we are bound to
+     * \tparam D Type used for domain coordinates
+     * \tparam R Type used for function values
+     * \tparam dim dimension of the reference element
      */
-    template<class Geometry>
-    void fillMatrix(Geometry const &geometry)
+    template<class D, class R>
+    class MorleyLocalFiniteElement
+      : public Impl::TransformedFiniteElementMixin<MorleyLocalFiniteElement<D,R>, MorleyLocalBasisTraits<D, R>>
     {
-      std::array<R, 3> B_11;
-      std::array<R, 3> B_12;
-      std::array<R, 3> l_inv;
+      using Base = Impl::TransformedFiniteElementMixin< MorleyLocalFiniteElement<D,R>, MorleyLocalBasisTraits<D, R>>;
+      friend class Impl::TransformedLocalBasis<MorleyLocalFiniteElement<D,R>, MorleyLocalBasisTraits<D, R>>;
+      static constexpr int dim = 2;
+    public:
 
-      std::array<Dune::FieldVector<R, 2>, 3> referenceTangents;
-      std::array<Dune::FieldVector<R, 2>, 3> globalTangents;
+      /** \brief Export number types, dimensions, etc.
+       */
+      using size_type = std::size_t;
+      using Traits = LocalFiniteElementTraits<
+          Impl::TransformedLocalBasis<MorleyLocalFiniteElement<D,R>, MorleyLocalBasisTraits<D, R>>,
+          Impl::MorleyLocalCoefficients,
+          Impl::MorleyLocalInterpolation<D>>;
 
-      // By default, edges point from the vertex with the smaller index
-      // to the vertex with the larger index.
-
-      // get local and global Tangents
-      auto refElement = Dune::referenceElement<double, 2>(geometry.type());
-      auto x = refElement.position(0,0);
-      for (std::size_t i = 0; i < 3; ++i)
+      /** \brief Returns the assignment of the degrees of freedom to the element
+       * subentities
+       */
+      const typename Traits::LocalCoefficientsType &localCoefficients() const
       {
-        std::size_t lower = (i == 2) ? 1 : 0;
-        std::size_t upper = (i == 0) ? 1 : 2;
-        auto edge = refElement.position(upper, 2) - refElement.position(lower, 2);
-
-        referenceTangents[i] = edge / edge.two_norm();
-
-        auto globalEdge = geometry.global(refElement.position(upper, 2))
-                          - geometry.global(refElement.position(lower, 2));
-
-        l_inv[i] = 1. / globalEdge.two_norm();
-        globalTangents[i] = globalEdge * l_inv[i];
+        return coefficients_;
       }
 
-      auto jacobianTransposed = geometry.jacobianTransposed(x);
-      for (std::size_t i = 0; i < 3; ++i)
+      /** \brief Returns object that evaluates degrees of freedom
+       */
+      const typename Traits::LocalInterpolationType &localInterpolation() const
       {
-        B_11[i] = -referenceTangents[i][1]
-                    *(-globalTangents[i][1] * jacobianTransposed[0][0]
-                      + globalTangents[i][0] * jacobianTransposed[0][1])
-                  + referenceTangents[i][0]
-                    *(-globalTangents[i][1] * jacobianTransposed[1][0]
-                      + globalTangents[i][0] * jacobianTransposed[1][1]);
-        B_12[i] = -referenceTangents[i][1]
-                    *(globalTangents[i][0] * jacobianTransposed[0][0]
-                      + globalTangents[i][1] * jacobianTransposed[0][1])
-                  + referenceTangents[i][0]
-                    *(globalTangents[i][0] * jacobianTransposed[1][0]
-                      + globalTangents[i][1] * jacobianTransposed[1][1]);
+        return interpolation_;
       }
 
-      // Actually setup matrix
-      int sign = -1;
-      for (std::size_t i = 0; i < 3; ++i)
+      /** \brief The reference element that the local finite element is defined on
+       */
+      static constexpr GeometryType type()
       {
-        mat_[i][i] = 1.;
-        for (std::size_t j = 0; j < 3; ++j)
+        return GeometryTypes::simplex(dim);
+      }
+
+      /** The size of the transformed finite element.
+       */
+      static constexpr size_type size()
+      {
+        return 6;
+      }
+
+      /** Binds the Finite Element to an element.
+        */
+      template<class Element>
+      void bind(std::bitset<3> const& data, Element const &e)
+      {
+        edgeOrientation_ = data;
+
+        fillMatrix(e.geometry());
+        interpolation_.bind(e, edgeOrientation_);
+      }
+
+    protected:
+
+      /** \brief Returns the local basis, i.e., the set of shape functions
+       */
+      Impl::MorleyReferenceLocalBasis<D, R> const& referenceLocalBasis() const
+      {
+        return basis_;
+      }
+
+      /** Apply the transformation. Note that we do not distinguish for
+       * Scalar/Vector/Matrix Type,
+       * but only assume the Values to be Elements of a Vectorspace.
+       * We assume random access containers.
+       */
+      template<class InputValues, class OutputValues>
+      void transform(InputValues const& inValues, OutputValues& outValues) const
+      {
+        mat_.mv(inValues, outValues);
+      }
+
+    private:
+
+      /**
+       * \brief Fill the transformationmatrix \f$ M \f$
+       *
+       * \tparam Geometry  the Geometry class
+       * \param geometry   the geometry of the element we are bound to
+       */
+      template<class Geometry>
+      void fillMatrix(Geometry const &geometry)
+      {
+        std::array<R, 3> B_11;
+        std::array<R, 3> B_12;
+        std::array<R, 3> l_inv;
+
+        std::array<Dune::FieldVector<R, 2>, 3> referenceTangents;
+        std::array<Dune::FieldVector<R, 2>, 3> globalTangents;
+
+        // By default, edges point from the vertex with the smaller index
+        // to the vertex with the larger index.
+
+        // get local and global Tangents
+        auto refElement = Dune::referenceElement<double, 2>(geometry.type());
+        auto x = refElement.position(0,0);
+        for (std::size_t i = 0; i < 3; ++i)
         {
-          if (j != (2 - i)) // dune specific edge order
-          {
-            mat_[j][3 + i] = sign * B_12[i] * l_inv[i];
-            sign *= -1;
-          }
+          std::size_t lower = (i == 2) ? 1 : 0;
+          std::size_t upper = (i == 0) ? 1 : 2;
+          auto edge = refElement.position(upper, 2) - refElement.position(lower, 2);
+
+          referenceTangents[i] = edge / edge.two_norm();
+
+          auto globalEdge = geometry.global(refElement.position(upper, 2))
+                            - geometry.global(refElement.position(lower, 2));
+
+          l_inv[i] = 1. / globalEdge.two_norm();
+          globalTangents[i] = globalEdge * l_inv[i];
         }
-        mat_[3 + i][3 + i] = (edgeOrientation_[i] ? -1. : 1.) * B_11[i];
+
+        auto jacobianTransposed = geometry.jacobianTransposed(x);
+        for (std::size_t i = 0; i < 3; ++i)
+        {
+          B_11[i] = -referenceTangents[i][1]
+                      *(-globalTangents[i][1] * jacobianTransposed[0][0]
+                        + globalTangents[i][0] * jacobianTransposed[0][1])
+                    + referenceTangents[i][0]
+                      *(-globalTangents[i][1] * jacobianTransposed[1][0]
+                        + globalTangents[i][0] * jacobianTransposed[1][1]);
+          B_12[i] = -referenceTangents[i][1]
+                      *(globalTangents[i][0] * jacobianTransposed[0][0]
+                        + globalTangents[i][1] * jacobianTransposed[0][1])
+                    + referenceTangents[i][0]
+                      *(globalTangents[i][0] * jacobianTransposed[1][0]
+                        + globalTangents[i][1] * jacobianTransposed[1][1]);
+        }
+
+        // Actually setup matrix
+        int sign = -1;
+        for (std::size_t i = 0; i < 3; ++i)
+        {
+          mat_[i][i] = 1.;
+          for (std::size_t j = 0; j < 3; ++j)
+          {
+            if (j != (2 - i)) // dune specific edge order
+            {
+              mat_[j][3 + i] = sign * B_12[i] * l_inv[i];
+              sign *= -1;
+            }
+          }
+          mat_[3 + i][3 + i] = (edgeOrientation_[i] ? -1. : 1.) * B_11[i];
+        }
       }
-    }
 
-    // a finite element consists of a basis, coeffiecents and an interpolation
-    typename Impl::MorleyReferenceLocalBasis<D, R> basis_;
-    typename Traits::LocalCoefficientsType coefficients_;
-    typename Traits::LocalInterpolationType interpolation_;
-    // This is the matrix M in Kirbys paper
-    Dune::FieldMatrix<R, 6, 6>mat_;
-    // the local state, i.e. a collection of global information restricted to this element
-    std::bitset<3> edgeOrientation_;
+      // a finite element consists of a basis, coeffiecents and an interpolation
+      typename Impl::MorleyReferenceLocalBasis<D, R> basis_;
+      typename Traits::LocalCoefficientsType coefficients_;
+      typename Traits::LocalInterpolationType interpolation_;
+      // This is the matrix M in Kirbys paper
+      Dune::FieldMatrix<R, 6, 6>mat_;
+      // the local state, i.e. a collection of global information restricted to this element
+      std::bitset<3> edgeOrientation_;
 
-  };
+    };
+
+  } // end namespace Impl
+
+
 
   // *****************************************************************************
   // This is the reusable part of the basis. It contains
@@ -533,7 +533,7 @@ namespace Dune::Functions
   public:
     using size_type = std::size_t;
     using Element = typename GV::template Codim<0>::Entity;
-    using FiniteElement = MorleyLocalFiniteElement<typename GV::ctype, R>;
+    using FiniteElement = typename Impl::MorleyLocalFiniteElement<typename GV::ctype, R>;
 
 
     MorleyNode(Mapper const& m, std::vector<std::bitset<3>> const& data)
