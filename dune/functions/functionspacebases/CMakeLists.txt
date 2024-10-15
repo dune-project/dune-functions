@@ -11,12 +11,14 @@ install(FILES
         compositebasis.hh
         concepts.hh
         containerdescriptors.hh
+        cubichermitebasis.hh
         defaultglobalbasis.hh
         defaultlocalview.hh
         defaultnodetorangemap.hh
         dynamicpowerbasis.hh
         flatmultiindex.hh
         flatvectorview.hh
+        functionaldescriptor.hh
         globalvaluedlocalfiniteelement.hh
         hierarchicallagrangebasis.hh
         hierarchicnodetorangemap.hh
@@ -27,6 +29,7 @@ install(FILES
         leafprebasismappermixin.hh
         leafprebasismixin.hh
         lfeprebasismixin.hh
+        morleybasis.hh
         nedelecbasis.hh
         periodicbasis.hh
         powerbasis.hh
@@ -39,5 +42,6 @@ install(FILES
         subspacebasis.hh
         subspacelocalview.hh
         taylorhoodbasis.hh
+        transformedfiniteelementmixin.hh
         transformedindexbasis.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/functionspacebases)
