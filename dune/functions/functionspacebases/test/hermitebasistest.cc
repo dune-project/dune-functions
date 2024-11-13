@@ -48,13 +48,14 @@ int main (int argc, char* argv[])
     {
       using Domain = Dune::FieldVector<double,1>;
       using Range = Dune::FieldVector<double,1>;
+      using Jacobian = Dune::FieldMatrix<double,1,1>;
 
       using SignatureTag = Dune::Functions::SignatureTag<Range(Domain)>;
-      auto f = [](const auto& x) {
+      auto f = [](const Domain& x) -> Range {
         return x*x;
       };
-      auto df = [](const auto& x) {
-        return 2*x;
+      auto df = [](const Domain& x) -> Jacobian {
+        return Jacobian{2.0*x};
       };
       auto ff = Dune::Functions::makeDifferentiableFunctionFromCallables(SignatureTag(), f, df);
       auto coefficients = std::vector<double>();
