@@ -26,19 +26,6 @@ using namespace Dune::Functions;
 template<int i=0>
 class CheckLocalFiniteElementFlag {};
 
-template<class LFE>
-auto benchmarkEvaluation(LFE const &lfe, int repeat = 1000)
-{
-  using RT = typename LFE::Traits::LocalBasisType::Traits::RangeType;
-  using DT = typename LFE::Traits::LocalBasisType::Traits::DomainType;
-  std::vector<RT> out;
-  out.resize(lfe.size());
-  Dune::Timer timer;
-  for (auto i : Dune::range(repeat))
-    lfe.localBasis().evaluateFunction(DT{}, out);
-  return timer.elapsed();
-}
-
 int main(int argc, char *argv[])
 {
   Dune::MPIHelper::instance(argc, argv);
@@ -46,8 +33,6 @@ int main(int argc, char *argv[])
   Dune::TestSuite test_1d("1d"), test_2d("2d"), test_3d("3d");
 
   using namespace Dune::Functions::BasisFactory;
-  bool benchmark = true;
-  int repeat = 1000000;
 
   { // 1d
     std::cout << "CubicHermite test in 1d" << std::endl;
@@ -65,15 +50,6 @@ int main(int argc, char *argv[])
       test_1d.subTest(checkBasis(basis, EnableContinuityCheck(), EnableDifferentiabilityCheck(),
                                  EnableVertexDifferentiabilityCheck(),
                                  CheckLocalFiniteElementFlag<2>()));
-      if (benchmark) {
-        auto lv = basis.localView();
-        for (auto e : elements(gridView)) {
-          lv.bind(e);
-          std::cout << repeat << " Evaluations took "
-                    << benchmarkEvaluation(lv.tree().finiteElement(), repeat) << std::endl;
-          break;
-        }
-      }
     }
   }
 
@@ -102,15 +78,6 @@ int main(int argc, char *argv[])
       test_2d.subTest(checkBasis(basis, EnableContinuityCheck(),
                                  EnableVertexDifferentiabilityCheck(),
                                  CheckLocalFiniteElementFlag<2>()));
-      if (benchmark) {
-        auto lv = basis.localView();
-        for (auto e : elements(gridView)) {
-          lv.bind(e);
-          std::cout << repeat << " Evaluations took "
-                    << benchmarkEvaluation(lv.tree().finiteElement(), repeat) << std::endl;
-          break;
-        }
-      }
     }
   }
 
@@ -139,15 +106,6 @@ int main(int argc, char *argv[])
       test_2d.subTest(checkBasis(basis, EnableContinuityCheck(),
                                  EnableVertexDifferentiabilityCheck(),
                                  CheckLocalFiniteElementFlag<2>()));
-      if (benchmark) {
-        auto lv = basis.localView();
-        for (auto e : elements(gridView)) {
-          lv.bind(e);
-          std::cout << repeat << " Evaluations took "
-                    << benchmarkEvaluation(lv.tree().finiteElement(), repeat) << std::endl;
-          break;
-        }
-      }
     }
   }
 
@@ -169,15 +127,6 @@ int main(int argc, char *argv[])
       test_3d.subTest(checkBasis(basis, EnableContinuityCheck(),
                                  EnableVertexDifferentiabilityCheck(),
                                  CheckLocalFiniteElementFlag<2>()));
-      if (benchmark) {
-        auto lv = basis.localView();
-        for (auto e : elements(gridView)) {
-          lv.bind(e);
-          std::cout << repeat << " Evaluations took "
-                    << benchmarkEvaluation(lv.tree().finiteElement(), repeat) << std::endl;
-          break;
-        }
-      }
     }
   }
 
