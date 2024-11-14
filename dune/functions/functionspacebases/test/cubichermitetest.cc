@@ -19,7 +19,6 @@
 
 #include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/functions/functionspacebases/cubichermitebasis.hh>
-//#include <dune/functions/functionspacebases/test/cubichermitebasis.hh>
 
 using namespace Dune;
 using namespace Dune::Functions;
@@ -79,36 +78,6 @@ int main(int argc, char *argv[])
       }
     }
   }
-
-#if 0
-  { // 1d
-    std::cout << "CubicHermite test in 1d, Carstens implementation" << std::endl;
-    auto grid = StructuredGridFactory<OneDGrid>::createSimplexGrid({0.}, {1.}, {10});
-
-    auto gridView = grid->levelGridView(0);
-
-    {
-      std::cout << "Grid has " << gridView.size(0) << " elementes and " << gridView.size(1)
-                << " facettes and " << gridView.size(2) << " vertices" << std::endl;
-
-      auto basis = makeBasis(gridView, cubicHermite());
-      std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
-
-      test_1d.subTest(checkBasis(basis, EnableContinuityCheck(), EnableDifferentiabilityCheck(),
-                                 EnableVertexDifferentiabilityCheck(),
-                                 CheckLocalFiniteElementFlag<0>()));
-      if (benchmark) {
-        auto lv = basis.localView();
-        for (auto e : elements(gridView)) {
-          lv.bind(e);
-          std::cout << repeat << " Evaluations took "
-                    << benchmarkEvaluation(lv.tree().finiteElement(), repeat) << std::endl;
-          break;
-        }
-      }
-    }
-  }
-#endif
 
   { // 2d
     std::cout << "Hermite test in 2d" << std::endl;
@@ -183,38 +152,6 @@ int main(int argc, char *argv[])
       }
     }
   }
-
-#if 0
-  { // 2d  reduced
-    std::cout << "reduced Hermite test in 2d, Carstens Implementation" << std::endl;
-
-    auto grid = StructuredGridFactory<UGGrid<2>>::createSimplexGrid({0., 0.}, {1., 1.}, {{2, 2}});
-
-    auto gridView = grid->leafGridView();
-    std::cout << "Grid has " << gridView.size(0) << " elementes and " << gridView.size(1)
-              << " facettes and " << gridView.size(2) << " vertices" << std::endl;
-    {
-      using namespace Dune::Functions::BasisFactory;
-
-      auto basis = makeBasis(gridView, reducedCubicHermite());
-      std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
-
-      test_2d.subTest(checkBasis(basis, EnableContinuityCheck(),
-                                 EnableVertexDifferentiabilityCheck(),
-                                 CheckLocalFiniteElementFlag<0>()));
-      if (benchmark) {
-        auto lv = basis.localView();
-        for (auto e : elements(gridView)) {
-          lv.bind(e);
-          std::cout << repeat << " Evaluations took "
-                    << benchmarkEvaluation(lv.tree().finiteElement(), repeat)
-                    << std::endl;
-          break;
-        }
-      }
-    }
-  }
-#endif
 
   { // 3d
     std::cout << "CubicHermite test in 3d" << std::endl;
