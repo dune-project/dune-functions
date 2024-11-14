@@ -21,10 +21,6 @@
 using namespace Dune;
 using namespace Dune::Functions;
 
-// Hack: Disable test that has not been merged to master so far,
-// by replacing it with a dummy.
-template<int i=0>
-class CheckLocalFiniteElementFlag {};
 
 int main(int argc, char *argv[])
 {
@@ -48,8 +44,7 @@ int main(int argc, char *argv[])
       std::cout << "Basis has " << basis.size() << " dofs" << std::endl;
 
       test_1d.subTest(checkBasis(basis, EnableContinuityCheck(), EnableDifferentiabilityCheck(),
-                                 EnableVertexDifferentiabilityCheck(),
-                                 CheckLocalFiniteElementFlag<2>()));
+                                 EnableVertexDifferentiabilityCheck()));
     }
   }
 
@@ -76,8 +71,7 @@ int main(int argc, char *argv[])
       std::cout << "Basis has " << basis.size() << " dofs" << std::endl;
 
       test_2d.subTest(checkBasis(basis, EnableContinuityCheck(),
-                                 EnableVertexDifferentiabilityCheck(),
-                                 CheckLocalFiniteElementFlag<2>()));
+                                 EnableVertexDifferentiabilityCheck()));
     }
   }
 
@@ -104,8 +98,7 @@ int main(int argc, char *argv[])
       std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
 
       test_2d.subTest(checkBasis(basis, EnableContinuityCheck(),
-                                 EnableVertexDifferentiabilityCheck(),
-                                 CheckLocalFiniteElementFlag<2>()));
+                                 EnableVertexDifferentiabilityCheck()));
     }
   }
 
@@ -125,8 +118,7 @@ int main(int argc, char *argv[])
       std::cout << "Basis has " << basis.size() << " dofs" << std::endl;
 
       test_3d.subTest(checkBasis(basis, EnableContinuityCheck(),
-                                 EnableVertexDifferentiabilityCheck(),
-                                 CheckLocalFiniteElementFlag<2>()));
+                                 EnableVertexDifferentiabilityCheck()));
     }
   }
 
