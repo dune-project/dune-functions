@@ -12,9 +12,7 @@
 #include <dune/common/timer.hh>
 
 #include <dune/grid/uggrid.hh>
-#include <dune/grid/uggrid/uggridfactory.hh>
 #include <dune/grid/onedgrid.hh>
-#include <dune/grid/albertagrid.hh>
 #include <dune/grid/utility/structuredgridfactory.hh>
 
 #include <dune/functions/functionspacebases/test/basistest.hh>
@@ -58,11 +56,11 @@ int main(int argc, char *argv[])
     auto gridView = grid->levelGridView(0);
 
     {
-      std::cout << "Grid has " << gridView.size(0) << " elementes and " << gridView.size(1)
-                << " facettes and " << gridView.size(2) << " vertices" << std::endl;
+      std::cout << "Grid has " << gridView.size(0) << " elements and " << gridView.size(1)
+                << " facets and " << gridView.size(2) << " vertices" << std::endl;
 
       auto basis = makeBasis(gridView, cubicHermite());
-      std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
+      std::cout << "Basis has " << basis.size() << " dofs" << std::endl;
 
       test_1d.subTest(checkBasis(basis, EnableContinuityCheck(), EnableDifferentiabilityCheck(),
                                  EnableVertexDifferentiabilityCheck(),
@@ -93,13 +91,13 @@ int main(int argc, char *argv[])
     grid->globalRefine(2);
 
     auto gridView = grid->leafGridView();
-    std::cout << "Grid has " << gridView.size(0) << " elementes and " << gridView.size(1)
-              << " facettes and " << gridView.size(2) << " vertices" << std::endl;
-    // using GridView = decltype(gridView);
+    std::cout << "Grid has " << gridView.size(0) << " elements and " << gridView.size(1)
+              << " facets and " << gridView.size(2) << " vertices" << std::endl;
+
     {
       using namespace Dune::Functions::BasisFactory;
       auto basis = makeBasis(gridView, cubicHermite());
-      std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
+      std::cout << "Basis has " << basis.size() << " dofs" << std::endl;
 
       test_2d.subTest(checkBasis(basis, EnableContinuityCheck(),
                                  EnableVertexDifferentiabilityCheck(),
@@ -130,8 +128,8 @@ int main(int argc, char *argv[])
     grid->globalRefine(2);
 
     auto gridView = grid->leafGridView();
-    std::cout << "Grid has " << gridView.size(0) << " elementes and " << gridView.size(1)
-              << " facettes and " << gridView.size(2) << " vertices" << std::endl;
+    std::cout << "Grid has " << gridView.size(0) << " elements and " << gridView.size(1)
+              << " facets and " << gridView.size(2) << " vertices" << std::endl;
     {
       using namespace Dune::Functions::BasisFactory;
 
@@ -160,13 +158,13 @@ int main(int argc, char *argv[])
                                                                     {{3, 3, 3}});
 
     auto gridView = grid->leafGridView();
-    std::cout << "Grid has " << gridView.size(0) << " elementes and " << gridView.size(1)
-              << " facettes and " << gridView.size(2) << " edges and " << gridView.size(3)
+    std::cout << "Grid has " << gridView.size(0) << " elements and " << gridView.size(1)
+              << " facets and " << gridView.size(2) << " edges and " << gridView.size(3)
               << " vertices " << std::endl;
     {
       using namespace Dune::Functions::BasisFactory;
       auto basis = makeBasis(gridView, cubicHermite());
-      std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
+      std::cout << "Basis has " << basis.size() << " dofs" << std::endl;
 
       test_3d.subTest(checkBasis(basis, EnableContinuityCheck(),
                                  EnableVertexDifferentiabilityCheck(),
