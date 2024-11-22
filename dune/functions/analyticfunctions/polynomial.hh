@@ -82,9 +82,8 @@ namespace Impl {
       // so is the deduced result type of std::multiplies.
       auto mult = Dune::Hybrid::hybridFunctor(std::multiplies());
       return Dune::unpackIntegerSequence([&](auto... i) {
-        using signed_type = std::conditional_t<std::is_same_v<std::size_t, long unsigned int>,
-                                               long signed int, signed int>;
-        return std::tuple(mult(std::get<i+1>(coefficients), std::integral_constant<signed_type, i+1>()) ...);
+        return std::tuple(mult(std::get<i+1>(coefficients),
+          std::integral_constant<long signed int, (long signed int)(i+1)>()) ...);
       }, std::make_index_sequence<sizeof...(T)-1>());
     }
   }
