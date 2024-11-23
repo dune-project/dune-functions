@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <array>
 #include <iostream>
+#include <ostream>
 
 #include <dune/common/hash.hh>
 
@@ -74,8 +75,8 @@ public:
 
 
 
-template<typename Stream, class size_type, std::size_t n>
-inline Stream& operator<<(Stream& stream, const StaticMultiIndex<size_type,n>& c) {
+template<class size_type, std::size_t n>
+inline std::ostream& operator<<(std::ostream& stream, const StaticMultiIndex<size_type,n>& c) {
   for (const auto& ci : c)
     stream << ci << "  ";
   return stream;
