@@ -24,7 +24,7 @@ using namespace Dune;
 struct MyLeafBasisNode : Dune::Functions::LeafBasisNode
 {
   using Element = Dune::Concept::Archetypes::Entity<2,0>;
-  MyLeafBasisNode () = default;
+  MyLeafBasisNode () {}
 };
 
 void testCompositeBasisNode ()
