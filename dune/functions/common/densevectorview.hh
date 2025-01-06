@@ -22,7 +22,6 @@ namespace Dune::Functions::Impl {
     : public DenseVector<DenseVectorView<R>>
   {
     R& data_;
-    using Base = DenseVector<DenseVectorView<R>>;
 
     using mutable_reference = typename std::decay_t<R>::reference;
 
@@ -52,7 +51,6 @@ namespace Dune::Functions::Impl {
 
     //! Move constructor
     DenseVectorView (DenseVectorView &&other) :
-      Base(),
       data_( other.data_ )
     {}
 
