@@ -9,6 +9,8 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <tuple>
+#include <string>
 
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/fvector.hh>
@@ -58,6 +60,12 @@ Dune::TestSuite testMonomialSet(unsigned long n, double tol)
 
   auto p = monomials.exponents();
   auto size = p.size();
+
+  auto exponentsToString = [](const auto& exponents) {
+    return std::apply([](const auto&... xi) {
+      return (std::to_string(xi) + ...);
+    }, exponents);
+  };
 
   for(auto x : samplePoints<F, dim>(n))
   {
@@ -121,7 +129,7 @@ Dune::TestSuite testMonomialSet(unsigned long n, double tol)
             yy *= p[i][j] * p[i][l];
 
           suite.check(std::fabs(y[i][j][l] - yy) < tol)
-            << "Monomial(dim=" << dim << ",maxOrder=" << maxOrder << ",index=" << i << ", exponents= "<< p[i][0] << p[i][1]<<") hessian component ["<<l<<","<<j<<"] was "<<y[i][j][l]<<" but "<<yy<<" was expected.";
+            << "Monomial(dim=" << dim << ",maxOrder=" << maxOrder << ",index=" << i << ", exponents= "<< exponentsToString(p[i]) <<") hessian component ["<<l<<","<<j<<"] was "<<y[i][j][l]<<" but "<<yy<<" was expected.";
         }
       }
     }
