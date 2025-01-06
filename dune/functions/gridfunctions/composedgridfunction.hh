@@ -60,7 +60,7 @@ public:
   using Domain = typename EntitySet::GlobalCoordinate;
   using LocalDomain = typename EntitySet::LocalCoordinate;
 
-  using Range = decltype(std::declval<OF>()(std::declval<IF>()(std::declval<Domain>())...));
+  using Range = decltype(std::declval<OF>()(localFunction(std::declval<IF>())(std::declval<LocalDomain>())...));
 
 private:
 
