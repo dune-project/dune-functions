@@ -47,11 +47,8 @@ namespace Dune::Functions::Impl {
       : data_(data)
     {}
 
-    //! Copy constructor
-    DenseVectorView (const DenseVectorView &other) :
-      Base(),
-      data_(other.data_)
-    {}
+    //! The copy constructor is deleted
+    DenseVectorView (const DenseVectorView &other) = delete;
 
     //! Move constructor
     DenseVectorView (DenseVectorView &&other) :
