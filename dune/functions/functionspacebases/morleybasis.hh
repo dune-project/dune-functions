@@ -12,6 +12,7 @@
 #include <array>
 #include <bitset>
 
+#include <dune/common/boundschecking.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/common/fvector.hh>
 
@@ -23,6 +24,7 @@
 #include <dune/localfunctions/common/localkey.hh>
 
 #include <dune/functions/analyticfunctions/monomialset.hh>
+#include <dune/functions/common/densevectorview.hh>
 #include <dune/functions/functionspacebases/cubichermitebasis.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/functionaldescriptor.hh>
@@ -423,7 +425,12 @@ namespace Dune::Functions
       template<class InputValues, class OutputValues>
       void transform(InputValues const& inValues, OutputValues& outValues) const
       {
-        mat_.mv(inValues, outValues);
+        // Here we cannot directly use
+        // mat_.mv(inValues, outValues);
+        // because mv expects the DenseVector interface.
+        auto inValuesDenseVector = Impl::DenseVectorView(inValues);
+        auto outValuesDenseVector = Impl::DenseVectorView(outValues);
+        mat_.mv(inValuesDenseVector, outValuesDenseVector);
       }
 
     private:

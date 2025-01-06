@@ -20,6 +20,8 @@
 #include <dune/localfunctions/common/localbasis.hh>
 #include <dune/localfunctions/common/localfiniteelementtraits.hh>
 
+#include <dune/functions/common/densevectorview.hh>
+
 namespace Dune::Functions::Impl
 {
 
@@ -53,7 +55,12 @@ namespace Dune::Functions::Impl
       for (auto& value : values)
       {
         auto tmp = value;
-        jacobianTransposed.mtv(tmp, value);
+        // Here we cannot directly use
+        // jacobianTransposed.mtv(tmp, value);
+        // because mtv expects the DenseVector interface.
+        auto tmpDenseVector = Impl::DenseVectorView(tmp);
+        auto valueDenseVector = Impl::DenseVectorView(value);
+        jacobianTransposed.mtv(tmpDenseVector, valueDenseVector);
         value /= integrationElement;
       }
     }
@@ -117,7 +124,13 @@ namespace Dune::Functions::Impl
         auto integrationElement = element_.geometry().integrationElement(xi);
 
         auto localValue = LocalValue{};
-        jacobianInverseTransposed.mtv(globalValue, localValue);
+
+        // Here we cannot directly use
+        // jacobianInverseTransposed.mtv(globalValue, localValue);
+        // because mtv expects the DenseVector interface.
+        auto globalValueDenseVector = Impl::DenseVectorView(globalValue);
+        auto localValueDenseVector = Impl::DenseVectorView(localValue);
+        jacobianInverseTransposed.mtv(globalValueDenseVector, localValueDenseVector);
         localValue *= integrationElement;
 
         return localValue;
@@ -154,7 +167,12 @@ namespace Dune::Functions::Impl
       for (auto& value : values)
       {
         auto tmp = value;
-        jacobianInverseTransposed.mv(tmp, value);
+        // Here we cannot directly use
+        // jacobianInverseTransposed.mv(tmp, value);
+        // because mv expects the DenseVector interface.
+        auto tmpDenseVector = Impl::DenseVectorView(tmp);
+        auto valueDenseVector = Impl::DenseVectorView(value);
+        jacobianInverseTransposed.mv(tmpDenseVector, valueDenseVector);
       }
     }
 
@@ -213,7 +231,12 @@ namespace Dune::Functions::Impl
         auto jacobianTransposed = element_.geometry().jacobianTransposed(xi);
 
         auto localValue = globalValue;
-        jacobianTransposed.mv(globalValue, localValue);
+        // Here we cannot directly use
+        // jacobianTransposed.mv(globalValue, localValue);
+        // because mv expects the DenseVector interface.
+        auto localValueDenseVector = Impl::DenseVectorView(localValue);
+        auto globalValueDenseVector = Impl::DenseVectorView(globalValue);
+        jacobianTransposed.mv(globalValueDenseVector, localValueDenseVector);
 
         return localValue;
       }

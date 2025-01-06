@@ -5,6 +5,7 @@ add_subdirectory("test")
 
 install(FILES
         defaultderivativetraits.hh
+        densevectorview.hh
         differentiablefunction.hh
         differentiablefunction_imp.hh
         differentiablefunctionfromcallables.hh
