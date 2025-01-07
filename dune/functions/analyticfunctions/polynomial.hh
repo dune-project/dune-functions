@@ -33,7 +33,7 @@ namespace Impl {
 
   // Compute coefficients of derivative of polynomial.
   // Overload for std::array
-  template<class K, unsigned long n>
+  template<class K, std::size_t n>
   auto polynomialDerivativeCoefficients(const std::array<K, n>& coefficients) {
     if constexpr (n==0)
       return coefficients;
@@ -82,7 +82,8 @@ namespace Impl {
       // so is the deduced result type of std::multiplies.
       auto mult = Dune::Hybrid::hybridFunctor(std::multiplies());
       return Dune::unpackIntegerSequence([&](auto... i) {
-        return std::tuple(mult(std::get<i+1>(coefficients), std::integral_constant<long signed int, i+1>()) ...);
+        return std::tuple(mult(std::get<i+1>(coefficients),
+          std::integral_constant<long signed int, (long signed int)(i+1)>()) ...);
       }, std::make_index_sequence<sizeof...(T)-1>());
     }
   }
@@ -197,7 +198,7 @@ private:
 template<class K>
 Polynomial(std::vector<K>) -> Polynomial<K, std::vector<K>>;
 
-template<class K, unsigned long n>
+template<class K, std::size_t n>
 Polynomial(std::array<K,n>) -> Polynomial<K, std::array<K,n>>;
 
 template<class K, K... ci>
