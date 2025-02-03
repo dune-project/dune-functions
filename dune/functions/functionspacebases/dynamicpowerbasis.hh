@@ -373,9 +373,9 @@ protected:
   {
     auto subTree = Dune::Functions::containerDescriptor(subPreBasis_);
     if constexpr(std::is_same_v<IMS, BasisFactory::FlatInterleaved>)
-      return ContainerDescriptors::Unknown{}; // Not yet implemented
+      return ContainerDescriptors::Impl::flatInterleavedN(children,std::move(subTree));
     else if constexpr(std::is_same_v<IMS, BasisFactory::FlatLexicographic>)
-      return ContainerDescriptors::Unknown{}; // Not yet implemented
+      return ContainerDescriptors::Impl::flatLexicographicN(children,std::move(subTree));
     else if constexpr(std::is_same_v<IMS, BasisFactory::BlockedLexicographic>)
       return ContainerDescriptors::makeUniformDescriptor(children,std::move(subTree));
     else if constexpr(std::is_same_v<IMS, BasisFactory::BlockedInterleaved>)

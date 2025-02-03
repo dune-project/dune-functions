@@ -280,7 +280,9 @@ public:
       }, subPreBases_);
     }
     else if constexpr(std::is_same_v<IMS, BasisFactory::FlatLexicographic>) {
-      return CD::Unknown{}; // Not yet implemented
+      return std::apply([&](auto const&... spb) {
+        return CD::Impl::flatLexicographic(Dune::Functions::containerDescriptor(spb)...);
+      }, subPreBases_);
     }
     else
       return CD::Unknown{};
