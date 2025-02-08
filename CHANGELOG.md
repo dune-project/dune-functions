@@ -8,6 +8,8 @@ SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0
 Any version of dune-functions is supposed to be compatible with the
 corresponding version of the Dune core modules.
 
+- Add `HierarchicalLagrangeWithElementBubblePreBasis` implemented in terms of `LFEPreBasisMixin`
+
 # Master (will become release 2.11)
 
 - Add the function `makeISTLVector` to construct an istl vector type compatible
