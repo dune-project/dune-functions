@@ -16,6 +16,8 @@
 #include <dune/common/filledarray.hh>
 #include <dune/common/tuplevector.hh>
 #include <dune/common/typeutilities.hh>
+#include <dune/common/hybridutilities.hh>
+#include <dune/common/rangeutilities.hh>
 
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -23,7 +25,7 @@
 /**
  * \file containerdescriptor.hh
  * \brief Lightweight representation of (hierarchical) size and block structure extracted
- * from a bsis to describe data structures like containers that can be accessed by
+ * from a basis to describe data structures like containers that can be accessed by
  * multi-indices provided by the basis.
  *
  * The structure of a container-descriptor is a reduced container interface:
@@ -284,6 +286,154 @@ auto appendToTree (Size s, const T& tree)
     [s](auto&& node) { return appendToTree(s, node); },
     [s](auto&& node) { return makeUniformDescriptor(s, node); });
   return transform(tree);
+}
+
+//! Concatenate n descriptors by flat lexicographic merging wrt first digit
+template<class... Child>
+auto flatLexicographic (Child... child)
+{
+  if constexpr ((std::is_same_v<Child, FlatVector> && ...))
+    return FlatVector((child.size() + ...));
+  else
+    return Unknown{};
+}
+
+//! Concatenate descriptor n-times by flat lexicographic merging wrt first digit
+template<class N, class Child>
+auto flatLexicographicN (N n, Child child)
+{
+  return Unknown{};
+}
+
+//! Concatenate descriptor n-times by flat lexicographic merging wrt first digit
+template<class N, class GrandChild>
+auto flatLexicographicN (N n, UniformVector<GrandChild> child)
+{
+  return UniformVector<GrandChild>{child.size()*n, child[0]};
+}
+
+//! Concatenate descriptor n-times by flat lexicographic merging wrt first digit
+template<class N, class GrandChild, std::size_t m>
+auto flatLexicographicN (N n, UniformArray<GrandChild, m> child)
+{
+  if constexpr (std::is_same_v<N, std::size_t>)
+    return UniformVector<GrandChild>{n*m, child[0]};
+  else
+    return UniformArray<GrandChild, N::value*m>{child[0]};
+}
+
+//! Concatenate descriptor n-times by flat lexicographic merging wrt first digit
+template<class N, class GrandChild>
+auto flatLexicographicN (N n, Vector<GrandChild> child)
+{
+  auto result = Vector<GrandChild>{};
+  result.reserve(child.size()*n);
+  for (auto j : Dune::range(n))
+    for (auto i : Dune::range(child.size()))
+      result.emplace_back(child[i]);
+  return result;
+}
+
+//! Concatenate descriptor n-times by flat lexicographic merging wrt first digit
+template<class N, class GrandChild, std::size_t m>
+auto flatLexicographicN (N n, Array<GrandChild, m> child)
+{
+  if constexpr (std::is_same_v<N, std::size_t>)
+  {
+    auto result = Vector<GrandChild>{};
+    result.reserve(child.size()*n);
+    for (auto j : Dune::range(n))
+      for (auto i : Dune::range(child.size()))
+        result.emplace_back(child[i]);
+    return result;
+  }
+  else
+  {
+    auto result = Array<GrandChild, N::value*m>{};
+    for (auto j : Dune::range(n))
+      for (auto i : Dune::range(child.size()))
+        result.emplace_back(child[i]);
+    return result;
+  }
+}
+
+//! Concatenate descriptor n-times by flat lexicographic merging wrt first digit
+template<class N, class... GrandChild>
+auto flatLexicographicN (N n, Tuple<GrandChild...> child)
+{
+  constexpr std::size_t m = sizeof...(GrandChild);
+  return Dune::unpackIntegerSequence([&](auto... i) {
+    return makeDescriptor(std::get<i%m>(child)...);
+  }, std::make_index_sequence<n*m>{});
+}
+
+//! Concatenate descriptor n-times by flat interleaved merging wrt first digit
+template<class N, class Child>
+auto flatInterleavedN (N n, Child child)
+{
+  return Unknown{};
+}
+
+//! Concatenate descriptor n-times by flat interleaved merging wrt first digit
+template<class N, class GrandChild>
+auto flatInterleavedN (N n, UniformVector<GrandChild> child)
+{
+  return UniformVector<GrandChild>{child.size()*n, child[0]};
+}
+
+//! Concatenate descriptor n-times by flat interleaved merging wrt first digit
+template<class N, class GrandChild, std::size_t m>
+auto flatInterleavedN (N n, UniformArray<GrandChild, m> child)
+{
+  if constexpr (std::is_integral_v<N>)
+    return UniformVector<GrandChild>{n*m, child[0]};
+  else
+    return UniformArray<GrandChild, N::value*m>{child[0]};
+}
+
+//! Concatenate descriptor n-times by flat interleaved merging wrt first digit
+template<class N, class GrandChild>
+auto flatInterleavedN (N n, Vector<GrandChild> child)
+{
+  auto result = Vector<GrandChild>{};
+  result.reserve(child.size()*n);
+  for (auto i : Dune::range(child.size()))
+    for (auto j : Dune::range(n))
+      result.emplace_back(child[i]);
+  return result;
+}
+
+//! Concatenate descriptor n-times by flat interleaved merging wrt first digit
+template<class N, class GrandChild, std::size_t m>
+auto flatInterleavedN (N n, Array<GrandChild, m> child)
+{
+  if constexpr (std::is_integral_v<N>)
+  {
+    auto result = Vector<GrandChild>{};
+    result.reserve(child.size()*n);
+    for (auto i : Dune::range(child.size()))
+      for (auto j : Dune::range(n))
+        result.emplace_back(child[i]);
+    return result;
+  }
+  else
+  {
+    auto result = Array<GrandChild, N::value*m>{};
+    for (auto i : Dune::range(child.size()))
+      for (auto j : Dune::range(n))
+        result.emplace_back(child[i]);
+    return result;
+  }
+}
+
+//! Concatenate descriptor n-times by flat interleaved merging wrt first digit
+template<class N, class... GrandChild>
+auto flatInterleavedN (N n, Tuple<GrandChild...> child)
+{
+  constexpr std::size_t m = sizeof...(GrandChild);
+  return Dune::unpackIntegerSequence([&](auto... i) {
+    return makeDescriptor(std::get<i/n>(child)...);
+  }, std::make_index_sequence<n*m>{});
 }
 
 } // end namespace Impl
