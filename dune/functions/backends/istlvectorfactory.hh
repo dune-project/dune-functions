@@ -13,7 +13,6 @@
 
 #include <dune/istl/bvector.hh>
 #include <dune/istl/multitypeblockvector.hh>
-#include <dune/istl/vbvector.hh>
 
 namespace Dune::Functions {
 namespace ContainerDescriptors {
@@ -110,36 +109,6 @@ struct ISTLVectorFactory
   auto operator() (const Array<UniformArray<Value,n>,m>& tree) const
   {
     return Dune::BlockVector<Dune::FieldVector<T,n>>(m);
-  }
-
-  // variable-size block vectors
-
-  auto operator() (const UniformVector<UniformVector<Value>>& tree) const
-  {
-    return Dune::VariableBlockVector<T>(tree.size(), tree[0].size());
-  }
-
-  template<std::size_t n>
-  auto operator() (const UniformArray<UniformVector<Value>,n>& tree) const
-  {
-    return Dune::VariableBlockVector<T>(n, tree[0].size());
-  }
-
-  auto operator() (const Vector<UniformVector<Value>>& tree) const
-  {
-    auto result = Dune::VariableBlockVector<T>(tree.size());
-    for (auto it = result.createbegin(); it != result.createend(); ++it)
-      it.setblocksize(tree[it.index()].size());
-    return result;
-  }
-
-  template<std::size_t n>
-  auto operator() (const Array<UniformVector<Value>,n>& tree) const
-  {
-    auto result = Dune::VariableBlockVector<T>(tree.size());
-    for (auto it = result.createbegin(); it != result.createend(); ++it)
-      it.setblocksize(tree[it.index()].size());
-    return result;
   }
 };
 
