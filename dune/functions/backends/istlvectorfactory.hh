@@ -16,6 +16,7 @@
 
 namespace Dune::Functions {
 namespace ContainerDescriptors {
+namespace Impl {
 
 template<class T>
 struct ISTLVectorFactory
@@ -112,14 +113,15 @@ struct ISTLVectorFactory
   }
 };
 
+} // end namespace Impl
 } // end namespace ContainerDescriptors
 
 
 // Construct an istl vector type compatible with the container descriptor
 template<class T = double, class ContainerDescriptor>
-auto istlVectorFactory (const ContainerDescriptor& tree)
+auto makeISTLVector (const ContainerDescriptor& tree)
 {
-  auto factory = ContainerDescriptors::ISTLVectorFactory<T>{};
+  auto factory = ContainerDescriptors::Impl::ISTLVectorFactory<T>{};
   return factory(tree);
 }
 
