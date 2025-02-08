@@ -117,7 +117,14 @@ struct ISTLVectorFactory
 } // end namespace ContainerDescriptors
 
 
-// Construct an istl vector type compatible with the container descriptor
+/**
+ * \brief Construct an istl vector type compatible with the container descriptor.
+ *
+ * The constructed vector mimics the nested structure of the container descriptor,
+ * but uses data structures like `BlockVector` and `FieldVector` to represent the
+ * block levels. The entries in the vector are of type `T` and initialized with
+ * the default value `0`.
+ **/
 template<class T = double, class ContainerDescriptor>
 auto makeISTLVector (const ContainerDescriptor& tree)
 {
