@@ -10,6 +10,9 @@ corresponding version of the Dune core modules.
 
 # Master (will become release 2.11)
 
+- Add the function `makeISTLVector` to construct an istl vector type compatible
+  with a container descriptor of a basis.
+
 ## Release 2.10
 
 - The new class `MonomialSet<K,dim,n>` implements a vector-valued
