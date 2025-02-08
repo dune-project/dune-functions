@@ -41,7 +41,6 @@ int main(int argc, char *argv[])
     auto gridView = grid->leafGridView();
     std::cout << "Grid has " << gridView.size(0) << " elementes and " << gridView.size(1)
               << " facettes and " << gridView.size(2) << " vertices" << std::endl;
-    using GridView = decltype(gridView);
     {
       using namespace Dune::Functions::BasisFactory;
       auto basis = makeBasis(gridView, morley());
