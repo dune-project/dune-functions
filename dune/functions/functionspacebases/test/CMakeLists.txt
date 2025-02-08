@@ -47,6 +47,8 @@ dune_add_test(SOURCES makebasistest.cc LABELS quick)
 
 dune_add_test(SOURCES hierarchicallagrangebasistest.cc LABELS quick)
 
+dune_add_test(SOURCES hierarchicallagrangewithelementbubblebasistest.cc LABELS quick)
+
 dune_add_test(SOURCES refinedlagrangebasistest.cc
               CMAKE_GUARD Alberta_FOUND)
 add_dune_alberta_flags(refinedlagrangebasistest WORLDDIM 2)

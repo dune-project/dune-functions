@@ -21,6 +21,7 @@ install(FILES
         functionaldescriptor.hh
         globalvaluedlocalfiniteelement.hh
         hierarchicallagrangebasis.hh
+        hierarchicallagrangewithelementbubblebasis.hh
         hierarchicnodetorangemap.hh
         hierarchicvectorwrapper.hh
         interpolate.hh
