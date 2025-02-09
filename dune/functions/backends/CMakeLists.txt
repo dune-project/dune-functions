@@ -5,6 +5,7 @@ add_subdirectory("test")
 
 install(FILES
         concepts.hh
+        containerfactory.hh
         istlvectorbackend.hh
         istlvectorfactory.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/functions/backends)
