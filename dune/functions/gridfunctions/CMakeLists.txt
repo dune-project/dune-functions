@@ -8,6 +8,7 @@ install(FILES
         composedgridfunction.hh
         coarsegridviewfunction.hh
         discreteglobalbasisfunction.hh
+        finegridviewfunction.hh
         gridfunction.hh
         gridfunction_imp.hh
         gridviewentityset.hh
