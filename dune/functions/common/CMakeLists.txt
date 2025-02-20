@@ -10,6 +10,7 @@ install(FILES
         differentiablefunction_imp.hh
         differentiablefunctionfromcallables.hh
         functionconcepts.hh
+        geometryinancestor.hh
         indexaccess.hh
         interfaces.hh
         localfunction.hh
