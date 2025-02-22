@@ -10,15 +10,77 @@
 #include <optional>
 #include <type_traits>
 #include <utility>
+#include <limits>
+#include <algorithm>
+#include <cmath>
 
-#include <dune/common/exceptions.hh>
 #include <dune/common/referencehelper.hh>
+
+#include <dune/geometry/type.hh>
 
 #include <dune/functions/common/defaultderivativetraits.hh>
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 
 namespace Dune::Functions {
+
+namespace Impl {
+
+namespace ReferenceElementUtilities {
+
+// Compute the l1-distance of x to the reference element identified
+// by the topology id and dimension.
+template<class X, class FT = std::decay_t<decltype(std::declval<X>()[0])> >
+FT distance(unsigned int topologyId, int dim, X x, FT scaleFactor = FT(1))
+{
+  using std::abs;
+  using std::max;
+  using std::min;
+  auto dist_x_last = max(max(x[dim-1]-scaleFactor, -x[dim-1]), FT(0));
+  if (dim > 1)
+  {
+    if (Dune::Impl::isPyramid(topologyId, dim))
+      scaleFactor -= max(min(x[dim-1], scaleFactor), FT(0));
+    return distance(Dune::Impl::baseTopologyId(topologyId, dim), dim-1, x, scaleFactor) + dist_x_last;
+  }
+  if (dim == 1)
+    return dist_x_last;
+  return FT(0);
+}
+
+// Check if the l1-distance of x to the reference element identified
+// by the topology id and dimension is less than a tolerance. This
+// implementation is significantly faster than checking if
+// distance(...) <= tolerance. It is almost as fast as checkInside(...)
+// of the refenece element, but the latter does not reflect the
+// distance wrt any norm while we use the l1-norm here.
+template<class X, class FT = std::decay_t<decltype(std::declval<X>()[0])> >
+bool checkInside(unsigned int topologyId, int dim, X x, FT tolerance, FT scaleFactor = FT(1))
+{
+  using std::abs;
+  using std::max;
+  using std::min;
+  if (dim > 0)
+  {
+    auto dist_x_last = max(x[dim-1]-scaleFactor, -x[dim-1]);
+    if (dist_x_last <= tolerance)
+    {
+      if (Dune::Impl::isPyramid(topologyId, dim))
+        scaleFactor -= max(min(x[dim-1], scaleFactor), FT(0));
+      return checkInside(Dune::Impl::baseTopologyId(topologyId, dim), dim-1, x, tolerance - max(dist_x_last, FT(0)), scaleFactor);
+    }
+    return false;
+  }
+  return true;
+}
+
+} // namespace ReferenceElementUtilities
+
+} // namespace Impl
+
+
+
+
 
 
 
@@ -45,6 +107,8 @@ class FineGridViewFunction
   {
     return Dune::resolveRef(function_);
   }
+
+  static constexpr auto dim = GV::Grid::dimension;
 
 public:
 
@@ -128,22 +192,30 @@ private:
     // Find a child containing the point and evaluate there recursively
     Range evaluateInDescendent(const Element& element, LocalDomain x) const
     {
-      for(const auto& childElement : descendantElements(element, element.level()+1))
+      Element closestChild;
+      LocalDomain xInClosestChild;
+      double distanceToClosestChild = std::numeric_limits<double>::max();
+      for(const auto& child : descendantElements(element, element.level()+1))
       {
-        auto&& geometry = childElement.geometryInFather();
-        auto x_child = geometry.local(x);
-        if (referenceElement(geometry).checkInside(x_child))
+        auto&& geometry = child.geometryInFather();
+        auto xInChild = geometry.local(x);
+        auto dist = Impl::ReferenceElementUtilities::distance(child.type().id(), dim, xInChild);
+        if (dist < distanceToClosestChild)
         {
-          if (fineEntitySet_.contains(childElement))
-          {
-            localFunction_.bind(childElement);
-            return localFunction_(x_child);
-          }
-          else
-            return evaluateInDescendent(childElement, x_child);
+          closestChild = child;
+          distanceToClosestChild = dist;
+          xInClosestChild = xInChild;
+          if (distanceToClosestChild==0)
+            break;
         }
       }
-      DUNE_THROW(Dune::Exception, "Did not find matching child for point " << x);
+      if (fineEntitySet_.contains(closestChild))
+      {
+        localFunction_.bind(closestChild);
+        return localFunction_(xInClosestChild);
+      }
+      else
+        return evaluateInDescendent(closestChild, xInClosestChild);
     }
 
     mutable typename RawGridFunction::LocalFunction localFunction_;
