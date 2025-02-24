@@ -10,6 +10,8 @@ corresponding version of the Dune core modules.
 
 # Master (will become release 2.11)
 
+- The `LagrangeDG(Pre)Basis` supports selecting the polynomial order at runtime.
+  Its static variables `LagrangeDGPreBasis::dofsPer.*` are deprecated.
 - Add function wrappers `CoarseFunctionOnFineGridView` and `FineFunctionOnCoarseGridView`
   that allow to represent a grid function on a grid view if the function
   is itself only defined on an entity set that is coarser or finer than the
@@ -116,7 +118,7 @@ Deprecations and removals
   This changes nothing for the user but gives more freedom in the construction
   of global bases.
   But it is a breaking change for the `PreBasis` and `PreBasisFactory` interface.
-  If you maintain your own prebasis implementions, they have to be adapted.
+  If you maintain your own prebasis implementations, they have to be adapted.
   The necessary modifications are documented in detail here: https://gitlab.dune-project.org/staging/dune-functions/-/merge_requests/326.
 - Support for `PreBasis` implementations not providing `PreBasis::indices()`
   has been removed.
