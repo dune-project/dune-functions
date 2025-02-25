@@ -4,8 +4,8 @@
 // SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0-or-later
 
-#ifndef DUNE_FUNCTIONS_GRIDFUNCTIONS_FINEGRIDVIEWFUNCTION_HH
-#define DUNE_FUNCTIONS_GRIDFUNCTIONS_FINEGRIDVIEWFUNCTION_HH
+#ifndef DUNE_FUNCTIONS_GRIDFUNCTIONS_FINEFUNCTIONONCOARSEGRIDVIEW_HH
+#define DUNE_FUNCTIONS_GRIDFUNCTIONS_FINEFUNCTIONONCOARSEGRIDVIEW_HH
 
 #include <optional>
 #include <type_traits>
@@ -99,7 +99,7 @@ bool checkInside(unsigned int topologyId, int dim, X x, FT tolerance, FT scaleFa
  *    element from the entity has an ancestor in the `GridView`.
  */
 template<class GridFunction, class GV, template<class> class DerivativeTraits=Dune::Functions::DefaultDerivativeTraits>
-class FineGridViewFunction
+class FineFunctionOnCoarseGridView
 {
   using RawGridFunction = Dune::ResolveRef_t<GridFunction>;
 
@@ -124,20 +124,20 @@ private:
   using FineEntitySet = std::decay_t<decltype(std::declval<RawGridFunction>().entitySet())>;
   using Traits = Dune::Functions::Imp::GridFunctionTraits<Range(Domain), EntitySet, DerivativeTraits, 56>;
 
-  class FineGridViewLocalFunction
+  class FineLocalFunctionOnCoarseGridView
   {
-    using Traits = typename FineGridViewFunction::Traits::LocalFunctionTraits;
+    using Traits = typename FineFunctionOnCoarseGridView::Traits::LocalFunctionTraits;
 
   public:
 
-    using Derivative = decltype(localFunction(derivative(std::declval<FineGridViewFunction>())));
+    using Derivative = decltype(localFunction(derivative(std::declval<FineFunctionOnCoarseGridView>())));
 
     /**
      * \brief Construct the LocalFunction
      *
-     * The LocalFunction is created from the global FineGridViewFunction.
+     * The LocalFunction is created from the global FineFunctionOnCoarseGridView.
      **/
-    FineGridViewLocalFunction(typename RawGridFunction::LocalFunction&& localFunction, const FineEntitySet& fineEntitySet)
+    FineLocalFunctionOnCoarseGridView(typename RawGridFunction::LocalFunction&& localFunction, const FineEntitySet& fineEntitySet)
       : localFunction_(localFunction)
       , fineEntitySet_(fineEntitySet)
       , element_()
@@ -171,7 +171,7 @@ private:
     }
 
     //! Obtain local derivative of this function
-    friend auto derivative(const FineGridViewLocalFunction& f)
+    friend auto derivative(const FineLocalFunctionOnCoarseGridView& f)
     {
       if constexpr(requires{ derivative(f.localFunction_); })
         return Derivative(derivative(f.localFunction_), f.fineEntitySet_);
@@ -226,26 +226,26 @@ private:
 
 public:
 
-  using LocalFunction = FineGridViewLocalFunction;
+  using LocalFunction = FineLocalFunctionOnCoarseGridView;
 
   /**
-   * \brief Create FineGridViewFunction from GridFunction and GridView
+   * \brief Create FineFunctionOnCoarseGridView from GridFunction and GridView
    *
    * \param gridFunction The GridFunction that should be represented on gridView
    * \param gridView The GridFunction should be represented on this gridView
    */
-  FineGridViewFunction(const GridFunction& function, const GridView& gridView)
+  FineFunctionOnCoarseGridView(const GridFunction& function, const GridView& gridView)
     : function_(function)
     , entitySet_(gridView)
   {}
 
   /**
-   * \brief Create FineGridViewFunction from GridFunction and GridView
+   * \brief Create FineFunctionOnCoarseGridView from GridFunction and GridView
    *
    * \param gridFunction The GridFunction that should be represented on gridView
    * \param gridView The GridFunction should be represented on this gridView
    */
-  FineGridViewFunction(GridFunction&& function, const GridView& gridView)
+  FineFunctionOnCoarseGridView(GridFunction&& function, const GridView& gridView)
     : function_(std::move(function))
     , entitySet_(gridView)
   {}
@@ -257,19 +257,19 @@ public:
   }
 
   //! Obtain global derivative of this function
-  friend auto derivative(const FineGridViewFunction& f)
+  friend auto derivative(const FineFunctionOnCoarseGridView& f)
   {
     if constexpr(requires{ derivative(f.rawFunction()); })
     {
       using RawDerivative = std::decay_t<decltype(derivative(f.rawFunction()))>;
-      return FineGridViewFunction<RawDerivative, GridView, DerivativeTraits>(derivative(f.rawFunction()), f.entitySet_.gridView());
+      return FineFunctionOnCoarseGridView<RawDerivative, GridView, DerivativeTraits>(derivative(f.rawFunction()), f.entitySet_.gridView());
     }
     else
       return typename Traits::DerivativeInterface{};
   }
 
   //! Create a LocalFunction for evaluation in local coordinates
-  friend LocalFunction localFunction(const FineGridViewFunction& f)
+  friend LocalFunction localFunction(const FineFunctionOnCoarseGridView& f)
   {
     return LocalFunction(localFunction(f.rawFunction()), f.rawFunction().entitySet());
   }
@@ -290,4 +290,4 @@ protected:
 
 } // namespace Dune::Functions
 
-#endif // DUNE_FUNCTIONS_GRIDFUNCTIONS_FINEGRIDVIEWFUNCTION_HH
+#endif // DUNE_FUNCTIONS_GRIDFUNCTIONS_FINEFUNCTIONONCOARSEGRIDVIEW_HH

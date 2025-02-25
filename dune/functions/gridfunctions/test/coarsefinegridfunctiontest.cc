@@ -33,8 +33,8 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
-#include <dune/functions/gridfunctions/coarsegridviewfunction.hh>
-#include <dune/functions/gridfunctions/finegridviewfunction.hh>
+#include <dune/functions/gridfunctions/coarsefunctiononfinegridview.hh>
+#include <dune/functions/gridfunctions/finefunctiononcoarsegridview.hh>
 
 
 
@@ -142,11 +142,11 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
     // ********************************************************************************
 
     // Map fine function to coarse level grid view
-    auto g_fc = Dune::Functions::FineGridViewFunction(g_f, gridView_c);
+    auto g_fc = Dune::Functions::FineFunctionOnCoarseGridView(g_f, gridView_c);
     testSuite.check(isGridViewFunction<decltype(g_fc), Range(Domain), decltype(gridView_c)>());
 
     // Remap coarse function to fine leaf grid view
-    auto g_fcf = Dune::Functions::CoarseGridViewFunction(g_fc, gridView_f);
+    auto g_fcf = Dune::Functions::CoarseFunctionOnFineGridView(g_fc, gridView_f);
     testSuite.check(isGridViewFunction<decltype(g_fcf), Range(Domain), decltype(gridView_f)>());
 
     // Compare values on fine level
@@ -169,7 +169,7 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
     }
 
     // Remap fine function to coarse level grid view
-    auto g_fcfc = Dune::Functions::FineGridViewFunction(g_fcf, gridView_c);
+    auto g_fcfc = Dune::Functions::FineFunctionOnCoarseGridView(g_fcf, gridView_c);
     testSuite.check(isGridViewFunction<decltype(g_fcfc), Range(Domain), decltype(gridView_c)>());
 
     // Compare values on coarse level
@@ -200,11 +200,11 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
     auto g_c = Dune::Functions::makeDiscreteGlobalBasisFunction<Range>(basis_c, coeff_c);
 
     // Map coarse function to fine leaf grid view
-    auto g_cf = Dune::Functions::CoarseGridViewFunction(g_c, gridView_f);
+    auto g_cf = Dune::Functions::CoarseFunctionOnFineGridView(g_c, gridView_f);
     testSuite.check(isGridViewFunction<decltype(g_cf), Range(Domain), decltype(gridView_f)>());
 
     // Remap fine function to coarse level grid view
-    auto g_cfc = Dune::Functions::FineGridViewFunction(g_cf, gridView_c);
+    auto g_cfc = Dune::Functions::FineFunctionOnCoarseGridView(g_cf, gridView_c);
     testSuite.check(isGridViewFunction<decltype(g_cfc), Range(Domain), decltype(gridView_c)>());
 
     // Compare values on coarse level
