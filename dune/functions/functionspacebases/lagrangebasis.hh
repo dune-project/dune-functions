@@ -54,6 +54,11 @@ class LagrangePreBasis;
  * - If k is no larger than 2, then the grids can have any dimension
  * - If k is larger than 3 then the grid must be two-dimensional
  * - If k is 3, then the grid can be 3d *if* it is a simplex grid
+ *
+ * \warning For pyramid elements in 3d, the shape functions are different for
+ *    run-time and compile-time order. While the former are defined using the
+ *    Duffy-transformation the latter are continuous and piecewise polynomial
+ *    with discontinuous gradients.
  */
 template<typename GV, int k, typename R>
 class LagrangePreBasis :
@@ -518,6 +523,11 @@ auto lagrange(int order)
  *   (see https://gitlab.dune-project.org/core/dune-localfunctions/issues/14)
  *   Keep this in mind if ever you experience difficult-to-explain crashes
  *   or wrong results.
+ *
+ * \warning For pyramid elements in 3d, the shape functions are different for
+ *    run-time and compile-time order. While the former are defined using the
+ *    Duffy-transformation the latter are continuous and piecewise polynomial
+ *    with discontinuous gradients.
  *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis; -1 means 'order determined at run-time'
