@@ -61,25 +61,75 @@ auto rangeDist(Dune::FieldMatrix<F, n, m> x1, Dune::FieldMatrix<F, n, m> x2)
 
 
 
+// This is used as a drop-in replacement for Dune::QuadratureRules
+// except for pyramids. For the latter, the standard Dune rules provide
+// points on the diagonal. Unfortunately the compile time order Lagrange
+// elements on pyramids are piecewise polynomial with gradients jumping
+// across the diagonal. This utility defines pyramid rules by splitting
+// them into two tetrahedra. Since the pyramid order-k shape functions
+// are bi-order-k polynomials double the order for those.
+template<class ctype, int dim>
+struct QuadratureRules
+{
+
+  using QuadratureRule = Dune::QuadratureRule<ctype, dim>;
+  using QuadraturePoint = Dune::QuadraturePoint<ctype, dim>;
+  using Coordinate = typename QuadraturePoint::Vector;
+
+  static const auto& rule(const Dune::GeometryType& type, int order)
+  {
+    static auto pyramidRules = std::vector<QuadratureRule>();
+    if (type == Dune::GeometryTypes::pyramid)
+    {
+      if (pyramidRules.size() < order)
+        for(auto k : Dune::range(pyramidRules.size(), std::size_t(order+1)))
+        {
+          const auto& simplexRule = Dune::QuadratureRules<double, dim>::rule(Dune::GeometryTypes::tetrahedron, 2*k);
+          auto pyramidRule = QuadratureRule();
+          for(auto [position, weight] : simplexRule)
+          {
+            pyramidRule.emplace_back(Coordinate({position[0], position[0]+position[1], position[2]}), weight);
+            pyramidRule.emplace_back(Coordinate({position[0]+position[1], position[1], position[2]}), weight);
+          }
+          pyramidRules.push_back(pyramidRule);
+        }
+      return pyramidRules[order];
+    }
+    else
+      return Dune::QuadratureRules<double, dim>::rule(type, order);
+  }
+};
 
 
+
+// Check difference of local functions on element
 template<class Element, class F, class G>
-double maxNormDistanceOnElement(const Element& element, const F& f_local, const G& g_local, std::size_t sampleQuadratureOrder = 5)
+double maxNormDistanceOnElement(const Element& element, const F& f_local, const G& g_local, bool checkCorners, std::size_t sampleQuadratureOrder = 5)
 {
   constexpr auto dimension = Element::Geometry::mydimension;
+  const auto& re = referenceElement(element);
   double diff = 0.0;
-  const auto& quad = Dune::QuadratureRules<double, dimension>::rule(element.type(), sampleQuadratureOrder);
-  for (const auto& quadPoint : quad)
+  const auto& quad = QuadratureRules<double, dimension>::rule(element.type(), sampleQuadratureOrder);
+  for (const auto& [x, weight] : quad)
   {
-    auto f_x = f_local(quadPoint.position());
-    auto g_x = g_local(quadPoint.position());
+    auto f_x = f_local(x);
+    auto g_x = g_local(x);
     diff = std::max(diff, rangeDist(f_x, g_x));
   }
+  if (checkCorners)
+    for (const auto& k : Dune::range(re.size(dimension)))
+    {
+      auto x = re.position(k, dimension);
+      auto f_x = f_local(x);
+      auto g_x = g_local(x);
+      diff = std::max(diff, rangeDist(f_x, g_x));
+    }
   return diff;
 }
 
+// Check difference of grid functions on grid view
 template<class GridView, class F, class G>
-double maxNormDistanceOnGridView(const GridView& gridView, const F& f, const G& g, std::size_t sampleQuadratureOrder = 5)
+double maxNormDistanceOnGridView(const GridView& gridView, const F& f, const G& g, bool checkVertices, std::size_t sampleQuadratureOrder = 5)
 {
   constexpr auto dimension = GridView::dimension;
   double diff = 0.0;
@@ -90,7 +140,7 @@ double maxNormDistanceOnGridView(const GridView& gridView, const F& f, const G& 
   {
     f_local.bind(element);
     g_local.bind(element);
-    diff = std::max(diff, maxNormDistanceOnElement(element, f_local, g_local, sampleQuadratureOrder));
+    diff = std::max(diff, maxNormDistanceOnElement(element, f_local, g_local, checkVertices, sampleQuadratureOrder));
   }
 
   return diff;
@@ -108,7 +158,10 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
   using Domain = typename Element::Geometry::GlobalCoordinate;
   using Range = Dune::FieldVector<double,2>;
 
-  double TOL = 1e-13;
+  double TOL = 1e-14;
+  double Gradient_TOL = TOL*std::pow(2., double(grid.maxLevel()));
+
+  std::cout << "Checking grid with " << (grid.maxLevel()+1) << " levels with tolerance " << TOL << std::endl;
 
   auto g = [](auto x) {
     auto y = Range();
@@ -122,7 +175,6 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
   };
 
   using namespace Dune::Functions::BasisFactory;
-
   auto preBasisFactory = power<2>(lagrange<2>(), flatInterleaved());
 
   auto gridView_f = grid.leafGridView();
@@ -151,7 +203,7 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
 
     // Compare values on fine level
     {
-      auto dist = maxNormDistanceOnGridView(gridView_f, g_fcf, g_f);
+      auto dist = maxNormDistanceOnGridView(gridView_f, g_fcf, g_f, true);
       testSuite.check(dist < TOL)
         << "Values of mapped fine->coarse->fine function differ from fine function by " << dist;
     }
@@ -160,11 +212,11 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
     // Since the sample points are in the interiour of fine elements
     // they are in the interiour of coarse elements, too. Hence we
     // should not get problems due to the fact that the derivative
-    // is discontinuous across fine elements.
-    // This comparison is saf
+    // is discontinuous across fine elements. However, we should not
+    // check the element corners.
     {
-      auto dist = maxNormDistanceOnGridView(gridView_f, derivative(g_fcf), derivative(g_f));
-      testSuite.check(dist < TOL)
+      auto dist = maxNormDistanceOnGridView(gridView_f, derivative(g_fcf), derivative(g_f), false);
+      testSuite.check(dist < Gradient_TOL)
         << "Jacobians of mapped fine->coarse->fine function differ from fine function by " << dist;
     }
 
@@ -174,7 +226,7 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
 
     // Compare values on coarse level
     {
-      auto dist = maxNormDistanceOnGridView(gridView_c, g_fcfc, g_fc);
+      auto dist = maxNormDistanceOnGridView(gridView_c, g_fcfc, g_fc, true);
       testSuite.check(dist < TOL)
         << "Values of mapped fine->coarse->fine->coarse function differ from fine->coarse function by " << dist;
     }
@@ -209,17 +261,18 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
 
     // Compare values on coarse level
     {
-      auto dist = maxNormDistanceOnGridView(gridView_c, g_cfc, g_c);
+      auto dist = maxNormDistanceOnGridView(gridView_c, g_cfc, g_c, true);
       testSuite.check(dist < TOL)
         << "Values of mapped coarse->fine->coarse function differ from coarse function by " << dist;
     }
 
     // Compare jacobians on coarse level
     // Since the coarse interpolates derivative is continuous within
-    // the coarse elements, this is safe.
+    // the coarse elements, this is safe. Since we only search children
+    // of the coares element, we can even check the corners.
     {
-      auto dist = maxNormDistanceOnGridView(gridView_c, derivative(g_cfc), derivative(g_c));
-      testSuite.check(dist < TOL)
+      auto dist = maxNormDistanceOnGridView(gridView_c, derivative(g_cfc), derivative(g_c), true);
+      testSuite.check(dist < Gradient_TOL)
         << "Jacobians of mapped coarse->fine->coarse function differ from coarse function by " << dist;
     }
 
@@ -228,13 +281,38 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
   return testSuite;
 }
 
-
+template<class Grid>
+void refineLocalNearOrigin(Grid& grid, std::size_t refinements)
+{
+  constexpr auto dimension = Grid::dimension;
+  auto origin = Dune::FieldVector<double, dimension>();
+  for(auto k : Dune::range(refinements))
+  {
+    for(const auto& element : elements(grid.leafGridView()))
+    {
+      const auto& re = referenceElement(element);
+      const auto& geometry = element.geometry();
+      if (re.checkInside(geometry.local(origin)))
+        grid.mark(1, element);
+    }
+    grid.preAdapt();
+    grid.adapt();
+    grid.postAdapt();
+  }
+}
 
 int main (int argc, char* argv[]) try
 {
   Dune::MPIHelper::instance(argc, argv);
 
   Dune::TestSuite testSuite;
+
+  {
+    using Grid = Dune::YaspGrid<1>;
+    auto grid = Dune::StructuredGridFactory<Grid>::createCubeGrid({{0}}, {{1}}, {{2}});
+    grid->globalRefine(2);
+    testSuite.subTest(checkOnGrid(*grid, "YaspGrid<1>"));
+  }
 
   {
     using Grid = Dune::YaspGrid<2>;
@@ -250,10 +328,13 @@ int main (int argc, char* argv[]) try
     testSuite.subTest(checkOnGrid(*grid, "YaspGrid<3>"));
   }
 
+  // We use UGGrid with RefinementType=copy to ensure that intermediate levels cover the whole domain
+
   {
     using Grid = Dune::UGGrid<2>;
     auto grid = Dune::StructuredGridFactory<Grid>::createSimplexGrid({{0,0}}, {{1,1}}, {{1,1}});
-    grid->globalRefine(2);
+    grid->setRefinementType(Grid::RefinementType::COPY);
+    refineLocalNearOrigin(*grid, 30);
     testSuite.subTest(checkOnGrid(*grid, "UGGrid<2> (triangles)"));
   }
 
@@ -266,14 +347,16 @@ int main (int argc, char* argv[]) try
     factory.insertVertex({2,2});
     factory.insertElement(Dune::GeometryTypes::cube(2), {0,1,2,3});
     auto grid = factory.createGrid();
-    grid->globalRefine(2);
+    grid->setRefinementType(Grid::RefinementType::COPY);
+    refineLocalNearOrigin(*grid, 30);
     testSuite.subTest(checkOnGrid(*grid, "UGGrid<2> (nonaffine rectangles)"));
   }
 
   {
     using Grid = Dune::UGGrid<3>;
     auto grid = Dune::StructuredGridFactory<Grid>::createSimplexGrid({{0,0,0}}, {{1,1,1}}, {{1,1,1}});
-    grid->globalRefine(2);
+    grid->setRefinementType(Grid::RefinementType::COPY);
+    refineLocalNearOrigin(*grid, 5);
     testSuite.subTest(checkOnGrid(*grid, "UGGrid<2> (triangles)"));
   }
 
@@ -290,7 +373,8 @@ int main (int argc, char* argv[]) try
     factory.insertVertex({2,2,2});
     factory.insertElement(Dune::GeometryTypes::cube(3), {0,1,2,3,4,5,6,7});
     auto grid = factory.createGrid();
-    grid->globalRefine(2);
+    grid->setRefinementType(Grid::RefinementType::COPY);
+    refineLocalNearOrigin(*grid, 5);
     testSuite.subTest(checkOnGrid(*grid, "UGGrid<3> (nonaffine cubes)"));
   }
 
