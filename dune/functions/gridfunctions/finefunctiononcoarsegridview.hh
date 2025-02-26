@@ -140,7 +140,25 @@ private:
     FineLocalFunctionOnCoarseGridView(typename RawGridFunction::LocalFunction&& localFunction, const FineEntitySet& fineEntitySet)
       : localFunction_(localFunction)
       , fineEntitySet_(fineEntitySet)
+      , forwardToFineFunction_(false)
       , element_()
+    {}
+
+    /**
+     * \brief Construct the LocalFunction
+     *
+     * The LocalFunction is created from the global FineFunctionOnCoarseGridView.
+     **/
+    FineLocalFunctionOnCoarseGridView(
+        typename RawGridFunction::LocalFunction&& localFunction,
+        const FineEntitySet& fineEntitySet,
+        bool forwardToFineFunction,
+        const std::optional<Element>& element
+      )
+      : element_(element)
+      , localFunction_(localFunction)
+      , fineEntitySet_(fineEntitySet)
+      , forwardToFineFunction_(forwardToFineFunction)
     {}
 
     //! Bind to an element from the GridView
@@ -174,7 +192,7 @@ private:
     friend auto derivative(const FineLocalFunctionOnCoarseGridView& f)
     {
       if constexpr(requires{ derivative(f.localFunction_); })
-        return Derivative(derivative(f.localFunction_), f.fineEntitySet_);
+        return Derivative(derivative(f.localFunction_), f.fineEntitySet_, f.forwardToFineFunction_, f.element_);
       else
         return typename Traits::DerivativeInterface{};
     }
@@ -218,10 +236,10 @@ private:
         return evaluateInDescendent(closestChild, xInClosestChild);
     }
 
+    std::optional<Element> element_;
     mutable typename RawGridFunction::LocalFunction localFunction_;
     const FineEntitySet& fineEntitySet_;
     bool forwardToFineFunction_ = false;
-    std::optional<Element> element_;
   };
 
 public:

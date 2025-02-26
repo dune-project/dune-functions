@@ -58,6 +58,7 @@ public:
 private:
 
   using CoarseEntitySet = std::decay_t<decltype(std::declval<RawGridFunction>().entitySet())>;
+  using GeometryInAncestor = Dune::Functions::GeometryInAncestor<Element>;
   using Traits = Dune::Functions::Imp::GridFunctionTraits<Range(Domain), EntitySet, DerivativeTraits, 56>;
 
   class CoarseLocalFunctionOnFineGridView
@@ -72,11 +73,28 @@ private:
      * \brief Construct the LocalFunction
      *
      * The LocalFunction is created from the global CoarseFunctionOnFineGridView.
-     **/
+     */
     CoarseLocalFunctionOnFineGridView(typename RawGridFunction::LocalFunction&& localFunction, const CoarseEntitySet& coarseEntitySet)
       : localFunction_(localFunction)
       , coarseEntitySet_(coarseEntitySet)
       , element_()
+    {}
+
+    /**
+     * \brief Construct the LocalFunction
+     *
+     * The LocalFunction is created from the global CoarseFunctionOnFineGridView.
+     */
+    CoarseLocalFunctionOnFineGridView(
+        typename RawGridFunction::LocalFunction&& localFunction,
+        const CoarseEntitySet& coarseEntitySet,
+        const GeometryInAncestor& geometryInAncestor,
+        const std::optional<Element>& element
+      )
+      : element_(element)
+      , geometryInAncestor_(geometryInAncestor, *element_)
+      , localFunction_(localFunction)
+      , coarseEntitySet_(coarseEntitySet)
     {}
 
     //! Bind to an element from the GridView
@@ -109,7 +127,7 @@ private:
     friend auto derivative(const CoarseLocalFunctionOnFineGridView& f)
     {
       if constexpr(requires{ derivative(f.localFunction_); })
-        return Derivative(derivative(f.localFunction_), f.coarseEntitySet_);
+        return Derivative(derivative(f.localFunction_), f.coarseEntitySet_, f.geometryInAncestor_, f.element_);
       else
         return typename Traits::DerivativeInterface{};
     }
@@ -121,10 +139,10 @@ private:
     }
 
   private:
+    std::optional<Element> element_;
     typename RawGridFunction::LocalFunction localFunction_;
     const CoarseEntitySet& coarseEntitySet_;
-    std::optional<Element> element_;
-    Dune::Functions::GeometryInAncestor<Element> geometryInAncestor_;
+    GeometryInAncestor geometryInAncestor_;
   };
 
 public:
