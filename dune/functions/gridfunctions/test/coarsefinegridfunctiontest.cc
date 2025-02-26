@@ -146,6 +146,29 @@ double maxNormDistanceOnGridView(const GridView& gridView, const F& f, const G& 
   return diff;
 }
 
+template<class GridView, class F, class G>
+double maxNormDerivativeDistanceOnGridView(const GridView& gridView, const F& f, const G& g, bool checkVertices, std::size_t sampleQuadratureOrder = 5)
+{
+  constexpr auto dimension = GridView::dimension;
+  double diff = 0.0;
+
+  // First check by obtaining the derivative globally
+  diff = maxNormDistanceOnGridView(gridView, derivative(f), derivative(g), checkVertices, sampleQuadratureOrder);
+
+  // Now check by obtaining the derivative locally
+  auto f_local = localFunction(f);
+  auto g_local = localFunction(g);
+  for(const auto& element : elements(gridView))
+  {
+    f_local.bind(element);
+    g_local.bind(element);
+    auto df_local = derivative(f_local);
+    auto dg_local = derivative(g_local);
+    diff = std::max(diff, maxNormDistanceOnElement(element, df_local, dg_local, checkVertices, sampleQuadratureOrder));
+  }
+
+  return diff;
+}
 
 
 template<class Grid>
@@ -215,7 +238,7 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
     // is discontinuous across fine elements. However, we should not
     // check the element corners.
     {
-      auto dist = maxNormDistanceOnGridView(gridView_f, derivative(g_fcf), derivative(g_f), false);
+      auto dist = maxNormDerivativeDistanceOnGridView(gridView_f, g_fcf, g_f, false);
       testSuite.check(dist < Gradient_TOL)
         << "Jacobians of mapped fine->coarse->fine function differ from fine function by " << dist;
     }
@@ -271,7 +294,7 @@ Dune::TestSuite checkOnGrid(const Grid& grid, std::string name)
     // the coarse elements, this is safe. Since we only search children
     // of the coares element, we can even check the corners.
     {
-      auto dist = maxNormDistanceOnGridView(gridView_c, derivative(g_cfc), derivative(g_c), true);
+      auto dist = maxNormDerivativeDistanceOnGridView(gridView_c, g_cfc, g_c, true);
       testSuite.check(dist < Gradient_TOL)
         << "Jacobians of mapped coarse->fine->coarse function differ from coarse function by " << dist;
     }
