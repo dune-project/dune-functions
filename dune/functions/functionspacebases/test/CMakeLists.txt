@@ -4,6 +4,7 @@
 # tests that should build and run successfully
 
 # Path to the example grid files in dune-grid
+link_libraries(Dune::Functions)
 add_definitions(-DDUNE_GRID_EXAMPLE_GRIDS_PATH=\"${DUNE_GRID_EXAMPLE_GRIDS_PATH}\")
 
 dune_add_test(SOURCES brezzidouglasmarinibasistest.cc LABELS quick)
