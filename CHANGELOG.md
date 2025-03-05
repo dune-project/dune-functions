@@ -8,12 +8,23 @@ SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0
 Any version of dune-functions is supposed to be compatible with the
 corresponding version of the Dune core modules.
 
-- Add `HierarchicalLagrangeWithElementBubblePreBasis` implemented in terms of `LFEPreBasisMixin`
-
 # Master (will become release 2.11)
 
 - Add the function `makeISTLVector` to construct an istl vector type compatible
   with a container descriptor of a basis.
+- Add `HierarchicalLagrangeWithElementBubblePreBasis` implemented in terms of `LFEPreBasisMixin`
+- The new `MorleyPreBasis` implements the non-conforming C1 Morley element
+  on triangles.
+- The new `CubicHermitePreBasis` implements the cubic Hermite basis on
+  simplices in 1d,2d, and 3d. This C1 element is in general non-conforming
+  since differentiability is only guaranteed in vertices (except for 1d where
+  it coincides with cubic C1 splines). For 2d there is also the reduced variant
+  which is part of the mixed DKT-element.
+- The new utility class `TransformedFiniteElementMixin` can be used to implement
+  local finite elements where the element specific basis functions are obtained
+  by a linear transformation of the reference basis functions (additionally
+  to the classical geometric pull back). This can e.g. be used to implement
+  Hermite-type C1 elements.
 
 ## Release 2.10
 
@@ -65,7 +76,7 @@ Deprecations and removals
 - The `BasisBuilder` namespace is deprecated and will be removed
   after the 2.10 release. Use `BasisFactory` instead.
 - The headers `common/callable.hh` and `common/functionfromcallable.hh` providing adaptors
-  the the removed `VirtualFunction` interface from dune-common have been removed.
+  the removed `VirtualFunction` interface from dune-common have been removed.
 - Remove deprecated `DefaultLocalView::isBound()`, use `bound()` instead.
 - The class `HierarchicalVectorWrapper` and the corresponding header `functionspacebases/hierarchicvectorwrapper.hh`
   have been deprecated. Use `istlVectorBackend()` from `backends/istlvectorbackend.hh` instead.
@@ -92,7 +103,7 @@ Deprecations and removals
 - SubspaceBases will no longer be nested. Instead,
   `SubspaceBasis(SubspaceBases(rootBasis,innerTP),outerTP)`
   is resolved to a `SubspaceBases(rootBasis, tp)` where the tree path `tp`
-  is obainted by joining `innerTP` and `outerTP`.
+  is obtained by joining `innerTP` and `outerTP`.
   This is implemented for the helper function `subspaceBasis()`
   and the newly added class template argument deduction guides.
 - The way multi index types are generated for global bases has been refactored.
