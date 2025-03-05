@@ -131,17 +131,18 @@ private:
   public:
 
     using Derivative = decltype(localFunction(derivative(std::declval<FineFunctionOnCoarseGridView>())));
+    using RawLocalFunction = std::decay_t<decltype(localFunction(std::declval<const RawGridFunction&>()))>;
 
     /**
      * \brief Construct the LocalFunction
      *
      * The LocalFunction is created from the global FineFunctionOnCoarseGridView.
      **/
-    FineLocalFunctionOnCoarseGridView(typename RawGridFunction::LocalFunction&& localFunction, const FineEntitySet& fineEntitySet)
-      : localFunction_(localFunction)
+    FineLocalFunctionOnCoarseGridView(RawLocalFunction&& localFunction, const FineEntitySet& fineEntitySet)
+      : element_()
+      , localFunction_(localFunction)
       , fineEntitySet_(fineEntitySet)
       , forwardToFineFunction_(false)
-      , element_()
     {}
 
     /**
@@ -150,7 +151,7 @@ private:
      * The LocalFunction is created from the global FineFunctionOnCoarseGridView.
      **/
     FineLocalFunctionOnCoarseGridView(
-        typename RawGridFunction::LocalFunction&& localFunction,
+        RawLocalFunction&& localFunction,
         const FineEntitySet& fineEntitySet,
         bool forwardToFineFunction,
         const std::optional<Element>& element
@@ -237,7 +238,7 @@ private:
     }
 
     std::optional<Element> element_;
-    mutable typename RawGridFunction::LocalFunction localFunction_;
+    mutable RawLocalFunction localFunction_;
     const FineEntitySet& fineEntitySet_;
     bool forwardToFineFunction_ = false;
   };

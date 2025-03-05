@@ -68,16 +68,18 @@ private:
   public:
 
     using Derivative = decltype(localFunction(derivative(std::declval<CoarseFunctionOnFineGridView>())));
+    using RawLocalFunction = std::decay_t<decltype(localFunction(std::declval<const RawGridFunction&>()))>;
 
     /**
      * \brief Construct the LocalFunction
      *
      * The LocalFunction is created from the global CoarseFunctionOnFineGridView.
      */
-    CoarseLocalFunctionOnFineGridView(typename RawGridFunction::LocalFunction&& localFunction, const CoarseEntitySet& coarseEntitySet)
-      : localFunction_(localFunction)
+    CoarseLocalFunctionOnFineGridView(RawLocalFunction&& localFunction, const CoarseEntitySet& coarseEntitySet)
+      : element_()
+      , localFunction_(localFunction)
       , coarseEntitySet_(coarseEntitySet)
-      , element_()
+      , geometryInAncestor_()
     {}
 
     /**
@@ -86,15 +88,15 @@ private:
      * The LocalFunction is created from the global CoarseFunctionOnFineGridView.
      */
     CoarseLocalFunctionOnFineGridView(
-        typename RawGridFunction::LocalFunction&& localFunction,
+        RawLocalFunction&& localFunction,
         const CoarseEntitySet& coarseEntitySet,
         const GeometryInAncestor& geometryInAncestor,
         const std::optional<Element>& element
       )
       : element_(element)
-      , geometryInAncestor_(geometryInAncestor, *element_)
       , localFunction_(localFunction)
       , coarseEntitySet_(coarseEntitySet)
+      , geometryInAncestor_(geometryInAncestor, *element_)
     {}
 
     //! Bind to an element from the GridView
@@ -140,7 +142,7 @@ private:
 
   private:
     std::optional<Element> element_;
-    typename RawGridFunction::LocalFunction localFunction_;
+    RawLocalFunction localFunction_;
     const CoarseEntitySet& coarseEntitySet_;
     GeometryInAncestor geometryInAncestor_;
   };
