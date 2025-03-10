@@ -226,6 +226,14 @@ void testOnStructuredGrid()
 
   grid.globalRefine(2);
 
+  // Test updating the basis after the grid has been changed
+  pq3Basis.update(grid.leafGridView());
+  pq4Basis.update(grid.leafGridView());
+  pq0Basis.update(grid.leafGridView());
+  lagrangeDG1Basis.update(grid.leafGridView());
+  lagrangeDG2Basis.update(grid.leafGridView());
+  lagrangeDG3Basis.update(grid.leafGridView());
+
   // Test LagrangeBasis for k==3
   if (dim<3) // Currently not implemented for dim >= 3
     testScalarBasis(pq3Basis, gridView, true);
