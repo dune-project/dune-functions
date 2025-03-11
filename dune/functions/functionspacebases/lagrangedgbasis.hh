@@ -7,14 +7,13 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_LAGRANGEDGBASIS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_LAGRANGEDGBASIS_HH
 
-#include <array>
 #include <dune/common/exceptions.hh>
 #include <dune/common/math.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
-#include <dune/functions/functionspacebases/leafprebasismixin.hh>
+#include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
 
 
 
@@ -35,162 +34,120 @@ namespace Functions {
 // and can be used without a global basis.
 // *****************************************************************************
 
-template<typename GV, int k>
-using LagrangeDGNode = LagrangeNode<GV, k>;
+template<typename GV, int k, typename R=double>
+using LagrangeDGNode = LagrangeNode<GV, k, R>;
 
-template<typename GV, int k>
+/** \brief PreBasis implementation for a Lagrangean-DG finite element space
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam GV  The grid view that the FE basis is defined on
+ * \tparam k   The order of ansatz functions; -1 means 'order determined at run-time'
+ * \tparam R   Range type used for shape function values
+ */
+template<typename GV, int k, typename R=double>
 class LagrangeDGPreBasis :
-  public LeafPreBasisMixin< LagrangeDGPreBasis<GV,k> >
+  public Dune::Functions::LeafPreBasisMapperMixin<GV>
 {
-  static const int dim = GV::dimension;
+  using Base = Dune::Functions::LeafPreBasisMapperMixin<GV>;
+
+  static constexpr bool useDynamicOrder = (k<0);
+
+  static MCMGLayout dofLayout(int order)
+  {
+    return [order](Dune::GeometryType type, int dimGrid) {
+      if (type.dim() == dimGrid)
+      {
+        if (type.isLine())
+          return order+1;
+        if (type.isTriangle())
+          return (order+1)*(order+2)/2;
+        if (type.isQuadrilateral())
+          return (order+1)*(order+1);
+        if (type.isTetrahedron())
+          return (order+1)*(order+2)*(order+3)/6;
+        if (type.isPrism())
+          return (order+1)*(order+1)*(order+2)/2;
+        if (type.isHexahedron())
+          return (order+1)*(order+1)*(order+1);
+        if (type.isPyramid())
+          return (order+1)*(order+2)*(2*order+3)/6;
+        DUNE_THROW(Dune::NotImplemented, "Using LagrangeDGPreBasis with non-supported GeometryType");
+      }
+      return 0;
+    };
+  }
 
 public:
 
   /** \brief The grid view that the FE space is defined on */
   using GridView = GV;
-  using size_type = std::size_t;
-
+  using size_type = typename Base::size_type;
 
   // Precompute the number of dofs per entity type
-  const static int dofsPerEdge        = k+1;
-  const static int dofsPerTriangle    = (k+1)*(k+2)/2;
-  const static int dofsPerQuad        = (k+1)*(k+1);
-  const static int dofsPerTetrahedron = (k+1)*(k+2)*(k+3)/6;
-  const static int dofsPerPrism       = (k+1)*(k+1)*(k+2)/2;
-  const static int dofsPerHexahedron  = (k+1)*(k+1)*(k+1);
-  const static int dofsPerPyramid     = (k+1)*(k+2)*(2*k+3)/6;
+  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerEdge        = k+1;
+  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerTriangle    = (k+1)*(k+2)/2;
+  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerQuad        = (k+1)*(k+1);
+  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerTetrahedron = (k+1)*(k+2)*(k+3)/6;
+  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerPrism       = (k+1)*(k+1)*(k+2)/2;
+  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerHexahedron  = (k+1)*(k+1)*(k+1);
+  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerPyramid     = (k+1)*(k+2)*(2*k+3)/6;
 
+  using Node = LagrangeDGNode<GV, k, R>;
 
-  using Node = LagrangeDGNode<GV, k>;
-
-  /** \brief Constructor for a given grid view object */
-  LagrangeDGPreBasis(const GridView& gv) :
-    gridView_(gv)
+  /**
+   * \brief Constructor for a given grid view object
+   *
+   * This constructor requires that the order is given
+   * at compile-time using `k>=0`
+   */
+  LagrangeDGPreBasis(const GridView& gv)
+    requires(k>=0)
+    : Base(gv, dofLayout(k))
+    , order_(k)
   {}
 
-
-  void initializeIndices()
-  {
-    switch (dim)
-    {
-      case 1:
-      {
-        break;
-      }
-      case 2:
-      {
-        quadrilateralOffset_ = dofsPerTriangle * gridView_.size(Dune::GeometryTypes::triangle);
-        break;
-      }
-      case 3:
-      {
-        prismOffset_         = dofsPerTetrahedron * gridView_.size(Dune::GeometryTypes::tetrahedron);
-
-        hexahedronOffset_    = prismOffset_         +   dofsPerPrism * gridView_.size(Dune::GeometryTypes::prism);
-
-        pyramidOffset_       = hexahedronOffset_    +   dofsPerHexahedron * gridView_.size(Dune::GeometryTypes::hexahedron);
-        break;
-      }
-    }
-  }
-
-  /** \brief Obtain the grid view that the basis is defined on
+  /**
+   * \brief Constructor for a given grid view object
+   *
+   * This constructor has to be used to set the order
+   * dynamically which is enables using `k<0`.
    */
-  const GridView& gridView() const
-  {
-    return gridView_;
-  }
-
-  void update(const GridView& gv)
-  {
-    gridView_ = gv;
-  }
+  LagrangeDGPreBasis(const GridView& gv, unsigned int order)
+    requires(k<0)
+    : Base(gv, dofLayout(order))
+    , order_(order)
+  {}
 
   /**
    * \brief Create tree node
    */
   Node makeNode() const
   {
-    return Node{};
+    return Node{order_};
   }
 
-  size_type dimension() const
-  {
-    switch (dim)
-    {
-      case 1:
-        return dofsPerEdge*gridView_.size(0);
-      case 2:
-      {
-        return dofsPerTriangle*gridView_.size(Dune::GeometryTypes::triangle) + dofsPerQuad*gridView_.size(Dune::GeometryTypes::quadrilateral);
-      }
-      case 3:
-      {
-        return dofsPerTetrahedron*gridView_.size(Dune::GeometryTypes::tetrahedron)
-             + dofsPerPyramid*gridView_.size(Dune::GeometryTypes::pyramid)
-             + dofsPerPrism*gridView_.size(Dune::GeometryTypes::prism)
-             + dofsPerHexahedron*gridView_.size(Dune::GeometryTypes::hexahedron);
-      }
-    }
-    DUNE_THROW(Dune::NotImplemented, "No size method for " << dim << "d grids available yet!");
-  }
-
-  size_type maxNodeSize() const
-  {
-    return Dune::power(k+1, int(GV::dimension));
-  }
-
-  template<typename It>
+  template<class Node, class It>
   It indices(const Node& node, It it) const
   {
-    const auto& gridIndexSet = gridView().indexSet();
-    const auto& element = node.element();
-
-    size_type offset = 0;
-    if constexpr (dim==1)
-      offset = dofsPerEdge*gridIndexSet.subIndex(element,0,0);
-    else if constexpr (dim==2)
+    size_type elementOffset = Base::mapper_.index(node.element());
+    for(auto i : Dune::range(node.size()))
     {
-      if (element.type().isTriangle())
-        offset = dofsPerTriangle*gridIndexSet.subIndex(element,0,0);
-      else if (element.type().isQuadrilateral())
-        offset = quadrilateralOffset_ + dofsPerQuad*gridIndexSet.subIndex(element,0,0);
-      else
-        DUNE_THROW(Dune::NotImplemented, "2d elements have to be triangles or quadrilaterals");
+      *it = {{ (size_type)(elementOffset+i) }};
+      ++it;
     }
-    else if constexpr (dim==3)
-    {
-      if (element.type().isTetrahedron())
-        offset = dofsPerTetrahedron*gridIndexSet.subIndex(element,0,0);
-      else if (element.type().isPrism())
-        offset = prismOffset_ + dofsPerPrism*gridIndexSet.subIndex(element,0,0);
-      else if (element.type().isHexahedron())
-        offset = hexahedronOffset_ + dofsPerHexahedron*gridIndexSet.subIndex(element,0,0);
-      else if (element.type().isPyramid())
-        offset = pyramidOffset_ + dofsPerPyramid*gridIndexSet.subIndex(element,0,0);
-      else
-        DUNE_THROW(Dune::NotImplemented, "3d elements have to be tetrahedrons, prisms, hexahedrons or pyramids");
-    }
-    else
-      DUNE_THROW(Dune::NotImplemented, "No index method for " << dim << "d grids available yet!");
-    for (size_type i = 0, end = node.size() ; i < end ; ++i, ++it)
-      *it = {offset + i};
     return it;
   }
 
   //! Polynomial order used in the local Lagrange finite-elements
   unsigned int order() const
   {
-    return k;
+    return (useDynamicOrder) ? order_ : k;
   }
 
 protected:
-  GridView gridView_;
 
-  size_t quadrilateralOffset_;
-  size_t pyramidOffset_;
-  size_t prismOffset_;
-  size_t hexahedronOffset_;
+  unsigned int order_;
 };
 
 
@@ -202,13 +159,30 @@ namespace BasisFactory {
  *
  * \ingroup FunctionSpaceBasesImplementations
  *
- * \tparam k   The polynomial order of the ansatz functions
+ * \tparam order  The polynomial order of the ansatz functions
+ * \tparam R      The range type of the local basis
  */
-template<std::size_t k>
+template<std::size_t order, typename R=double>
 auto lagrangeDG()
 {
   return [](const auto& gridView) {
-    return LagrangeDGPreBasis<std::decay_t<decltype(gridView)>, k>(gridView);
+    return LagrangeDGPreBasis<std::decay_t<decltype(gridView)>, order, R>(gridView);
+  };
+}
+
+/**
+ * \brief Create a pre-basis factory that can create a LagrangeDG pre-basis
+ *
+ * \ingroup FunctionSpaceBasesImplementations
+ *
+ * \tparam R      The range type of the local basis
+ * \param order   The polynomial order of the ansatz functions
+ */
+template<typename R=double>
+auto lagrangeDG(unsigned int order)
+{
+  return [order](const auto& gridView) {
+    return LagrangeDGPreBasis<std::decay_t<decltype(gridView)>, -1, R>(gridView, order);
   };
 }
 
@@ -226,9 +200,10 @@ auto lagrangeDG()
  *
  * \tparam GV The GridView that the space is defined on
  * \tparam k The order of the basis
+ * \tparam R The range type of the local basis
  */
-template<typename GV, int k>
-using LagrangeDGBasis = DefaultGlobalBasis<LagrangeDGPreBasis<GV, k> >;
+template<typename GV, int k=-1, typename R=double>
+using LagrangeDGBasis = DefaultGlobalBasis<LagrangeDGPreBasis<GV, k, R> >;
 
 
 

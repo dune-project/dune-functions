@@ -35,9 +35,7 @@ int main (int argc, char* argv[])
   std::array<int,dim> elements = {{10, 10}};
   GridType grid(l,elements);
 
-
-
-  // check LagrangeDGBasis created 'manually'
+  // check LagrangeDGBasis with static order created 'manually'
   {
     typedef GridType::LeafGridView GridView;
     const GridView& gridView = grid.leafGridView();
@@ -45,16 +43,27 @@ int main (int argc, char* argv[])
     test.subTest(checkBasis(basis));
   }
 
+  // check LagrangeDGBasis with dynamic order created 'manually'
+  {
+    typedef GridType::LeafGridView GridView;
+    const GridView& gridView = grid.leafGridView();
+    LagrangeDGBasis<GridView> basis(gridView, 2);
+    test.subTest(checkBasis(basis));
+  }
 
-
-  // check LagrangeDGBasis created using basis builder mechanism
+  // check LagrangeDGBasis with static order created using basis builder mechanism
   {
     using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid.leafGridView(), lagrangeDG<2>());
     test.subTest(checkBasis(basis));
   }
 
-
+  // check LagrangeDGBasis with dynamic order created using basis builder mechanism
+  {
+    using namespace Functions::BasisFactory;
+    auto basis = makeBasis(grid.leafGridView(), lagrangeDG(2));
+    test.subTest(checkBasis(basis));
+  }
 
   return test.exit();
 }
