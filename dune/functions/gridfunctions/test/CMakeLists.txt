@@ -6,6 +6,8 @@ link_libraries(Dune::Functions)
 
 dune_add_test(SOURCES analyticgridviewfunctiontest.cc LABELS quick)
 
+dune_add_test(SOURCES coarsefinegridfunctiontest.cc LABELS quick)
+
 dune_add_test(SOURCES composedgridfunctiontest.cc LABELS quick)
 
 dune_add_test(SOURCES discreteglobalbasisfunctiontest.cc LABELS quick)

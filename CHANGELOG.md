@@ -10,6 +10,12 @@ corresponding version of the Dune core modules.
 
 # Master (will become release 2.11)
 
+- Add function wrappers `CoarseFunctionOnFineGridView` and `FineFunctionOnCoarseGridView`
+  that allow to represent a grid function on a grid view if the function
+  is itself only defined on an entity set that is coarser or finer than the
+  the target grid view.
+- Add the utility class `GeometryInAncestor` providing the geometric fine-in-coarse
+  element embedding across multiple levels.
 - Add the function `makeISTLVector` to construct an istl vector type compatible
   with a container descriptor of a basis.
 - Add `HierarchicalLagrangeWithElementBubblePreBasis` implemented in terms of `LFEPreBasisMixin`
