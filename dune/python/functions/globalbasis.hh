@@ -13,12 +13,10 @@
 #include <dune/common/classname.hh>
 #include <dune/common/reservedvector.hh>
 #include <dune/common/shared_ptr.hh>
+#include <dune/common/typetraits.hh>
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
-#include <dune/typetree/nodetags.hh>
-
-#include <dune/python/common/dimrange.hh>
 #include <dune/python/common/fmatrix.hh>
 #include <dune/python/common/fvector.hh>
 #include <dune/python/functions/discretefunction.hh>
@@ -51,25 +49,30 @@ namespace Dune
   namespace Python
   {
 
-    namespace detail {
+    namespace Impl {
 
-      // specialization of the DimRange utility from dune-common
-      template <class T>
-      struct DimRange<T, std::enable_if_t<std::is_same_v<typename T::NodeTag, Dune::TypeTree::CompositeNodeTag>> >
-        : public DimRange<typename T::ChildTypes>
-      {};
+      template<class T>
+      static constexpr bool hasStaticDegree() {
+        return requires() { T::degree(); };
+      }
 
-      template <class T>
-      struct DimRange<T, std::enable_if_t<std::is_same_v<typename T::NodeTag, Dune::TypeTree::PowerNodeTag>> >
-        : public std::integral_constant<std::size_t, T::degree() * DimRange<typename T::ChildType>::value>
-      {};
+      // Utility to compute an appropriate range dimension for grid function associated to a node
+      template<class Node>
+      constexpr std::size_t nodeRangeDim()
+      {
+        if constexpr (Node::isLeaf)
+          return Node::FiniteElement::Traits::LocalBasisType::Traits::dimRange;
+        else if constexpr (Node::isComposite)
+          return Dune::unpackIntegerSequence([&](auto... i) {
+            return (nodeRangeDim<typename Node::template Child<i>::Type>() + ...);
+          }, std::make_index_sequence<Node::degree()>{});
+        else if constexpr (Node::isPower and hasStaticDegree<Node>())
+          return Node::degree() * nodeRangeDim<typename Node::ChildType>();
+        else
+          static_assert(Dune::AlwaysFalse<Node>::value, "Dynamic power bases are not supported through the python interface.");
+      }
 
-      template <class T>
-      struct DimRange<T, std::enable_if_t<std::is_same_v<typename T::NodeTag, Dune::TypeTree::LeafNodeTag>> >
-        : public std::integral_constant<std::size_t, T::FiniteElement::Traits::LocalBasisType::Traits::dimRange>
-      {};
-
-    } // end namespace detail
+    } // end namespace Impl
 
 
     template <class Basis>
@@ -137,7 +140,7 @@ namespace Dune
       using pybind11::operator""_a;
       using GridView = typename GlobalBasis::GridView;
 
-      const std::size_t dimRange = DimRange< typename GlobalBasis::LocalView::Tree >::value;
+      const std::size_t dimRange = Impl::nodeRangeDim< typename GlobalBasis::LocalView::Tree >();
       const std::size_t dimWorld = GridView::dimensionworld;
 
       cls.def( pybind11::init( constructCall ), pybind11::keep_alive< 1, 2 >() );
