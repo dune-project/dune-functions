@@ -11,11 +11,7 @@
 #include <dune/common/reservedvector.hh>
 #include <dune/common/indices.hh>
 
-#include <dune/typetree/powernode.hh>
-#include <dune/typetree/compositenode.hh>
-
 #include <dune/functions/functionspacebases/nodes.hh>
-
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
