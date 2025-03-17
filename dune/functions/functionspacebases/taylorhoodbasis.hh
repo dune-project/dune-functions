@@ -297,7 +297,7 @@ public:
   TaylorHoodVelocityTree()
   {
     for(int i=0; i<GV::dimension; ++i)
-      this->setChild(i, std::make_shared<PQ2Node>());
+      this->setChild(i, PQ2Node());
   }
 };
 
@@ -316,8 +316,8 @@ class TaylorHoodBasisTree :
 public:
   TaylorHoodBasisTree()
   {
-    this->template setChild<0>(std::make_shared<VelocityNode>());
-    this->template setChild<1>(std::make_shared<PressureNode>());
+    this->template setChild<0>(VelocityNode());
+    this->template setChild<1>(PressureNode());
   }
 };
 
