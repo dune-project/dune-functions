@@ -34,6 +34,7 @@ corresponding version of the Dune core modules.
   to the classical geometric pull back). This can e.g. be used to implement
   Hermite-type C1 elements.
 - The deprecated header `functionspacebases/sizeinfo.hh` was removed.
+- The deprecated header `functionspacebases/defaultnodetorangemap.hh` was removed.
 
 ## Release 2.10
 

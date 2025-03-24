@@ -14,7 +14,6 @@ install(FILES
         cubichermitebasis.hh
         defaultglobalbasis.hh
         defaultlocalview.hh
-        defaultnodetorangemap.hh
         dynamicpowerbasis.hh
         flatmultiindex.hh
         flatvectorview.hh
