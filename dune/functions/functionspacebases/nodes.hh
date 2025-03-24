@@ -263,8 +263,12 @@ namespace Dune {
         Node(children)
       {}
 
+      explicit CompositeBasisNode(const T&... children) :
+        Node(children...)
+      {}
+
       template<typename... Children>
-      CompositeBasisNode(const std::shared_ptr<Children>&... children) :
+      explicit CompositeBasisNode(const std::shared_ptr<Children>&... children) :
         Node(children...)
       {}
 
