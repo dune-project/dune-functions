@@ -35,6 +35,7 @@ corresponding version of the Dune core modules.
   Hermite-type C1 elements.
 - The deprecated header `functionspacebases/sizeinfo.hh` was removed.
 - The deprecated header `functionspacebases/defaultnodetorangemap.hh` was removed.
+- The deprecated header `functionspacebases/hierarchicvectorwrapper.hh` was removed.
 
 ## Release 2.10
 

@@ -22,7 +22,6 @@ install(FILES
         hierarchicallagrangebasis.hh
         hierarchicallagrangewithelementbubblebasis.hh
         hierarchicnodetorangemap.hh
-        hierarchicvectorwrapper.hh
         interpolate.hh
         lagrangebasis.hh
         lagrangedgbasis.hh
