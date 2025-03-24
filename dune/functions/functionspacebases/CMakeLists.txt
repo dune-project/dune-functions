@@ -38,7 +38,6 @@ install(FILES
         raviartthomasbasis.hh
         refinedlagrangebasis.hh
         nodes.hh
-        sizeinfo.hh
         subentitydofs.hh
         subspacebasis.hh
         subspacelocalview.hh

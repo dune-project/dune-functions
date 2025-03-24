@@ -33,6 +33,7 @@ corresponding version of the Dune core modules.
   by a linear transformation of the reference basis functions (additionally
   to the classical geometric pull back). This can e.g. be used to implement
   Hermite-type C1 elements.
+- The deprecated header `functionspacebases/sizeinfo.hh` was removed.
 
 ## Release 2.10
 
