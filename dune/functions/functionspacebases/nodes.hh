@@ -17,7 +17,6 @@
 #include <dune/typetree/dynamicpowernode.hh>
 #include <dune/typetree/compositenode.hh>
 #include <dune/typetree/traversal.hh>
-#include <dune/typetree/visitor.hh>
 
 namespace Dune {
   namespace Functions {
@@ -25,95 +24,27 @@ namespace Dune {
 
     namespace Impl {
 
-
-      struct ClearSizeVisitor
-        : public TypeTree::TreeVisitor
-        , public TypeTree::DynamicTraversal
+      // This class encapsulates the access to the setOffset()
+      // and setTreeIndex() methods of a node. This way we
+      // can hide the methods from the user but still provide
+      // access where this is needed.
+      struct BasisNodeSetupHelper
       {
 
-        template<typename Node, typename TreePath>
-        void pre(Node& node, TreePath treePath)
+        template<class Node, class size_type>
+        static void setOffset(Node& node, const size_type offset)
         {
-          leaf(node,treePath);
-          node.setSize(0);
+          node.setOffset(offset);
         }
 
-        template<typename Node, typename TreePath>
-        void leaf(Node& node, TreePath treePath)
+        template<class Node, class size_type>
+        static void setTreeIndex(Node& node, const size_type index)
         {
-          node.setOffset(offset_);
+          node.setTreeIndex(index);
         }
-
-        ClearSizeVisitor(std::size_t offset)
-          : offset_(offset)
-        {}
-
-        const std::size_t offset_;
 
       };
 
-
-      template<typename Entity>
-      struct BindVisitor
-        : public TypeTree::TreeVisitor
-        , public TypeTree::DynamicTraversal
-      {
-
-        template<typename Node, typename TreePath>
-        void pre(Node& node, TreePath)
-        {
-          node.setOffset(offset_);
-        }
-
-        template<typename Node, typename TreePath>
-        void post(Node& node, TreePath)
-        {
-          node.setSize(offset_ - node.offset());
-        }
-
-        template<typename Node, typename TreePath>
-        void leaf(Node& node, TreePath)
-        {
-          node.setOffset(offset_);
-          node.bind(entity_);
-          offset_ += node.size();
-        }
-
-        BindVisitor(const Entity& entity, std::size_t offset = 0)
-          : entity_(entity)
-          , offset_(offset)
-        {}
-
-        const Entity& entity_;
-        std::size_t offset_;
-
-      };
-
-
-      struct InitializeTreeVisitor :
-        public TypeTree::TreeVisitor,
-        public TypeTree::DynamicTraversal
-      {
-        template<typename Node, typename TreePath>
-        void pre(Node& node, TreePath)
-        {
-          node.setTreeIndex(treeIndex_);
-          ++treeIndex_;
-        }
-
-        template<typename Node, typename TreePath>
-        void leaf(Node& node, TreePath)
-        {
-          node.setTreeIndex(treeIndex_);
-          ++treeIndex_;
-        }
-
-        InitializeTreeVisitor(std::size_t treeIndexOffset = 0) :
-          treeIndex_(treeIndexOffset)
-        {}
-
-        std::size_t treeIndex_;
-      };
 
     } // end namespace Impl
 
@@ -121,12 +52,7 @@ namespace Dune {
     class BasisNodeMixin
     {
 
-      friend struct Impl::ClearSizeVisitor;
-
-      template<typename>
-      friend struct Impl::BindVisitor;
-
-      friend struct Impl::InitializeTreeVisitor;
+      friend struct Impl::BasisNodeSetupHelper;
 
     public:
 
@@ -191,9 +117,31 @@ namespace Dune {
     {};
 
 
+
+    template<typename Node, typename Element>
+    class InnerBasisNodeMixin
+      : public BasisNodeMixin
+    {
+    public:
+
+      void bind(const Element& entity)
+      {
+        Node& self = *static_cast<Node*>(this);
+        std::size_t offset = this->offset();
+        Dune::Hybrid::forEach(Dune::range(self.degree()), [&](auto i) {
+          bindTree(self.child(i), entity, offset);
+          offset += self.child(i).size();
+        });
+        this->setSize(offset - this->offset());
+      }
+
+    };
+
+
+
     template<typename T, std::size_t n>
     class PowerBasisNode :
-      public BasisNodeMixin,
+      public InnerBasisNodeMixin<PowerBasisNode<T, n>, typename T::Element>,
       public TypeTree::PowerNode<T,n>
     {
 
@@ -217,9 +165,10 @@ namespace Dune {
     };
 
 
+
     template<typename T>
     class DynamicPowerBasisNode :
-      public BasisNodeMixin,
+      public InnerBasisNodeMixin<DynamicPowerBasisNode<T>, typename T::Element>,
       public TypeTree::DynamicPowerNode<T>
     {
 
@@ -247,7 +196,7 @@ namespace Dune {
 
     template<typename... T>
     class CompositeBasisNode :
-      public BasisNodeMixin,
+      public InnerBasisNodeMixin<CompositeBasisNode<T...>, typename TypeTree::CompositeNode<T...>::template Child<0>::Type::Element>,
       public TypeTree::CompositeNode<T...>
     {
 
@@ -280,24 +229,20 @@ namespace Dune {
     };
 
 
-    template<typename Tree>
-    void clearSize(Tree& tree, std::size_t offset)
-    {
-      TypeTree::applyToTree(tree,Impl::ClearSizeVisitor(offset));
-    }
-
     template<typename Tree, typename Entity>
     void bindTree(Tree& tree, const Entity& entity, std::size_t offset = 0)
     {
-      Impl::BindVisitor<Entity> visitor(entity,offset);
-      TypeTree::applyToTree(tree,visitor);
+      Impl::BasisNodeSetupHelper::setOffset(tree, offset);
+      tree.bind(entity);
     }
 
     template<typename Tree>
     void initializeTree(Tree& tree, std::size_t treeIndexOffset = 0)
     {
-      Impl::InitializeTreeVisitor visitor(treeIndexOffset);
-      TypeTree::applyToTree(tree,visitor);
+      Dune::TypeTree::forEachNode(tree, [&](auto& node, const auto& treePath) {
+          Impl::BasisNodeSetupHelper::setTreeIndex(node, treeIndexOffset);
+          ++treeIndexOffset;
+        });
     }
 
 
