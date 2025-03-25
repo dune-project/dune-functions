@@ -441,13 +441,6 @@ auto composite(Args&&... args)
 
 } // end namespace BasisFactory
 
-// Backward compatibility
-namespace [[deprecated("Will be removed after Dune 2.10")]] BasisBuilder {
-
-  using namespace BasisFactory;
-
-}
-
 
 
 } // end namespace Functions

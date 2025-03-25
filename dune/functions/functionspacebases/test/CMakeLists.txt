@@ -38,8 +38,6 @@ dune_add_test(SOURCES rannacherturekbasistest.cc LABELS quick)
 
 dune_add_test(SOURCES raviartthomasbasistest.cc LABELS quick)
 
-dune_add_test(SOURCES hierarchicvectorwrappertest.cc LABELS quick)
-
 dune_add_test(SOURCES subspacebasistest.cc LABELS quick)
 
 dune_add_test(SOURCES compositebasistest.cc LABELS quick)

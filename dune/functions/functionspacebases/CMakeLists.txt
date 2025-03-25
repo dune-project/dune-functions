@@ -14,7 +14,6 @@ install(FILES
         cubichermitebasis.hh
         defaultglobalbasis.hh
         defaultlocalview.hh
-        defaultnodetorangemap.hh
         dynamicpowerbasis.hh
         flatmultiindex.hh
         flatvectorview.hh
@@ -23,7 +22,6 @@ install(FILES
         hierarchicallagrangebasis.hh
         hierarchicallagrangewithelementbubblebasis.hh
         hierarchicnodetorangemap.hh
-        hierarchicvectorwrapper.hh
         interpolate.hh
         lagrangebasis.hh
         lagrangedgbasis.hh
@@ -38,7 +36,6 @@ install(FILES
         raviartthomasbasis.hh
         refinedlagrangebasis.hh
         nodes.hh
-        sizeinfo.hh
         subentitydofs.hh
         subspacebasis.hh
         subspacelocalview.hh
