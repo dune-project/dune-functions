@@ -32,6 +32,12 @@ namespace Dune {
       {
 
         template<class Node, class size_type>
+        static void setSize(Node& node, const size_type size)
+        {
+          node.setSize(size);
+        }
+
+        template<class Node, class size_type>
         static void setOffset(Node& node, const size_type offset)
         {
           node.setOffset(offset);
