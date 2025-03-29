@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
 # SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0-or-later
 
+import warnings
+
 class Tree(object):
     def __init__(self, name, children=None):
         self.name = name
@@ -61,6 +63,7 @@ class Composite(Tree):
     def __init__(self, *args, **kwargs):
         assert len(args) > 0
         Tree.__init__(self, "Composite", args)
+        # Please do not change the defaults here without taking the C++ interface into account
         self.blocked = kwargs.get("blocked", False)
         self.layout = kwargs.get("layout", "lexicographic")
 
@@ -74,7 +77,10 @@ class Power(Tree):
         Tree.__init__(self, "Power", [children])
         assert len(self.children) == 1
         self.exponent = exponent
+        # Please do not change the defaults here without taking the C++ interface into account
         self.blocked = kwargs.get("blocked", False)
+        if (not "layout" in kwargs):
+            warnings.warn('''The default layout of Power nodes will change from 'lexicographic' to 'interleaved' in release 2.11. Please add the argument 'layout="lexicographic"' explicitly to retain the old behavior!''')
         self.layout = kwargs.get("layout", "lexicographic")
 
     def __repr__(self):
