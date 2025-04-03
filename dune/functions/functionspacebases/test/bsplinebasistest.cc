@@ -71,7 +71,8 @@ void testForDimension(TestSuite& test)
       using namespace Functions::BasisFactory;
       auto basis = makeBasis(gridView,
                              power<2>(
-                               bSpline(knotVector, order)
+                               bSpline(knotVector, order),
+                               blockedInterleaved()
                              ));
       if (order>0)
         test.subTest(checkBasis(basis, AllowZeroBasisFunctions(), EnableContinuityCheck()));

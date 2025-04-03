@@ -136,7 +136,7 @@ int main(int argc, char** argv)
         };
       },
       gridView);
-    const auto basis = makeBasis(gridView, power<3>(lagrange<order>()));
+    const auto basis = makeBasis(gridView, power<3>(lagrange<order>(), blockedInterleaved()));
 
     auto coefficients = std::vector< Dune::FieldVector<double, 3> >();
     Dune::Functions::interpolate(basis, coefficients, f);

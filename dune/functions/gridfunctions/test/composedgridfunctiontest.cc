@@ -61,7 +61,7 @@ int main (int argc, char* argv[]) try
       return (v0*v0) + (v1*v1);
     };
 
-    // Coposition is a polynomial of degree 4.
+    // Composition is a polynomial of degree 4.
     auto gf = [&](auto x) {
       return g(f(x)[0], f(x)[1]);
     };
@@ -70,7 +70,7 @@ int main (int argc, char* argv[]) try
     auto integral = integrateGridViewFunction(gridView, makeAnalyticGridViewFunction(gf, gridView), 4);
 
     // Create 2nd order polynomial basis
-    auto basis = makeBasis(gridView,power<2>(lagrange<2>()));
+    auto basis = makeBasis(gridView,power<2>(lagrange<2>(), blockedInterleaved()));
     Dune::BlockVector<Range> c;
 
     // Interpolate f wrt basis.

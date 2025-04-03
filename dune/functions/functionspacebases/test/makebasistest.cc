@@ -131,9 +131,10 @@ int main (int argc, char* argv[])
     auto basis = makeBasis(gridView,
         power<2>(
           composite(
-            power<1>(power<1>(lagrange<1>())),
-            power<2>(lagrange<1>()),
-            power<3>(lagrange<1>())
+            power<1>(power<1>(lagrange<1>(), blockedInterleaved()), blockedInterleaved()),
+            power<2>(lagrange<1>(), blockedInterleaved()),
+            power<3>(lagrange<1>(), blockedInterleaved()),
+            blockedLexicographic()
           ),
           flatInterleaved()
         )
@@ -146,9 +147,10 @@ int main (int argc, char* argv[])
     auto basis = makeBasis(gridView,
         power<2>(
           composite(
-            power<1>(power<1>(lagrange<1>())),
-            power<2>(lagrange<1>()),
-            power<3>(lagrange<1>())
+            power<1>(power<1>(lagrange<1>(), blockedInterleaved()), blockedInterleaved()),
+            power<2>(lagrange<1>(), blockedInterleaved()),
+            power<3>(lagrange<1>(), blockedInterleaved()),
+            blockedLexicographic()
           ),
           flatLexicographic()
         )

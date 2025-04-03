@@ -333,7 +333,8 @@ int main (int argc, char *argv[]) try
             power<dim>(
               lagrange<p+1>(),
               blockedInterleaved()),
-            lagrange<p>()
+            lagrange<p>(),
+            blockedLexicographic()
           ));
   // { function_space_basis_end }
 #else
@@ -346,7 +347,8 @@ int main (int argc, char *argv[]) try
             power<dim>(
               lagrange<p+1>(),
               flatInterleaved()),
-            lagrange<p>()
+            lagrange<p>(),
+            blockedLexicographic()
           ));
 #endif
 

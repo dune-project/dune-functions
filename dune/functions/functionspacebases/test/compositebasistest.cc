@@ -69,7 +69,8 @@ int main (int argc, char *argv[]) try
       composite(
         lagrange<1>(),
         lagrange<1>(),
-        lagrange<1>()
+        lagrange<1>(),
+        blockedLexicographic()
       ));
 
     test.subTest(checkBasis(basis, EnableContinuityCheck()));
@@ -81,7 +82,8 @@ int main (int argc, char *argv[]) try
       composite(
         lagrange<1>(),
         lagrange<1>(),
-        lagrange<1>()
+        lagrange<1>(),
+        blockedLexicographic()
       ));
 
     test.subTest(checkBasis(basis, EnableContinuityCheck()));

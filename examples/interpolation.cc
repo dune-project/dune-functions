@@ -133,7 +133,8 @@ int main (int argc, char *argv[])
             power<dim>(
               lagrange<2>(),
               blockedInterleaved()),
-            lagrange<1>()
+            lagrange<1>(),
+            blockedLexicographic()
           ));
 
     // Note: In the following code we cannot use

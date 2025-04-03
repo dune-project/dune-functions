@@ -256,8 +256,8 @@ int main (int argc, char *argv[])
 
   // test default index-merging strategies
   checkBasis(test, lagrange<1>() );
-  checkBasis(test, power<2>(lagrange<1>()) );
-  checkBasis(test, composite(lagrange<1>(),lagrange<2>()) );
+  checkBasis(test, power<2>(lagrange<1>(), blockedInterleaved()) );
+  checkBasis(test, composite(lagrange<1>(),lagrange<2>(), blockedLexicographic()) );
 
   // test all combinations of two nested power bases
   Dune::Hybrid::forEach(std::tuple{flatLexicographic(), flatInterleaved(), blockedLexicographic(), blockedInterleaved()}, [&](auto outerIMS) {
@@ -271,7 +271,8 @@ int main (int argc, char *argv[])
         composite(
           power<1>(power<1>(lagrange<1>(), blockedInterleaved()), blockedLexicographic()),
           power<2>(lagrange<1>(), blockedInterleaved()),
-          power<3>(lagrange<1>(), blockedLexicographic())
+          power<3>(lagrange<1>(), blockedLexicographic()),
+          blockedLexicographic()
         ), blockedLexicographic()
       )
   );
@@ -279,13 +280,16 @@ int main (int argc, char *argv[])
   checkBasis(test, composite(
       composite(
         power<2>(lagrange<1>(), blockedInterleaved()),
-        power<1>(power<2>(lagrange<1>(), blockedLexicographic()), blockedLexicographic())
+        power<1>(power<2>(lagrange<1>(), blockedLexicographic()), blockedLexicographic()),
+        blockedLexicographic()
       ),
       composite(
         power<1>(power<1>(lagrange<1>(), blockedLexicographic()), blockedInterleaved()),
         power<2>(lagrange<1>(), blockedInterleaved()),
-        power<3>(lagrange<1>(), blockedLexicographic())
-      )
+        power<3>(lagrange<1>(), blockedLexicographic()),
+        blockedLexicographic()
+      ),
+      blockedLexicographic()
     )
   );
 
