@@ -110,7 +110,7 @@ int main (int argc, char* argv[]) try
 
   // power Lagrange basis
   {
-    auto feBasis = makeBasis(gridView,power<2>(lagrange<2>()));
+    auto feBasis = makeBasis(gridView,power<2>(lagrange<2>(), blockedInterleaved()));
     using Range = FieldVector<double,2>;
 
     // f(x,y) = (y,x)

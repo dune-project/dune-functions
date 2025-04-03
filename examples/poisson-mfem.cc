@@ -380,7 +380,8 @@ int main (int argc, char *argv[])
     gridView,
     composite(
       raviartThomas<k>(),
-      lagrange<k>()
+      lagrange<k>(),
+      blockedLexicographic()
     ));
 
   auto fluxBasis = Functions::subspaceBasis(basis, _0);

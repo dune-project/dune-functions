@@ -56,7 +56,7 @@ int main (int argc, char* argv[]) try
   using namespace Dune::Indices;
 
   {
-    auto basis = makeBasis(grid2d->leafGridView(), power<3>(lagrange<3>()));
+    auto basis = makeBasis(grid2d->leafGridView(), power<3>(lagrange<3>(), blockedInterleaved()));
     auto tp = Dune::TypeTree::treePath(_0);
     auto sb0_a = subspaceBasis(basis, tp);
     auto sb0_b = subspaceBasis(basis, _0);
@@ -64,7 +64,7 @@ int main (int argc, char* argv[]) try
   }
 
   {
-    auto basis = makeBasis(grid2d->leafGridView(), composite(power<3>(lagrange<3>()), lagrange<1>()));
+    auto basis = makeBasis(grid2d->leafGridView(), composite(power<3>(lagrange<3>(), blockedInterleaved()), lagrange<1>(), blockedLexicographic()));
     auto sb0 = subspaceBasis(basis, _0);
     auto sb01_a = subspaceBasis(sb0, 1);
     auto sb01_b = subspaceBasis(basis, _0, 1);
@@ -72,7 +72,7 @@ int main (int argc, char* argv[]) try
   }
 
   {
-    auto basis = makeBasis(grid2d->leafGridView(), composite(power<3>(lagrange<3>()), lagrange<1>()));
+    auto basis = makeBasis(grid2d->leafGridView(), composite(power<3>(lagrange<3>(), blockedInterleaved()), lagrange<1>(), blockedLexicographic()));
     auto sb0 = SubspaceBasis(basis, Dune::TypeTree::treePath(_0));
     auto sb01_a = SubspaceBasis(sb0, Dune::TypeTree::treePath(1));
     auto sb01_b = SubspaceBasis(basis, Dune::TypeTree::treePath(_0, 1));
@@ -80,7 +80,7 @@ int main (int argc, char* argv[]) try
   }
 
   {
-    auto basis = makeBasis(grid2d->leafGridView(), composite(power<3>(lagrange<3>()), lagrange<1>()));
+    auto basis = makeBasis(grid2d->leafGridView(), composite(power<3>(lagrange<3>(), blockedInterleaved()), lagrange<1>(), blockedLexicographic()));
     auto sb0 = SubspaceBasis(basis, Dune::TypeTree::treePath(_0));
     auto sb01_a = SubspaceBasis(sb0, Dune::TypeTree::treePath(1));
     auto sb01_b = subspaceBasis(basis, _0, 1);
