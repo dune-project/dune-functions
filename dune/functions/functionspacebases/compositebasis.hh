@@ -434,6 +434,11 @@ auto composite(Args&&... args)
 template<
   typename... Args,
   std::enable_if_t<not Concept::isIndexMergingStrategy<typename LastType<Args...>::type>(),int> = 0>
+[[deprecated("Using the method `composite` without an explicit index merging strategy"
+  " will change its meaning after the release of dune-functions 2.11."
+  " Previously, the default merging strategy was `BlockedLexicographic`,"
+  " but this will change to `FlatLexicographic`."
+  " Change the call to `composite(..., blockedLexicographic())` to retain the old behavior.")]]
 auto composite(Args&&... args)
 {
   return Imp::CompositePreBasisFactory<BasisFactory::BlockedLexicographic, std::decay_t<Args>...>(std::forward<Args>(args)...);

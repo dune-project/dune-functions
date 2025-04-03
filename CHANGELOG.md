@@ -10,6 +10,23 @@ corresponding version of the Dune core modules.
 
 # Master (will become release 2.11)
 
+- Using the methods `power` or `composite` to construct function space
+  basis trees without an explicit index merging strategy argument
+  will now issue a warning. This warning informs that the default
+  index merging strategy will change after the 2.11 release.
+  More specifically, it will change from `BlockedLexicographic`
+  to `FlatLexicographic` for the `composite` method, and from
+  `BlockedInterleaved` to `FlatInterleaved` for the `power` method.
+  The consequence is that default indexing is always flat,
+  which is the most common form of indexing.
+
+  To ensure a smooth transition we suggest to not rely on default
+  index merging strategies until 2.11 has been released.
+- Similarly, when calling `functions.Power` to construct a product
+  of finite element bases in a Python program, you will now get a warning
+  saying that the default for the `layout` parameter will change
+  from `lexicographic` to `interleaved` after the 2.11 release.
+  After these changes, C++ and Python will have the same defaults.
 - The `LagrangeDG(Pre)Basis` supports selecting the polynomial order at runtime.
   Its static variables `LagrangeDGPreBasis::dofsPer.*` are deprecated.
 - Add function wrappers `CoarseFunctionOnFineGridView` and `FineFunctionOnCoarseGridView`

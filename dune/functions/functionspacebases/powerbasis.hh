@@ -156,6 +156,11 @@ auto power(ChildPreBasisFactory&& childPreBasisFactory, const IndexMergingStrate
  * This overload will select the BasisFactory::BlockedInterleaved strategy.
  */
 template<std::size_t k, class ChildPreBasisFactory>
+[[deprecated("Using the method `power` without an explicit index merging strategy"
+  " will change its meaning after the release of dune-functions 2.11."
+  " Previously, the default merging strategy was `BlockedInterleaved`,"
+  " but this will change to `FlatInterleaved`."
+  " Change the call to `power(..., blockedInterleaved())` to retain the old behavior.")]]
 auto power(ChildPreBasisFactory&& childPreBasisFactory)
 {
   return [childPreBasisFactory](const auto& gridView) {
