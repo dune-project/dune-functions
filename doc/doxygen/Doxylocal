@@ -4,15 +4,17 @@
 # This file contains local changes to the doxygen configuration
 # please us '+=' to add file/directories to the lists
 
+PROJECT_NAME          = Dune-Functions
+
 # The INPUT tag can be used to specify the files and/or directories that contain
 # documented source files. You may enter file names like "myfile.cpp" or
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                 += @top_srcdir@/dune/functions \
-                         @top_srcdir@/TODO.md \
-                         @top_srcdir@/doc/doxygen/mainpage.md \
-                         @top_srcdir@/dune/functions/modules.md
+INPUT                  += @top_srcdir@/dune/functions \
+                          @top_srcdir@/doc/doxygen/mainpage.md \
+                          @top_srcdir@/doc/doxygen/license.md \
+                          @top_srcdir@/doc/doxygen/doxygen_groups.hh
 
 USE_MDFILE_AS_MAINPAGE = @top_srcdir@/doc/doxygen/mainpage.md
 
@@ -26,7 +28,8 @@ USE_MDFILE_AS_MAINPAGE = @top_srcdir@/doc/doxygen/mainpage.md
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-# EXAMPLE_PATH          += @top_srcdir@/src
+EXAMPLE_PATH           += @top_srcdir@/examples
+EXAMPLE_PATH           += @top_srcdir@/LICENSES
 
 # The IMAGE_PATH tag can be used to specify one or more files or
 # directories that contain image that are included in the documentation (see
@@ -36,3 +39,12 @@ USE_MDFILE_AS_MAINPAGE = @top_srcdir@/doc/doxygen/mainpage.md
 
 # Generate documentation for friend functions
 HIDE_FRIEND_COMPOUNDS = NO
+
+EXTRA_PACKAGES        = amsmath amssymb
+USE_MATHJAX           = YES
+
+GENERATE_TODOLIST     = NO
+GENERATE_TREEVIEW     = YES
+DISABLE_INDEX         = NO
+FULL_SIDEBAR          = NO
+

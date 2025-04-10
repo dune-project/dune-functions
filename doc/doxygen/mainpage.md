@@ -1,30 +1,30 @@
+# Dune-Functions
 <!--
 SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
 SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0-or-later
 -->
 
 <!-- vi: set ft=mkd ts=8 sw=2 et sts=2: -->
-# The Dune-Function module
 
-## Scope of the module
+## Overview
 
-The dune-functions module provides an abstraction layer for global finite
+The [dune-functions][] module provides an abstraction layer for global finite
 element functions. Its two main concepts are functions implemented as callable
 objects, and bases of finite element spaces.
 
 ### Functions
 
-dune-functions provides an interface to "functions" in the mathematical sense,
+Dune-functions provides an interface to "functions" in the mathematical sense,
 in particular to finite element functions defined on a grid, but going far
 beyond that.
 
-The interface revolves around the concept of a "callable". It encompasses any
+The interface revolves around the concept of a "callable". This encompasses any
 type of C++ object that can be evaluated with `operator()`, like free functions,
-function objects, and even C++11 lambdas. Dynamic polymorphism is realized
+function objects, and lambdas. Dynamic polymorphism is realized
 using type erasure and the `std::function` class, which does not sacrifice
 efficiency in purely static code.
 
-dune-functions extends the "callable" concept into several directions. First,
+Dune-functions extends the "callable" concept into several directions. First,
 it allows for differentiable functions. Such functions can hand out their
 derivative as new function objects. Second, for functions defined piecewisely
 on a finite element grid, the concept of local function is introduced. Local
@@ -62,13 +62,18 @@ For more details refer to the @ref FunctionSpaceBases section.
 
 ## Documentation
 
+
 ### Class documentation
 The module contains a class documentation which can be build using [doxygen].
 After the module has been build, you can build the documentation using
-`make doc`
+`make doc`. Afterwards you can view the documentation by opening
+the file `doc/doxygen/html/index.html` from the build folder in the browser.
 Additionally the pre-build doxygen documentation for the _master_ and
 release branches is also hosted on the [documentation section][dune docs]
 of the dune-website.
+For a structured overview of the components of the module
+you can have a look at the [Topics](topics.html) page.
+
 
 ### Manual
 There are two documents describing the concepts and usage of dune functions.
@@ -100,16 +105,21 @@ described in detail in the manual (see above).
 
 
 ## Using dune-functions and licensing
-The module is licensed by different variants of the GPL licence.
-Please have a look at the `COPYING` file for more information
-and a list of all contributors. When using dune-functions
+
+### License
+
+Dune-Functions is dual licensed under the
+[GPL-2.0 with DUNE exception](@ref GPL-2-dune-exception)
+and
+[LGPL-3.0 or later](@ref LGPL-3).
+For details refer to the [license page](@ref license) and the [SPDX][] headers contained in each file.
+A list of contributors can be found in the `AUTHORS.md` file
+
+### Citing dune-functions
+When using dune-functions
 **please make sure to cite the publications on the
 [functions interface][functions paper] and the
-[bases interface][bases paper]** listed above.
-
-
-
-## Building dune-functions
+[bases interface][bases paper]**.
 
 ### Dependencies
 Dune-functions depends on the dune [core modules][core]
@@ -140,6 +150,7 @@ dune-common module.
 
 
 [core]: https://dune-project.org/groups/core
+[dune-functions]: https://gitlab.dune-project.org/staging/dune-functions
 [typetree]: https://gitlab.dune-project.org/staging/dune-typetree
 [dune docs]: https://dune-project.org/doxygen
 [functions paper arxiv]: https://arxiv.org/abs/1512.06136
@@ -147,3 +158,4 @@ dune-common module.
 [bases paper arxiv]: https://arxiv.org/abs/1806.09545
 [bases paper]: https://arxiv.org/abs/1806.09545
 [doxygen]: http://www.stack.nl/~dimitri/doxygen/
+[SPDX]: https://spdx.dev
