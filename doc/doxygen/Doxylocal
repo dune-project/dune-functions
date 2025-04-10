@@ -5,6 +5,7 @@
 # please us '+=' to add file/directories to the lists
 
 PROJECT_NAME          = Dune-Functions
+PROJECT_LOGO          = @top_srcdir@/doc/doxygen/dune-functions.png
 
 # The INPUT tag can be used to specify the files and/or directories that contain
 # documented source files. You may enter file names like "myfile.cpp" or
@@ -47,4 +48,6 @@ GENERATE_TODOLIST     = NO
 GENERATE_TREEVIEW     = YES
 DISABLE_INDEX         = NO
 FULL_SIDEBAR          = NO
+HTML_EXTRA_STYLESHEET = @top_srcdir@/doc/doxygen/doxygen-awesome/doxygen-awesome.css \
+                        @top_srcdir@/doc/doxygen/doxygen-awesome/doxygen-awesome-sidebar-only.css
 

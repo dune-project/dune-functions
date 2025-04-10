@@ -14,12 +14,17 @@ The manual is licensed under the
 
 * @subpage CC-BY-ND-4
 
+The [doxygen][] documentation uses the [doxygen-awesome][] css style licensed under the
+
+* @subpage MIT
+
 For details refer to the [SPDX][] headers contained in each file
 which can be processed using the [reuse tool][reuse].
 
 [SPDX]: https://spdx.dev
 [reuse]: https://reuse.software
 [doxygen]: https://www.doxygen.nl
+[doxygen-awesome]: https://jothepro.github.io/doxygen-awesome-css
 
 
 @page GPL-2-dune-exception GPL-2.0 only with DUNE exception
@@ -30,3 +35,6 @@ which can be processed using the [reuse tool][reuse].
 
 @page CC-BY-ND-4 CC-BY-ND-4.0 license
 @verbinclude CC-BY-ND-4.0.txt
+
+@page MIT MIT license
+@verbinclude MIT.txt
