@@ -49,5 +49,8 @@ GENERATE_TREEVIEW     = YES
 DISABLE_INDEX         = NO
 FULL_SIDEBAR          = NO
 HTML_EXTRA_STYLESHEET = @top_srcdir@/doc/doxygen/doxygen-awesome/doxygen-awesome.css \
-                        @top_srcdir@/doc/doxygen/doxygen-awesome/doxygen-awesome-sidebar-only.css
+                        @top_srcdir@/doc/doxygen/doxygen-awesome/doxygen-awesome-sidebar-only.css \
+                        @top_srcdir@/doc/doxygen/custom.css
+HTML_COLORSTYLE       = LIGHT
+TREEVIEW_WIDTH        = 300
 
