@@ -31,6 +31,7 @@
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 using namespace Dune;
+//! LABEL_END_INCLUDES
 
 // Compute the stiffness matrix for a single element
 template <class LocalView, class MatrixType>
@@ -83,7 +84,7 @@ void getLocalMatrix(const LocalView& localView, MatrixType& elementMatrix)
   }
 
 }
-
+//! LABEL_END_GETLOCALMATRIX
 
 // Compute the source term for a single element
 template <class LocalView, class LocalVolumeTerm>
@@ -130,6 +131,7 @@ void getVolumeTerm( const LocalView& localView,
   }
 
 }
+//! LABEL_END_GETVOLUMETERM
 
 // Get the occupation pattern of the stiffness matrix
 template <class FEBasis>
@@ -167,7 +169,7 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
   }
 
 }
-
+//! LABEL_END_GETPATTERN
 
 /** \brief Assemble the Laplace stiffness matrix on the given grid view */
 template <class FEBasis, class VolumeTerm>
@@ -247,7 +249,7 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
   }
 
 }
-
+//! LABEL_END_ASSEMBLELAPLACEMATRIX
 
 // This method marks all Lagrange nodes on the boundary of the grid.
 // In our problem we want to use them as the Dirichlet nodes.
@@ -267,6 +269,7 @@ void boundaryTreatment (const FEBasis& feBasis, std::vector<char>& dirichletNode
     dirichletNodes[index] = true;
   });
 }
+//! LABEL_END_BOUNDARYTREATMENT
 
 auto createMixedGrid()
 {
@@ -282,11 +285,14 @@ auto createMixedGrid()
   factory.insertElement(Dune::GeometryTypes::simplex(2), {5, 8, 7});
   return factory.createGrid();
 }
+//! LABEL_END_CREATEMIXEDGRID
 
+//! LABEL_START_MAIN
 int main (int argc, char *argv[]) try
 {
   // Set up MPI, if available
   MPIHelper::instance(argc, argv);
+//! LABEL_END_SETUP
 
   ///////////////////////////////////
   //   Generate the grid
@@ -298,6 +304,7 @@ int main (int argc, char *argv[]) try
 
   auto gridView = grid->leafGridView();
   using GridView = decltype(gridView);
+//! LABEL_END_CREATEGRID
 
   /////////////////////////////////////////////////////////
   //   Choose a finite element space
@@ -305,6 +312,7 @@ int main (int argc, char *argv[]) try
 
   typedef Functions::LagrangeBasis<GridView,2> FEBasis;
   FEBasis feBasis(gridView);
+//! LABEL_END_MAKEBASIS
 
   /////////////////////////////////////////////////////////
   //   Stiffness matrix and right hand side vector
