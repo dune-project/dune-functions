@@ -267,6 +267,8 @@ class RaviartThomasPreBasis :
   static MCMGLayout dofLayout()
   {
     return [](GeometryType gt, int gridDim) -> size_t {
+      if ((gt.isPyramid()) and (k==0))
+        return 1;
       if (gt.dim() == gridDim)
         return gt.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;
       if (gt.dim() == gridDim-1)
