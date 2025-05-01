@@ -22,21 +22,6 @@ namespace Functions {
 
 
 
-namespace Impl {
-
-  template<class... Inner, class... Outer>
-  auto joinTreePaths(const TypeTree::HybridTreePath<Inner...>& inner, const TypeTree::HybridTreePath<Outer...> outer)
-  {
-    return TypeTree::HybridTreePath<Inner..., Outer...>(std::tuple_cat(inner._data, outer._data));
-  }
-
-  template<class InnerTP, class OuterTP>
-  using JoinTreePath_t = std::decay_t<decltype(joinTreePaths(std::declval<InnerTP>(), std::declval<OuterTP>()))>;
-
-}
-
-
-
 template<class RB, class TP>
 class SubspaceBasis
 {
@@ -75,7 +60,7 @@ public:
    */
   template<class RootRootBasis, class InnerTP, class OuterTP>
   SubspaceBasis(const SubspaceBasis<RootRootBasis, InnerTP>& rootBasis, const OuterTP& prefixPath) :
-    SubspaceBasis(rootBasis.rootBasis(), Impl::joinTreePaths(rootBasis.prefixPath(), prefixPath))
+    SubspaceBasis(rootBasis.rootBasis(), Dune::TypeTree::join(rootBasis.prefixPath(), prefixPath))
   {}
 
 
@@ -137,7 +122,7 @@ SubspaceBasis(const RB&, const TP) -> SubspaceBasis<RB, TP>;
 // CTAD guide for a SubspaceBasis root basis
 template<class RootRootBasis, class InnerTP, class OuterTP>
 SubspaceBasis(const SubspaceBasis<RootRootBasis, InnerTP>& rootBasis, const OuterTP& prefixPath)
-  -> SubspaceBasis<std::decay_t<decltype(rootBasis.rootBasis())>, Impl::JoinTreePath_t<InnerTP, OuterTP>>;
+  -> SubspaceBasis<std::decay_t<decltype(rootBasis.rootBasis())>, decltype(Dune::TypeTree::join(rootBasis.prefixPath(), prefixPath))>;
 
 
 

@@ -47,7 +47,7 @@ int main (int argc, char* argv[]) try
   }();
 
   auto sameSubspace = [](const auto& sb1, const auto& sb2) {
-    return (((void*)&sb1.rootBasis())==((void*)&sb2.rootBasis())) and (sb1.prefixPath()._data==sb2.prefixPath()._data);
+    return (((void*)&sb1.rootBasis())==((void*)&sb2.rootBasis())) and (sb1.prefixPath()==sb2.prefixPath());
   };
 
   using namespace Dune;
