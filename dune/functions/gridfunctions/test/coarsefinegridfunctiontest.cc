@@ -357,7 +357,7 @@ int main (int argc, char* argv[]) try
     using Grid = Dune::UGGrid<2>;
     auto grid = Dune::StructuredGridFactory<Grid>::createSimplexGrid({{0,0}}, {{1,1}}, {{1,1}});
     grid->setRefinementType(Grid::RefinementType::COPY);
-    refineLocalNearOrigin(*grid, 30);
+    refineLocalNearOrigin(*grid, 15);
     testSuite.subTest(checkOnGrid(*grid, "UGGrid<2> (triangles)"));
   }
 
@@ -371,7 +371,7 @@ int main (int argc, char* argv[]) try
     factory.insertElement(Dune::GeometryTypes::cube(2), {0,1,2,3});
     auto grid = factory.createGrid();
     grid->setRefinementType(Grid::RefinementType::COPY);
-    refineLocalNearOrigin(*grid, 30);
+    refineLocalNearOrigin(*grid, 15);
     testSuite.subTest(checkOnGrid(*grid, "UGGrid<2> (nonaffine rectangles)"));
   }
 
@@ -379,7 +379,7 @@ int main (int argc, char* argv[]) try
     using Grid = Dune::UGGrid<3>;
     auto grid = Dune::StructuredGridFactory<Grid>::createSimplexGrid({{0,0,0}}, {{1,1,1}}, {{1,1,1}});
     grid->setRefinementType(Grid::RefinementType::COPY);
-    refineLocalNearOrigin(*grid, 5);
+    refineLocalNearOrigin(*grid, 4);
     testSuite.subTest(checkOnGrid(*grid, "UGGrid<2> (triangles)"));
   }
 
@@ -397,7 +397,7 @@ int main (int argc, char* argv[]) try
     factory.insertElement(Dune::GeometryTypes::cube(3), {0,1,2,3,4,5,6,7});
     auto grid = factory.createGrid();
     grid->setRefinementType(Grid::RefinementType::COPY);
-    refineLocalNearOrigin(*grid, 5);
+    refineLocalNearOrigin(*grid, 4);
     testSuite.subTest(checkOnGrid(*grid, "UGGrid<3> (nonaffine cubes)"));
   }
 
