@@ -22,6 +22,7 @@ install(FILES
         reserveddeque.hh
         signature.hh
         staticforloop.hh
+        subdomain.hh
         type_traits.hh
         typeerasure.hh
         utility.hh
