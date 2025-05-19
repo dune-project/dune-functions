@@ -74,6 +74,8 @@ public:
     auto re = Dune::referenceElement<double,dim>(localView.element().type());
 
     Dune::TypeTree::forEachLeafNode(localView.tree(), [&](auto&& node, auto&& /*treePath*/) {
+      if (node.empty())
+        return;
       const auto& localCoefficients = node.finiteElement().localCoefficients();
       std::size_t localSize = localCoefficients.size();
       for(std::size_t i=0; i<localSize; ++i)
