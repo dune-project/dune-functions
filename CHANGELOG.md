@@ -10,6 +10,9 @@ corresponding version of the Dune core modules.
 
 # Master (will become release 2.11)
 
+- The `RaviartThomasBasis` can now be used with mixed grids in 3d
+  including cubes, tetrahedra, pyramids, prisms.
+
 - Using the methods `power` or `composite` to construct function space
   basis trees without an explicit index merging strategy argument
   will now issue a warning. This warning informs that the default

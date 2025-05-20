@@ -27,7 +27,7 @@
 #include <dune/functions/functionspacebases/globalvaluedlocalfiniteelement.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
-#include <dune/functions/functionspacebases/leafprebasismixin.hh>
+#include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
 
 namespace Dune {
 namespace Functions {
@@ -96,6 +96,32 @@ namespace Impl {
     using FiniteElement = RT1Cube3DLocalFiniteElement<D,R>;
   };
 
+  template<int dim, typename D, typename R, std::size_t k>
+  struct RaviartThomasPyramidLocalInfo
+  {
+    // Dummy type, must be something that we can have a std::unique_ptr to
+    using FiniteElement = void*;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasPyramidLocalInfo<3,D,R,0>
+  {
+    using FiniteElement = RT0PyramidLocalFiniteElement<D,R>;
+  };
+
+  template<int dim, typename D, typename R, std::size_t k>
+  struct RaviartThomasPrismLocalInfo
+  {
+    // Dummy type, must be something that we can have a std::unique_ptr to
+    using FiniteElement = void*;
+  };
+
+  template<typename D, typename R>
+  struct RaviartThomasPrismLocalInfo<3,D,R,0>
+  {
+    using FiniteElement = RT0PrismLocalFiniteElement<D,R>;
+  };
+
   template<typename GV, int dim, typename R, std::size_t k>
   class RaviartThomasLocalFiniteElementMap
   {
@@ -104,6 +130,8 @@ namespace Impl {
 
     using CubeFiniteElement    = typename RaviartThomasCubeLocalInfo<dim, D, R, k>::FiniteElement;
     using SimplexFiniteElement = typename RaviartThomasSimplexLocalInfo<dim, D, R, k>::FiniteElement;
+    using PyramidFiniteElement = typename RaviartThomasPyramidLocalInfo<dim, D, R, k>::FiniteElement;
+    using PrismFiniteElement = typename RaviartThomasPrismLocalInfo<dim, D, R, k>::FiniteElement;
 
   public:
 
@@ -113,8 +141,10 @@ namespace Impl {
     constexpr static GeometryType type = GeometryType(topologyId, GV::dimension);
 
     using FiniteElement = std::conditional_t<hasFixedElementType,
-                                           std::conditional_t<type.isCube(),CubeFiniteElement,SimplexFiniteElement>,
-                                           LocalFiniteElementVariant<CubeFiniteElement, SimplexFiniteElement> >;
+                                           std::conditional_t<type.isCube(), CubeFiniteElement, SimplexFiniteElement>,
+                              std::conditional_t<dim == 3,
+                                           LocalFiniteElementVariant<CubeFiniteElement, SimplexFiniteElement, PyramidFiniteElement, PrismFiniteElement>,
+                                           LocalFiniteElementVariant<CubeFiniteElement, SimplexFiniteElement> > >;
 
     // Each element facet can have its orientation reversed, hence there are
     // 2^#facets different variants.
@@ -125,9 +155,14 @@ namespace Impl {
     }
 
     RaviartThomasLocalFiniteElementMap(const GV& gv)
-      : elementMapper_(gv, mcmgElementLayout()),
-        orient_(gv.size(0))
+      : elementMapper_(gv, mcmgElementLayout())
     {
+      update(gv);
+    }
+
+    void update (const GV& gv)
+    {
+      elementMapper_.update(gv);
       if constexpr (hasFixedElementType)
       {
         variants_.resize(numVariants(type));
@@ -137,13 +172,29 @@ namespace Impl {
       else
       {
         // for mixed grids add offset for cubes
-        variants_.resize(numVariants(GeometryTypes::simplex(dim)) + numVariants(GeometryTypes::cube(dim)));
-        for (size_t i = 0; i < numVariants(GeometryTypes::simplex(dim)); i++)
+        size_t numVariantsSimplex = numVariants(GeometryTypes::simplex(dim));
+        size_t numVariantsCube = numVariants(GeometryTypes::cube(dim));
+
+        variants_.resize(numVariantsSimplex + numVariantsCube);
+        for (size_t i = 0; i < numVariantsSimplex; i++)
           variants_[i] = SimplexFiniteElement(i);
-        for (size_t i = 0; i < numVariants(GeometryTypes::cube(dim)); i++)
-          variants_[i + numVariants(GeometryTypes::simplex(dim))] = CubeFiniteElement(i);
+        for (size_t i = 0; i < numVariantsCube; i++)
+          variants_[i + numVariantsSimplex] = CubeFiniteElement(i);
+        if constexpr (dim == 3)
+        {
+          size_t numVariantsPyramid = numVariants(GeometryTypes::pyramid);
+          size_t numVariantsPrism = numVariants(GeometryTypes::prism);
+
+          variants_.resize(numVariantsSimplex + numVariantsCube + numVariantsPyramid + numVariantsPrism );
+
+          for (size_t i = 0; i < numVariantsPyramid; i++)
+            variants_[i + numVariantsSimplex + numVariantsCube] = PyramidFiniteElement(i);
+          for (size_t i = 0; i < numVariantsPrism; i++)
+            variants_[i + numVariantsSimplex + numVariantsCube + numVariantsPyramid] = PrismFiniteElement(i);
+        }
       }
 
+      orient_.resize(gv.size(0));
       for(const auto& cell : elements(gv))
       {
         unsigned int myId = elementMapper_.index(cell);
@@ -155,10 +206,24 @@ namespace Impl {
             orient_[myId] |= (1 << intersection.indexInInside());
         }
 
-        // for mixed grids add offset for cubes
+        // for mixed grids add offset for cubes and pyramids
         if constexpr (!hasFixedElementType)
+        {
+          size_t numVariantsSimplex = numVariants(GeometryTypes::simplex(dim));
+          size_t numVariantsCube = numVariants(GeometryTypes::cube(dim));
+
           if (cell.type().isCube())
-            orient_[myId] += numVariants(GeometryTypes::simplex(dim));
+            orient_[myId] += numVariantsSimplex;
+          if constexpr (dim == 3)
+          {
+            size_t numVariantsPyramid = numVariants(GeometryTypes::pyramid);
+
+            if (cell.type().isPyramid())
+              orient_[myId] += numVariantsSimplex + numVariantsCube;
+            if (cell.type().isPrism())
+              orient_[myId] += numVariantsSimplex + numVariantsCube + numVariantsPyramid;
+          }
+        }
       }
     }
 
@@ -194,8 +259,24 @@ class RaviartThomasNode;
 
 template<typename GV, int k>
 class RaviartThomasPreBasis :
-  public LeafPreBasisMixin< RaviartThomasPreBasis<GV,k> >
+  public LeafPreBasisMapperMixin<GV>
 {
+  using Base = LeafPreBasisMapperMixin<GV>;
+
+  // the layout is defined in terms of a MCMGLayout specialized for k == 0 or 1
+  static MCMGLayout dofLayout()
+  {
+    return [](GeometryType gt, int gridDim) -> size_t {
+      if ((gt.isPyramid()) and (k==0))
+        return 1;
+      if (gt.dim() == gridDim)
+        return gt.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;
+      if (gt.dim() == gridDim-1)
+        return gt.isCube() ? (dim-2)*2*k+k+1 : (dim-1)*k+1 ;
+      return 0;
+    };
+  }
+
   static const int dim = GV::dimension;
   using FiniteElementMap = typename Impl::RaviartThomasLocalFiniteElementMap<GV, dim, double, k>;
 
@@ -209,7 +290,7 @@ public:
 
   /** \brief Constructor for a given grid view object */
   RaviartThomasPreBasis(const GridView& gv) :
-    gridView_(gv),
+    Base(gv, dofLayout()),
     finiteElementMap_(gv)
   {
     // Currently there are some unresolved bugs with hybrid grids and higher order Raviart-Thomas elements
@@ -217,33 +298,15 @@ public:
       DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas basis with index k>0 is only implemented for grids with a single element type");
 
     for(auto type : gv.indexSet().types(0))
-      if (!type.isSimplex() && !type.isCube())
-        DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas elements are only implemented for grids with simplex or cube elements.");
-
-    GeometryType type = gv.template begin<0>()->type();
-    const static int dofsPerElement = type.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;
-    const static int dofsPerFace    = type.isCube() ? (dim-2)*2*k+k+1 : (dim-1)*k+1 ;
-
-    dofsPerCodim_ = {{dofsPerElement, dofsPerFace}};
+      if (!type.isSimplex() && !type.isCube() && !type.isPyramid() && !type.isPrism())
+        DUNE_THROW(Dune::NotImplemented, "Raviart-Thomas elements are only implemented for grids with simplex, cube, pyramid or prism elements.");
   }
 
-  void initializeIndices()
+  /** \brief Update the stored grid view, to be called if the grid has changed */
+  void update(const GridView& gv)
   {
-    codimOffset_[0] = 0;
-    codimOffset_[1] = codimOffset_[0] + dofsPerCodim_[0] * gridView_.size(0);
-  }
-
-  /** \brief Obtain the grid view that the basis is defined on
-   */
-  const GridView& gridView() const
-  {
-    return gridView_;
-  }
-
-  /* \brief Update the stored grid view, to be called if the grid has changed */
-  void update (const GridView& gv)
-  {
-    gridView_ = gv;
+    Base::update(gv);
+    finiteElementMap_.update(gv);
   }
 
   /**
@@ -254,64 +317,8 @@ public:
     return Node{&finiteElementMap_};
   }
 
-  size_type dimension() const
-  {
-    return dofsPerCodim_[0] * gridView_.size(0) + dofsPerCodim_[1] * gridView_.size(1);
-  }
-
-  size_type maxNodeSize() const
-  {
-    size_type result = 0;
-    for (auto&& type : gridView_.indexSet().types(0))
-    {
-      size_t numFaces = ReferenceElements<double,dim>::general(type).size(1);
-      const static int dofsPerElement = type.isCube() ? ((dim == 2) ? k*(k+1)*dim : k*(k+1)*(k+1)*dim) : k*dim;
-      const static int dofsPerFace    = type.isCube() ? (dim-2)*2*k+k+1 : (dim-1)*k+1 ;
-      result = std::max(result, dofsPerElement + dofsPerFace * numFaces);
-    }
-
-    return result;
-  }
-
-  /**
-   * \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-   *
-   * This assumes dim \in \lbrace 2, 3 \rbrace.
-   */
-  template<typename It>
-  It indices(const Node& node, It it) const
-  {
-    const auto& gridIndexSet = gridView().indexSet();
-    const auto& element = node.element();
-
-    // throw if Element is not of predefined type
-    if (not(element.type().isCube()) and not(element.type().isSimplex()))
-      DUNE_THROW(Dune::NotImplemented, "RaviartThomasBasis only implemented for cube and simplex elements.");
-
-    for(std::size_t i=0, end=node.size(); i<end; ++i, ++it)
-    {
-      Dune::LocalKey localKey = node.finiteElement().localCoefficients().localKey(i);
-
-      // The dimension of the entity that the current dof is related to
-      size_t subentity = localKey.subEntity();
-      size_t codim = localKey.codim();
-
-      if (not(codim==0 or codim==1))
-        DUNE_THROW(Dune::NotImplemented, "Grid contains elements not supported for the RaviartThomasBasis");
-
-      *it = { codimOffset_[codim] +
-        dofsPerCodim_[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
-    }
-
-    return it;
-  }
-
 protected:
-  GridView gridView_;
-  std::array<size_t,dim+1> codimOffset_;
   FiniteElementMap finiteElementMap_;
-  // Number of dofs per entity type depending on the entity's codimension and type
-  std::array<int,dim+1> dofsPerCodim_;
 };
 
 

@@ -84,5 +84,16 @@ int main (int argc, char* argv[])
   testRaviartThomasBasis<0>(test, mixed2dGridView);
   //testRaviartThomasBasis<1>(test, mixed2dGridView);
 
+  // Test with mixed-element 3d grid
+  std::cout<<"Testing RaviartThomasBasis in 3D with mixed-element grid\n";
+  using Mixed3dGrid = UGGrid<3>;
+  auto mixed3dGrid = GmshReader<Mixed3dGrid>::read(path + "hybrid-testgrid-3d.msh");
+  auto mixed3dGridView = mixed3dGrid->leafGridView();
+
+  for(int i=0; i<3; i++)
+    std::cout<<"mixed3dGridView.size("<<i<<") = "<<mixed3dGridView.size(i) <<"\n";
+  testRaviartThomasBasis<0>(test, mixed3dGridView);
+
+
   return test.exit();
 }
