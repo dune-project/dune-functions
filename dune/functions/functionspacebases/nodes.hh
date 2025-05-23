@@ -76,9 +76,29 @@ namespace Dune {
         return offset_ + i;
       }
 
+      /**
+       * \brief Obtain the number of basis function in the local node.
+       *
+       * Notice that it is undefined behaviour to access the `element()`
+       * and `finiteElement()` methods of the node if it is empty, i.e.,
+       * if its size is zero.
+       */
       size_type size() const
       {
         return size_;
+      }
+
+      /**
+       * \brief Check if the node is empty
+       *
+       * This is equivalent to `size()==0`.
+       * Notice that it is undefined behaviour to access the `element()`
+       * and `finiteElement()` methods of the node if it is empty, i.e.,
+       * if its size is zero.
+       */
+      bool empty() const
+      {
+        return (size_ == 0);
       }
 
       size_type treeIndex() const
