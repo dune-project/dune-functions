@@ -1,9 +1,16 @@
-<!-- -*- tab-width: 4; indent-tabs-mode: nil -*- -->
+// -*- tab-width: 4; indent-tabs-mode: nil -*-
+// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
+// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0-or-later
 
-<!--
-SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
-SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0-or-later
--->
+/**
+
+@file
+@brief This file is an internal part of the doxygen documentation.
+
+This file only serves for documenting the doxygen groups
+to structure the documentation. It is a C++ header, because
+doxygen will always create a root level entry for markdown
+files which is undesired here.
 
 # Modules
 
@@ -59,8 +66,4 @@ of type-erasure wrappers in the spirit of std::function.
 @brief Helper classes for implementing type-erased interfaces
 @ingroup Utility
 
-
-
-
-
-
+*/
