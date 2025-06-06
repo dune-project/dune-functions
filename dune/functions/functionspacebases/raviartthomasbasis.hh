@@ -202,7 +202,7 @@ namespace Impl {
 
         for (const auto& intersection : intersections(gv,cell))
         {
-          if (intersection.neighbor() && (elementMapper_.index(intersection.outside()) > myId))
+          if (intersection.neighbor() && (gv.contains(intersection.outside())) && (elementMapper_.index(intersection.outside()) > myId))
             orient_[myId] |= (1 << intersection.indexInInside());
         }
 
