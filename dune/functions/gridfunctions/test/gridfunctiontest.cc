@@ -20,8 +20,7 @@
 #include <dune/functions/gridfunctions/gridfunction.hh>
 #include <dune/functions/gridfunctions/gridviewentityset.hh>
 
-#include <dune/functions/analyticfunctions/polynomial.hh>
-#include <dune/functions/analyticfunctions/trigonometricfunction.hh>
+#include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 
 
@@ -50,13 +49,25 @@ int main (int argc, char* argv[]) try
   [[maybe_unused]] auto entitySet = EntitySet(grid.leafGridView());
 
 
-  auto p = Polynomial<double>({0, 1, 2});
+  GridFunction<double(FieldVector<double,dim>), EntitySet> f;
 
-  GridFunction<double(double), EntitySet> f;
+  // Since we default-constructed the function it must be invalid.
+  if (f)
+  {
+    std::cerr << "Default-constructed GridFunction object is not invalid!\n";
+    return 1;
+  }
 
+  // Assign a test function to the GridFunction object
+  auto testFunction = [](FieldVector<double,dim> x) { return x[0]*x[1]; } ;
+  f = Functions::makeGridViewFunction(testFunction, grid.leafGridView());
 
-
-
+  // Since we assigned something to f it must be valid now.
+  if (!f)
+  {
+    std::cerr << "Nonempty GridFunction object is not valid!\n";
+    return 1;
+  }
 
   return 0;
 

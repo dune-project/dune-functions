@@ -30,6 +30,10 @@ corresponding version of the Dune core modules.
   saying that the default for the `layout` parameter will change
   from `lexicographic` to `interleaved` after the 2.11 release.
   After these changes, C++ and Python will have the same defaults.
+- The `GridFunction` class (and indeed everything else that inherits from
+  `TypeErasureBase`) now implements the `operator bool` cast operator,
+  which allows to check whether the `GridFunction` object contains
+  a valid object or not.
 - The `LagrangeDG(Pre)Basis` supports selecting the polynomial order at runtime.
   Its static variables `LagrangeDGPreBasis::dofsPer.*` are deprecated.
 - Add function wrappers `CoarseFunctionOnFineGridView` and `FineFunctionOnCoarseGridView`
