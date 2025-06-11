@@ -337,6 +337,8 @@ public:
       istlVectorBackend(y) = 0;
 
       TypeTree::forEachLeafNode(this->localView_.tree(), [&](auto&& node, auto&& treePath) {
+        if (node.empty())
+          return;
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
         auto& shapeFunctionValues = evaluationBuffer_[treePath];
@@ -584,6 +586,8 @@ public:
       const auto& jacobianInverse = geometry_->jacobianInverse(x);
 
       TypeTree::forEachLeafNode(this->localView_.tree(), [&](auto&& node, auto&& treePath) {
+        if (node.empty())
+          return;
         const auto& fe = node.finiteElement();
         const auto& localBasis = fe.localBasis();
         auto& shapeFunctionJacobians = evaluationBuffer_[treePath];

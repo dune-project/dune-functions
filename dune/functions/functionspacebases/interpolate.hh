@@ -152,6 +152,8 @@ template<class VectorBackend, class BitVectorBackend, class LocalFunction, class
 void interpolateLocal(VectorBackend& vector, const BitVectorBackend& bitVector, const LocalFunction& localF, const LocalView& localView, const NodeToRangeEntry& nodeToRangeEntry)
 {
   Dune::TypeTree::forEachLeafNode(localView.tree(), [&](auto&& node, auto&& treePath) {
+    if (node.empty())
+      return;
     using Node = std::decay_t<decltype(node)>;
     using FiniteElement = typename Node::FiniteElement;
     using FiniteElementRangeField = typename FiniteElement::Traits::LocalBasisType::Traits::RangeFieldType;
