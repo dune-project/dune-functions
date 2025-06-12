@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <dune/common/exceptions.hh>
+#include <dune/common/iteratorfacades.hh>
 #include <dune/common/iteratorrange.hh>
 #include <dune/common/rangeutilities.hh>
 
@@ -22,8 +23,103 @@
 #include <dune/geometry/typeindex.hh>
 
 #include <dune/grid/common/mcmgmapper.hh>
+#include <dune/grid/common/partitionset.hh>
 
 namespace Dune::Functions {
+
+  namespace Impl {
+
+    template<class GridView>
+    using GlobalIntersectionIteratorTraits = Dune::DefaultIteratorTraits<
+                                                std::forward_iterator_tag,
+                                                decltype(*std::declval<typename GridView::IntersectionIterator>())>;
+
+
+    template<class GV, class ContainsCallback>
+    class GlobalIntersectionIt
+      : public Dune::IteratorFacadeForTraits<GlobalIntersectionIt<GV, ContainsCallback>, GlobalIntersectionIteratorTraits<GV>>
+    {
+      using Facade = Dune::IteratorFacadeForTraits<GlobalIntersectionIt<GV, ContainsCallback>, GlobalIntersectionIteratorTraits<GV>>;
+
+    public:
+
+      using GridView = GV;
+      using Element = typename GridView::template Codim<0>::Entity;
+      using ElementIterator = typename GridView::template Codim<0>::Iterator;
+      using IntersectionIterator = typename GridView::IntersectionIterator;
+
+      class SentinelIterator
+      {};
+
+      GlobalIntersectionIt(const GridView& gridView, const ContainsCallback& contains, ElementIterator elementIt, ElementIterator elementEnd)
+        : gridView_(gridView)
+        , contains_(contains)
+        , elementIt_(std::move(elementIt))
+        , elementEnd_(std::move(elementEnd))
+      {
+        if (elementIt_ != elementEnd_)
+        {
+          element_ = *elementIt_;
+          iIt_ = gridView_.ibegin(element_);
+          iEnd_ = gridView_.iend(element_);
+          if (not contains_(*iIt_))
+            ++(*this);
+        }
+      }
+
+      using reference = typename Facade::reference;
+
+      reference operator*() const
+      {
+        return *iIt_;
+      }
+
+      GlobalIntersectionIt& operator++()
+      {
+        while(true)
+        {
+          ++iIt_;
+          if (iIt_ == iEnd_)
+          {
+            ++elementIt_;
+            if (elementIt_ == elementEnd_)
+              return *this;
+            element_ = *elementIt_;
+            iIt_ = gridView_.ibegin(element_);
+            iIt_ = gridView_.ibegin(element_);
+            iEnd_ = gridView_.iend(element_);
+          }
+          if (contains_(*iIt_))
+            return *this;
+        }
+        return *this;
+      }
+
+      friend bool operator==(const GlobalIntersectionIt& it1, const GlobalIntersectionIt& it2)
+      {
+        if (it1.elementIt_ != it2.elementIt_)
+          return false;
+        if (it1.elementIt_ == it1.elementEnd_)
+          return true;
+        return (it1.iIt_ == it2.iIt_);
+      }
+
+      friend bool operator==(const GlobalIntersectionIt& it1, const SentinelIterator& it2)
+      {
+        return it1.elementIt_ == it1.elementEnd_;
+      }
+
+    private:
+      GridView gridView_;
+      ContainsCallback contains_;
+      ElementIterator elementIt_;
+      ElementIterator elementEnd_;
+      Element element_;
+      IntersectionIterator iIt_;
+      IntersectionIterator iEnd_;
+    };
+
+  }
 
 
 
@@ -491,6 +587,110 @@ namespace Dune::Functions {
 
   private:
     IndexSet indexSet_;
+  };
+
+
+
+  /**
+   * \brief Class representing the intersection between two subdomains
+   *
+   * Conceptually this represents a range of intersections.
+   */
+  template<class SubDomainA, class SubDomainB>
+  class SubDomainInterface
+  {
+    static_assert(
+      std::is_same_v<typename SubDomainA::GridView::Intersection, typename SubDomainB::GridView::Intersection>,
+      "SubDomainInterface requires that both SubDomain types have the same Intersection type");
+
+  public:
+
+    using Intersection = typename SubDomainA::GridView::Intersection;
+
+    /**
+     * \brief Create interface between two subdomains
+     *
+     * Notice that the order of the passed subdomains does matter,
+     * because the intersections visited by the iterator will
+     * always be oriented such that A is inside and B outside.
+     */
+    SubDomainInterface(const SubDomainA& subDomainA, const SubDomainB& subDomainB)
+      : subDomainA_(subDomainA)
+      , subDomainB_(subDomainB)
+    {}
+
+    /**
+     * \brief Check if intersection is contained in the interface between the subdomains
+     *
+     * This evaluates to true for all intersections having element from subdomain A and B
+     * as inside and outside or outside and inside, respectively.
+     *
+     * Notice that this also evaluates to true for intersection with B as inside and
+     * A as outside, despite the fact that these are not visited by the iterator.
+     */
+    bool contains(const Intersection& is) const
+    {
+      if (is.boundary() or not(is.neighbor()))
+        return false;
+      return (subDomainA_.contains(is.inside()) && subDomainB_.contains(is.outside()))
+          || (subDomainA_.contains(is.outside()) && subDomainB_.contains(is.inside()));
+    }
+
+    /**
+     * \brief Begin iterator over all intersection between the subdomains
+     *
+     * The iterator will always have the elements from sub domain A and B
+     * as inside and outside, respectively.
+     */
+    const auto begin() const
+    {
+      return Impl::GlobalIntersectionIt(subDomainA_.gridView(), [&](const auto& is) {
+        if (is.boundary() or not(is.neighbor()))
+          return false;
+        return subDomainB_.indexSet().contains(is.outside());
+      }, subDomainA_.gridView().template begin<0>(), subDomainA_.gridView().template end<0>());
+    }
+
+    //! End iterator (sentinel)
+    const auto end() const
+    {
+      return typename decltype(begin())::SentinelIterator();
+    }
+
+  private:
+    const SubDomainA& subDomainA_;
+    const SubDomainB& subDomainB_;
+  };
+
+
+
+  /**
+   * \brief Class representing the skeleton of a subdomain
+   *
+   * Conceptually this represents a range of intersections.
+   */
+  template<class SubDomain>
+  class SubDomainSkeleton
+  {
+  public:
+
+    using Intersection = typename SubDomain::GridView::Intersection;
+
+    //! Create skeleton of a subdomain
+    SubDomainSkeleton(const SubDomain& subDomain)
+      : subDomain_(subDomain)
+    {}
+
+    //! Check if intersection is contained in the skeleton of the subdomain
+    bool contains(const Intersection& is) const
+    {
+      if (is.boundary() or not(is.neighbor()))
+        return false;
+      return subDomain_.contains(is.inside()) and subDomain_.contains(is.outside());
+    }
+
+  private:
+    const SubDomain& subDomain_;
   };
 
 
