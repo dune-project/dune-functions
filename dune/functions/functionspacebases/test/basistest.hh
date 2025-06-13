@@ -292,6 +292,38 @@ Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView, F
     });
   }
 
+  // Check if copies of the local view are independent.
+  // To this end we create a copy, bind it to another element
+  // and check if the original LocalView still behaves correct.
+  // The check is done by first creating a fresh LocalView bound
+  // to the same element as reference.
+  {
+    // Create a new local view as reference
+    auto localView_reference = basis.localView();
+    localView_reference.bind(localView.element());
+
+    // Create and modify a copy of the local view
+    auto localView_copy = localView;
+    localView_copy.bind(*basis.gridView().template begin<0>());
+
+    Dune::TypeTree::forEachNode(localView.tree(), [&](const auto& node, auto&& treePath) {
+      const auto& node_reference = Dune::TypeTree::child(localView_reference.tree(), treePath);
+      const auto& node_copy = Dune::TypeTree::child(localView_copy.tree(), treePath);
+      test.check(&node != &node_copy)
+        << "LocalView and its copy share node " << treePath;
+      test.check(node.size() == node_reference.size())
+        << "Size of node changed by modifying a copy of the LocalView.";
+      if (node.empty()) return;
+      for(std::size_t i=0; i<node.size(); ++i)
+      {
+        test.check(node.localIndex(i) == node_reference.localIndex(i))
+          << "Local index of node changed by modifying a copy of the LocalView.";
+        test.check(localView.index(node.localIndex(i)) == localView_reference.index(node_reference.localIndex(i)))
+          << "Global index of node changed by modifying a copy of the LocalView.";
+      }
+    });
+  }
+
   return test;
 }
 
