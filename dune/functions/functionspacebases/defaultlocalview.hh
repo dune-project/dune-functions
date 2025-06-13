@@ -77,6 +77,16 @@ public:
     initializeTree(tree_);
   }
 
+  /** \brief Deep copy of the local view */
+  DefaultLocalView(const DefaultLocalView& other) :
+    globalBasis_(other.globalBasis_),
+    tree_(globalBasis_->preBasis().makeNode())
+  {
+    initializeTree(tree_);
+    if (other.bound())
+      bind(other.element());
+  }
+
   /** \brief Bind the view to a grid element
    *
    * Having to bind the view to an element before being able to actually access any of its data members
