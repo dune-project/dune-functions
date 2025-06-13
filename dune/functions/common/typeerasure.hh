@@ -190,6 +190,13 @@ public:
     return wrapped_.get();
   }
 
+  //! Query whether there is a stored object
+  explicit operator bool() const noexcept
+  {
+    // Forward the query to the wrapped object
+    return static_cast<bool>(wrapped_);
+  }
+
   //! Get type of stored object
   const std::type_info& target_type() const
   {
