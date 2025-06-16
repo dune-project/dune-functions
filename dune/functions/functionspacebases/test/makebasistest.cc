@@ -16,6 +16,7 @@
 #include <dune/common/test/testsuite.hh>
 
 #include <dune/grid/yaspgrid.hh>
+#include <dune/grid/uggrid.hh>
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
@@ -60,25 +61,16 @@ public:
 
 
 
-int main (int argc, char* argv[])
+template<class GridView>
+Dune::TestSuite checkMakeBasis(const GridView& gridView)
 {
-  Dune::MPIHelper::instance(argc, argv);
-
   Dune::TestSuite test;
-
-  // Generate grid for testing
-  const int dim = 2;
-  using Grid = Dune::YaspGrid<dim>;
-  Dune::FieldVector<double,dim> l(1);
-  std::array<int,dim> elements = {{10, 10}};
-  Grid grid(l,elements);
 
   using namespace Dune::Functions::BasisFactory;
 
   const int N = 10;
   const int M = 10;
 
-  auto gridView = grid.leafGridView();
   auto basis = makeBasis(gridView,
       power<N>(       // static power node
         power(        // dynamic power node
@@ -95,7 +87,7 @@ int main (int argc, char* argv[])
 
   {
     [[maybe_unused]] auto& firstLagrangeFactor = basis.preBasis().subPreBasis().subPreBasis().subPreBasis(Dune::Indices::_0);
-    [[maybe_unused]] auto& secondLagrangeFactor = basis.preBasis().subPreBasis().subPreBasis().subPreBasis<1>();
+    [[maybe_unused]] auto& secondLagrangeFactor = basis.preBasis().subPreBasis().subPreBasis().template subPreBasis<1>();
   }
 
   using Vector = std::vector<Dune::FieldVector<double,N>>;
@@ -127,7 +119,6 @@ int main (int argc, char* argv[])
         << "Coefficient of interpolated 1-function does not match";
 
   {
-    auto gridView = grid.leafGridView();
     auto basis = makeBasis(gridView,
         power<2>(
           composite(
@@ -143,7 +134,6 @@ int main (int argc, char* argv[])
   }
 
   {
-    auto gridView = grid.leafGridView();
     auto basis = makeBasis(gridView,
         power<2>(
           composite(
@@ -156,6 +146,51 @@ int main (int argc, char* argv[])
         )
       );
     test.subTest(checkBasis(basis, EnableContinuityCheck()));
+  }
+
+  return test;
+}
+
+
+int main (int argc, char* argv[])
+{
+  Dune::MPIHelper::instance(argc, argv);
+
+  Dune::TestSuite test;
+
+  // Check with YaspGrid
+  {
+    const int dim = 2;
+    using Grid = Dune::YaspGrid<dim>;
+    Dune::FieldVector<double,dim> l(1);
+    std::array<int,dim> elements = {{10, 10}};
+    Grid grid(l,elements);
+
+    auto gridView = grid.leafGridView();
+
+    test.subTest(checkMakeBasis(gridView));
+  }
+
+  // Check with mixed UGGrid
+  {
+    using Grid = Dune::UGGrid<2>;
+
+    auto factory = Dune::GridFactory<Grid>();
+    for(unsigned int k : Dune::range(9))
+      factory.insertVertex({0.5*(k%3), 0.5*(k/3)});
+    factory.insertElement(Dune::GeometryTypes::cube(2), {0, 1, 3, 4});
+    factory.insertElement(Dune::GeometryTypes::cube(2), {1, 2, 4, 5});
+    factory.insertElement(Dune::GeometryTypes::simplex(2), {3, 4, 6});
+    factory.insertElement(Dune::GeometryTypes::simplex(2), {4, 7, 6});
+    factory.insertElement(Dune::GeometryTypes::simplex(2), {4, 5, 7});
+    factory.insertElement(Dune::GeometryTypes::simplex(2), {5, 8, 7});
+
+    auto gridPtr = std::unique_ptr(factory.createGrid());
+    auto& grid = *gridPtr;
+
+    auto gridView = grid.leafGridView();
+
+    test.subTest(checkMakeBasis(gridView));
   }
 
   return test.exit();
