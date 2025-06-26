@@ -62,7 +62,7 @@ int main(int argc, char** argv)
   Basis basis(grid->leafGridView());
 
   // some artificial coefficients
-  using Vector = Dune::BlockVector<Dune::FieldVector<double, 1> >;
+  using Vector = Dune::BlockVector<double >;
   Vector x;
   x.resize(basis.dimension());
   auto xbe = Dune::Functions::istlVectorBackend(x);

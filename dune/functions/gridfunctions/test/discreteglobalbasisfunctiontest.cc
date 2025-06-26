@@ -171,7 +171,7 @@ int main (int argc, char* argv[]) try
   {
     auto feBasis = makeBasis(gridView, raviartThomas<0>());
     // coefficients and range of the FE are different here!
-    using Coeff = FieldVector<double,1>;
+    using Coeff = double;
     using Range = FieldVector<double,2>;
 
     // f(x,y) = (y,x)
@@ -189,7 +189,7 @@ int main (int argc, char* argv[]) try
   {
     auto feBasis = makeBasis(gridView, nedelec<1,1>());
     // coefficients and range of the FE are different here!
-    using Coeff = FieldVector<double,1>;
+    using Coeff = double;
     using Range = FieldVector<double,2>;
     // f(x,y) = (y,x)
     auto f = [](const auto& x){
@@ -233,7 +233,7 @@ int main (int argc, char* argv[]) try
   // we know its integral and can check whether quadrature returns
   // the correct result. Notice that resizing is done by the interpolate method.
   auto feBasis = makeBasis(gridView,lagrange<1>());
-  std::vector<FieldVector<double,1> > x;
+  std::vector<double > x;
   auto fAnalytic = [](const auto& x){ return x[0];};
   interpolate(feBasis, x, fAnalytic);
   using Range = FieldVector<double,1>;

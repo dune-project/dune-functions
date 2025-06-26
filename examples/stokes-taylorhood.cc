@@ -228,7 +228,7 @@ decltype(auto) matrixEntry(
     return matrix[_0][_1][row[1]][col[1]][row[2]][0];
   if ((row[0]==1) and (col[0]==0))
     return matrix[_1][_0][row[1]][col[1]][0][col[2]];
-  return matrix[_1][_1][row[1]][col[1]][0][0];  /*@\label{li:matrixentry_pressure_pressure}@*/
+  return matrix[_1][_1][row[1]][col[1]];  /*@\label{li:matrixentry_pressure_pressure}@*/
 }
 // { matrixentry_end }
 #else
@@ -361,17 +361,17 @@ int main (int argc, char *argv[]) try
 #if BLOCKEDBASIS
   // { linear_algebra_setup_begin }
   using VelocityVector = BlockVector<FieldVector<double,dim>>;
-  using PressureVector = BlockVector<FieldVector<double,1>>;
+  using PressureVector = BlockVector<double>;
   using VectorType = MultiTypeBlockVector<VelocityVector, PressureVector>;
 
   using VelocityBitVector = BlockVector<FieldVector<char,dim>>;
-  using PressureBitVector = BlockVector<FieldVector<char,1>>;
+  using PressureBitVector = BlockVector<char>;
   using BitVectorType = MultiTypeBlockVector<VelocityBitVector, PressureBitVector>;
 
   using Matrix00 = BCRSMatrix<FieldMatrix<double,dim,dim>>;
   using Matrix01 = BCRSMatrix<FieldMatrix<double,dim,1>>;
   using Matrix10 = BCRSMatrix<FieldMatrix<double,1,dim>>;
-  using Matrix11 = BCRSMatrix<FieldMatrix<double,1,1>>;   /*@\label{li:matrix_type_pressure_pressure}@*/
+  using Matrix11 = BCRSMatrix<double>;   /*@\label{li:matrix_type_pressure_pressure}@*/
   using MatrixRow0 = MultiTypeBlockVector<Matrix00, Matrix01>;
   using MatrixRow1 = MultiTypeBlockVector<Matrix10, Matrix11>;
   using MatrixType = MultiTypeBlockMatrix<MatrixRow0,MatrixRow1>;
