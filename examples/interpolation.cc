@@ -80,7 +80,7 @@ int main (int argc, char *argv[])
   // { taylorhood_basis_end }
 
   // { taylorhood_vector_begin }
-  BlockVector<FieldVector<double,1>> x2;
+  BlockVector<double> x2;
   // { taylorhood_vector_end }
 
 
@@ -97,7 +97,7 @@ int main (int argc, char *argv[])
   // { taylorhood_velocity_end }
 
   // { setup_mask_begin }
-  BlockVector<FieldVector<char,1>> isBoundary;
+  BlockVector<char> isBoundary;
   auto isBoundaryBackend = Functions::istlVectorBackend(isBoundary);
   isBoundaryBackend.resize(taylorHoodBasis);
   isBoundary = false;
