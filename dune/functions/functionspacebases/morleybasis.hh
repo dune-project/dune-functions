@@ -52,7 +52,7 @@ namespace Dune::Functions
 {
 
   template<class GV, class R>
-  struct MorleyPreBasis;
+  class MorleyPreBasis;
 
   /** \brief Nodal basis of a scalar quadratic Morley finite element space
    *

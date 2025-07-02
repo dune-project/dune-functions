@@ -52,7 +52,7 @@ namespace Dune::Functions
 {
 
   template<class GV, class R, bool reduced>
-  struct CubicHermitePreBasis;
+  class CubicHermitePreBasis;
 
   /** \brief Nodal basis of a scalar cubic Hermite finite element space
    *
