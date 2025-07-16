@@ -15,8 +15,7 @@
 #include <dune/functions/functionspacebases/nodes.hh>
 
 
-namespace Dune {
-namespace Functions {
+namespace Dune::Functions::Experimental {
 
 
 
@@ -236,14 +235,13 @@ auto restrict(SubDomainBasisFactory&& subPreBasisFactory, const SubDomain& subDo
     subPreBasisFactory=std::forward<SubDomainBasisFactory>(subPreBasisFactory),
     &subDomain
   ](const auto& gridView) {
-    return Dune::Functions::RestrictedPreBasis(gridView, subPreBasisFactory(subDomain.gridView()), subDomain);
+    return Dune::Functions::Experimental::RestrictedPreBasis(gridView, subPreBasisFactory(subDomain.gridView()), subDomain);
   };
 }
 
 
 } // end namespace BasisFactory
-} // end namespace Functions
-} // end namespace Dune
+} // end namespace Dune::Functions::Experimental
 
 
 #endif // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_RESTRICTEDBASIS_HH
