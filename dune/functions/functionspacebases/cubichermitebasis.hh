@@ -702,9 +702,7 @@ namespace Dune::Functions
       : element_(nullptr)
       , vertexMapper_(&m)
       , averageVertexMeshSize_(&averageVertexMeshSize)
-    {
-      this->setSize(finiteElement_.size());
-    }
+    {}
 
     //! Return current element, throw if unbound
     Element const &element() const
@@ -727,6 +725,7 @@ namespace Dune::Functions
     {
       element_ = &e;
       finiteElement_.bind(*vertexMapper_, *averageVertexMeshSize_, *element_);
+      this->setSize(finiteElement_.size());
     }
 
     //! The order of the local basis.
