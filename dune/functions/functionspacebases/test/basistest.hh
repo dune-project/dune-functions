@@ -251,6 +251,18 @@ Dune::TestSuite checkNonZeroShapeFunctions(const LocalFiniteElement& fe, std::si
 template<class Basis, class LocalView, class... Flags>
 Dune::TestSuite checkLocalView(const Basis& basis, const LocalView& localView, Flags... flags)
 {
+  if (not localView.bound())
+  {
+    Dune::TestSuite test(std::string("Unbound LocalView"));
+    Dune::TypeTree::forEachNode(localView.tree(), [&](const auto& node, auto&& treePath) {
+      test.check(node.size()==0)
+          << "Node of unbound LocalView has non-zero size " << node.size();
+    });
+    test.check(localView.size()==0)
+        << "Unbound LocalView has non-zero size " << localView.size();
+    return test;
+  }
+
   Dune::TestSuite test(std::string("LocalView on ") + elementStr(localView.element(), basis.gridView()));
 
   test.check(localView.size() <= localView.maxSize(), "localView.size() check")
@@ -606,9 +618,14 @@ Dune::TestSuite checkConstBasis(const Basis& basis, Flags... flags)
 
   // Perform all local tests.
   auto localView = basis.localView();
+  test.check(not localView.bound())
+    << "Unbound LocalView returns localView.bound()==true";
+  test.subTest(checkLocalView(basis, localView, flags...));
   for (const auto& e : elements(basis.gridView()))
   {
     localView.bind(e);
+    test.check(localView.bound())
+      << "Bound LocalView returns localView.bound()==false";
     test.subTest(checkLocalView(basis, localView, flags...));
   }
 

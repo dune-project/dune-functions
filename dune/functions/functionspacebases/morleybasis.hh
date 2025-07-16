@@ -545,9 +545,7 @@ namespace Dune::Functions
 
     MorleyNode(Mapper const& m, std::vector<std::bitset<3>> const& data)
       : mapper_(&m), data_(&data)
-    {
-      this->setSize(finiteElement_.size());
-    }
+    {}
 
     //! Return current element, throw if unbound
     Element const &element() const
@@ -570,6 +568,7 @@ namespace Dune::Functions
     {
       element_ = &e;
       finiteElement_.bind((*data_)[mapper_->index(e)], *element_);
+      this->setSize(finiteElement_.size());
     }
 
     //! The order of the local basis.
