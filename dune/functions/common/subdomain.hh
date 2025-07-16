@@ -25,7 +25,7 @@
 #include <dune/grid/common/mcmgmapper.hh>
 #include <dune/grid/common/partitionset.hh>
 
-namespace Dune::Functions {
+namespace Dune::Functions::Experimental {
 
   namespace Impl {
 
@@ -695,6 +695,6 @@ namespace Dune::Functions {
 
 
 
-} // namespace Dune::Functions
+} // namespace Dune::Functions::Experimental
 
 #endif// DUNE_FUNCTIONS_COMMON_SUBDOMAIN_HH
