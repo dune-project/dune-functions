@@ -637,6 +637,21 @@ namespace Dune::Functions::Experimental {
     }
 
     /**
+     * \brief Check if intersection is oriented
+     *
+     * The intersection is called oriented if its inside and outside
+     * element are contained in subDomainA and subDomainB, respectively.
+     * The result of this method is undefined if the intersection is not
+     * contained in the intersection.
+     */
+    bool isOriented(const Intersection& is) const
+    {
+      if (is.boundary() or not(is.neighbor()))
+        return false;
+      return (subDomainA_.contains(is.inside()) && subDomainB_.contains(is.outside()));
+    }
+
+    /**
      * \brief Begin iterator over all intersection between the subdomains
      *
      * The iterator will always have the elements from sub domain A and B
