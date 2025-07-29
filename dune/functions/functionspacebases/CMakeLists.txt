@@ -35,6 +35,7 @@ install(FILES
         rannacherturekbasis.hh
         raviartthomasbasis.hh
         refinedlagrangebasis.hh
+        restrictedbasis.hh
         nodes.hh
         subentitydofs.hh
         subspacebasis.hh
