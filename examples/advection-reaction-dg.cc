@@ -172,7 +172,7 @@ void getOffDiagonalLocalMatrix(const Intersection& intersection,
 // Compute the source term for a single element
 template <class LocalView, class LocalSourceTerm>
 void getVolumeTerm( const LocalView& localView,
-                    BlockVector<FieldVector<double,1> >& localRhs,
+                    BlockVector<double>& localRhs,
                     LocalSourceTerm&& localSourceTerm)
 {
   // Get the grid element from the local FE basis view
@@ -279,8 +279,8 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
 /** \brief Assemble the Laplace stiffness matrix on the given grid view */
 template <class FEBasis, class VelocityField, class ReactionCoefficient, class SourceTerm>
 void assembleStiffnessMatrix(const FEBasis& feBasis,
-                           BCRSMatrix<FieldMatrix<double,1,1> >& matrix,
-                           BlockVector<FieldVector<double,1> >& rhs,
+                           BCRSMatrix<double>& matrix,
+                           BlockVector<double>& rhs,
                            VelocityField&& velocityField,
                            ReactionCoefficient&& reactionCoefficient,
                            SourceTerm&& sourceTerm)
@@ -374,7 +374,7 @@ void assembleStiffnessMatrix(const FEBasis& feBasis,
     }
 
     // Now get the local contribution to the right-hand side vector
-    BlockVector<FieldVector<double,1> > localRhs;
+    BlockVector<double> localRhs;
     localSourceTerm.bind(element);
     getVolumeTerm(localView, localRhs, localSourceTerm);
 
@@ -421,8 +421,8 @@ int main (int argc, char *argv[]) try
   //   Stiffness matrix and right hand side vector
   /////////////////////////////////////////////////////////
 
-  typedef BlockVector<FieldVector<double,1> > VectorType;
-  typedef BCRSMatrix<FieldMatrix<double,1,1> > MatrixType;
+  typedef BlockVector<double> VectorType;
+  typedef BCRSMatrix<double> MatrixType;
 
   VectorType rhs;
   MatrixType stiffnessMatrix;
