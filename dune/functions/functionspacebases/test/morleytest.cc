@@ -20,11 +20,6 @@
 using namespace Dune;
 using namespace Dune::Functions;
 
-// Hack: Disable test that has not been merged to master so far,
-// by replacing it with a dummy.
-template<int i=0>
-class CheckLocalFiniteElementFlag {};
-
 int main(int argc, char *argv[])
 {
   Dune::MPIHelper::instance(argc, argv);

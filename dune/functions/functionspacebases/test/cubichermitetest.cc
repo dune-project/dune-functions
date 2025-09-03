@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
       auto basis = makeBasis(gridView, cubicHermite());
       std::cout << "Basis has " << basis.size() << " dofs" << std::endl;
 
-      test_1d.subTest(checkBasis(basis, EnableContinuityCheck(), EnableDifferentiabilityCheck(),
+      test_1d.subTest(checkBasis(basis, EnableContinuityCheck(), CheckLocalFiniteElementFlag<2>{}, EnableDifferentiabilityCheck(),
                                  EnableVertexDifferentiabilityCheck()));
     }
   }
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
       auto basis = makeBasis(gridView, cubicHermite());
       std::cout << "Basis has " << basis.size() << " dofs" << std::endl;
 
-      test_2d.subTest(checkBasis(basis, EnableContinuityCheck(),
+      test_2d.subTest(checkBasis(basis, CheckLocalFiniteElementFlag<1>{}, EnableContinuityCheck(),
                                  EnableVertexDifferentiabilityCheck()));
     }
   }
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
       auto basis = makeBasis(gridView, reducedCubicHermite());
       std::cout << "Basis has " << basis.size() << " Dofs" << std::endl;
 
-      test_2d.subTest(checkBasis(basis, EnableContinuityCheck(),
+      test_2d.subTest(checkBasis(basis,CheckLocalFiniteElementFlag<1>{}, EnableContinuityCheck(),
                                  EnableVertexDifferentiabilityCheck()));
     }
   }
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
       auto basis = makeBasis(gridView, cubicHermite());
       std::cout << "Basis has " << basis.size() << " dofs" << std::endl;
 
-      test_3d.subTest(checkBasis(basis, EnableContinuityCheck(),
+      test_3d.subTest(checkBasis(basis, EnableContinuityCheck(),CheckLocalFiniteElementFlag<1>{},
                                  EnableVertexDifferentiabilityCheck()));
     }
   }
