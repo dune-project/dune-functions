@@ -152,7 +152,7 @@ void getLocalMatrix(const LocalView& localView,
 // Compute the source term for a single element
 template <class LocalView, class LocalVolumeTerm>
 void getVolumeTerm( const LocalView& localView,
-                    BlockVector<FieldVector<double,1> >& localRhs,
+                    BlockVector<double>& localRhs,
                     LocalVolumeTerm&& localVolumeTerm)
 {
   // Get the grid element from the local FE basis view
@@ -268,7 +268,7 @@ void assembleMixedPoissonMatrix(const Basis& basis,
 
     // Now let's get the element stiffness matrix
     // A dense matrix is used for the element stiffness matrix
-    Matrix<FieldMatrix<double,1,1> > elementMatrix;
+    Matrix<double> elementMatrix;
     getLocalMatrix(localView, elementMatrix);
 
     // Add element stiffness matrix onto the global stiffness matrix
@@ -315,7 +315,7 @@ void assembleMixedPoissonRhs(const Basis& basis,
     localView.bind(element);
 
     // Now get the local contribution to the right-hand side vector
-    BlockVector<FieldVector<double,1> > localRhs;
+    BlockVector<double> localRhs;
     localVolumeTerm.bind(element);
     getVolumeTerm(localView, localRhs, localVolumeTerm);
 

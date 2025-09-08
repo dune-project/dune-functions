@@ -49,7 +49,7 @@ using namespace Dune;
 template <class LocalView>
 void getLocalMatrix(
         const LocalView& localView,
-        Matrix<FieldMatrix<double,1,1>>& elementMatrix)
+        Matrix<double>& elementMatrix)
 // { local_assembler_signature_end }
 {
   // Get the grid element from the local FE basis view
@@ -270,7 +270,7 @@ void assembleStokesMatrix(const Basis& basis, MatrixType& matrix)
     // Now let's get the element stiffness matrix
     // A dense matrix is used for the element stiffness matrix
     // { setup_element_stiffness_begin }
-    Matrix<FieldMatrix<double,1,1> > elementMatrix;
+    Matrix<double> elementMatrix;
     getLocalMatrix(localView, elementMatrix);
     // { setup_element_stiffness_end }
 
