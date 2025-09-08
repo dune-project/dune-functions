@@ -58,6 +58,20 @@ namespace Dune::Functions
       return m[0];
     }
 
+    /** \brief Const overload of \ref squeeze for 1,N,M-dimensional tensors
+     */
+    template<class K, int N, int M>
+    constexpr Dune::FieldMatrix<K, N, M> const& squeezeTensor(std::array<Dune::FieldMatrix<K,N,M>, 1> const& m){
+      return m[0];
+    }
+
+    /** \brief Mutable overload of \ref squeeze for 1,N,M-dimensional tensors
+     */
+    template<class K, int N, int M>
+    constexpr Dune::FieldMatrix<K, N, M>& squeezeTensor(std::array<Dune::FieldMatrix<K,N,M>, 1>& m){
+      return m[0];
+    }
+
   }  // namespace Impl
 
 }  // namespace Dune::Functions
