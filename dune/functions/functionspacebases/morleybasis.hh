@@ -25,6 +25,7 @@
 
 #include <dune/functions/analyticfunctions/monomialset.hh>
 #include <dune/functions/common/densevectorview.hh>
+#include <dune/functions/common/squeezetensor.hh>
 #include <dune/functions/functionspacebases/cubichermitebasis.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/functionaldescriptor.hh>
@@ -323,7 +324,7 @@ namespace Dune::Functions
         for (size_type i = 0; i < 3; ++i)
         {
           out[i] = f(localVertices_[i]);
-          out[3 + i] = squeeze(df(localMidpoints_[i])).dot(globalNormals_[i]);
+          out[3 + i] = squeezeTensor(df(localMidpoints_[i])).dot(globalNormals_[i]);
         }
       }
 

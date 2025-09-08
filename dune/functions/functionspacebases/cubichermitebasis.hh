@@ -23,6 +23,7 @@
 #include <dune/localfunctions/common/localkey.hh>
 
 #include <dune/functions/common/mapperutilities.hh>
+#include <dune/functions/common/squeezetensor.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/functionaldescriptor.hh>
 #include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
@@ -95,37 +96,6 @@ namespace Dune::Functions
     // * Some helper functions for building polynomial bases from monomials
     // *****************************************************************************
 
-    /** \brief Remove empty axes, i.e. Dune::FieldVector<K,1> -> F and Dune::FieldMatrix<K,1,n> ->Dune::FieldVector<F,n>
-     * const overload for 1-dimensional vectors
-     */
-    template<class K>
-    constexpr K const& squeeze(Dune::FieldVector<K,1> const& v){ return v[0]; }
-
-    /** \brief mutable overload for 1-dimensional vectors of \ref squeeze
-     */
-    template<class K>
-    constexpr K& squeeze(Dune::FieldVector<K,1>& v){ return v[0]; }
-
-    /** \brief const overload for 1,N-dimensional matrices of \ref squeeze
-     */
-    template<class K, int N>
-    constexpr Dune::FieldVector<K, N> const& squeeze(Dune::FieldMatrix<K,1,N> const& m){ return m[0]; }
-
-    /** \brief mutable overload for 1,N-dimensional matrices of \ref squeeze
-     */
-    template<class K, int N>
-    constexpr Dune::FieldVector<K, N>& squeeze(Dune::FieldMatrix<K,1,N>& m){ return m[0]; }
-
-    /** \brief Default mutable overload returning unchanged objects.
-     */
-    template<class Object>
-    constexpr Object& squeeze(Object& o){ return o; }
-
-    /** \brief Default const overload returning unchanged objects.
-     */
-    template<class Object>
-    constexpr Object const& squeeze(Object const& o){ return o; }
-
     /** \brief Multiply the evaluations of the monomialSet (see dune/functions/analyticfunctions/monomialset.hh) with a coefficient matrix, here FieldMatrix.
      * \tparam KCoeff The Field type of the coefficient matrix.
      * \tparam sizePolynom The number of polynomials to evaluate.
@@ -142,9 +112,9 @@ namespace Dune::Functions
     {
       for (int i = 0; i < sizePolynom; ++i)
       {
-        squeeze(polynomialValues[i]) = 0;
+        squeezeTensor(polynomialValues[i]) = 0;
         for (int j = 0; j < sizeMonom; ++j)
-          squeeze(polynomialValues[i]) += coefficients[i][j]*monomialValues[j];
+          squeezeTensor(polynomialValues[i]) += coefficients[i][j]*monomialValues[j];
       }
     }
 
@@ -506,7 +476,7 @@ namespace Dune::Functions
           auto&& derivativeValue = df(x);
           out[i * (dim +1)] = f(x);
           for (int d = 0; d < dim; ++d)
-            out[i * (dim+1) + d + 1] = squeeze(derivativeValue)[d] * (*averageVertexMeshSize_)[i];
+            out[i * (dim+1) + d + 1] = squeezeTensor(derivativeValue)[d] * (*averageVertexMeshSize_)[i];
         }
 
         if constexpr (not reduced)
