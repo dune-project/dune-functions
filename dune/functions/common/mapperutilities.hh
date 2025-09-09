@@ -8,6 +8,7 @@
 #define DUNE_FUNCTIONS_COMMON_MAPPERUTILITIES_HH
 
 #include <vector>
+#include <bitset>
 
 #include <dune/common/rangeutilities.hh>
 
@@ -113,7 +114,53 @@ namespace Impl {
     return subEntityMeshSize;
   }
 
+  /**
+   * \brief Computes a consistent orientation of edges. The orientation is chosen,
+   * such that the tangent of an edge points from the vertex with the lower global Id
+   * to the vertex with the larger global Id. This can agree with the reference orientation or not.
+   * \tparam ElementMapper  Mappertype providing the gridView and an index method
+   * \param  mapper         The mapper to compute the storage order of orientations
+   * \returns A vector with a std::bitset<3> for each element in the grid, order according to mapper.
+   * The bitset contains one bit for each edge, which is O iff the global orientation agrees with the
+   * reference orientation.
+   * \note This only works for a two dimensional, purely simplicial, grid.
+   */
+  template<class ElementMapper>
+  std::vector<std::bitset<3>> computeEdgeOrientations(ElementMapper mapper)
+  {
+    constexpr int dim = 2;
+    static_assert(dim == ElementMapper::GridView::dimension);
 
+    auto const& gridView = mapper.gridView();
+    std::vector<std::bitset<3>> orientations;
+    orientations.resize(gridView.size(0));
+    // compute orientation for all elements
+    auto const& idSet = gridView.grid().globalIdSet();
+
+    for (const auto &element : elements(gridView))
+    {
+      const auto &refElement = referenceElement(element);
+      auto elementIndex = mapper.index(element);
+
+      std::bitset<3>& orientation = orientations[elementIndex];
+
+
+      for (std::size_t i = 0; i < element.subEntities(dim - 1); i++)
+      {
+        // Local vertex indices within the element are ordered, localV0 < localV1
+        auto localV0 = refElement.subEntity(i, dim - 1, 0, dim);
+        auto localV1 = refElement.subEntity(i, dim - 1, 1, dim);
+
+        // Global vertex indices within the grid
+        auto globalV0 = idSet.subId(element, localV0, dim);
+        auto globalV1 = idSet.subId(element, localV1, dim);
+
+        // The edge is flipped if the local ordering disagrees with global ordering
+        orientation[i] = globalV0 > globalV1;
+      }
+    }
+    return orientations;
+  }
 
 } // end namespace Impl
 

@@ -634,14 +634,14 @@ namespace Dune::Functions
       : Base(gv, morleyMapperLayout)
       , mapper_({gv, mcmgElementLayout()})
     {
-      updateState(gv);
+      data_ = Impl::computeEdgeOrientations(mapper_);
     }
 
     //! Update the stored grid view, to be called if the grid has changed
     void update(GridView const &gv)
     {
       Base::update(gv);
-      updateState(gv);
+      data_ = Impl::computeEdgeOrientations(mapper_);
     }
 
     /**
@@ -653,41 +653,6 @@ namespace Dune::Functions
     }
 
   protected:
-
-    void updateState(GridView const &gridView)
-    {
-      data_.resize(gridView.size(0));
-      // compute orientation for all elements
-      unsigned short orientation = 0;
-      auto const& idSet = gridView.grid().globalIdSet();
-
-      for (const auto &element : elements(gridView))
-      {
-        const auto &refElement = referenceElement(element);
-        auto elementIndex = mapper_.index(element);
-
-        orientation = 0;
-
-        for (std::size_t i = 0; i < element.subEntities(dim - 1); i++)
-        {
-          // Local vertex indices within the element
-          auto localV0 = refElement.subEntity(i, dim - 1, 0, dim);
-          auto localV1 = refElement.subEntity(i, dim - 1, 1, dim);
-
-          // Global vertex indices within the grid
-          auto globalV0 = idSet.subId(element, localV0, dim);
-          auto globalV1 = idSet.subId(element, localV1, dim);
-
-          // The edge is flipped if the local ordering disagrees with global ordering
-          if ((localV0 < localV1 && globalV0 > globalV1)
-              || (localV0 > localV1 && globalV0 < globalV1))
-          {
-            orientation |= (1 << i);
-          }
-        }
-        data_[elementIndex] = orientation;
-      }
-    }
 
     SubEntityMapper mapper_;
     std::vector<std::bitset<3>> data_;
