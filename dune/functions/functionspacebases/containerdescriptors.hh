@@ -53,28 +53,14 @@ struct Unknown {};
 
 } // end namespace ContainerDescriptors
 
-namespace Impl {
-
-template<class PreBasis>
-auto containerDescriptorImpl(const PreBasis& preBasis, Dune::PriorityTag<1>)
-  -> decltype(preBasis.containerDescriptor())
-{
-  return preBasis.containerDescriptor();
-}
-
-template<class PreBasis>
-auto containerDescriptorImpl(const PreBasis& preBasis, Dune::PriorityTag<0>)
-{
-  return ContainerDescriptors::Unknown{};
-}
-
-} // end namespace Impl
-
 //! Return the container descriptor of the pre-basis, if defined, otherwise ContainerDescriptor::Unknown
 template<class PreBasis>
 auto containerDescriptor(const PreBasis& preBasis)
 {
-  return Impl::containerDescriptorImpl(preBasis, Dune::PriorityTag<2>{});
+  if constexpr (requires{ preBasis.containerDescriptor(); })
+    return preBasis.containerDescriptor();
+  else
+    return ContainerDescriptors::Unknown{};
 }
 
 

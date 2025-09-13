@@ -18,6 +18,7 @@
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/defaultlocalview.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
+#include <dune/functions/functionspacebases/containerdescriptors.hh>
 
 
 
@@ -171,6 +172,15 @@ public:
   const PrefixPath& prefixPath() const
   {
     return prefixPath_;
+  }
+
+  //! Return the associated container descriptor
+  auto containerDescriptor() const
+  {
+    if constexpr (requires(PreBasis pb){ pb.containerDescriptor(); })
+      return preBasis_.containerDescriptor();
+    else
+      return ContainerDescriptors::Unknown{};
   }
 
 protected:

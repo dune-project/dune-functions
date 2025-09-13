@@ -66,6 +66,10 @@ corresponding version of the Dune core modules.
   or `element()` is undefined behaviour. To check for this, the basis nodes
   have a new member function `node.empty()` which is equivalent to `node.size()==0`.
   These changes are also reflected in the updated tests.
+- Any global basis implementation is required to implement a method `.containerDescriptor()`
+  returning a container descriptor or `ContainerDescriptors::Unknown` as a fallback type. The
+  default behavior implemented in `DefaultGlobalBasis` is to return the container descriptor
+  provided by its pre-basis.
 
 ## Release 2.10
 

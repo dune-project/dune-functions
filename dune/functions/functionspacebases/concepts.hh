@@ -7,9 +7,12 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_CONCEPTS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_CONCEPTS_HH
 
+#include <utility>
 
 #include <dune/common/concept.hh>
+#include <dune/common/indices.hh>
 #include <dune/common/reservedvector.hh>
+#include <dune/common/typeutilities.hh>
 
 #include <dune/functions/common/utility.hh>
 
@@ -18,6 +21,8 @@
 
 namespace Dune {
 namespace Functions {
+namespace ContainerDescriptors { /* forward declaration */ struct Unknown; }
+
 namespace Concept {
 
 using namespace Dune::Concept;
@@ -51,6 +56,37 @@ struct HasIndexAccess
   );
 };
 
+// Concept for a container descriptor describing the structure of an index tree
+struct ContainerDescriptor
+{
+private:
+  template<class CD, std::size_t... II>
+  auto expandChilds(const CD& cd, std::index_sequence<II...>) -> decltype(
+    (requireConcept<ContainerDescriptor>(cd[std::integral_constant<std::size_t,II>{}]),...)
+  );
+
+  // static size overload
+  template<class CD, std::size_t S = CD::size()>
+  auto children(const CD& cd, Dune::PriorityTag<1>) -> decltype(
+    expandChilds(cd, std::make_index_sequence<S>{})
+  );
+
+  // dynamic size overload
+  template<class CD>
+  auto children(const CD& cd, Dune::PriorityTag<0>) -> decltype(
+    requireConcept<ContainerDescriptor>(cd[0])
+  );
+
+public:
+  // specialization for the fallback type
+  void require(const Dune::Functions::ContainerDescriptors::Unknown&);
+
+  template<class CD>
+  auto require(const CD& cd) -> decltype(
+    requireConvertible<std::size_t>(cd.size()),
+    children(cd, Dune::PriorityTag<2>{})
+  );
+};
 
 // Concept for a BasisNode in a local ansatz tree
 struct BasisNode
@@ -226,7 +262,8 @@ struct GlobalBasis
     requireConvertible<typename B::size_type>(basis.size(std::declval<typename B::SizePrefix>())),
     requireConvertible<typename B::size_type>(basis.dimension()),
     requireSameType<decltype(const_cast<B&>(basis).update(basis.gridView())),void>(),
-    requireConcept<LocalView<B>>(basis.localView())
+    requireConcept<LocalView<B>>(basis.localView()),
+    requireConcept<ContainerDescriptor>(basis.containerDescriptor())
   );
 };
 
