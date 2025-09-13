@@ -239,8 +239,8 @@ void checkBasis(Dune::TestSuite& test, const BasisFactory& bf)
   using Grid = Dune::YaspGrid<2>;
   Grid grid({1.0, 1.0}, {2, 2});
   auto basis = makeBasis(grid.leafGridView(), bf);
-  checkSize(test, containerDescriptor(basis.preBasis()), basis);
-  checkMultiIndices(test, containerDescriptor(basis.preBasis()), basis);
+  checkSize(test, basis.containerDescriptor(), basis);
+  checkMultiIndices(test, basis.containerDescriptor(), basis);
 }
 
 int main (int argc, char *argv[])

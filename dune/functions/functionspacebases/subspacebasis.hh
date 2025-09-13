@@ -109,6 +109,12 @@ public:
     return prefixPath_;
   }
 
+  //! Return the associated container descriptor
+  auto containerDescriptor() const
+  {
+    return rootBasis_->containerDescriptor();
+  }
+
 protected:
   const RootBasis* rootBasis_;
   PrefixPath prefixPath_;
