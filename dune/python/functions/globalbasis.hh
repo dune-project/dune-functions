@@ -152,8 +152,6 @@ namespace Dune
               pybind11::overload_cast<const typename GlobalBasis::SizePrefix&>(&GlobalBasis::size, pybind11::const_),
               "Return number of possible values for next position in multi index");
 
-      cls.def_property_readonly( "dimRange", [] ( pybind11::handle self ) { return pybind11::int_( dimRange ); } );
-
       if constexpr (hasUpdate)
       {
         cls.def_property( "gridView",
