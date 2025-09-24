@@ -147,15 +147,30 @@ public:
       coefficients_(std::move(coefficients))
   {}
 
-  //! Evaluate polynomial
+  //! Evaluate polynomial using the Horner scheme
   K operator() (const K& x) const
   {
-    auto y = K(0);
+    using namespace Dune::Indices;
+
     auto n = Dune::Hybrid::size(coefficients_);
-    Dune::Hybrid::forEach(Dune::range(n), [&](auto i) {
-      y += Dune::Hybrid::elementAt(coefficients_, i) * std::pow(x, int(i));
-    });
-    return y;
+
+    // Explicitly handling the corner case of an empty coefficient set
+    // allows to save one multiplication.
+    return Hybrid::ifElse(Hybrid::equal_to(n, _0),
+                          [&](auto id) { /* then */
+                            // No coefficients at all
+                            return K(0);
+                          },
+                          [&](auto id) { /* else */
+                            // Do the Horner scheme knowing that there is at least one coefficient
+                            K y = Hybrid::elementAt(coefficients_, Hybrid::minus(id(n), _1) );
+                            Dune::Hybrid::forEach(Dune::range(Hybrid::minus(id(n), _1) ), [&](auto i)
+                            {
+                              y *= x;
+                              y += Hybrid::elementAt(coefficients_, Hybrid::minus(Hybrid::minus(id(n),_2), i));
+                            });
+                            return y;
+                          });
   }
 
   //! Comparison of coefficients
