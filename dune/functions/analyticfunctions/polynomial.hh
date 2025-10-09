@@ -127,6 +127,27 @@ class Polynomial
   template<class I, I... i>
   struct IsIntegerSequence<std::integer_sequence<I, i...>> : public std::true_type {};
 
+  /** \brief Helper method for the Horner scheme
+   *
+   * This method simply adds c to y, unless c is of type std::integral_constant<0>.
+   * In that case, the method does nothing.  The motivation for explicitly handling
+   * this special case is automatic differentiation: While an optimizing compiler
+   * can be expected to eliminate additions by zero in normal code, removal of zeros
+   * is very unlikely when the Horner scheme code is taped for later use in reverse-mode
+   * automatic differentiation.
+   */
+  template <typename Coefficient>
+  static void add(K& y, const Coefficient &c)
+  {
+    if constexpr (!IsIntegralConstant<Coefficient>::value)
+    {
+      if (c!=0)
+        y += c;
+    }
+    else
+      y += c;
+  }
+
 public:
 
   //! The type of the stored coefficient container
@@ -147,15 +168,35 @@ public:
       coefficients_(std::move(coefficients))
   {}
 
-  //! Evaluate polynomial
+  /** \brief  Evaluate polynomial using the Horner scheme
+   *
+   * Coefficients of type `std::integral_constant<0>` are eliminated
+   * at compile time.
+   */
   K operator() (const K& x) const
   {
-    auto y = K(0);
+    using namespace Dune::Indices;
+
     auto n = Dune::Hybrid::size(coefficients_);
-    Dune::Hybrid::forEach(Dune::range(n), [&](auto i) {
-      y += Dune::Hybrid::elementAt(coefficients_, i) * std::pow(x, int(i));
-    });
-    return y;
+
+    // Explicitly handling the corner case of an empty coefficient set
+    // allows to save one multiplication.
+    return Hybrid::ifElse(Hybrid::equal_to(n, _0),
+                          [&](auto id) { /* then */
+                            // No coefficients at all
+                            return K(0);
+                          },
+                          [&](auto id) { /* else */
+                            // Do the Horner scheme knowing that there is at least one coefficient
+                            K y = Hybrid::elementAt(coefficients_, Hybrid::minus(id(n), _1) );
+                            Dune::Hybrid::forEach(Dune::range(Hybrid::minus(id(n), _1) ), [&](auto i)
+                            {
+                              y *= x;
+                              // Do y+= _next coefficient_, unless that coefficient is std::integral_constant<0>.
+                              add(y,Hybrid::elementAt(coefficients_, Hybrid::minus(Hybrid::minus(id(n),_2), i)));
+                            });
+                            return y;
+                          });
   }
 
   //! Comparison of coefficients

@@ -59,6 +59,10 @@ Dune::TestSuite testDynamicPolynomial()
     suite.check(std::is_same_v<decltype(p), P>);
   }
 
+  // Check whether a completely empty polynomial can be constructed and evaluated
+  auto pEmpty = Polynomial<double,std::array<double,0> >(std::array<double,0>());
+  suite.check(std::fabs(pEmpty(0)) == 0.0);
+
   auto p = P({ 1, 2, 3, -4});
 
   {
