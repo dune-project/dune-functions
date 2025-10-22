@@ -1,4 +1,4 @@
-@page poisson-pq2-cpp Poisson equation
+@page poisson-pq2-cpp Poisson equation (C++)
 <!--
 SPDX-FileCopyrightInfo: Copyright © DUNE Project contributors, see file AUTHORS.md
 SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception or LGPL-3.0-or-later
@@ -88,7 +88,7 @@ And here is the rest of the file:
 <div class="section_buttons">
 | Previous      |                         Next |
 |:--------------|-----------------------------:|
-| @ref examples |                              |
+| @ref examples | @ref poisson-pq2-py          |
 </div>
 
 
