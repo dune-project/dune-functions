@@ -76,6 +76,9 @@ basis on the `GridView`.
 
 @snippet poisson-pq2.cc makeBasis
 
+And here is the rest of the file:
+
+@snippet poisson-pq2.cc theRest
 
 
 [dune]: https://dune-project.org

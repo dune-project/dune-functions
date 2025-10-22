@@ -325,6 +325,7 @@ int main (int argc, char *argv[]) try
   //   Stiffness matrix and right hand side vector
   /////////////////////////////////////////////////////////
 
+  //! [theRest]
   using VectorType = BlockVector<double>;
   using MatrixType = BCRSMatrix<double>;
 
@@ -429,3 +430,4 @@ int main (int argc, char *argv[]) try
  catch (Exception& e) {
     std::cout << e.what() << std::endl;
  }
+//! [theRest]
