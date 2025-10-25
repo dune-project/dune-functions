@@ -336,7 +336,7 @@ private:
  * access container providing operator[] and size() methods.
  * For classical containers this should support indices
  * of type std::size_t. For multi-type containers indices
- * of the form Dune::index_constant<i> should be supported
+ * of the form Dune::index_constant\<i\> should be supported
  * while size() should be a static constexpr method.
  *
  * When accessing the vector with a multi-index the backend
@@ -374,7 +374,7 @@ auto istlVectorBackend(Vector& v)
  * access container providing operator[] and size() methods.
  * For classical containers this should support indices
  * of type std::size_t. For multi-type containers indices
- * of the form Dune::index_constant<i> should be supported
+ * of the form Dune::index_constant\<i\> should be supported
  * while size() should be a static constexpr method.
  *
  * When accessing the vector with a multi-index the backend

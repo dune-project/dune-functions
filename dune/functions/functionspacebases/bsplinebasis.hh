@@ -394,7 +394,7 @@ public:
    *
    * Elements are the non-empty knot spans, here we do the renumbering
    *
-   * \param ijk Integer coordinates in the tensor product patch
+   * \param elementIdx Integer coordinates in the tensor product patch
    */
   void bind(const std::array<unsigned,dim>& elementIdx)
   {
@@ -1100,7 +1100,6 @@ public:
   /** \brief Evaluate the second derivatives of all one-dimensional B-spline functions for a given coordinate direction
    *
    * \param in Scalar(!) coordinate where to evaluate the functions
-   * \param enableEvaluations switches calculation of desired derivatives on
    * \param [out] out Vector containing the values of all B-spline derivatives at 'in'
    * \param [out] outJac Vector containing the first derivatives of all B-spline derivatives at 'in' (only if calculation was switched on by enableEvaluations)
    * \param [out] outHess Vector containing the second derivatives of all B-spline derivatives at 'in' (only if calculation was switched on by enableEvaluations)

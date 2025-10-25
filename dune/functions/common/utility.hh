@@ -44,7 +44,7 @@ auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue, secondV
  *
  * \ingroup Utility
  *
- * This will call the given function with index_constant<i>
+ * This will call the given function with index_constant\<i\>
  * where i is the dynamically provided index.
  *
  * To achieve this the condition i==ii is checked subsequently
@@ -58,7 +58,7 @@ auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue, secondV
  * \param f Function to call (e.g., a generic lambda)
  * \param args Additional arguments for f
  *
- * \returns f(index_constant<i>(), args...)
+ * \returns f(index_constant\<i\>(), args...)
  */
 template<std::size_t end, class F, class size_type, class... Args>
 auto forwardAsStaticIndex(const size_type& i, F&& f, Args&&... args)
@@ -162,7 +162,7 @@ namespace Imp {
  * This will apply the given functor to all values in
  * given tuple and return the results in a new tuple.
  *
- * \param F A functor defined for all tuple entries
+ * \param f A functor defined for all tuple entries
  * \param tuple The tuple to transform
  */
 template<class F, class... T>
@@ -181,7 +181,7 @@ auto transformTuple(F&& f, const std::tuple<T...>& tuple)
  * pair of values in the given tuples and return the results
  * in a new tuple.
  *
- * \param F A functor defined for all tuple entries
+ * \param f A functor defined for all tuple entries
  * \param tuple1 The tuple containing values for the first parameter
  * \param tuple2 The tuple containing values for the second parameter
  */
@@ -292,9 +292,9 @@ auto callableCheck(Expression f)
 /**
  * \brief Negate given predicate
  *
- * \param f A predicate function to negate
+ * \param check A predicate function to negate
  *
- * This returns a function havin the same parameters as
+ * This returns a function having the same parameters as
  * f, but negating the result. Negation here means that
  * std::true_type is converted to std::false_type are
  * vice verse, while other return values are converted to

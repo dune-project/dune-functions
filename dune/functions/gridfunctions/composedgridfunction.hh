@@ -248,7 +248,7 @@ ComposedGridFunction(const OF&, const IF&...)
  * To store references you can pass `std::ref()`.
  *
  * \param outerFunction The outer-function to be composed with the grid-functions.
- * \param innerFunctions The inner grid-functions
+ * \param innerFunction The inner grid-functions
  *
  * \returns A grid-function defined on the same `EntitySet` as the input-functions.
  *

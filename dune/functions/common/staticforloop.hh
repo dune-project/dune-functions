@@ -49,7 +49,7 @@ struct StaticFindInRange<ST, end, end>
  * \ingroup Utility
  *
  * Run static for-loop from 'begin' to 'end-1' with functor.
- * The functor is called with \p Dune::index_constant<i>
+ * The functor is called with \p Dune::index_constant\<i\>
  * as first argument. All other arguments of this method
  * are forwarded to the functor. If the functor returns
  * true the loop is terminated.
