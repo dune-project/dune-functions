@@ -23,7 +23,7 @@
 #include <dune/functions/functionspacebases/basistags.hh>
 
 /**
- * \file containerdescriptor.hh
+ * \file
  * \brief Lightweight representation of (hierarchical) size and block structure extracted
  * from a basis to describe data structures like containers that can be accessed by
  * multi-indices provided by the basis.

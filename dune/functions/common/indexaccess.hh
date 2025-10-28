@@ -370,7 +370,7 @@ namespace Imp {
  * [0] entries are used until the termination criterion is satisfied.
  *
  * \param c Container to access
- * \param index Multi-index
+ * \param multiIndex Multi-index
  * \param isFinal A predicate function checking if recursion should be terminated.
  */
 template<class C, class MultiIndex, class IsFinal>
@@ -393,7 +393,7 @@ constexpr decltype(auto) resolveDynamicMultiIndex(C&& c, const MultiIndex& multi
  * on values that neither have a static nor a dynamic operator[].
  *
  * \param c Container to access
- * \param index Multi-index
+ * \param multiIndex Multi-index
  */
 template<class C, class MultiIndex>
 constexpr decltype(auto) resolveDynamicMultiIndex(C&& c, const MultiIndex& multiIndex)
@@ -415,7 +415,7 @@ constexpr decltype(auto) resolveDynamicMultiIndex(C&& c, const MultiIndex& multi
  * have a different size.
  *
  * \param c Container to access
- * \param index Multi-index
+ * \param multiIndex Multi-index
  */
 template<class C, class MultiIndex>
 constexpr decltype(auto) resolveStaticMultiIndex(C&& c, const MultiIndex& multiIndex)

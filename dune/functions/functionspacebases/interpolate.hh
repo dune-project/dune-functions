@@ -198,7 +198,7 @@ struct HasDerivative
  * \param basis Global function space basis of discrete function space
  * \param coeff Coefficient vector to represent the interpolation
  * \param f Function to interpolate
- * \param bitVector A vector with flags marking all DOFs that should be interpolated
+ * \param bv A bit vector with flags marking all DOFs that should be interpolated
  * \param nodeToRangeEntry Polymorphic functor mapping local ansatz nodes to range-indices of given function
  */
 template <class B, class C, class F, class BV, class NTRE>

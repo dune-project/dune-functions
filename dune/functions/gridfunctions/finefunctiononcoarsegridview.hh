@@ -250,7 +250,7 @@ public:
   /**
    * \brief Create FineFunctionOnCoarseGridView from GridFunction and GridView
    *
-   * \param gridFunction The GridFunction that should be represented on gridView
+   * \param function The GridFunction that should be represented on gridView
    * \param gridView The GridFunction should be represented on this gridView
    */
   FineFunctionOnCoarseGridView(const GridFunction& function, const GridView& gridView)
@@ -261,7 +261,7 @@ public:
   /**
    * \brief Create FineFunctionOnCoarseGridView from GridFunction and GridView
    *
-   * \param gridFunction The GridFunction that should be represented on gridView
+   * \param function The GridFunction that should be represented on gridView
    * \param gridView The GridFunction should be represented on this gridView
    */
   FineFunctionOnCoarseGridView(GridFunction&& function, const GridView& gridView)

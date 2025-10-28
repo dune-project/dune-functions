@@ -436,7 +436,7 @@ public:
  * Create a new DiscreteGlobalBasisFunction by wrapping the vector in a
  * VectorBackend that allows the hierarchic resize and multi-index access in
  * the DiscreteGlobalBasisFunction, if the vector does not yet fulfill the
- * \ref ConstVectorBackend concept.
+ * \ref Concept::ConstVectorBackend concept.
  *
  * \tparam R  The range type this grid-function should represent when seen as
  *            a mapping `R(Domain)` with `Domain` the global coordinates of the
