@@ -86,6 +86,7 @@ corresponding version of the Dune core modules.
   returning a container descriptor or `ContainerDescriptors::Unknown` as a fallback type. The
   default behavior implemented in `DefaultGlobalBasis` is to return the container descriptor
   provided by its pre-basis.
+- One overload of `forEachBoundaryDOF` is now available via the Python interface.
 
 ## Release 2.10
 

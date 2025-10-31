@@ -86,10 +86,16 @@ The `assembleLaplaceMatrix` method returns *two* objects, the stiffness matrix `
 and the assembled source term vector `b`.
 
 The next code block manages the handling of the Dirichlet boundary conditions.
-In this example, the entire boundary is the Dirichet boundary, for simplicity.
-To find all degrees of freedom on the grid boundary, the method `markBoundaryDOFs`
-(explained below) marks them by setting the corresponding value in an array
-called `isDirichlet` to `True`. Then, the function \f$ g \f$ from the problem formulation
+In this example, the entire boundary is the Dirichet boundary.
+To find all degrees of freedom on the grid boundary, the method `forEachBoundaryDOF`
+visits each degree of freedom (DOF) associated to the grid boundary and
+calls the callback function `markDOF` with the global index of that degree of freedom.
+This callback then sets the corresponding entry in an array
+called `isDirichlet` to `True`.
+
+@snippet poisson-pq2.py dirichletDOFs
+
+Then, the function \f$ g \f$ from the problem formulation
 is defined. In this example the Dirichlet values are given by the closed-form
 expression
 \f[
@@ -98,7 +104,7 @@ expression
 This closed form expression is evaluated
 at the boundary Lagrange nodes by the method `basis.interpolate`.
 
-@snippet poisson-pq2.py dirichletHandling
+@snippet poisson-pq2.py dirichletValues
 
 After this, the information about the boundary conditions is integrated into
 the linear system of equations. The code loops over all nonzero entries of the
@@ -194,21 +200,6 @@ The integrals over \f$ T_\text{ref} \f$ are then computed by a quadrature rule.
 
 
 @snippet poisson-pq2.py localAssembler
-
-
-### Boundary detection
-
-The last part of the code is a helper function that marks the indices
-of all degrees of freedom that belong to the grid boundary. This helper
-function is called by the main program to determine the degrees
-of freedom to keep at fixed values for the Dirichlet boundary conditions.
-The `dune-functions` module has a dedicated method for this. Unfortunately,
-this method is not currently exposed via the Python API, and a hack
-is therefore employed to use the method for this example.
-This will change eventually.
-
-@snippet poisson-pq2.py markBoundaryDOFs
-
 
 
 [dune]: https://dune-project.org

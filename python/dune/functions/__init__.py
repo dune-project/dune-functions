@@ -5,6 +5,7 @@ from dune.generator.generator import SimpleGenerator
 from dune.common.hashit import hashIt
 from dune.common.checkconfiguration import assertHave, ConfigurationError
 
+from .boundarydofs import *
 from .globalbasis import defaultGlobalBasis
 from .subspacebasis import subspaceBasis
 from .tree import *
