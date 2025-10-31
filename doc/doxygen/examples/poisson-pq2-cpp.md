@@ -1,10 +1,8 @@
-@page poisson-pq2-cpp Poisson equation
+@page poisson-pq2-cpp Poisson equation (C++)
 <!--
 SPDX-FileCopyrightInfo: Copyright © DUNE Project contributors, see file AUTHORS.md
 SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception or LGPL-3.0-or-later
 -->
-
-@dontinclude{lineno} poisson-pq2.cc
 
 The following explains how to solve the Poisson equation
 using [dune-functions][]. The full example @ref source-poisson-pq2-cpp
@@ -20,37 +18,35 @@ The function `getLocalMatrix()` implements the assembler
 of the local stiffness matrix for the bilinear form
 @f$(u,v) \mapsto \int_\Omega \nabla u(x)\nabla v(x)dx@f$.
 
-@skip LABEL_END_INCLUDES
-@until LABEL_END_GETLOCALMATRIX
+@snippet poisson-pq2.cc getLocalMatrix
 
 The `getVolumeTerm()` functions implements the local assembler
 for the volume right hand side term @f$\int_\Omega f(x)v(x)dx@f$.
 
-@until LABEL_END_GETVOLUMETERM
-
+@snippet poisson-pq2.cc getVolumeTerm
 
 
 ### Global assembler
 
 Assemble the global matrix pattern.
 
-@until LABEL_END_GETPATTERN
+@snippet poisson-pq2.cc getOccupationPattern
+
 
 Assembly of matrix and right-hand-side.
 
-@until LABEL_END_ASSEMBLELAPLACEMATRIX
-
+@snippet poisson-pq2.cc assembleLaplaceMatrix
 
 
 ### Helper functions
 
 Treatment of boundary condition.
 
-@until LABEL_END_BOUNDARYTREATMENT
+@snippet poisson-pq2.cc boundaryTreatment
 
 Create a mixed grid containing triangles and quadrilaterals.
 
-@until LABEL_END_CREATEMIXEDGRID
+@snippet poisson-pq2.cc createMixedGrid
 
 
 
@@ -58,7 +54,7 @@ Create a mixed grid containing triangles and quadrilaterals.
 
 Initialize MPI
 
-@until LABEL_END_SETUP
+@snippet poisson-pq2.cc startMainAndMPI
 
 
 
@@ -73,13 +69,16 @@ Grids in [dune][] are in general hierarchical and composed by elements
 on several levels. The discretization usually lives on the set of
 most refined elements that is denote the leaf `GridView` in dune.
 
-@until LABEL_END_CREATEGRID
+@snippet poisson-pq2.cc createGridCall
 
 As a next step the program creates a global finite element
 basis on the `GridView`.
 
-@until LABEL_END_MAKEBASIS
+@snippet poisson-pq2.cc makeBasis
 
+And here is the rest of the file:
+
+@snippet poisson-pq2.cc theRest
 
 
 [dune]: https://dune-project.org
@@ -89,7 +88,7 @@ basis on the `GridView`.
 <div class="section_buttons">
 | Previous      |                         Next |
 |:--------------|-----------------------------:|
-| @ref examples |                              |
+| @ref examples | @ref poisson-pq2-py          |
 </div>
 
 

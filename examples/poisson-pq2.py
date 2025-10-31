@@ -1,19 +1,21 @@
 # SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file AUTHORS.md
 # SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0-or-later
 
+#! [imports]
 import numpy as np
 import scipy.sparse.linalg
 from scipy.sparse import lil_matrix
-from io import StringIO
 
 import dune.geometry
 import dune.grid as grid
 import dune.functions as functions
+#! [imports]
 
 # Compute element stiffness matrix and element load vector
 #
 # TODO: This assembler loop is very inefficient in terms of run time and should be improved using Python vectorization.
 # See discussion at https://gitlab.dune-project.org/staging/dune-functions/-/merge_requests/295 for hints and code pointers.
+#! [localAssembler]
 def localAssembler(localView, volumeTerm):
 
     # Number of degrees of freedom on this element
@@ -29,30 +31,24 @@ def localAssembler(localView, volumeTerm):
     localA = np.zeros((n,n))
     localB = np.zeros(n)
 
-    # choose a high enough quadrature order
-    quadOrder = 4
-
-    # create a quadrature rule and integrate
-    quadRule = dune.geometry.quadratureRule(element.type, quadOrder)
+    # Create a quadrature rule and integrate
+    quadRule = dune.geometry.quadratureRule(element.type, order=4)
     for pt in quadRule:
 
-        # Position of the quadrature point
-        quadPos = pt.position
-
         # The determinant that appears in the integral transformation formula
-        integrationElement = element.geometry.integrationElement(quadPos)
+        integrationElement = element.geometry.integrationElement(pt.position)
 
         # Evaluate all shape functions (The return value is an array!)
-        values = localBasis.evaluateFunction(quadPos)
+        values = localBasis.evaluateFunction(pt.position)
 
         # Evaluate the shape function Jacobians on the reference element (array of arrays)
-        referenceJacobians = localBasis.evaluateJacobian(quadPos)
+        referenceJacobians = localBasis.evaluateJacobian(pt.position)
 
         # Transform the reference Jacobians to the actual element
-        geometryJacobianInverse = element.geometry.jacobianInverse(quadPos)
+        geometryJacobianInverse = element.geometry.jacobianInverse(pt.position)
         jacobians = [ np.dot(np.array(g)[0], geometryJacobianInverse) for g in referenceJacobians ]
 
-        quadPosGlobal = element.geometry.toGlobal(quadPos)
+        quadPosGlobal = element.geometry.toGlobal(pt.position)
 
         for i in range( n ):
             for j in range( n ):
@@ -61,9 +57,11 @@ def localAssembler(localView, volumeTerm):
             localB[i] += pt.weight * integrationElement * values[i] * volumeTerm(quadPosGlobal)
 
     return localA, localB
+#! [localAssembler]
 
 
 # The assembler for the global stiffness matrix
+#! [assembleLaplaceMatrix]
 def assembleLaplaceMatrix(basis, volumeTerm):
 
     # Total number of degrees of freedom
@@ -72,7 +70,7 @@ def assembleLaplaceMatrix(basis, volumeTerm):
     # Make empty sparse matrix
     A = lil_matrix((n,n))
 
-    # Make empty rhs vector
+    # Make empty vector
     b = np.zeros(n)
 
     # View on the finite element basis on a single element
@@ -104,12 +102,15 @@ def assembleLaplaceMatrix(basis, volumeTerm):
 
     # Convert matrix to CSR format
     return A.tocsr(), b
+#! [assembleLaplaceMatrix]
 
 # Mark all degrees of freedom on the grid boundary
 #
 # This method simply calls the corresponding C++ code.  A more Pythonic solution
 # is planned to appear eventually...
+#! [markBoundaryDOFs]
 def markBoundaryDOFs(basis, vector):
+    from io import StringIO
     code="""
     #include<utility>
     #include<functional>
@@ -124,25 +125,33 @@ def markBoundaryDOFs(basis, vector):
     }
     """
     dune.generator.algorithm.run("run",StringIO(code), basis, vector)
+#! [markBoundaryDOFs]
 
 
 ############################  main program  ###################################
 
+#! [createGrid]
 # Number of grid elements in one direction
 gridSize = 32
 
 # Create a grid of the unit square
 grid = grid.structuredGrid([0,0],[1,1],[gridSize,gridSize])
+#! [createGrid]
 
+#! [createBasis]
 # Create a second-order Lagrange FE basis
 basis = functions.defaultGlobalBasis(grid, functions.Lagrange(order=2))
+#! [createBasis]
 
-# Load term
-rightHandSide = lambda x : 10
+#! [assembly]
+# Source term
+f = lambda x : 10
 
-# Compute stiffness matrix and rhs vector
-A,b = assembleLaplaceMatrix(basis, rightHandSide)
+# Compute stiffness matrix and load vector
+A,b = assembleLaplaceMatrix(basis, f)
+#! [assembly]
 
+#! [dirichletHandling]
 # Determine all coefficients that are on the boundary
 isDirichlet = np.zeros(len(basis))
 markBoundaryDOFs(basis, isDirichlet)
@@ -151,10 +160,12 @@ markBoundaryDOFs(basis, isDirichlet)
 dirichletValueFunction = lambda x : np.sin(2*np.pi*x[0])
 
 # Get coefficients of a Lagrange-FE approximation of the Dirichlet values
-dirichletCoeffs = np.zeros(len(basis))
-basis.interpolate(dirichletCoeffs, dirichletValueFunction)
+dirichletValues = np.zeros(len(basis))
+basis.interpolate(dirichletValues, dirichletValueFunction)
+#! [dirichletHandling]
 
-# Integrate Dirichlet conditions into the matrix and rhs vector
+#! [dirichletIntegration]
+# Integrate Dirichlet conditions into the matrix and load vector
 rows, cols = A.nonzero()
 
 for i,j in zip(rows, cols):
@@ -163,15 +174,19 @@ for i,j in zip(rows, cols):
             A[i,j] = 1.0
         else:
             A[i,j] = 0
-        b[i] = dirichletCoeffs[i]
+        b[i] = dirichletValues[i]
+#! [dirichletIntegration]
 
-
+#! [solving]
 # Solve linear system!
 x = scipy.sparse.linalg.spsolve(A, b)
+#! [solving]
 
+#! [vtkWriting]
 # Write result as vtu file
-u = basis.asFunction(x)
+uh = basis.asFunction(x)
 
-vtk = grid.vtkWriter(2)
-u.addToVTKWriter("sol", vtk, dune.grid.DataType.PointData)
-vtk.write("poisson-pq2-result")
+vtkWriter = grid.vtkWriter(subsampling=2)
+uh.addToVTKWriter("u", vtkWriter, dune.grid.DataType.PointData)
+vtkWriter.write("poisson-pq2-result")
+#! [vtkWriting]

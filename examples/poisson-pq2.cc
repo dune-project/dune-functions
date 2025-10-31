@@ -31,8 +31,8 @@
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 using namespace Dune;
-//! LABEL_END_INCLUDES
 
+//! [getLocalMatrix]
 // Compute the stiffness matrix for a single element
 template <class LocalView, class MatrixType>
 void getLocalMatrix(const LocalView& localView, MatrixType& elementMatrix)
@@ -84,8 +84,9 @@ void getLocalMatrix(const LocalView& localView, MatrixType& elementMatrix)
   }
 
 }
-//! LABEL_END_GETLOCALMATRIX
+//! [getLocalMatrix]
 
+//! [getVolumeTerm]
 // Compute the source term for a single element
 template <class LocalView, class LocalVolumeTerm>
 void getVolumeTerm( const LocalView& localView,
@@ -131,8 +132,9 @@ void getVolumeTerm( const LocalView& localView,
   }
 
 }
-//! LABEL_END_GETVOLUMETERM
+//! [getVolumeTerm]
 
+//! [getOccupationPattern]
 // Get the occupation pattern of the stiffness matrix
 template <class FEBasis>
 void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
@@ -169,8 +171,9 @@ void getOccupationPattern(const FEBasis& feBasis, MatrixIndexSet& nb)
   }
 
 }
-//! LABEL_END_GETPATTERN
+//! [getOccupationPattern]
 
+//! [assembleLaplaceMatrix]
 /** \brief Assemble the Laplace stiffness matrix on the given grid view */
 template <class FEBasis, class VolumeTerm>
 void assembleLaplaceMatrix(const FEBasis& feBasis,
@@ -249,7 +252,7 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
   }
 
 }
-//! LABEL_END_ASSEMBLELAPLACEMATRIX
+//! [assembleLaplaceMatrix]
 
 // This method marks all Lagrange nodes on the boundary of the grid.
 // In our problem we want to use them as the Dirichlet nodes.
@@ -259,6 +262,7 @@ void assembleLaplaceMatrix(const FEBasis& feBasis,
 // Since interpolating into a vector<bool> is currently not supported,
 // we use a vector<char> which, in contrast to vector<bool>
 // is a real container.
+//! [boundaryTreatment]
 template <class FEBasis>
 void boundaryTreatment (const FEBasis& feBasis, std::vector<char>& dirichletNodes )
 {
@@ -269,8 +273,9 @@ void boundaryTreatment (const FEBasis& feBasis, std::vector<char>& dirichletNode
     dirichletNodes[index] = true;
   });
 }
-//! LABEL_END_BOUNDARYTREATMENT
+//! [boundaryTreatment]
 
+//! [createMixedGrid]
 auto createMixedGrid()
 {
   using Grid = Dune::UGGrid<2>;
@@ -285,39 +290,42 @@ auto createMixedGrid()
   factory.insertElement(Dune::GeometryTypes::simplex(2), {5, 8, 7});
   return factory.createGrid();
 }
-//! LABEL_END_CREATEMIXEDGRID
+//! [createMixedGrid]
 
-//! LABEL_START_MAIN
+//! [startMainAndMPI]
 int main (int argc, char *argv[]) try
 {
   // Set up MPI, if available
   MPIHelper::instance(argc, argv);
-//! LABEL_END_SETUP
+  //! [startMainAndMPI]
 
   ///////////////////////////////////
   //   Generate the grid
   ///////////////////////////////////
 
+  //! [createGridCall]
   auto grid = createMixedGrid();
 
   grid->globalRefine(4);
 
   auto gridView = grid->leafGridView();
   using GridView = decltype(gridView);
-//! LABEL_END_CREATEGRID
+  //! [createGridCall]
 
   /////////////////////////////////////////////////////////
   //   Choose a finite element space
   /////////////////////////////////////////////////////////
 
+  //! [makeBasis]
   typedef Functions::LagrangeBasis<GridView,2> FEBasis;
   FEBasis feBasis(gridView);
-//! LABEL_END_MAKEBASIS
+  //! [makeBasis]
 
   /////////////////////////////////////////////////////////
   //   Stiffness matrix and right hand side vector
   /////////////////////////////////////////////////////////
 
+  //! [theRest]
   using VectorType = BlockVector<double>;
   using MatrixType = BCRSMatrix<double>;
 
@@ -422,3 +430,4 @@ int main (int argc, char *argv[]) try
  catch (Exception& e) {
     std::cout << e.what() << std::endl;
  }
+//! [theRest]
