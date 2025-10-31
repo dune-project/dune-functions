@@ -15,6 +15,7 @@ Currently there is only one commented example in the tutorial:
 
 ### Python examples
 1. @subpage poisson-pq2-py
+1. @subpage poisson-mfem-py
 
 [dune-functions]: https://gitlab.dune-project.org/staging/dune-functions
 
@@ -37,3 +38,4 @@ The commented versions can be found in the @ref tutorial section.
 
 ### Python examples
 1. @subpage source-poisson-pq2-py
+1. @subpage source-poisson-mfem-py

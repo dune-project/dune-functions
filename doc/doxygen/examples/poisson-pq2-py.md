@@ -218,7 +218,7 @@ This will change eventually.
 <div class="section_buttons">
 | Previous      |                         Next |
 |:--------------|-----------------------------:|
-| @ref poisson-pq2-cpp |                       |
+| @ref poisson-pq2-cpp | @ref poisson-mfem-py  |
 </div>
 
 

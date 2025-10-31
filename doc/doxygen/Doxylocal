@@ -16,6 +16,7 @@ INPUT                  += @top_srcdir@/dune/functions \
                           @top_srcdir@/doc/doxygen/mainpage.md \
                           @top_srcdir@/doc/doxygen/license.md \
                           @top_srcdir@/doc/doxygen/examples.md \
+                          @top_srcdir@/doc/doxygen/examples/poisson-mfem-py.md \
                           @top_srcdir@/doc/doxygen/examples/poisson-pq2-cpp.md \
                           @top_srcdir@/doc/doxygen/examples/poisson-pq2-py.md \
                           @top_srcdir@/doc/doxygen/doxygen_groups.hh
