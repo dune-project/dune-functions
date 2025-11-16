@@ -14,6 +14,8 @@
 #include <dune/common/typetraits.hh>
 #include <dune/common/visibility.hh>
 
+#include <dune/common/typetree/nodeconcepts.hh>
+
 #include <dune/python/pybind11/pybind11.h>
 #include <dune/python/pybind11/extensions.h>
 #include <dune/python/localfunctions/localfiniteelement.hh>
@@ -24,22 +26,29 @@ namespace Functions {
 
 namespace detail {
 
-template<typename Tree, std::enable_if_t< Tree::isComposite, int > = 0>
+template<typename Tree>
+requires Dune::TypeTree::Concept::StaticDegreeInnerTreeNode<Tree>
+         and (not Dune::TypeTree::Concept::UniformInnerTreeNode<Tree>)
 void registerTree_(pybind11::handle scope, const char* name = "Tree");
 
-template<typename Tree, std::enable_if_t< Tree::isLeaf, int > = 0>
+template<typename Tree>
+requires Dune::TypeTree::Concept::LeafTreeNode<Tree>
 void registerTree_(pybind11::handle scope, const char* name = "Tree");
 
-template<typename Tree, std::enable_if_t< Tree::isPower, int > = 0>
+template<typename Tree>
+requires Dune::TypeTree::Concept::UniformInnerTreeNode<Tree>
 void registerTree_(pybind11::handle scope, const char* name = "Tree");
 
 template<typename Tree>
 void registerTreeCommon(pybind11::class_<Tree, std::shared_ptr<Tree>>& cls)
 {
+    using namespace Dune::TypeTree::Concept;
   /* dune-typetree properties */
-  cls.def_property_readonly_static("isComposite", [](pybind11::object) { return Tree::isComposite; });
-  cls.def_property_readonly_static("isLeaf", [](pybind11::object) { return Tree::isLeaf; });
-  cls.def_property_readonly_static("isPower", [](pybind11::object) { return Tree::isPower; });
+  cls.def_property_readonly_static("isComposite", [](pybind11::object) {
+    return StaticDegreeInnerTreeNode<Tree> and (not UniformInnerTreeNode<Tree>);
+  });
+  cls.def_property_readonly_static("isLeaf", [](pybind11::object) { return LeafTreeNode<Tree>; });
+  cls.def_property_readonly_static("isPower", [](pybind11::object) { return UniformInnerTreeNode<Tree>; });
   cls.def("degree", [](pybind11::object) -> std::size_t { return Tree::degree(); });
   cls.def( "__len__", [] (const Tree& self) -> int { return self.size(); } );
   cls.def( "size", [] (const Tree& self) -> int { return self.size(); } );
@@ -73,7 +82,9 @@ void registerTreeChildAccessor(pybind11::class_<Tree, std::shared_ptr<Tree>>& cl
     pybind11::arg("i"));
 }
 
-template<typename Tree, std::enable_if_t< Tree::isComposite, int > >
+template<typename Tree>
+requires Dune::TypeTree::Concept::StaticDegreeInnerTreeNode<Tree>
+         and (not Dune::TypeTree::Concept::UniformInnerTreeNode<Tree>)
 void registerTree_(pybind11::handle scope, const char* name)
 {
   if( !pybind11::already_registered< Tree >() )
@@ -126,7 +137,8 @@ void registerFiniteElementProperty(pybind11::class_< Tree, std::shared_ptr<Tree>
 // using static to avoid double registration doesn't work with clang
 // because statics remain local to module and are not made unique between modules
 // If the class is needed use the TypeRegistry to make this work smoothly
-template<typename Tree, std::enable_if_t< Tree::isLeaf, int >>
+template<typename Tree>
+requires Dune::TypeTree::Concept::LeafTreeNode<Tree>
 void registerTree_(pybind11::handle scope, const char* name)
 {
   if( !pybind11::already_registered< Tree >() )
@@ -137,7 +149,8 @@ void registerTree_(pybind11::handle scope, const char* name)
   }
 }
 
-template<typename Tree, std::enable_if_t< Tree::isPower, int >>
+template<typename Tree>
+requires Dune::TypeTree::Concept::UniformInnerTreeNode<Tree>
 void registerTree_(pybind11::handle scope, const char* name)
 {
   if( !pybind11::already_registered< Tree >() )

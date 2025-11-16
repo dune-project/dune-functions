@@ -11,6 +11,8 @@
 #include <dune/common/typeutilities.hh>
 #include <dune/common/indices.hh>
 
+#include <dune/common/typetree/nodeconcepts.hh>
+
 #include <dune/functions/common/utility.hh>
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -106,8 +108,8 @@ public:
   }
 
   //! Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-  template<class NodeType, typename It,
-    std::enable_if_t<NodeType::isPower, int> = 0>
+  template<class NodeType, typename It>
+  requires Dune::TypeTree::Concept::UniformInnerTreeNode<NodeType>
   It indices(const NodeType& node, It it) const
   {
     return Base::indicesImpl(node, it, children, IndexMergingStrategy{});

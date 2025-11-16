@@ -14,6 +14,8 @@
 #include <dune/common/reservedvector.hh>
 #include <dune/common/typeutilities.hh>
 
+#include <dune/common/typetree/nodeconcepts.hh>
+
 #include <dune/functions/common/utility.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
@@ -167,10 +169,10 @@ struct BasisTree : Refines<BasisNode>
 
   template<class N>
   auto require(const N& node) -> decltype(
-    requireConcept<std::conditional_t<N::isLeaf, LeafBasisNode<GridView>, BasisNode>, N>(),
-    requireConcept<std::conditional_t<N::isPower and hasStaticDegree<N>(), PowerBasisNode<GridView>, BasisNode>, N>(),
-    requireConcept<std::conditional_t<N::isPower and not hasStaticDegree<N>(), DynamicPowerBasisNode<GridView>, BasisNode>, N>(),
-    requireConcept<std::conditional_t<N::isComposite, CompositeBasisNode<GridView>, BasisNode>, N>()
+    requireConcept<std::conditional_t<Dune::TypeTree::Concept::LeafTreeNode<N>, LeafBasisNode<GridView>, BasisNode>, N>(),
+    requireConcept<std::conditional_t<Dune::TypeTree::Concept::UniformInnerTreeNode<N> and hasStaticDegree<N>(), PowerBasisNode<GridView>, BasisNode>, N>(),
+    requireConcept<std::conditional_t<Dune::TypeTree::Concept::UniformInnerTreeNode<N> and not hasStaticDegree<N>(), DynamicPowerBasisNode<GridView>, BasisNode>, N>(),
+    requireConcept<std::conditional_t<Dune::TypeTree::Concept::StaticDegreeInnerTreeNode<N> and (not Dune::TypeTree::Concept::UniformInnerTreeNode<N>), CompositeBasisNode<GridView>, BasisNode>, N>()
   );
 };
 
