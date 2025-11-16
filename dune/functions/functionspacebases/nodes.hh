@@ -224,10 +224,10 @@ namespace Dune {
 
       // Historic node interface
 
-      static const bool isLeaf = true;
-      static const bool isPower = false;
-      static const bool isComposite = false;
-      using NodeTag = Dune::TypeTree::LeafNodeTag;
+      static const bool isLeaf [[deprecated]] = true;
+      static const bool isPower [[deprecated]] = false;
+      static const bool isComposite [[deprecated]] = false;
+      using NodeTag [[deprecated]] = Dune::TypeTree::LeafNodeTag;
 
       // End of node interface
 
@@ -290,10 +290,10 @@ namespace Dune {
 
       using ChildType = T;
 
-      static const bool isLeaf = false;
-      static const bool isPower = true;
-      static const bool isComposite = false;
-      using NodeTag = Dune::TypeTree::PowerNodeTag;
+      static const bool isLeaf [[deprecated]] = false;
+      static const bool isPower [[deprecated]] = true;
+      static const bool isComposite [[deprecated]] = false;
+      using NodeTag [[deprecated]] = Dune::TypeTree::PowerNodeTag;
 
       // End of node interface
 
@@ -352,10 +352,10 @@ namespace Dune {
 
       using ChildType = T;
 
-      static const bool isLeaf = false;
-      static const bool isPower = true;
-      static const bool isComposite = false;
-      using NodeTag = Dune::TypeTree::DynamicPowerNodeTag;
+      static const bool isLeaf [[deprecated]] = false;
+      static const bool isPower [[deprecated]] = true;
+      static const bool isComposite [[deprecated]] = false;
+      using NodeTag [[deprecated]] = Dune::TypeTree::DynamicPowerNodeTag;
 
       // End of node interface
 
@@ -413,10 +413,10 @@ namespace Dune {
 
       using ChildTypes = std::tuple<T...>;
 
-      static const bool isLeaf = false;
-      static const bool isPower = false;
-      static const bool isComposite = true;
-      using NodeTag = Dune::TypeTree::CompositeNodeTag;
+      static const bool isLeaf [[deprecated]] = false;
+      static const bool isPower [[deprecated]] = false;
+      static const bool isComposite [[deprecated]] = true;
+      using NodeTag [[deprecated]] = Dune::TypeTree::CompositeNodeTag;
 
       template<std::size_t k>
       struct Child {
