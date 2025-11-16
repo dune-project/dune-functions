@@ -20,8 +20,8 @@ namespace Dune {
 namespace Functions {
 
 
-
 template<class F, class size_type, size_type firstValue, class... Args>
+[[deprecated("This function will be removed after Dune 2.11")]]
 auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue> values, const size_type& i, F&& f, Args&&... args)
   ->decltype(f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...))
 {
@@ -29,6 +29,7 @@ auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue> values,
 }
 
 template<class F, class size_type, size_type firstValue, size_type secondValue, size_type... otherValues, class... Args>
+[[deprecated("This function will be removed after Dune 2.11")]]
 auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue, secondValue, otherValues...> values, const size_type i, F&& f, Args&&... args)
   ->decltype(f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...))
 {
@@ -59,8 +60,11 @@ auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue, secondV
  * \param args Additional arguments for f
  *
  * \returns f(index_constant\<i\>(), args...)
+ *
+ * \deprecated This will be removed in 2.11. use Dune::Hybrid::switchCases instead.
  */
 template<std::size_t end, class F, class size_type, class... Args>
+[[deprecated("This function will be removed after Dune 2.11, use Dune::Hybrid::switchCases.")]]
 auto forwardAsStaticIndex(const size_type& i, F&& f, Args&&... args)
   ->decltype(f(Dune::Indices::_0, std::forward<Args>(args)...))
 {
