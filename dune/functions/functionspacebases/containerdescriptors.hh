@@ -82,7 +82,7 @@ template<class... Children>
 using Tuple = Dune::TupleVector<Children...>;
 
 //! Generate a descriptor in case the children are not all of the same type.
-//! \relates Tuple
+//! \relates Dune::TupleVector<Children...>
 template<class Child0, class... Children,
   std::enable_if_t<(sizeof...(Children) > 0), int> = 0,
   std::enable_if_t<(...|| (not std::is_same_v<Child0, Children>)), int> = 0>

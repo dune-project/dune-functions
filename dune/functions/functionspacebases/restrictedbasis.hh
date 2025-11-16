@@ -137,14 +137,7 @@ public:
   }
 
   /**
-   * \brief Create tree node with given root tree path
-   *
-   * \tparam TP Type of root tree path
-   * \param tp Root tree path
-   *
-   * By passing a non-trivial root tree path this can be used
-   * to create a node suitable for being placed in a tree at
-   * the position specified by the root tree path.
+   * \brief Create tree node
    */
   Node makeNode() const
   {

@@ -97,7 +97,7 @@ namespace Impl {
  * When resolving multi-indices the backend appends indices
  * using operator[] as long as the result is not a scalar.
  * If this exhausts the digits of the multi-index, additional
- * zero`s are appended.
+ * zeros are appended.
  *
  * \tparam V Type of the raw wrapper vector
  */
@@ -342,9 +342,9 @@ private:
  * When accessing the vector with a multi-index the backend
  * appends multi-index digits using operator[] as long as the
  * result is not a scalar. If this exhausts all digits of the
- * multi-index, additional zero`s are appended.
+ * multi-index, additional zeros are appended.
  *
- * \tparam V Type of the raw wrapper vector
+ * \tparam Vector Type of the raw wrapper vector
  */
 template<class Vector>
 auto istlVectorBackend(Vector& v)
@@ -380,9 +380,9 @@ auto istlVectorBackend(Vector& v)
  * When accessing the vector with a multi-index the backend
  * appends multi-index digits using operator[] as long as the
  * result is not a scalar. If this exhausts all digits of the
- * multi-index, additional zero`s are appended.
+ * multi-index, additional zeros are appended.
  *
- * \tparam V Type of the raw wrapper vector
+ * \tparam Vector Type of the raw wrapper vector
  */
 template<class Vector>
 auto istlVectorBackend(const Vector& v)
