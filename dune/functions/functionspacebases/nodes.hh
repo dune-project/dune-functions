@@ -288,7 +288,7 @@ namespace Dune {
 
       // Historic node interface
 
-      using ChildType = T;
+      using ChildType [[deprecated]] = T;
 
       static const bool isLeaf [[deprecated]] = false;
       static const bool isPower [[deprecated]] = true;
@@ -350,7 +350,7 @@ namespace Dune {
 
       // Historic node interface
 
-      using ChildType = T;
+      using ChildType [[deprecated]] = T;
 
       static const bool isLeaf [[deprecated]] = false;
       static const bool isPower [[deprecated]] = true;
@@ -411,7 +411,7 @@ namespace Dune {
 
       // Historic node interface
 
-      using ChildTypes = std::tuple<T...>;
+      using ChildTypes [[deprecated]] = std::tuple<T...>;
 
       static const bool isLeaf [[deprecated]] = false;
       static const bool isPower [[deprecated]] = false;
@@ -419,18 +419,18 @@ namespace Dune {
       using NodeTag [[deprecated]] = Dune::TypeTree::CompositeNodeTag;
 
       template<std::size_t k>
-      struct Child {
+      struct [[deprecated]] Child {
         static_assert((k < degree()), "child index out of range");
 
         //! The type of the child.
-        using Type = typename std::tuple_element_t<k,ChildTypes>;
+        using Type = typename std::tuple_element_t<k, std::tuple<T...>>;
 
         using type = Type;
       };
 
       // End of node interface
 
-      using Element = typename Child<0>::Type::Element;
+      using Element = typename std::tuple_element_t<0, std::tuple<T...>>::Element;
 
       CompositeBasisNode() = default;
 
