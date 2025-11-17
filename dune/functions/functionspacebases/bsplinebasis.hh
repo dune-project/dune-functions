@@ -71,6 +71,7 @@ public:
 
   /** \brief Evaluate all shape functions
    * \param in Coordinates where to evaluate the functions, in local coordinates of the current knot span
+   * \param[out] out Result of shape functions evaluation
    */
   void evaluateFunction (const FieldVector<D,dim>& in,
                          std::vector<FieldVector<R,1> >& out) const
@@ -83,6 +84,7 @@ public:
 
   /** \brief Evaluate Jacobian of all shape functions
    * \param in Coordinates where to evaluate the Jacobian, in local coordinates of the current knot span
+   * \param[out] out Result of Jacobian evaluation
    */
   void evaluateJacobian (const FieldVector<D,dim>& in,
                          std::vector<FieldMatrix<D,1,dim> >& out) const
@@ -585,6 +587,7 @@ public:
    *
    * Unfortunately, not all of these conditions can be checked for automatically.
    *
+   * \param gridView The grid we are defining the basis on.
    * \param knotVector A single knot vector, which will be used for all coordinate directions
    * \param order B-spline order, will be used for all coordinate directions
    * \param makeOpen If this is true, then knots are prepended and appended to the knot vector to make the knot vector 'open'.

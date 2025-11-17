@@ -401,7 +401,6 @@ namespace BasisFactory {
  * \tparam ChildPreBasisFactory Types of child pre-basis factory
  * \tparam IndexMergingStrategy An IndexMergingStrategy type
  * \param childPreBasisFactory Child pre-basis factory
- * \param ims IndexMergingStrategy to be used
  *
  * This overload can be used to explicitly supply an IndexMergingStrategy.
  */

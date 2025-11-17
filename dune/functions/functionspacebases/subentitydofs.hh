@@ -160,7 +160,7 @@ private:
  * T::GridView. Hence t it can be a GlobalBasis or
  * a LocalView.
  *
- * \param t A GlobalBasis or a LocalView
+ * \tparam T A GlobalBasis type or a LocalView type
  */
 template<class T>
 auto subEntityDOFs(const T&)
