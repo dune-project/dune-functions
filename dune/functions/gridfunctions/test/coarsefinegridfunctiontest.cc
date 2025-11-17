@@ -76,7 +76,7 @@ struct QuadratureRules
   using QuadraturePoint = Dune::QuadraturePoint<ctype, dim>;
   using Coordinate = typename QuadraturePoint::Vector;
 
-  static const auto& rule(const Dune::GeometryType& type, int order)
+  static const auto& rule(const Dune::GeometryType& type, size_t order)
   {
     static auto pyramidRules = std::vector<QuadratureRule>();
     if (type == Dune::GeometryTypes::pyramid)

@@ -266,7 +266,7 @@ class RaviartThomasPreBasis :
   // the layout is defined in terms of a MCMGLayout specialized for k == 0 or 1
   static MCMGLayout dofLayout()
   {
-    return [](GeometryType gt, int gridDim) -> size_t {
+    return [](GeometryType gt, size_t gridDim) -> size_t {
       if ((gt.isPyramid()) and (k==0))
         return 1;
       if (gt.dim() == gridDim)

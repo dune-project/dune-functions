@@ -55,7 +55,7 @@ class LagrangeDGPreBasis :
 
   static MCMGLayout dofLayout(int order)
   {
-    return [order](Dune::GeometryType type, int dimGrid) {
+    return [order](Dune::GeometryType type, size_t dimGrid) {
       if (type.dim() == dimGrid)
       {
         if (type.isLine())
