@@ -67,10 +67,10 @@ namespace Dune
           return Node::FiniteElement::Traits::LocalBasisType::Traits::dimRange;
         else if constexpr (StaticDegreeInnerTreeNode<Node> and (not UniformInnerTreeNode<Node>) )
           return Dune::unpackIntegerSequence([&](auto... i) {
-            return (nodeRangeDim<typename Node::template Child<i>::Type>() + ...);
+            return (nodeRangeDim<Dune::TypeTree::Child<Node, i>>() + ...);
           }, std::make_index_sequence<Node::degree()>{});
         else if constexpr (UniformInnerTreeNode<Node> and hasStaticDegree<Node>())
-          return Node::degree() * nodeRangeDim<typename Node::ChildType>();
+          return Node::degree() * nodeRangeDim<Dune::TypeTree::Child<Node, 0>>();
         else
           static_assert(Dune::AlwaysFalse<Node>::value, "Dynamic power bases are not supported through the python interface.");
       }

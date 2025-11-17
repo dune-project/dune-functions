@@ -95,7 +95,7 @@ void registerTree_(pybind11::handle scope, const char* name)
     // static variable cls is captured automatically - explicit capture fails with clang:
     //    fatal error: 'cls' cannot be captured because it does not have automatic storage duration
     Hybrid::forEach(std::make_index_sequence<Tree::degree()>{}, [&cls](auto i) {
-        using SubTree = typename Tree::template Child<i>::Type;
+        using SubTree = Dune::TypeTree::Child<Tree, i>;
         std::string subName = std::string("Tree") + std::to_string(i);
         if( !pybind11::already_registered< SubTree >() )
           registerTree_<SubTree>(cls, subName.c_str());
@@ -157,7 +157,7 @@ void registerTree_(pybind11::handle scope, const char* name)
   {
     pybind11::class_< Tree, std::shared_ptr<Tree> > cls(scope, name);
     registerTreeCommon(cls);
-    registerTree_<typename Tree::ChildType>(cls);
+    registerTree_<Dune::TypeTree::Child<Tree,0>>(cls);
     registerTreeChildAccessor(cls);
   }
 }
