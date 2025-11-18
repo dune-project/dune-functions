@@ -30,17 +30,28 @@ void testRaviartThomasBasis(TestSuite& test, const GridFactory& factory)
   std::cout<<"  Testing order: "<< k <<std::endl;
 
   // Check RaviartThomasBasis created 'manually'
-  {
-    Functions::RaviartThomasBasis<decltype(gridView),k> basis(gridView);
-    test.subTest(checkBasis(basis, EnableNormalContinuityCheck()));
-  }
+  Functions::RaviartThomasBasis<decltype(gridView),k> basis1(gridView);
+  test.subTest(checkBasis(basis1, EnableNormalContinuityCheck()));
 
   // Check RaviartThomasBasis created using basis builder mechanism
-  {
-    using namespace Functions::BasisFactory;
-    auto basis = makeBasis(gridView, raviartThomas<k>());
-    test.subTest(checkBasis(basis, EnableNormalContinuityCheck()));
-  }
+  using namespace Functions::BasisFactory;
+  auto basis2 = makeBasis(gridView, raviartThomas<k>());
+  test.subTest(checkBasis(basis2, EnableNormalContinuityCheck()));
+
+  // Now modify the grid, and check again.
+  const auto firstEntity = gridView.template begin<0>();
+  grid->mark(1, *firstEntity);
+  grid->adapt();
+
+  auto modifiedGridView = grid->leafGridView();
+
+  // Check the RaviartThomasBasis that was created 'manually'
+  basis1.update(modifiedGridView);
+  test.subTest(checkBasis(basis1, EnableNormalContinuityCheck()));
+
+  // Check the RaviartThomasBasis that was created using the basis builder mechanism
+  basis2.update(modifiedGridView);
+  test.subTest(checkBasis(basis2, EnableNormalContinuityCheck()));
 }
 
 
