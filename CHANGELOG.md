@@ -10,6 +10,8 @@ corresponding version of the Dune core modules.
 
 # Master (will become release 2.11)
 
+- There is now an implementation of the Argyris finite element.
+
 - The `RaviartThomasBasis` can now be used with mixed grids in 3d
   including cubes, tetrahedra, pyramids, prisms.
 
