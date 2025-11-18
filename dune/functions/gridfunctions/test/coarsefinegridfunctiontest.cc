@@ -76,7 +76,7 @@ struct QuadratureRules
   using QuadraturePoint = Dune::QuadraturePoint<ctype, dim>;
   using Coordinate = typename QuadraturePoint::Vector;
 
-  static const auto& rule(const Dune::GeometryType& type, int order)
+  static const auto& rule(const Dune::GeometryType& type, size_t order)
   {
     static auto pyramidRules = std::vector<QuadratureRule>();
     if (type == Dune::GeometryTypes::pyramid)
@@ -131,7 +131,6 @@ double maxNormDistanceOnElement(const Element& element, const F& f_local, const 
 template<class GridView, class F, class G>
 double maxNormDistanceOnGridView(const GridView& gridView, const F& f, const G& g, bool checkVertices, std::size_t sampleQuadratureOrder = 5)
 {
-  constexpr auto dimension = GridView::dimension;
   double diff = 0.0;
 
   auto f_local = localFunction(f);
@@ -149,7 +148,6 @@ double maxNormDistanceOnGridView(const GridView& gridView, const F& f, const G& 
 template<class GridView, class F, class G>
 double maxNormDerivativeDistanceOnGridView(const GridView& gridView, const F& f, const G& g, bool checkVertices, std::size_t sampleQuadratureOrder = 5)
 {
-  constexpr auto dimension = GridView::dimension;
   double diff = 0.0;
 
   // First check by obtaining the derivative globally
@@ -309,7 +307,7 @@ void refineLocalNearOrigin(Grid& grid, std::size_t refinements)
 {
   constexpr auto dimension = Grid::dimension;
   auto origin = Dune::FieldVector<double, dimension>();
-  for(auto k : Dune::range(refinements))
+  for([[maybe_unused]] auto k : Dune::range(refinements))
   {
     for(const auto& element : elements(grid.leafGridView()))
     {
