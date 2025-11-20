@@ -98,7 +98,7 @@ void forEachBoundaryDOF(const Basis& basis, F&& f)
  * \ingroup FunctionSpaceBasesUtilities
  *
  * This loops over all DOFs of a basis associated to sub-entities
- * on the boundary. This overload will pass a single arguments to the
+ * on the boundary. This overload will pass a single argument to the
  * given loop callback: The global (multi-)index of the boundary DOF.
  * Notice that this may visit the same DOF multiple times.
  *
