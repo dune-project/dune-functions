@@ -7,6 +7,8 @@
 link_libraries(Dune::Functions)
 add_definitions(-DDUNE_GRID_EXAMPLE_GRIDS_PATH=\"${DUNE_GRID_EXAMPLE_GRIDS_PATH}\")
 
+dune_add_test(SOURCES argyristest.cc LABELS quick)
+
 dune_add_test(SOURCES brezzidouglasmarinibasistest.cc LABELS quick)
 
 dune_add_test(SOURCES bsplinebasistest.cc LABELS quick)

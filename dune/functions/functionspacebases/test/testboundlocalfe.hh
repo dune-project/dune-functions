@@ -141,9 +141,12 @@ public:
             dir[j]++;
             t.fe_.localBasis().partial(dir, x, partials);
             for (std::size_t k = 0; k < Base::dimRange; ++k)
+            {
+              hessian[k][i][j] = 0.0;
               referenceHessian[k][i][j] = partials[t.shapeFunction_][k];
+            }
           }
-        hessian = 0;
+
         const auto geometryJacobianInverse = t.e_.geometry().jacobianInverse(x);
         for (std::size_t k = 0; k < Base::dimRange; ++k)
           hessian[k] = transpose(geometryJacobianInverse) * referenceHessian[k] * geometryJacobianInverse;

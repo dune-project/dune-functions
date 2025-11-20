@@ -21,6 +21,7 @@ install(FILES
         polymorphicsmallobject.hh
         reserveddeque.hh
         signature.hh
+        squeezetensor.hh
         staticforloop.hh
         subdomain.hh
         type_traits.hh
