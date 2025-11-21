@@ -66,7 +66,7 @@ decltype(auto) access (Tree&& tree, [[maybe_unused]] Dune::TypeTree::HybridTreeP
   return accessImpl(std::forward<Tree>(tree),Dune::TypeTree::treePathEntry<i>(tp)...);
 }
 
-// access a tree using a hybridTreePath
+// access a tree using a HybridTreePath
 template<class Tree, class... Indices>
 decltype(auto) access (Tree&& tree, Dune::TypeTree::HybridTreePath<Indices...> tp)
 {

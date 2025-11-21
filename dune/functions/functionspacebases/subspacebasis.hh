@@ -151,7 +151,7 @@ auto subspaceBasis(const RootBasis& rootBasis, const TypeTree::HybridTreePath<Pr
 template<class RootBasis, class... PrefixTreeIndices>
 auto subspaceBasis(const RootBasis& rootBasis, const PrefixTreeIndices&... prefixTreeIndices)
 {
-  return subspaceBasis(rootBasis, TypeTree::hybridTreePath(prefixTreeIndices...));
+  return subspaceBasis(rootBasis, TypeTree::treePath(prefixTreeIndices...));
 }
 
 
