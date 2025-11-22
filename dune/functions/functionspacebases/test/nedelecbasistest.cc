@@ -30,17 +30,28 @@ void testNedelecBasis(TestSuite& test, const GridFactory& factory)
   std::cout<<"  Testing order: "<< order <<std::endl;
 
   // Check NedelecBasis created 'manually'
-  {
-    Functions::NedelecBasis<decltype(gridView), kind, order, double> basis(gridView);
-    test.subTest(checkBasis(basis, EnableTangentialContinuityCheck()));
-  }
+  Functions::NedelecBasis<decltype(gridView), kind, order, double> basis1(gridView);
+  test.subTest(checkBasis(basis1, EnableTangentialContinuityCheck()));
 
   // Check NedelecBasis created using basis builder mechanism
-  {
-    using namespace Functions::BasisFactory;
-    auto basis = makeBasis(gridView, nedelec<kind,order, double>());
-    test.subTest(checkBasis(basis, EnableTangentialContinuityCheck()));
-  }
+  using namespace Functions::BasisFactory;
+  auto basis2 = makeBasis(gridView, nedelec<kind,order, double>());
+  test.subTest(checkBasis(basis2, EnableTangentialContinuityCheck()));
+
+  // Now modify the grid, and check again.
+  const auto firstEntity = gridView.template begin<0>();
+  grid->mark(1, *firstEntity);
+  grid->adapt();
+
+  auto modifiedGridView = grid->leafGridView();
+
+  // Check the NedelecBasis that was created 'manually'
+  basis1.update(modifiedGridView);
+  test.subTest(checkBasis(basis1, EnableTangentialContinuityCheck()));
+
+  // Check the NedelecBasis that was created using the basis builder mechanism
+  basis2.update(modifiedGridView);
+  test.subTest(checkBasis(basis2, EnableTangentialContinuityCheck()));
 }
 
 
