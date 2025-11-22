@@ -18,7 +18,7 @@
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/globalvaluedlocalfiniteelement.hh>
-#include <dune/functions/functionspacebases/leafprebasismixin.hh>
+#include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 
 namespace Dune::Functions
@@ -59,6 +59,14 @@ namespace Impl
       : elementMapper_(gv, mcmgElementLayout()),
         orientation_(gv.size(0))
     {
+      update(gv);
+    }
+
+    void update(const GV& gv)
+    {
+      elementMapper_.update(gv);
+      orientation_.resize(gv.size(0));
+
       // create all variants
       if constexpr (hasFixedElementType)
       {
@@ -138,7 +146,7 @@ class NedelecNode;
 
 template<typename GV, typename Range, std::size_t kind, int order>
 class NedelecPreBasis :
-  public LeafPreBasisMixin< NedelecPreBasis<GV,Range,kind,order> >
+  public LeafPreBasisMapperMixin<GV>
 {
   static const int dim = GV::dimension;
   static_assert(kind==1, "Only the Nedelec basis of the first kind is currently implemented!");
@@ -154,10 +162,9 @@ public:
   using Node = NedelecNode<GV, Range, kind, order>;
 
   /** \brief Constructor for a given grid view object */
-  NedelecPreBasis(const GridView& gv) :
-    gridView_(gv),
-    finiteElementMap_(gv),
-    mapper_(gridView_, mcmgLayout(Dim<1>{}))
+  NedelecPreBasis(const GridView& gv)
+  : LeafPreBasisMapperMixin<GV>(gv, mcmgLayout(Dim<1>{}))
+  , finiteElementMap_(gv)
   {
     if (kind!=1)
       DUNE_THROW(NotImplemented, "Only Nedelec elements of the first kind are implemented!");
@@ -178,21 +185,11 @@ public:
       DUNE_THROW(NotImplemented, "Only 2d and 3d Nédélec elements are implemented");
   }
 
-  void initializeIndices()
-  {}
-
-  /** \brief Obtain the grid view that the basis is defined on
-   */
-  const GridView& gridView() const
-  {
-    return gridView_;
-  }
-
-  /* \brief Update the stored grid view, to be called if the grid has changed */
+  /** \brief Update the stored grid view, to be called if the grid has changed */
   void update (const GridView& gv)
   {
-    gridView_ = gv;
-    mapper_.update(gridView_);
+    LeafPreBasisMapperMixin<GV>::update(gv);
+    finiteElementMap_.update(gv);
   }
 
   /**
@@ -203,48 +200,8 @@ public:
     return Node{&finiteElementMap_};
   }
 
-  size_type dimension() const
-  {
-    return mapper_.size();
-  }
-
-  size_type maxNodeSize() const
-  {
-    size_type result = 0;
-    for (auto&& type : gridView_.indexSet().types(0))
-    {
-      size_type numEdges = referenceElement<typename GV::ctype,dim>(type).size(dim-1);
-      result = std::max(result, numEdges);
-    }
-
-    return result;
-  }
-
-  /**
-   * \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-   */
-  template<typename It>
-  It indices(const Node& node, It it) const
-  {
-    const auto& element = node.element();
-
-    // throw if Element is not of predefined type
-    if (not(element.type().isCube()) and not(element.type().isSimplex()))
-      DUNE_THROW(NotImplemented, "NedelecBasis only implemented for cube and simplex elements.");
-
-    for(std::size_t i=0, end=node.size(); i<end; ++i, ++it)
-    {
-      Dune::LocalKey localKey = node.finiteElement().localCoefficients().localKey(i);
-      *it = { mapper_.subIndex(element, localKey.subEntity(), localKey.codim()) + localKey.index() };
-    }
-
-    return it;
-  }
-
 protected:
-  GridView gridView_;
   FiniteElementMap finiteElementMap_;
-  Mapper mapper_;
 };
 
 
