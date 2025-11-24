@@ -14,6 +14,7 @@
 #include <dune/common/typetraits.hh>
 #include <dune/common/visibility.hh>
 
+#include <dune/common/typetree/childaccess.hh>
 #include <dune/common/typetree/nodeconcepts.hh>
 
 #include <dune/python/pybind11/pybind11.h>

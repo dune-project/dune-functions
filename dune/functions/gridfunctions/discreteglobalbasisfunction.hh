@@ -11,10 +11,12 @@
 #include <optional>
 
 #include <dune/common/typetraits.hh>
+#include <dune/common/shared_ptr.hh>
 
 #include <dune/grid/utility/hierarchicsearch.hh>
 
-#include <dune/typetree/treecontainer.hh>
+#include <dune/common/typetree/traversal.hh>
+#include <dune/common/typetree/treecontainer.hh>
 
 #include <dune/functions/functionspacebases/hierarchicnodetorangemap.hh>
 #include <dune/functions/functionspacebases/flatvectorview.hh>

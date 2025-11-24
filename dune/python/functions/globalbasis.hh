@@ -15,6 +15,7 @@
 #include <dune/common/shared_ptr.hh>
 #include <dune/common/typetraits.hh>
 
+#include <dune/common/typetree/childaccess.hh>
 #include <dune/common/typetree/nodeconcepts.hh>
 
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>

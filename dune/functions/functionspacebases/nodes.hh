@@ -17,9 +17,10 @@
 #include <dune/common/tuplevector.hh>
 #include <dune/common/typelist.hh>
 
-#include <dune/typetree/hybridmultiindex.hh>
+#include <dune/common/hybridmultiindex.hh>
+#include <dune/common/typetree/traversal.hh>
+
 #include <dune/typetree/nodetags.hh>
-#include <dune/typetree/traversal.hh>
 
 namespace Dune {
   namespace Functions {

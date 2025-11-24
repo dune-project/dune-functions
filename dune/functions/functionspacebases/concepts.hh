@@ -17,7 +17,7 @@
 #include <dune/common/typelist.hh>
 
 #include <dune/common/typetree/nodeconcepts.hh>
-#include <dune/typetree/childextraction.hh>
+#include <dune/common/typetree/childaccess.hh>
 
 #include <dune/functions/common/utility.hh>
 

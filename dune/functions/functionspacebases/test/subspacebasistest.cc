@@ -11,6 +11,8 @@
 #include <dune/common/exceptions.hh>
 #include <dune/common/parallel/mpihelper.hh>
 
+#include <dune/common/typetree/treepath.hh>
+
 #include <dune/grid/uggrid.hh>
 
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
