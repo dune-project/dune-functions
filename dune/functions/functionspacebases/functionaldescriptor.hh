@@ -8,6 +8,8 @@
 
 #include <array>
 
+#include <dune/common/rangeutilities.hh>
+
 
 namespace Dune::Functions::Impl
 {

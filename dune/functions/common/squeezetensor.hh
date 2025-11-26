@@ -6,6 +6,9 @@
 #ifndef DUNE_FUNCTIONS_COMMON_SQUEEZETENSOR_HH
 #define DUNE_FUNCTIONS_COMMON_SQUEEZETENSOR_HH
 
+#include <dune/common/fvector.hh>
+#include <dune/common/fmatrix.hh>
+
 namespace Dune::Functions
 {
   namespace Impl
