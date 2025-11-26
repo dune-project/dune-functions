@@ -7,6 +7,11 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_TRANSFORMEDFINITEELEMENTMIXIN_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_TRANSFORMEDFINITEELEMENTMIXIN_HH
 
+#include <array>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
 namespace Dune::Functions::Impl {
 
 /**
