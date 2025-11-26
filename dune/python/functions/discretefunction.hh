@@ -6,8 +6,6 @@
 
 #include <dune/common/ftraits.hh>
 
-#include <dune/typetree/treepath.hh>
-
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 
 #include <dune/python/common/pythonvector.hh>

@@ -12,7 +12,7 @@
 
 #include <dune/common/concept.hh>
 
-#include <dune/typetree/childextraction.hh>
+#include <dune/common/typetree/childaccess.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>
 

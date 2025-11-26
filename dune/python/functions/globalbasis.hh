@@ -15,6 +15,9 @@
 #include <dune/common/shared_ptr.hh>
 #include <dune/common/typetraits.hh>
 
+#include <dune/common/typetree/childaccess.hh>
+#include <dune/common/typetree/nodeconcepts.hh>
+
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 
 #include <dune/python/common/fmatrix.hh>
@@ -60,14 +63,15 @@ namespace Dune
       template<class Node>
       constexpr std::size_t nodeRangeDim()
       {
-        if constexpr (Node::isLeaf)
+        using namespace Dune::TypeTree::Concept;
+        if constexpr (LeafTreeNode<Node>)
           return Node::FiniteElement::Traits::LocalBasisType::Traits::dimRange;
-        else if constexpr (Node::isComposite)
+        else if constexpr (StaticDegreeInnerTreeNode<Node> and (not UniformInnerTreeNode<Node>) )
           return Dune::unpackIntegerSequence([&](auto... i) {
-            return (nodeRangeDim<typename Node::template Child<i>::Type>() + ...);
+            return (nodeRangeDim<Dune::TypeTree::Child<Node, i>>() + ...);
           }, std::make_index_sequence<Node::degree()>{});
-        else if constexpr (Node::isPower and hasStaticDegree<Node>())
-          return Node::degree() * nodeRangeDim<typename Node::ChildType>();
+        else if constexpr (UniformInnerTreeNode<Node> and hasStaticDegree<Node>())
+          return Node::degree() * nodeRangeDim<Dune::TypeTree::Child<Node, 0>>();
         else
           static_assert(Dune::AlwaysFalse<Node>::value, "Dynamic power bases are not supported through the python interface.");
       }
@@ -139,8 +143,11 @@ namespace Dune
     {
       using pybind11::operator""_a;
       using GridView = typename GlobalBasis::GridView;
+      using RawLocalView = typename GlobalBasis::LocalView;
+      using RawTree = typename GlobalBasis::LocalView::Tree;
+      using namespace Dune::TypeTree::Concept;
 
-      const std::size_t dimRange = Impl::nodeRangeDim< typename GlobalBasis::LocalView::Tree >();
+      const std::size_t dimRange = Impl::nodeRangeDim< RawTree >();
       const std::size_t dimWorld = GridView::dimensionworld;
 
       cls.def( pybind11::init( constructCall ), pybind11::keep_alive< 1, 2 >() );
@@ -194,7 +201,7 @@ namespace Dune
         cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, bool> );
         cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, int> );
       }
-      else if constexpr (GlobalBasis::LocalView::Tree::isLeaf or GlobalBasis::LocalView::Tree::isPower)
+      else if constexpr (LeafTreeNode<RawTree> or UniformInnerTreeNode<RawTree>)
       {
         cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, double, FieldVector<double,dimRange> > );
         cls.def( "interpolate", &Dune::Python::Functions::interpolate<GlobalBasis, bool, std::array<bool,dimRange> > );
@@ -205,7 +212,7 @@ namespace Dune
       // TODO: As we do not currently have support for nested range types,
       // we register grid function types only for 'simple' bases.
       // A more general implementation is planned for the future.
-      if constexpr (GlobalBasis::LocalView::Tree::isLeaf or GlobalBasis::LocalView::Tree::isPower)
+      if constexpr (LeafTreeNode<RawTree> or UniformInnerTreeNode<RawTree>)
       {
         using Range = typename RangeType< double, dimRange >::type;
         RangeType< double, dimRange >::registerRange(module);

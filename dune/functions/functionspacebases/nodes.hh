@@ -9,14 +9,18 @@
 
 #include <cassert>
 #include <memory>
+#include <vector>
+#include <array>
+#include <optional>
 
 #include <dune/common/indices.hh>
+#include <dune/common/tuplevector.hh>
+#include <dune/common/typelist.hh>
 
-#include <dune/typetree/leafnode.hh>
-#include <dune/typetree/powernode.hh>
-#include <dune/typetree/dynamicpowernode.hh>
-#include <dune/typetree/compositenode.hh>
-#include <dune/typetree/traversal.hh>
+#include <dune/common/hybridmultiindex.hh>
+#include <dune/common/typetree/traversal.hh>
+
+#include <dune/typetree/nodetags.hh>
 
 namespace Dune {
   namespace Functions {
@@ -51,6 +55,76 @@ namespace Dune {
 
       };
 
+
+
+      // A mixin class for generalized child access from
+      // multiple indices or a tree path. The derived class
+      // only has to provide the child(i) method with
+      // a single index for accessing direct children.
+      template<class Impl>
+      class ChildAccessMixIn
+      {
+
+        Impl& asImpl()
+        {
+          return static_cast<Impl&>(*this);
+        }
+
+        const Impl& asImpl() const
+        {
+          return static_cast<const Impl&>(*this);
+        }
+
+      public:
+
+        /**
+         * \brief Const access to descendent node by indices
+         *
+         * \param ii Indices of descendents
+         */
+        template<class... II>
+        const auto& child(II... ii) const
+        requires (sizeof...(II) != 1)
+        {
+          return Dune::TypeTree::child(asImpl(), ii...);
+        }
+
+        /**
+         * \brief Mutable access to descendent node by indices
+         *
+         * \param ii Indices of descendents
+         */
+
+        template<class... II>
+        auto& child(II... ii)
+        requires (sizeof...(II) != 1)
+        {
+          return Dune::TypeTree::child(asImpl(), ii...);
+        }
+
+        /**
+         * \brief Const access to descendent node by tree path
+         *
+         * \param treePath Tree path identifying the descendent
+         */
+        template<class... II>
+        const auto& child(Dune::HybridMultiIndex<II...> treePath) const
+        {
+          return Dune::TypeTree::child(asImpl(), treePath);
+        }
+
+        /**
+         * \brief Mutable access to descendent node by tree path
+         *
+         * \param treePath Tree path identifying the descendent
+         */
+        template<class... II>
+        auto& child(Dune::HybridMultiIndex<II...> treePath)
+        {
+          return Dune::TypeTree::child(asImpl(), treePath);
+        }
+
+      };
 
     } // end namespace Impl
 
@@ -138,9 +212,27 @@ namespace Dune {
 
 
     class LeafBasisNode :
-        public BasisNodeMixin,
-        public TypeTree::LeafNode
-    {};
+        public BasisNodeMixin
+    {
+    public:
+
+      // Begin of node interface
+
+      static constexpr auto degree()
+      {
+        return Dune::index_constant<0>{};
+      }
+
+      // Historic node interface
+
+      static const bool isLeaf [[deprecated]] = true;
+      static const bool isPower [[deprecated]] = false;
+      static const bool isComposite [[deprecated]] = false;
+      using NodeTag [[deprecated]] = Dune::TypeTree::LeafNodeTag;
+
+      // End of node interface
+
+    };
 
 
 
@@ -168,26 +260,61 @@ namespace Dune {
     template<typename T, std::size_t n>
     class PowerBasisNode :
       public InnerBasisNodeMixin<PowerBasisNode<T, n>, typename T::Element>,
-      public TypeTree::PowerNode<T,n>
+      public Impl::ChildAccessMixIn<PowerBasisNode<T, n>>
     {
-
-      using Node = TypeTree::PowerNode<T,n>;
-
     public:
+
+      // Begin of node interface
+
+      static constexpr auto degree()
+      {
+        return Dune::index_constant<n>{};
+      }
+
+      template<class Index>
+      requires (std::is_convertible_v<Index, std::size_t>)
+      const auto& child(Index i) const
+      {
+        return children_[i].value();
+      }
+
+      template<class Index>
+      requires (std::is_convertible_v<Index, std::size_t>)
+      auto& child(Index i)
+      {
+        return children_[i].value();
+      }
+
+      using Impl::ChildAccessMixIn<PowerBasisNode<T, n>>::child;
+
+      // Historic node interface
+
+      using ChildType [[deprecated]] = T;
+
+      static const bool isLeaf [[deprecated]] = false;
+      static const bool isPower [[deprecated]] = true;
+      static const bool isComposite [[deprecated]] = false;
+      using NodeTag [[deprecated]] = Dune::TypeTree::PowerNodeTag;
+
+      // End of node interface
 
       using Element = typename T::Element;
 
       PowerBasisNode() = default;
 
-      PowerBasisNode(const typename Node::NodeStorage& children) :
-        Node(children)
-      {}
-
       const Element& element() const
       {
-        return this->child(Dune::Indices::_0).element();
+        return child(Dune::Indices::_0).element();
       }
 
+      template<class Index, class TT>
+      void setChild(Index i, TT&& t)
+      {
+        children_[i].emplace(std::forward<TT>(t));
+      }
+
+    private:
+      std::array<std::optional<T>, n> children_;
     };
 
 
@@ -195,63 +322,136 @@ namespace Dune {
     template<typename T>
     class DynamicPowerBasisNode :
       public InnerBasisNodeMixin<DynamicPowerBasisNode<T>, typename T::Element>,
-      public TypeTree::DynamicPowerNode<T>
+      public Impl::ChildAccessMixIn<DynamicPowerBasisNode<T>>
     {
-
-      using Node = TypeTree::DynamicPowerNode<T>;
-
     public:
+
+      // Begin of node interface
+
+      std::size_t degree() const
+      {
+        return children_.size();
+      }
+
+      template<class Index>
+      requires (std::is_convertible_v<Index, std::size_t>)
+      const auto& child(Index i) const
+      {
+        return children_[i].value();
+      }
+
+      template<class Index>
+      requires (std::is_convertible_v<Index, std::size_t>)
+      auto& child(Index i)
+      {
+        return children_[i].value();
+      }
+
+      using Impl::ChildAccessMixIn<DynamicPowerBasisNode<T>>::child;
+
+      // Historic node interface
+
+      using ChildType [[deprecated]] = T;
+
+      static const bool isLeaf [[deprecated]] = false;
+      static const bool isPower [[deprecated]] = true;
+      static const bool isComposite [[deprecated]] = false;
+      using NodeTag [[deprecated]] = Dune::TypeTree::DynamicPowerNodeTag;
+
+      // End of node interface
 
       using Element = typename T::Element;
 
       DynamicPowerBasisNode (std::size_t children)
-        : Node(children)
-      {}
-
-      DynamicPowerBasisNode (typename Node::NodeStorage children)
-        : Node(std::move(children))
+        : children_(children)
       {}
 
       const Element& element() const
       {
-        return this->child(0).element();
+        return child(Dune::Indices::_0).element();
       }
 
+      template<class Index, class TT>
+      void setChild(Index i, TT&& t)
+      {
+        children_[i].emplace(std::forward<TT>(t));
+      }
+
+    private:
+      std::vector<std::optional<T>> children_;
     };
 
 
     template<typename... T>
     class CompositeBasisNode :
-      public InnerBasisNodeMixin<CompositeBasisNode<T...>, typename TypeTree::CompositeNode<T...>::template Child<0>::Type::Element>,
-      public TypeTree::CompositeNode<T...>
+      public InnerBasisNodeMixin<CompositeBasisNode<T...>, typename TypeListEntry_t<0, TypeList<T...>>::Element>,
+      public Impl::ChildAccessMixIn<CompositeBasisNode<T...>>
     {
-
-      using Node = TypeTree::CompositeNode<T...>;
-
     public:
 
-      using Element = typename Node::template Child<0>::Type::Element;
+      // Begin of node interface
+
+      static constexpr auto degree()
+      {
+        return Dune::index_constant<sizeof...(T)>{};
+      }
+
+      template<std::size_t i>
+      const auto& child(Dune::index_constant<i> ii) const
+      {
+        return children_[ii].value();
+      }
+
+      template<std::size_t i>
+      auto& child(Dune::index_constant<i> ii)
+      {
+        return children_[ii].value();
+      }
+
+      using Impl::ChildAccessMixIn<CompositeBasisNode<T...>>::child;
+
+      // Historic node interface
+
+      using ChildTypes [[deprecated]] = std::tuple<T...>;
+
+      static const bool isLeaf [[deprecated]] = false;
+      static const bool isPower [[deprecated]] = false;
+      static const bool isComposite [[deprecated]] = true;
+      using NodeTag [[deprecated]] = Dune::TypeTree::CompositeNodeTag;
+
+      template<std::size_t k>
+      struct [[deprecated]] Child {
+        static_assert((k < degree()), "child index out of range");
+
+        //! The type of the child.
+        using Type = typename std::tuple_element_t<k, std::tuple<T...>>;
+
+        using type = Type;
+      };
+
+      // End of node interface
+
+      using Element = typename std::tuple_element_t<0, std::tuple<T...>>::Element;
 
       CompositeBasisNode() = default;
 
-      CompositeBasisNode(const typename Node::NodeStorage& children) :
-        Node(children)
-      {}
-
       explicit CompositeBasisNode(const T&... children) :
-        Node(children...)
-      {}
-
-      template<typename... Children>
-      explicit CompositeBasisNode(const std::shared_ptr<Children>&... children) :
-        Node(children...)
+        children_(children...)
       {}
 
       const Element& element() const
       {
-        return this->child(Dune::Indices::_0).element();
+        return child(Dune::Indices::_0).element();
       }
 
+      template<std::size_t i, class TT>
+      void setChild (TT&& t, Dune::index_constant<i> ii = {})
+      {
+        children_[ii].emplace(std::forward<TT>(t));
+      }
+
+    private:
+      Dune::TupleVector<std::optional<T>...> children_;
     };
 
 

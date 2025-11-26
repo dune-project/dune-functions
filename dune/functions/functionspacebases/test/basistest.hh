@@ -19,6 +19,9 @@
 #include <dune/common/typetraits.hh>
 #include <dune/common/hybridutilities.hh>
 
+#include <dune/common/typetree/childaccess.hh>
+#include <dune/common/typetree/traversal.hh>
+
 #include <dune/geometry/quadraturerules.hh>
 
 #include <dune/functions/functionspacebases/concepts.hh>

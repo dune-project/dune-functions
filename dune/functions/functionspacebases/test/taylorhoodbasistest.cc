@@ -13,6 +13,8 @@
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
 
+#include <dune/common/typetree/childaccess.hh>
+
 #include <dune/geometry/quadraturerules.hh>
 
 #include <dune/grid/yaspgrid.hh>

@@ -10,6 +10,20 @@ corresponding version of the Dune core modules.
 
 # Master (will become release 2.11)
 
+- Dune-functions now only depends on the modernized typetree interface
+  provided in the `dune/common/typetree/` subdirectory of the dune-typetree
+  module. The plan is to eventually move this code to the dune-common
+  module and then drop dune-typetree as dependency of dune-functions.
+
+- The nodes of a `LocalView::Tree` no longer derive from the base
+  classes in dune-typetree but are still compatible with the
+  utilities and algorithms from dune-typetree. The node members
+  `isLeaf`, `isPower`, `isComposite`, and `NodeTag` are deprecated
+  and the respective properties can be derived by checking the new
+  node concepts from `dune/common/typetree/nodeconcepts.hh`.
+  The node members `Child<i>`, `ChildType`, and `ChildTypes`
+  are deprecated in favour of using `Dune::TypeTree::Child`.
+
 - There is now an implementation of the Argyris finite element.
 
 - The `RaviartThomasBasis` can now be used with mixed grids in 3d

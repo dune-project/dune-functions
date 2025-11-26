@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <utility>
 
-#include <dune/typetree/traversal.hh>
+#include <dune/common/typetree/traversal.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
 

@@ -10,7 +10,7 @@
 
 #include <dune/geometry/quadraturerules.hh>
 
-#include <dune/typetree/traversal.hh>
+#include <dune/common/typetree/traversal.hh>
 
 template <class Element, class GridView>
 std::string elementStr(const Element &element, const GridView &gridView);

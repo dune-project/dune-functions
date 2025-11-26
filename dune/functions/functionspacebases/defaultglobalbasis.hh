@@ -15,6 +15,8 @@
 #include <dune/common/typeutilities.hh>
 #include <dune/common/concept.hh>
 
+#include <dune/common/typetree/treepath.hh>
+
 #include <dune/functions/common/type_traits.hh>
 #include <dune/functions/functionspacebases/defaultlocalview.hh>
 #include <dune/functions/functionspacebases/concepts.hh>
