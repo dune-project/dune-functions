@@ -20,7 +20,9 @@
 #include <dune/common/hybridmultiindex.hh>
 #include <dune/common/typetree/traversal.hh>
 
+#ifdef HAVE_DUNE_TYPETREE
 #include <dune/typetree/nodetags.hh>
+#endif
 
 namespace Dune {
   namespace Functions {
@@ -228,7 +230,9 @@ namespace Dune {
       static const bool isLeaf [[deprecated]] = true;
       static const bool isPower [[deprecated]] = false;
       static const bool isComposite [[deprecated]] = false;
+#ifdef HAVE_DUNE_TYPETREE
       using NodeTag [[deprecated]] = Dune::TypeTree::LeafNodeTag;
+#endif
 
       // End of node interface
 
@@ -294,7 +298,9 @@ namespace Dune {
       static const bool isLeaf [[deprecated]] = false;
       static const bool isPower [[deprecated]] = true;
       static const bool isComposite [[deprecated]] = false;
+#ifdef HAVE_DUNE_TYPETREE
       using NodeTag [[deprecated]] = Dune::TypeTree::PowerNodeTag;
+#endif
 
       // End of node interface
 
@@ -356,7 +362,9 @@ namespace Dune {
       static const bool isLeaf [[deprecated]] = false;
       static const bool isPower [[deprecated]] = true;
       static const bool isComposite [[deprecated]] = false;
+#ifdef HAVE_DUNE_TYPETREE
       using NodeTag [[deprecated]] = Dune::TypeTree::DynamicPowerNodeTag;
+#endif
 
       // End of node interface
 
@@ -417,7 +425,9 @@ namespace Dune {
       static const bool isLeaf [[deprecated]] = false;
       static const bool isPower [[deprecated]] = false;
       static const bool isComposite [[deprecated]] = true;
+#ifdef HAVE_DUNE_TYPETREE
       using NodeTag [[deprecated]] = Dune::TypeTree::CompositeNodeTag;
+#endif
 
       template<std::size_t k>
       struct [[deprecated]] Child {
