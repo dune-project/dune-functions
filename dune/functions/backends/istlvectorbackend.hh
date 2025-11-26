@@ -131,15 +131,15 @@ class ISTLVectorBackend
   using isDynamicVector = Dune::Std::is_detected<dynamicIndexAccess_t, std::remove_reference_t<C>>;
 
   template<class C>
-  using isStaticVector = Dune::Std::bool_constant<
+  using isStaticVector = std::bool_constant<
     Dune::Std::is_detected_v<staticIndexAccess_t, std::remove_reference_t<C>>
     and not Dune::Std::is_detected_v<dynamicIndexAccess_t, std::remove_reference_t<C>>>;
 
   template<class C>
-  using isScalar = Dune::Std::bool_constant<not Dune::Std::is_detected_v<staticIndexAccess_t, std::remove_reference_t<C>>>;
+  using isScalar = std::bool_constant<not Dune::Std::is_detected_v<staticIndexAccess_t, std::remove_reference_t<C>>>;
 
   template<class C>
-  using isVector = Dune::Std::bool_constant<Dune::Std::is_detected_v<staticIndexAccess_t, std::remove_reference_t<C>>>;
+  using isVector = std::bool_constant<Dune::Std::is_detected_v<staticIndexAccess_t, std::remove_reference_t<C>>>;
 
 
 
