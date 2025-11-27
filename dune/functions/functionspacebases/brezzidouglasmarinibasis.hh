@@ -92,6 +92,14 @@ namespace Impl {
     BDMLocalFiniteElementMap(const GV& gv)
       : is_(&(gv.indexSet())), orient_(gv.size(0))
     {
+      update(gv);
+    }
+
+    void update(const GV& gv)
+    {
+      is_ = &(gv.indexSet());
+      orient_.resize(gv.size(0));
+
       cubeVariant_.resize(BDMCubeLocalInfo<dim, D, R, k>::Variants);
       simplexVariant_.resize(BDMSimplexLocalInfo<dim, D, R, k>::Variants);
 
@@ -196,6 +204,7 @@ public:
   void update (const GridView& gv)
   {
     gridView_ = gv;
+    finiteElementMap_.update(gv);
   }
 
   /**

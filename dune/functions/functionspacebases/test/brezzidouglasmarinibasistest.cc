@@ -36,6 +36,21 @@ void testBrezziDouglasMariniBasis(TestSuite& test, const GridFactory& factory)
   using namespace Functions::BasisFactory;
   auto basis2 = makeBasis(gridView, brezziDouglasMarini<order>());
   test.subTest(checkBasis(basis2, EnableNormalContinuityCheck()));
+
+  // Now modify the grid, and check again.
+  const auto firstEntity = gridView.template begin<0>();
+  grid->mark(1, *firstEntity);
+  grid->adapt();
+
+  auto modifiedGridView = grid->leafGridView();
+
+  // Check the NedelecBasis that was created 'manually'
+  basis1.update(modifiedGridView);
+  test.subTest(checkBasis(basis1, EnableNormalContinuityCheck()));
+
+  // Check the NedelecBasis that was created using the basis builder mechanism
+  basis2.update(modifiedGridView);
+  test.subTest(checkBasis(basis2, EnableNormalContinuityCheck()));
 }
 
 
