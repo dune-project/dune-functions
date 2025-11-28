@@ -24,7 +24,7 @@ def subspaceBasis(basis, *args):
     # is only constructed from the root basis and no tree path
     # is passed. This is possible, because we only use fully
     # static tree path types that can be default constructed.
-    prefixPathTypeName = "Dune::TypeTree::HybridTreePath<"
+    prefixPathTypeName = "Dune::TypeTree::TreePath<"
     prefixPathTypeName += ",".join("Dune::index_constant<"+str(i)+">" for i in args)
     prefixPathTypeName += ">"
 

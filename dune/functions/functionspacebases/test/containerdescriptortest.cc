@@ -65,21 +65,21 @@ decltype(auto) accessImpl (Node&& node, I0 i0, [[maybe_unused]] I... i)
 
 // forward to the impl methods by extracting the indices from the tree path
 template<class Tree, class... Indices, std::size_t... i>
-decltype(auto) access (Tree&& tree, [[maybe_unused]] Dune::TypeTree::HybridTreePath<Indices...> tp, std::index_sequence<i...>)
+decltype(auto) access (Tree&& tree, [[maybe_unused]] Dune::TypeTree::TreePath<Indices...> tp, std::index_sequence<i...>)
 {
   return accessImpl(std::forward<Tree>(tree), tp[Dune::index_constant<i>{}]...);
 }
 
-// access a tree using a HybridTreePath
+// access a tree using a TreePath
 template<class Tree, class... Indices>
-decltype(auto) access (Tree&& tree, Dune::TypeTree::HybridTreePath<Indices...> tp)
+decltype(auto) access (Tree&& tree, Dune::TypeTree::TreePath<Indices...> tp)
 {
   return access(std::forward<Tree>(tree),tp,std::index_sequence_for<Indices...>{});
 }
 
-// convert a HybridTreePath into a ReservedVector
+// convert a TreePath into a ReservedVector
 template <class SizePrefix, class... Indices>
-auto sizePrefix (Dune::TypeTree::HybridTreePath<Indices...> tp)
+auto sizePrefix (Dune::TypeTree::TreePath<Indices...> tp)
 {
   using value_type = typename SizePrefix::value_type;
   return Dune::unpackIntegerSequence([&](auto... i) {
@@ -93,7 +93,7 @@ auto sizePrefix (Dune::TypeTree::HybridTreePath<Indices...> tp)
 // check that the sizes of an container descriptor correspond to the sizes provided by the
 // basis (size-provider) directly.
 template<class ContainerDescriptor, class SizeProvider,
-         class PrefixPath = Dune::TypeTree::HybridTreePath<>>
+         class PrefixPath = Dune::TypeTree::TreePath<>>
 void checkSize (Dune::TestSuite& test, const ContainerDescriptor& cd,
                 const SizeProvider& sizeProvider, PrefixPath prefix = {})
 {
