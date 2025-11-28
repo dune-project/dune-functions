@@ -1773,9 +1773,9 @@ accessed by the run-time integer \cpp{1}.
 
 The second \cpp{child} method allows to pass the tree path in a dedicated container.
 Such a container needs to handle sequences of static and run-time values.
-The \dunemodule{dune\-functions} module uses \cpp{Dune::TypeTree::HybridTreePath}
+The \dunemodule{dune\-functions} module uses \cpp{Dune::TypeTree::TreePath}
 for this, which we describe in detail in Section~\ref{sec:multi_indices}.
-Using a \cpp{HybridTreePath} object, the example looks as follows:
+Using a \cpp{TreePath} object, the example looks as follows:
 %
 \begin{lstlisting}[style=Example]
 auto treePath = Dune::TypeTree::treePath(_0, 1);
@@ -1894,19 +1894,19 @@ This is achieved by the class
 %
 \begin{lstlisting}[style=Interface]
 template <class... I>
-class HybridTreePath;
+class TreePath;
 \end{lstlisting}
 %
 from the \dunemodule{dune-typetree} module.
 
-Conceptually, a \cpp{HybridTreePath} is a fixed-size container, where each entry
+Conceptually, a \cpp{TreePath} is a fixed-size container, where each entry
 can be of different type. The types of the individual entries
 are passed as template parameters. If the type used for an entry is
 \cpp{std::size_t}, then this entry will have a dynamic value.
 If, on the other hand, the type is \cpp{Dune::index_constant<i>}, then its value is static,
 and can be used for compile-time decisions.
 
-An object of type \cpp{HybridTreePath} can be used to access the nodes of a
+An object of type \cpp{TreePath} can be used to access the nodes of a
 localized basis tree if dynamic tree path entries only appear as child indices
 for power nodes in the tree while all other entries are static.
 For example, to access the leaf nodes corresponding
@@ -1914,22 +1914,22 @@ to the velocity components in the Taylor--Hood ansatz tree depicted
 in Figure~\ref{fig:taylor_hood_basis_tree} one would use multi-indices
 of the type
 \begin{lstlisting}[style=Example]
-HybridTreePath<Dune::index_constant<0>, std::size_t>;
+TreePath<Dune::index_constant<0>, std::size_t>;
 \end{lstlisting}
 whereas the multi-index for the pressure leaf node would use the type
 \begin{lstlisting}[style=Example]
-HybridTreePath<Dune::index_constant<1>>;
+TreePath<Dune::index_constant<1>>;
 \end{lstlisting}
 To construct objects of these types, call
 \begin{lstlisting}[style=Example]
 using namespace Dune::Indices;
-HybridTreePath<Dune::index_constant<0>, std::size_t> i00(_0,0);
-HybridTreePath<Dune::index_constant<0>, std::size_t> i01(_0,1);
-HybridTreePath<Dune::index_constant<0>, std::size_t> i02(_0,2);
+TreePath<Dune::index_constant<0>, std::size_t> i00(_0,0);
+TreePath<Dune::index_constant<0>, std::size_t> i01(_0,1);
+TreePath<Dune::index_constant<0>, std::size_t> i02(_0,2);
 \end{lstlisting}
 for the velocity leaf nodes, and
 \begin{lstlisting}[style=Example]
-HybridTreePath<Dune::index_constant<1>> i1(_1);
+TreePath<Dune::index_constant<1>> i1(_1);
 \end{lstlisting}
 for the pressure node.  The constants \cpp{_0}, \cpp{_1}, and \cpp{_2}
 are predefined in the namespace \cpp{Dune::Indices}.
@@ -1942,7 +1942,7 @@ module provides the helper function
 template <class... I>
 auto TypeTree::treePath(I... i);
 \end{lstlisting}
-which creates a \cpp{HybridTreePath} with the given entries.
+which creates a \cpp{TreePath} with the given entries.
 As this is a free method rather than a constructor, the entries have to be
 given only once, and their types are inferred.
 The multi-indices of the previous example can be constructed using
@@ -1953,7 +1953,7 @@ auto i02 = TypeTree::treePath(_0, 2);
 auto i1  = TypeTree::treePath(_1);
 \end{lstlisting}
 which is much shorter.
-To access entries of a \cpp{HybridTreePath} object, the object has
+To access entries of a \cpp{TreePath} object, the object has
 the method
 %
 \begin{lstlisting}[style=Interface]
@@ -1965,7 +1965,7 @@ Depending on the template parameter \cpp{i}, the return type is either \cpp{std:
 or \cpp{Dune::index_constant<i>}.
 Note that this construction is necessary although the function is already
 \cpp{constexpr}:
-Since \cpp{HybridTreePath} objects are intended to select
+Since \cpp{TreePath} objects are intended to select
 children of different type in run-time contexts, they have to encode
 compile-time index values into the run-time index objects.
 The latter is only possible by making the types of those index objects
@@ -1986,7 +1986,7 @@ For a tree path in the Taylor--Hood tree this will return \cpp{0} or \cpp{1}
 as expected.  However, this return value is not usable in compile-time situations
 anymore.
 
-These are just the more important methods of the \cpp{HybridTreePath} class.
+These are just the more important methods of the \cpp{TreePath} class.
 For a complete description see the online
 documentation of the \dunemodule{dune-typetree} module.
 
@@ -2434,7 +2434,7 @@ const @@<implementation defined>@@& rootBasis() const;
 \end{lstlisting}
 provides access to the root basis, and the method
 \begin{lstlisting}[style=Interface]
-using PrefixPath = TypeTree::HybridTreePath@@<implementation defined>@@;
+using PrefixPath = TypeTree::TreePath@@<implementation defined>@@;
 const PrefixPath& prefixPath() const;
 \end{lstlisting}
 returns the
@@ -2453,13 +2453,13 @@ full root basis.
 \cpp{SubspaceBasis} objects are created using a global
 factory function from the root basis and the path
 to the desired subtree. The path can either be passed
-as a single \cpp{HybridTreePath} object (see Section~\ref{sec:multi_indices}), or
+as a single \cpp{TreePath} object (see Section~\ref{sec:multi_indices}), or
 as a sequence of individual indices.
 
 \begin{lstlisting}[style=Interface]
 template<class RootBasis, class... PathIndices>
 auto subspaceBasis(const RootBasis& rootBasis,
-                   const TypeTree::HybridTreePath<PathIndices...>& prefixPath);
+                   const TypeTree::TreePath<PathIndices...>& prefixPath);
 
 template<class RootBasis, class... PathIndices>
 auto subspaceBasis(const RootBasis& rootBasis, const PathIndices&... indices);

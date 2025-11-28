@@ -58,7 +58,7 @@ public:
   using PreBasis = PB;
 
   //! The empty prefix path that identifies the root in the local ansatz tree
-  using PrefixPath = TypeTree::HybridTreePath<>;
+  using PrefixPath = TypeTree::TreePath<>;
 
   //! The grid view that the FE space is defined on
   using GridView = typename PreBasis::GridView;

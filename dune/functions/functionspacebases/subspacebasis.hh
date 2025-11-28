@@ -145,7 +145,7 @@ SubspaceBasis(const SubspaceBasis<RootRootBasis, InnerTP>& rootBasis, const Oute
  * \param prefixPath A prefix path of the subspace within the root basis
  */
 template<class RootBasis, class... PrefixTreeIndices>
-auto subspaceBasis(const RootBasis& rootBasis, const TypeTree::HybridTreePath<PrefixTreeIndices...>& prefixPath)
+auto subspaceBasis(const RootBasis& rootBasis, const TypeTree::TreePath<PrefixTreeIndices...>& prefixPath)
 {
   return SubspaceBasis(rootBasis, prefixPath);
 }
