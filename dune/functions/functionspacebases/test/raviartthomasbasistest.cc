@@ -6,6 +6,8 @@
 
 #include <config.h>
 
+#include <memory>
+
 #include <dune/common/exceptions.hh>
 #include <dune/common/parallel/mpihelper.hh>
 
@@ -19,23 +21,37 @@
 
 using namespace Dune;
 
-template<int k, class GridView>
-void testRaviartThomasBasis(TestSuite& test, const GridView& gridView)
+template<int k, class GridFactory>
+void testRaviartThomasBasis(TestSuite& test, const GridFactory& factory)
 {
+  auto grid = factory();
+  auto gridView = grid->leafGridView();
+
   std::cout<<"  Testing order: "<< k <<std::endl;
 
   // Check RaviartThomasBasis created 'manually'
-  {
-    Functions::RaviartThomasBasis<GridView,k> basis(gridView);
-    test.subTest(checkBasis(basis, EnableNormalContinuityCheck()));
-  }
+  Functions::RaviartThomasBasis<decltype(gridView),k> basis1(gridView);
+  test.subTest(checkBasis(basis1, EnableNormalContinuityCheck()));
 
   // Check RaviartThomasBasis created using basis builder mechanism
-  {
-    using namespace Functions::BasisFactory;
-    auto basis = makeBasis(gridView, raviartThomas<k>());
-    test.subTest(checkBasis(basis, EnableNormalContinuityCheck()));
-  }
+  using namespace Functions::BasisFactory;
+  auto basis2 = makeBasis(gridView, raviartThomas<k>());
+  test.subTest(checkBasis(basis2, EnableNormalContinuityCheck()));
+
+  // Now modify the grid, and check again.
+  const auto firstEntity = gridView.template begin<0>();
+  grid->mark(1, *firstEntity);
+  grid->adapt();
+
+  auto modifiedGridView = grid->leafGridView();
+
+  // Check the RaviartThomasBasis that was created 'manually'
+  basis1.update(modifiedGridView);
+  test.subTest(checkBasis(basis1, EnableNormalContinuityCheck()));
+
+  // Check the RaviartThomasBasis that was created using the basis builder mechanism
+  basis2.update(modifiedGridView);
+  test.subTest(checkBasis(basis2, EnableNormalContinuityCheck()));
 }
 
 
@@ -43,57 +59,68 @@ int main (int argc, char* argv[])
 {
   MPIHelper::instance(argc, argv);
 
+  const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
+
   TestSuite test;
 
   // Test with grid that only supports cube elements
   // (Grids with only a single element type receive special treatment by RaviartThomasBasis)
   std::cout<<"Testing RaviartThomasBasis in 2D with cube grids\n";
-  YaspGrid<2> quadGrid({1.0, 1.0}, {5,5});
-  auto quadGridView = quadGrid.leafGridView();
 
-  testRaviartThomasBasis<0>(test, quadGridView);
-  testRaviartThomasBasis<1>(test, quadGridView);
-  testRaviartThomasBasis<2>(test, quadGridView);
+  auto quadGridFactory = []() {
+    return std::make_unique<YaspGrid<2> >(FieldVector<double,2>{1.0, 1.0}, std::array<int,2>{5,5});
+  };
+
+  testRaviartThomasBasis<0>(test, quadGridFactory);
+  testRaviartThomasBasis<1>(test, quadGridFactory);
+  testRaviartThomasBasis<2>(test, quadGridFactory);
 
   std::cout<<"Testing RaviartThomasBasis in 3D with cube grids\n";
-  YaspGrid<3> hexaGrid({1.0, 1.0, 1.0}, {4,4,4});
-  auto hexaGridView = hexaGrid.leafGridView();
-  testRaviartThomasBasis<0>(test, hexaGridView);
-  testRaviartThomasBasis<1>(test, hexaGridView);
+
+  auto hexaGridFactory = []() {
+    return std::make_unique<YaspGrid<3> >(FieldVector<double,3>{1.0, 1.0, 1.0}, std::array<int,3>{4,4,4});
+  };
+
+  testRaviartThomasBasis<0>(test, hexaGridFactory);
+  testRaviartThomasBasis<1>(test, hexaGridFactory);
 
   // Test with pure simplex grid
   // (Unfortunately there is no grid implementation available that only supports simplices.)
   std::cout<<"Testing RaviartThomasBasis in 2D with simplex grid\n";
-  using Mixed2dGrid = UGGrid<2>;
-  const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
-  auto triangleGrid = GmshReader<Mixed2dGrid>::read(path + "curved2d.msh");
-  auto triangleGridView = triangleGrid->leafGridView();
-  testRaviartThomasBasis<0>(test, triangleGridView);
-  testRaviartThomasBasis<1>(test, triangleGridView);
+
+  auto triangleGridFactory = [&path]() {
+    return GmshReader<UGGrid<2> >::read(path + "curved2d.msh");
+  };
+
+  testRaviartThomasBasis<0>(test, triangleGridFactory);
+  testRaviartThomasBasis<1>(test, triangleGridFactory);
 
   std::cout<<"Testing RaviartThomasBasis in 3D with simplex grid\n";
-  using Mixed3dGrid = UGGrid<3>;
-  auto tetraGrid = GmshReader<Mixed3dGrid>::read(path + "telescope.msh");
-  auto tetraGridView = tetraGrid->leafGridView();
-  testRaviartThomasBasis<0>(test, tetraGridView);
+
+  auto tetraGridFactory = [&path]() {
+    return GmshReader<UGGrid<3> >::read(path + "telescope.msh");
+  };
+
+  testRaviartThomasBasis<0>(test, tetraGridFactory);
 
   // Test with mixed-element 2d grid
   std::cout<<"Testing RaviartThomasBasis in 2D with mixed-element grid\n";
-  auto mixed2dGrid = GmshReader<Mixed2dGrid>::read(path + "hybrid-testgrid-2d.msh");
-  auto mixed2dGridView = mixed2dGrid->leafGridView();
-  testRaviartThomasBasis<0>(test, mixed2dGridView);
-  //testRaviartThomasBasis<1>(test, mixed2dGridView);
+
+  auto mixed2dGridFactory = [&path]() {
+    return GmshReader<UGGrid<2> >::read(path + "hybrid-testgrid-2d.msh");
+  };
+
+  testRaviartThomasBasis<0>(test, mixed2dGridFactory);
+  //testRaviartThomasBasis<1>(test, mixed2dGridFactory);
 
   // Test with mixed-element 3d grid
   std::cout<<"Testing RaviartThomasBasis in 3D with mixed-element grid\n";
-  using Mixed3dGrid = UGGrid<3>;
-  auto mixed3dGrid = GmshReader<Mixed3dGrid>::read(path + "hybrid-testgrid-3d.msh");
-  auto mixed3dGridView = mixed3dGrid->leafGridView();
 
-  for(int i=0; i<3; i++)
-    std::cout<<"mixed3dGridView.size("<<i<<") = "<<mixed3dGridView.size(i) <<"\n";
-  testRaviartThomasBasis<0>(test, mixed3dGridView);
+  auto mixed3dGridFactory = [&path]() {
+    return GmshReader<UGGrid<3> >::read(path + "hybrid-testgrid-3d.msh");
+  };
 
+  testRaviartThomasBasis<0>(test, mixed3dGridFactory);
 
   return test.exit();
 }

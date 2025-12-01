@@ -11,6 +11,7 @@
 
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/grid/io/file/gmshreader.hh>
 
 #include <dune/functions/functionspacebases/brezzidouglasmarinibasis.hh>
 
@@ -18,48 +19,106 @@
 
 using namespace Dune;
 
+
+template <int order, class GridFactory>
+void testBrezziDouglasMariniBasis(TestSuite& test, const GridFactory& factory)
+{
+  auto grid = factory();
+  auto gridView = grid->leafGridView();
+
+  std::cout<<"  Testing order: "<< order <<std::endl;
+
+  // Check BrezziDouglasMariniBasis created 'manually'
+  Functions::BrezziDouglasMariniBasis<decltype(gridView), order> basis1(gridView);
+  test.subTest(checkBasis(basis1, EnableNormalContinuityCheck()));
+
+  // Check BrezziDouglasMariniBasis created using basis builder mechanism
+  using namespace Functions::BasisFactory;
+  auto basis2 = makeBasis(gridView, brezziDouglasMarini<order>());
+  test.subTest(checkBasis(basis2, EnableNormalContinuityCheck()));
+
+  // Now modify the grid, and check again.
+  const auto firstEntity = gridView.template begin<0>();
+  grid->mark(1, *firstEntity);
+  grid->adapt();
+
+  auto modifiedGridView = grid->leafGridView();
+
+  // Check the NedelecBasis that was created 'manually'
+  basis1.update(modifiedGridView);
+  test.subTest(checkBasis(basis1, EnableNormalContinuityCheck()));
+
+  // Check the NedelecBasis that was created using the basis builder mechanism
+  basis2.update(modifiedGridView);
+  test.subTest(checkBasis(basis2, EnableNormalContinuityCheck()));
+}
+
+
 int main (int argc, char* argv[])
 {
   MPIHelper::instance(argc, argv);
 
+  const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
+
   TestSuite test;
 
+  std::cout<<"Testing NedelecBasis in 2D with simplex grid\n";
+  auto triangleGridFactory = [&path]() {
+    return GmshReader<UGGrid<2> >::read(path + "curved2d.msh");
+  };
 
+  testBrezziDouglasMariniBasis<1>(test, triangleGridFactory);
+  // TODO: Enable this test!
+  //testBrezziDouglasMariniBasis<2>(test, triangleGridFactory);
 
-  // Generate grid for testing
-  const int dim = 2;
-  typedef YaspGrid<dim> GridType;
-  FieldVector<double,dim> l(1);
-  std::array<int,dim> elements = {{10, 10}};
-  GridType grid(l,elements);
+  // Test with grid that only supports cube elements
+  std::cout<<"Testing BrezziDouglasMariniBasis in 2D with cube grid\n";
+  auto quadGridFactory = []() {
+    return std::make_unique<YaspGrid<2> >(FieldVector<double,2>{1.0, 1.0}, std::array<int,2>{5,5});
+  };
 
+  testBrezziDouglasMariniBasis<1>(test, quadGridFactory);
+  // TODO: Enable this test!
+  //testBrezziDouglasMariniBasis<2>(test, quadGridFactory);
 
+#if 0  // TODO: Enable this test!
+  std::cout<<"Testing BrezziDouglasMariniBasis in 2D with mixed-element grid\n";
+  auto mixed2dGridFactory = [&path]() {
+    return GmshReader<UGGrid<2> >::read(path + "hybrid-testgrid-2d.msh");
+  };
 
-  // check BrezziDouglasMariniBasis created 'manually'
-  {
-    typedef GridType::LeafGridView GridView;
-    const GridView& gridView = grid.leafGridView();
-    Functions::BrezziDouglasMariniBasis<GridView,1> basis(gridView);
-    test.subTest(checkBasis(basis, EnableNormalContinuityCheck()));
-  }
+  testBrezziDouglasMariniBasis<1>(test, mixed2dGridFactory);
+#endif
 
+#if 0  // TODO: Enable this test!
+  std::cout<<"Testing BrezziDouglasMariniBasis in 3D with simplex grid\n";
 
+  auto tetraGridFactory = [&path]() {
+    return GmshReader<UGGrid<3> >::read(path + "telescope1storder.msh");
+  };
 
-  // check BrezziDouglasMariniBasis created using basis factory mechanism
-  {
-    using namespace Functions::BasisFactory;
-    auto basis = makeBasis(grid.leafGridView(), brezziDouglasMarini<1>());
-    test.subTest(checkBasis(basis, EnableNormalContinuityCheck()));
-  }
+  testBrezziDouglasMariniBasis<1>(test, tetraGridFactory);
+#endif
 
+#if 0  // TODO: Enable this test!
+  Test with grid that only supports cube elements
+  std::cout<<"Testing BrezziDouglasMariniBasis in 3D with cube grid\n";
+  auto cubeGridFactory = []() {
+    return std::make_unique<YaspGrid<3> >(FieldVector<double,3>{1.0, 1.0, 1.0}, std::array<int,3>{5,5,5});
+  };
 
-  // check BrezziDouglasMariniBasis on a grid without a compile-time-fixed element type
-  {
-    using Grid = UGGrid<dim>;
-    std::shared_ptr<Grid> grid = StructuredGridFactory<Grid>::createCubeGrid({0.0,0.0}, l, {{10,10}});
-    Functions::BrezziDouglasMariniBasis<Grid::LeafGridView,1> basis(grid->leafGridView());
-    test.subTest(checkBasis(basis, EnableNormalContinuityCheck()));
-  }
+  testBrezziDouglasMariniBasis<1>(test, cubeGridFactory);
+#endif
+
+#if 0  // TODO: Enable this test!
+  hybrid-testgrid-3d.msh contains pyramids and prisms, which are not implemented
+  std::cout<<"Testing BrezziDouglasMariniBasis in 3D with mixed-element grid\n";
+  auto mixed3dGridFactory = [&path]() {
+    return GmshReader<UGGrid<3> >::read(path + "hybrid-testgrid-3d.msh");
+  };
+
+  testBrezziDouglasMariniBasis<1>(test, mixed3dGridFactory);
+#endif
 
   return test.exit();
 }

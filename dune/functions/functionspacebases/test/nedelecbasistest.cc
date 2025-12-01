@@ -20,113 +20,95 @@
 
 using namespace Dune;
 
-template <int dim, int kind, int order>
-void testNedelecBasis(TestSuite& test)
+
+template <int kind, int order, class GridFactory>
+void testNedelecBasis(TestSuite& test, const GridFactory& factory)
 {
-  ///////////////////////////
-  /////  Simplex grids  /////
-  ///////////////////////////
+  auto grid = factory();
+  auto gridView = grid->leafGridView();
+
+  std::cout<<"  Testing order: "<< order <<std::endl;
 
   // Check NedelecBasis created 'manually'
-  // Use grid with unknown-at-compile-time element type
-  {
-    using Grid = UGGrid<dim>;
-    const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
-    auto grid = (dim==2) ? GmshReader<Grid>::read(path + "curved2d.msh")
-                         : GmshReader<Grid>::read(path + "telescope1storder.msh");
-
-    Functions::NedelecBasis<typename Grid::LeafGridView, kind, order, double> basis(grid->leafGridView());
-    test.subTest(checkBasis(basis, EnableTangentialContinuityCheck()));
-  }
+  Functions::NedelecBasis<decltype(gridView), kind, order, double> basis1(gridView);
+  test.subTest(checkBasis(basis1, EnableTangentialContinuityCheck()));
 
   // Check NedelecBasis created using basis builder mechanism
-  // Use grid with unknown-at-compile-time element type
-  {
-    using Grid = UGGrid<dim>;
-    const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
-    auto grid = (dim==2) ? GmshReader<Grid>::read(path + "curved2d.msh")
-                         : GmshReader<Grid>::read(path + "telescope1storder.msh");
+  using namespace Functions::BasisFactory;
+  auto basis2 = makeBasis(gridView, nedelec<kind,order, double>());
+  test.subTest(checkBasis(basis2, EnableTangentialContinuityCheck()));
 
-    using namespace Functions::BasisFactory;
-    auto basis = makeBasis(grid->leafGridView(), nedelec<kind,order, double>());
-    test.subTest(checkBasis(basis, EnableTangentialContinuityCheck()));
-  }
+  // Now modify the grid, and check again.
+  const auto firstEntity = gridView.template begin<0>();
+  grid->mark(1, *firstEntity);
+  grid->adapt();
 
-  ///////////////////////////
-  /////    Cube grids   /////
-  ///////////////////////////
+  auto modifiedGridView = grid->leafGridView();
 
-  // Check NedelecBasis created 'manually'
-  // Use grid with known-at-compile-time element type
-  {
-    using Grid = YaspGrid<dim>;
-    Dune::FieldVector<double,dim> one(1);
-    std::array<int,dim> elems;
-    elems.fill(5);
+  // Check the NedelecBasis that was created 'manually'
+  basis1.update(modifiedGridView);
+  test.subTest(checkBasis(basis1, EnableTangentialContinuityCheck()));
 
-    Grid grid(one, elems);
-
-    Functions::NedelecBasis<typename Grid::LeafGridView, kind, order, double> basis(grid.leafGridView());
-    test.subTest(checkBasis(basis, EnableTangentialContinuityCheck()));
-  }
-
-  // Check NedelecBasis created using basis builder mechanism
-  // Use grid with known-at-compile-time element type
-  {
-    using Grid = YaspGrid<dim>;
-    Dune::FieldVector<double,dim> one(1);
-    std::array<int,dim> elems;
-    elems.fill(5);
-    Grid grid(one, elems);
-
-    using namespace Functions::BasisFactory;
-    auto basis = makeBasis(grid.leafGridView(), nedelec<kind,order, double>());
-    test.subTest(checkBasis(basis, EnableTangentialContinuityCheck()));
-  }
-
-  ///////////////////////////
-  /////   Hybrid grids  /////
-  ///////////////////////////
-
-  // only for dim = 2
-  // hybrid-testgrid-3d.msh contains pyramids and prisms, which are not implemented
-  if (dim ==2)
-  {
-    // Check NedelecBasis created 'manually'
-    // Use grid with unknown-at-compile-time element type
-    {
-      using Grid = UGGrid<dim>;
-      const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
-      auto grid = (dim==2) ? GmshReader<Grid>::read(path + "hybrid-testgrid-2d.msh")
-                         : GmshReader<Grid>::read(path + "hybrid-testgrid-3d.msh");
-
-      Functions::NedelecBasis<typename Grid::LeafGridView, kind, order, double> basis(grid->leafGridView());
-      test.subTest(checkBasis(basis, EnableTangentialContinuityCheck()));
-    }
-
-    // Check NedelecBasis created using basis builder mechanism
-    // Use grid with unknown-at-compile-time element type
-    {
-      using Grid = UGGrid<dim>;
-      const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
-      auto grid = (dim==2) ? GmshReader<Grid>::read(path + "hybrid-testgrid-2d.msh")
-                         : GmshReader<Grid>::read(path + "hybrid-testgrid-3d.msh");
-
-      using namespace Functions::BasisFactory;
-      auto basis = makeBasis(grid->leafGridView(), nedelec<kind,order, double>());
-      test.subTest(checkBasis(basis, EnableTangentialContinuityCheck()));
-    }
-  }
+  // Check the NedelecBasis that was created using the basis builder mechanism
+  basis2.update(modifiedGridView);
+  test.subTest(checkBasis(basis2, EnableTangentialContinuityCheck()));
 }
+
 
 int main (int argc, char* argv[])
 {
   MPIHelper::instance(argc, argv);
 
+  const std::string path = std::string(DUNE_GRID_EXAMPLE_GRIDS_PATH) + "gmsh/";
+
   TestSuite test;
 
-  testNedelecBasis<2, 1, 1>(test);
-  testNedelecBasis<3, 1, 1>(test);
+  std::cout<<"Testing NedelecBasis in 2D with simplex grid\n";
+  auto triangleGridFactory = [&path]() {
+    return GmshReader<UGGrid<2> >::read(path + "curved2d.msh");
+  };
+
+  testNedelecBasis<1, 1>(test, triangleGridFactory);
+
+  // Test with grid that only supports cube elements
+  std::cout<<"Testing NedelecBasis in 2D with cube grid\n";
+  auto quadGridFactory = []() {
+    return std::make_unique<YaspGrid<2> >(FieldVector<double,2>{1.0, 1.0}, std::array<int,2>{5,5});
+  };
+
+  testNedelecBasis<1, 1>(test, quadGridFactory);
+
+  std::cout<<"Testing NedelecBasis in 2D with mixed-element grid\n";
+  auto mixed2dGridFactory = [&path]() {
+    return GmshReader<UGGrid<2> >::read(path + "hybrid-testgrid-2d.msh");
+  };
+
+  testNedelecBasis<1, 1>(test, mixed2dGridFactory);
+
+
+  std::cout<<"Testing NedelecBasis in 3D with simplex grid\n";
+
+  auto tetraGridFactory = [&path]() {
+    return GmshReader<UGGrid<3> >::read(path + "telescope1storder.msh");
+  };
+
+  testNedelecBasis<1, 1>(test, tetraGridFactory);
+
+  // Test with grid that only supports cube elements
+  std::cout<<"Testing NedelecBasis in 3D with cube grid\n";
+  auto cubeGridFactory = []() {
+    return std::make_unique<YaspGrid<3> >(FieldVector<double,3>{1.0, 1.0, 1.0}, std::array<int,3>{5,5,5});
+  };
+
+  testNedelecBasis<1, 1>(test, cubeGridFactory);
+
+  // hybrid-testgrid-3d.msh contains pyramids and prisms, which are not implemented
+  // std::cout<<"Testing NedelecBasis in 3D with mixed-element grid\n";
+  // auto mixed3dGridFactory = [&path]() {
+  //   return GmshReader<UGGrid<3> >::read(path + "hybrid-testgrid-3d.msh");
+  // };
+  //
+  //testNedelecBasis<1, 1>(test, mixed3dGridFactory);
 
   return test.exit();
 }

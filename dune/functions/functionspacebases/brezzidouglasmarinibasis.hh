@@ -23,7 +23,7 @@
 #include <dune/functions/functionspacebases/globalvaluedlocalfiniteelement.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
-#include <dune/functions/functionspacebases/leafprebasismixin.hh>
+#include <dune/functions/functionspacebases/leafprebasismappermixin.hh>
 
 namespace Dune {
 namespace Functions {
@@ -77,10 +77,11 @@ namespace Impl {
     static const std::size_t Variants = 64;
   };
 
-  template<typename GV, int dim, typename R, std::size_t k>
+  template<typename GV, typename R, std::size_t k>
   class BDMLocalFiniteElementMap
   {
     using D = typename GV::ctype;
+    constexpr static auto dim = GV::dimension;
     using CubeFiniteElement    = typename BDMCubeLocalInfo<dim, D, R, k>::FiniteElement;
     using SimplexFiniteElement = typename BDMSimplexLocalInfo<dim, D, R, k>::FiniteElement;
 
@@ -92,6 +93,14 @@ namespace Impl {
     BDMLocalFiniteElementMap(const GV& gv)
       : is_(&(gv.indexSet())), orient_(gv.size(0))
     {
+      update(gv);
+    }
+
+    void update(const GV& gv)
+    {
+      is_ = &(gv.indexSet());
+      orient_.resize(gv.size(0));
+
       cubeVariant_.resize(BDMCubeLocalInfo<dim, D, R, k>::Variants);
       simplexVariant_.resize(BDMSimplexLocalInfo<dim, D, R, k>::Variants);
 
@@ -154,10 +163,24 @@ class BrezziDouglasMariniNode;
 
 template<typename GV, int k>
 class BrezziDouglasMariniPreBasis :
-  public LeafPreBasisMixin< BrezziDouglasMariniPreBasis<GV,k> >
+  public LeafPreBasisMapperMixin<GV>
 {
+  using Base = LeafPreBasisMapperMixin<GV>;
   static const int dim = GV::dimension;
-  using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, double, k>;
+
+  // Degrees of freedom per subentity
+  static MCMGLayout dofLayout()
+  {
+    return [](GeometryType gt, size_t gridDim) -> size_t {
+      if (gt.dim() == gridDim)
+        return dim*(k-1)*3;
+      if (gt.dim() == gridDim-1)
+        return dim+(k-1);
+      return 0;
+    };
+  }
+
+  using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, double, k>;
 
 public:
 
@@ -169,7 +192,7 @@ public:
 
   /** \brief Constructor for a given grid view object */
   BrezziDouglasMariniPreBasis(const GridView& gv) :
-    gridView_(gv),
+    Base(gv, dofLayout()),
     finiteElementMap_(gv)
   {
     // There is no inherent reason why the basis shouldn't work for grids with more than one
@@ -178,24 +201,11 @@ public:
       DUNE_THROW(Dune::NotImplemented, "Brezzi-Douglas-Marini basis is only implemented for grids with a single element type");
   }
 
-  void initializeIndices()
-  {
-    codimOffset_[0] = 0;
-    codimOffset_[1] = codimOffset_[0] + dofsPerCodim_[0] * gridView_.size(0);
-    //if (dim==3) codimOffset_[2] = codimOffset_[1] + dofsPerCodim[1] * gridView_.size(1);
-  }
-
-  /** \brief Obtain the grid view that the basis is defined on
-   */
-  const GridView& gridView() const
-  {
-    return gridView_;
-  }
-
   /* \brief Update the stored grid view, to be called if the grid has changed */
   void update (const GridView& gv)
   {
-    gridView_ = gv;
+    Base::update(gv);
+    finiteElementMap_.update(gv);
   }
 
   /**
@@ -206,56 +216,8 @@ public:
     return Node{&finiteElementMap_};
   }
 
-  size_type dimension() const
-  {
-    return dofsPerCodim_[0] * gridView_.size(0) + dofsPerCodim_[1] * gridView_.size(1); // only 2d
-  }
-
-  size_type maxNodeSize() const
-  {
-    // The implementation currently only supports grids with a single element type.
-    // We can therefore return the actual number of dofs here.
-    GeometryType elementType = *(gridView_.indexSet().types(0).begin());
-    size_t numFaces = ReferenceElements<double,dim>::general(elementType).size(1);
-    return dofsPerCodim_[0] + dofsPerCodim_[1] * numFaces;
-  }
-
-  /**
-   * \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
-   *
-   * This assume dim \f$\in \lbrace 2, 3 \rbrace\f$.
-   */
-  template<typename It>
-  It indices(const Node& node, It it) const
-  {
-    const auto& gridIndexSet = gridView().indexSet();
-    const auto& element = node.element();
-
-    // throw if element is not of predefined type
-    if (not(element.type().isCube()) and not(element.type().isSimplex()))
-      DUNE_THROW(Dune::NotImplemented, "BrezziDouglasMariniBasis only implemented for cube and simplex elements.");
-
-    for(std::size_t i=0, end=node.size(); i<end; ++i, ++it)
-    {
-      Dune::LocalKey localKey = node.finiteElement().localCoefficients().localKey(i);
-
-      // The dimension of the entity that the current dof is related to
-      size_t subentity = localKey.subEntity();
-      size_t codim = localKey.codim();
-
-      *it = { codimOffset_[codim] +
-             dofsPerCodim_[codim] * gridIndexSet.subIndex(element, subentity, codim) + localKey.index() };
-    }
-
-    return it;
-  }
-
 protected:
-  GridView gridView_;
-  std::array<size_t,dim+1> codimOffset_;
   FiniteElementMap finiteElementMap_;
-  // Number of dofs per entity type depending on the entity's codimension and type
-  std::array<int,2> dofsPerCodim_ {{dim*(k-1)*3, dim+(k-1)}};
 };
 
 
@@ -264,13 +226,11 @@ template<typename GV, int k>
 class BrezziDouglasMariniNode :
   public LeafBasisNode
 {
-  static const int dim = GV::dimension;
-
 public:
 
   using size_type = std::size_t;
   using Element = typename GV::template Codim<0>::Entity;
-  using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, dim, double, k>;
+  using FiniteElementMap = typename Impl::BDMLocalFiniteElementMap<GV, double, k>;
   using FiniteElement = Impl::GlobalValuedLocalFiniteElement<Impl::ContravariantPiolaTransformator,
                                                              typename FiniteElementMap::FiniteElement,
                                                              Element>;
