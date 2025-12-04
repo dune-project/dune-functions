@@ -40,3 +40,20 @@ reuse:
   before_script: ""
   script:
     - reuse lint
+
+ubuntu:24.04 gcc-13-20 (debug, with dune-typetree):
+  extends: .common
+  image: registry.dune-project.org/docker/ci/ubuntu:24.04
+  before_script:
+    - . /duneci/bin/duneci-init-job
+    - duneci-install-module https://gitlab.dune-project.org/core/dune-common.git
+    - duneci-install-module https://gitlab.dune-project.org/core/dune-geometry.git
+    - duneci-install-module https://gitlab.dune-project.org/core/dune-localfunctions.git
+    - duneci-install-module https://gitlab.dune-project.org/staging/dune-uggrid.git
+    - duneci-install-module https://gitlab.dune-project.org/core/dune-grid.git
+    - duneci-install-module https://gitlab.dune-project.org/core/dune-istl.git
+    - duneci-install-module https://gitlab.dune-project.org/staging/dune-typetree.git
+  variables:
+    DUNECI_CMAKE_FLAGS: "-DDUNE_GRID_SKIP_VTK_PYTHON_TESTS:BOOL=ON"
+    DUNECI_TOOLCHAIN: gcc-13-20
+    DUNECI_BUILD_TYPE: Debug
