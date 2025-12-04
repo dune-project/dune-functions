@@ -10,6 +10,14 @@ corresponding version of the Dune core modules.
 
 # Master (will become release 2.11)
 
+- Dune-functions no longer has a hard dependency on dune-typetree.
+  If dune-typetree is not present, all features of dune-functions
+  can be used, except for the deprecated `NodeTag` member typedefs
+  of the node classes. After 2.11 the optional dependency on
+  dune-typetree will be dropped, too. Hence downstream modules
+  depending on typetree features that have not been moved to
+  dune-common will have to make dune-typetree an explicit dependency.
+
 - Dune-functions now only depends on the modernized typetree interface
   provided in the `dune/common/typetree/` subdirectory of the dune-typetree
   module. The plan is to eventually move this code to the dune-common
