@@ -3,6 +3,7 @@
 
 set(HEADERS
   discretefunction.hh
+  foreachboundarydof.hh
   globalbasis.hh
   hierarchicvectorwrapper.hh
   interpolate.hh

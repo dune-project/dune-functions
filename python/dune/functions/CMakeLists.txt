@@ -3,6 +3,7 @@
 
 add_python_targets(functions
   __init__
+  boundarydofs
   globalbasis
   subspacebasis
   tree

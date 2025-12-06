@@ -104,29 +104,6 @@ def assembleLaplaceMatrix(basis, volumeTerm):
     return A.tocsr(), b
 #! [assembleLaplaceMatrix]
 
-# Mark all degrees of freedom on the grid boundary
-#
-# This method simply calls the corresponding C++ code.  A more Pythonic solution
-# is planned to appear eventually...
-#! [markBoundaryDOFs]
-def markBoundaryDOFs(basis, vector):
-    from io import StringIO
-    code="""
-    #include<utility>
-    #include<functional>
-    #include<dune/functions/functionspacebases/boundarydofs.hh>
-    template<class Basis, class Vector>
-    void run(const Basis& basis, Vector& vector)
-    {
-      auto vectorBackend = vector.mutable_unchecked();
-      Dune::Functions::forEachBoundaryDOF(basis, [&] (auto&& index) {
-          vectorBackend[index] = true;
-      });
-    }
-    """
-    dune.generator.algorithm.run("run",StringIO(code), basis, vector)
-#! [markBoundaryDOFs]
-
 
 ############################  main program  ###################################
 
@@ -151,18 +128,24 @@ f = lambda x : 10
 A,b = assembleLaplaceMatrix(basis, f)
 #! [assembly]
 
-#! [dirichletHandling]
+#! [dirichletDOFs]
 # Determine all coefficients that are on the boundary
 isDirichlet = np.zeros(len(basis))
-markBoundaryDOFs(basis, isDirichlet)
 
+def markDOF(boundaryDOFNumber):
+    isDirichlet[boundaryDOFNumber] = True
+
+functions.boundarydofs.forEachBoundaryDOF(basis,markDOF)
+#! [dirichletDOFs]
+
+#! [dirichletValues]
 # The function that implements the Dirichlet values
 dirichletValueFunction = lambda x : np.sin(2*np.pi*x[0])
 
 # Get coefficients of a Lagrange-FE approximation of the Dirichlet values
 dirichletValues = np.zeros(len(basis))
 basis.interpolate(dirichletValues, dirichletValueFunction)
-#! [dirichletHandling]
+#! [dirichletValues]
 
 #! [dirichletIntegration]
 # Integrate Dirichlet conditions into the matrix and load vector
