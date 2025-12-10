@@ -1,17 +1,17 @@
 Copyright holders:
 
-2023          Markus Blatt
+2023--2025    Markus Blatt
 2016--2017    Jakub Both
 2021          Klaus Böhnlein
 2016--2023    Ansgar Burchardt
 2021          Andreas Dedner
-2013--2023    Christian Engwer
+2013--2025    Christian Engwer
 2015          Elisa Friebel
 2013          Christoph Gersbacher
 2013          Stefan Girke
-2013--2024    Carsten Gräser
+2013--2025    Carsten Gräser
 2015--2018    Felix Gruber
-2015--2024    Christoph Grüninger
+2015--2025    Christoph Grüninger
 2021--2024    Patrick Jaap
 2017--2021    Lasse Hinrichsen
 2020          René Heß
@@ -25,13 +25,13 @@ Copyright holders:
 2013--2019    Steffen Müthing
 2017          Martin Nolte
 2015--2017    Elias Pipping
-2024          Maik Porrmann
-2018--2024    Simon Praetorius
+2024--2025    Maik Porrmann
+2022--2025    Santiago Ospina De Los Ríos
+2018--2025    Simon Praetorius
 2018          Lukas Renelt
-2013--2024    Oliver Sander
-2020--2021    Henrik Stolzmann
+2013--2025    Oliver Sander
+2020--2025    Henrik Stolzmann
 2015          Jonathan Youett
-2022          Santiago Ospina
 
 
 The dune-functions library, headers and test programs are copyrighted free software. You
