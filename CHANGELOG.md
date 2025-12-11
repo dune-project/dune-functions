@@ -8,7 +8,7 @@ SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception OR LGPL-3.0
 Any version of dune-functions is supposed to be compatible with the
 corresponding version of the Dune core modules.
 
-# Master (will become release 2.11)
+# Release 2.11
 
 - Dune-functions no longer has a hard dependency on dune-typetree.
   If dune-typetree is not present, all features of dune-functions
