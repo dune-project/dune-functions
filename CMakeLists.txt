@@ -29,6 +29,11 @@ dune_add_library(dunefunctions INTERFACE
   EXPORT_NAME Functions
   LINK_LIBRARIES ${DUNE_LIBS})
 
+if(dune-typetree_FOUND)
+  target_link_libraries(dunefunctions INTERFACE Dune::TypeTree)
+  dune_mark_module_as_required_dependency(MODULE dune-typetree)
+endif()
+
 # set include directories for dunefunctions library
 dune_default_include_directories(dunefunctions INTERFACE)
 
