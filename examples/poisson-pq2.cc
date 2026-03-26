@@ -79,7 +79,7 @@ void getLocalMatrix(const LocalView& localView, MatrixType& elementMatrix)
     // Compute the actual matrix entries
     for (size_t i=0; i<elementMatrix.N(); i++)
       for (size_t j=0; j<elementMatrix.M(); j++ )
-        elementMatrix[i][j] += (jacobians[i] * transpose(jacobians[j])) * quad[pt].weight() * integrationElement;
+        elementMatrix[i][j] += (jacobians[i] * transpose(jacobians[j]))[0][0] * quad[pt].weight() * integrationElement;
 
   }
 
