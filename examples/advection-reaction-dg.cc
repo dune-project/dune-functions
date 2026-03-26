@@ -325,7 +325,7 @@ void assembleStiffnessMatrix(const FEBasis& feBasis,
 
     // Now let's get the element stiffness matrix
     // A dense matrix is used for the element stiffness matrix
-    Matrix<FieldMatrix<double,1,1> > elementMatrix;
+    Matrix<double> elementMatrix;
     getLocalMatrix(localView, elementMatrix, localVelocityField, localReactionCoefficient);
 
     // Add element stiffness matrix onto the global stiffness matrix

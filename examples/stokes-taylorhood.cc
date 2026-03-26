@@ -120,7 +120,7 @@ void getLocalMatrix(
         {
           size_t row = localView.tree().child(_0,k).localIndex(i);                    /*@\label{li:stokes_taylorhood_compute_vv_element_matrix_row}@*/
           size_t col = localView.tree().child(_0,k).localIndex(j);                    /*@\label{li:stokes_taylorhood_compute_vv_element_matrix_column}@*/
-          elementMatrix[row][col] += (jacobians[i] * transpose(jacobians[j]))
+          elementMatrix[row][col] += (jacobians[i] * transpose(jacobians[j]))[0][0]
                                      * quadPoint.weight() * integrationElement;  /*@\label{li:stokes_taylorhood_update_vv_element_matrix}@*/
         }
     // { velocity_velocity_coupling_end }
