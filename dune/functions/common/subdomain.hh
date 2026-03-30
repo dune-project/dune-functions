@@ -32,17 +32,11 @@ namespace Dune::Functions::Experimental {
 
   namespace Impl {
 
-    template<class GridView>
-    using GlobalIntersectionIteratorTraits = Dune::DefaultIteratorTraits<
-                                                std::forward_iterator_tag,
-                                                const typename GridView::Intersection&>;
-
-
     template<class GV, class ContainsCallback>
     class GlobalIntersectionIt
-      : public Dune::IteratorFacadeForTraits<GlobalIntersectionIt<GV, ContainsCallback>, GlobalIntersectionIteratorTraits<GV>>
+      : public Dune::IteratorFacade<GlobalIntersectionIt<GV, ContainsCallback>, std::forward_iterator_tag, const typename GV::Intersection>
     {
-      using Facade = Dune::IteratorFacadeForTraits<GlobalIntersectionIt<GV, ContainsCallback>, GlobalIntersectionIteratorTraits<GV>>;
+      using Facade = Dune::IteratorFacade<GlobalIntersectionIt<GV, ContainsCallback>, std::forward_iterator_tag, const typename GV::Intersection>;
 
     public:
 
@@ -107,6 +101,14 @@ namespace Dune::Functions::Experimental {
             ++(*this);
         }
       }
+
+      GlobalIntersectionIt(const GridView& gridView, const ContainsCallback& contains, ElementIterator elementIt)
+        : GlobalIntersectionIt(gridView, contains, elementIt, gridView.template end<0>())
+      {}
+
+      GlobalIntersectionIt(const GridView& gridView, const ContainsCallback& contains)
+        : GlobalIntersectionIt(gridView, contains, gridView.template begin<0>())
+      {}
 
       using reference = typename Facade::reference;
 
@@ -703,7 +705,7 @@ namespace Dune::Functions::Experimental {
         if (is.boundary() or not(is.neighbor()))
           return false;
         return subDomainB_.indexSet().contains(is.outside());
-      }, subDomainA_.gridView().template begin<0>(), subDomainA_.gridView().template end<0>());
+      });
     }
 
     //! End iterator (sentinel)
