@@ -86,7 +86,6 @@ namespace Dune::Functions::Experimental {
               return *this;
             element_ = *elementIt_;
             iIt_ = gridView_.ibegin(element_);
-            iIt_ = gridView_.ibegin(element_);
             iEnd_ = gridView_.iend(element_);
           }
           if (contains_(*iIt_))
