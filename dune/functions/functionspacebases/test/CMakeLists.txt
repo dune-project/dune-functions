@@ -20,7 +20,6 @@ dune_add_test(SOURCES cubichermitetest.cc LABELS quick)
 dune_add_test(SOURCES morleytest.cc LABELS quick)
 
 dune_add_test(SOURCES globalvaluedlfetest.cc LABELS quick)
-target_compile_definitions(globalvaluedlfetest PRIVATE -DDUNE_DEPRECATED_INTERPOLATE_CHECK=1)
 
 dune_add_test(SOURCES gridviewfunctionspacebasistest.cc LABELS quick)
 

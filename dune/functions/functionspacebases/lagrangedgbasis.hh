@@ -83,16 +83,6 @@ public:
   /** \brief The grid view that the FE space is defined on */
   using GridView = GV;
   using size_type = typename Base::size_type;
-
-  // Precompute the number of dofs per entity type
-  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerEdge        = k+1;
-  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerTriangle    = (k+1)*(k+2)/2;
-  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerQuad        = (k+1)*(k+1);
-  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerTetrahedron = (k+1)*(k+2)*(k+3)/6;
-  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerPrism       = (k+1)*(k+1)*(k+2)/2;
-  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerHexahedron  = (k+1)*(k+1)*(k+1);
-  [[deprecated("This constant will be removed after Dune 2.11")]] const static int dofsPerPyramid     = (k+1)*(k+2)*(2*k+3)/6;
-
   using Node = LagrangeDGNode<GV, k, R>;
 
   /**

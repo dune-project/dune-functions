@@ -225,15 +225,6 @@ namespace Dune {
         return Dune::index_constant<0>{};
       }
 
-      // Historic node interface
-
-      static const bool isLeaf [[deprecated]] = true;
-      static const bool isPower [[deprecated]] = false;
-      static const bool isComposite [[deprecated]] = false;
-#ifdef HAVE_DUNE_TYPETREE
-      using NodeTag [[deprecated]] = Dune::TypeTree::LeafNodeTag;
-#endif
-
       // End of node interface
 
     };
@@ -291,17 +282,6 @@ namespace Dune {
 
       using Impl::ChildAccessMixIn<PowerBasisNode<T, n>>::child;
 
-      // Historic node interface
-
-      using ChildType [[deprecated]] = T;
-
-      static const bool isLeaf [[deprecated]] = false;
-      static const bool isPower [[deprecated]] = true;
-      static const bool isComposite [[deprecated]] = false;
-#ifdef HAVE_DUNE_TYPETREE
-      using NodeTag [[deprecated]] = Dune::TypeTree::PowerNodeTag;
-#endif
-
       // End of node interface
 
       using Element = typename T::Element;
@@ -355,17 +335,6 @@ namespace Dune {
 
       using Impl::ChildAccessMixIn<DynamicPowerBasisNode<T>>::child;
 
-      // Historic node interface
-
-      using ChildType [[deprecated]] = T;
-
-      static const bool isLeaf [[deprecated]] = false;
-      static const bool isPower [[deprecated]] = true;
-      static const bool isComposite [[deprecated]] = false;
-#ifdef HAVE_DUNE_TYPETREE
-      using NodeTag [[deprecated]] = Dune::TypeTree::DynamicPowerNodeTag;
-#endif
-
       // End of node interface
 
       using Element = typename T::Element;
@@ -417,27 +386,6 @@ namespace Dune {
       }
 
       using Impl::ChildAccessMixIn<CompositeBasisNode<T...>>::child;
-
-      // Historic node interface
-
-      using ChildTypes [[deprecated]] = std::tuple<T...>;
-
-      static const bool isLeaf [[deprecated]] = false;
-      static const bool isPower [[deprecated]] = false;
-      static const bool isComposite [[deprecated]] = true;
-#ifdef HAVE_DUNE_TYPETREE
-      using NodeTag [[deprecated]] = Dune::TypeTree::CompositeNodeTag;
-#endif
-
-      template<std::size_t k>
-      struct [[deprecated]] Child {
-        static_assert((k < degree()), "child index out of range");
-
-        //! The type of the child.
-        using Type = typename std::tuple_element_t<k, std::tuple<T...>>;
-
-        using type = Type;
-      };
 
       // End of node interface
 

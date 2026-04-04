@@ -20,59 +20,6 @@ namespace Dune {
 namespace Functions {
 
 
-template<class F, class size_type, size_type firstValue, class... Args>
-[[deprecated("This function will be removed after Dune 2.11")]]
-auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue> values, const size_type& i, F&& f, Args&&... args)
-  ->decltype(f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...))
-{
-  return f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...);
-}
-
-template<class F, class size_type, size_type firstValue, size_type secondValue, size_type... otherValues, class... Args>
-[[deprecated("This function will be removed after Dune 2.11")]]
-auto forwardAsStaticInteger(std::integer_sequence<size_type, firstValue, secondValue, otherValues...> values, const size_type i, F&& f, Args&&... args)
-  ->decltype(f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...))
-{
-  if (i==firstValue)
-    return f(std::integral_constant<size_type, firstValue>(), std::forward<Args>(args)...);
-  return forwardAsStaticInteger(std::integer_sequence<size_type, secondValue, otherValues...>(), i, std::forward<F>(f), std::forward<Args>(args)...);
-}
-
-
-
-/**
- * \brief Transform dynamic index to static index_constant
- *
- * \ingroup Utility
- *
- * This will call the given function with index_constant\<i\>
- * where i is the dynamically provided index.
- *
- * To achieve this the condition i==ii is checked subsequently
- * for al static indices ii in the range 0,...,(end-1). In order
- * to be able to compile this we require for all ii in this range
- * that f(index_constant<ii>()) is well-formed and that the result
- * type of it can be converted to the result type of f(index_constant<0>()).
- * If i is not in this range, the returned value is f(index_constant<n-1>())
- *
- * \param i Dynamic index
- * \param f Function to call (e.g., a generic lambda)
- * \param args Additional arguments for f
- *
- * \returns f(index_constant\<i\>(), args...)
- *
- * \deprecated This will be removed in 2.11. use Dune::Hybrid::switchCases instead.
- */
-template<std::size_t end, class F, class size_type, class... Args>
-[[deprecated("This function will be removed after Dune 2.11, use Dune::Hybrid::switchCases.")]]
-auto forwardAsStaticIndex(const size_type& i, F&& f, Args&&... args)
-  ->decltype(f(Dune::Indices::_0, std::forward<Args>(args)...))
-{
-  return forwardAsStaticInteger(std::make_index_sequence<end>{}, i, std::forward<F>(f), std::forward<Args>(args)...);
-}
-
-
-
 namespace Imp {
 
   template<template<class...> class T, class List>
