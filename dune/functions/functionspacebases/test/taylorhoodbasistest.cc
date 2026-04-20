@@ -121,6 +121,11 @@ int main (int argc, char* argv[]) try
   std::cout << "Computed integral is " << integral << std::endl;
   assert(std::abs(integral-0.5)< 1e-10);
 
+  // Modify grid, update basis and check again
+  grid.globalRefine(1);
+  feBasis.update(grid.leafGridView());
+  test.subTest(checkBasis(feBasis, EnableContinuityCheck()));
+
   /////////////////////////////////////////////////////////////////
   //  Standard tests
   /////////////////////////////////////////////////////////////////

@@ -40,5 +40,16 @@ int main(int argc, char *argv[])
   test.subTest(checkBasis(basis, EnableContinuityCheck(),
                           EnableDifferentiabilityCheck(),
                           CheckLocalFiniteElementFlag<2>()));
+
+  // Modify grid, update basis and check again
+  const auto firstEntity = gridView.template begin<0>();
+  grid->mark(1, *firstEntity);
+  grid->adapt();
+  basis.update(grid->leafGridView());
+
+  test.subTest(checkBasis(basis, EnableContinuityCheck(),
+                          EnableDifferentiabilityCheck(),
+                          CheckLocalFiniteElementFlag<2>()));
+
   return test.exit();
 }

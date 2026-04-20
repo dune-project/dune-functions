@@ -16,9 +16,13 @@
 
 using namespace Dune;
 
-template <class GridView>
-TestSuite checkDimension (const GridView& gridView)
+template <class Grid>
+TestSuite checkDimension (Grid& grid)
 {
+  using GridView = typename Grid::LeafGridView;
+
+  auto gridView = grid.leafGridView();
+
   TestSuite test("Check dimension " + std::to_string(GridView::dimension));
 
   { // check HierarchicalBasis created 'manually'
@@ -42,6 +46,17 @@ TestSuite checkDimension (const GridView& gridView)
     test.subTest(checkBasis(basis1, EnableContinuityCheck()));
     auto basis2 = makeBasis(gridView, hierarchicalP2B());
     test.subTest(checkBasis(basis2, EnableContinuityCheck()));
+
+    // Modify grid, update basis and check again
+    const auto firstEntity = gridView.template begin<0>();
+    grid.mark(1, *firstEntity);
+    grid.adapt();
+
+    basis1.update(grid.leafGridView());
+    test.subTest(checkBasis(basis1, EnableContinuityCheck()));
+
+    basis2.update(grid.leafGridView());
+    test.subTest(checkBasis(basis2, EnableContinuityCheck()));
   }
 
   return test;
@@ -56,19 +71,19 @@ int main (int argc, char* argv[])
   { // 1d
     using Factory = StructuredGridFactory<OneDGrid>;
     auto grid = Factory::createSimplexGrid({0.0}, {1.0}, {4u});
-    test.subTest(checkDimension(grid->leafGridView()));
+    test.subTest(checkDimension(*grid));
   }
 
   { // 2d
     using Factory = StructuredGridFactory<UGGrid<2>>;
     auto grid = Factory::createSimplexGrid({0.0,0.0}, {1.0,1.0}, {4u,4u});
-    test.subTest(checkDimension(grid->leafGridView()));
+    test.subTest(checkDimension(*grid));
   }
 
   { // 3d
     using Factory = StructuredGridFactory<UGGrid<3>>;
     auto grid = Factory::createSimplexGrid({0.0,0.0,0.0}, {1.0,1.0,1.0}, {4u,4u,4u});
-    test.subTest(checkDimension(grid->leafGridView()));
+    test.subTest(checkDimension(*grid));
   }
 
   return test.exit();

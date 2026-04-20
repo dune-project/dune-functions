@@ -64,28 +64,49 @@ int main (int argc, char* argv[])
     vtkWriter.addVertexData(v1_f, VTK::FieldInfo("refinedP1", VTK::FieldInfo::Type::scalar, 1));
     vtkWriter.write("debug");
 
+    // Modify grid, update basis and check again
+    const auto firstEntity = gridView.template begin<0>();
+    grid->mark(1, *firstEntity);
+    grid->preAdapt();
+    grid->adapt();
+    grid->postAdapt();
+    basis0.update(grid->leafGridView());
+    basis1.update(grid->leafGridView());
+
+    test.subTest(checkBasis(basis0));
+    test.subTest(checkBasis(basis1, EnableContinuityCheck()));
   }
 
   {
     std::unique_ptr<OneDGrid> grid
       = StructuredGridFactory<OneDGrid>::createSimplexGrid({0}, {1}, {10});
 
-    auto gridView = grid->levelGridView(0);
+    auto gridView = grid->leafGridView();
 
-    {
-      auto basis0 = makeBasis(gridView, refinedLagrange<0>());
-      test.subTest(checkBasis(basis0));
-      auto basis1 = makeBasis(gridView, refinedLagrange<1>());
-      test.subTest(checkBasis(basis1, EnableContinuityCheck()));
-    }
+    auto basis0 = makeBasis(gridView, refinedLagrange<0>());
+    auto basis1 = makeBasis(gridView, refinedLagrange<1>());
+    auto basis0f = makeBasis(gridView, refinedLagrange<0,float>());
+    auto basis1f = makeBasis(gridView, refinedLagrange<1,float>());
 
-    {
-      auto basis0 = makeBasis(gridView, refinedLagrange<0,float>());
-      test.subTest(checkBasis(basis0));
-      auto basis1 = makeBasis(gridView, refinedLagrange<1,float>());
-      test.subTest(checkBasis(basis1, EnableContinuityCheck()));
-    }
+    test.subTest(checkBasis(basis0));
+    test.subTest(checkBasis(basis1, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis0f));
+    test.subTest(checkBasis(basis1f, EnableContinuityCheck()));
 
+    // Modify grid, update basis and check again
+    const auto firstEntity = gridView.template begin<0>();
+    grid->mark(1, *firstEntity);
+    grid->adapt();
+
+    basis0.update(grid->leafGridView());
+    basis1.update(grid->leafGridView());
+    basis0f.update(grid->leafGridView());
+    basis1f.update(grid->leafGridView());
+
+    test.subTest(checkBasis(basis0));
+    test.subTest(checkBasis(basis1, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis0f));
+    test.subTest(checkBasis(basis1f, EnableContinuityCheck()));
   }
 
 

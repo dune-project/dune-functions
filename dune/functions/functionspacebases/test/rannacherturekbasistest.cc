@@ -40,6 +40,12 @@ void testRannacherTurekBasis(TestSuite& test)
 
     Functions::RannacherTurekBasis<typename Grid::LeafGridView> basis(grid->leafGridView());
     test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
+
+    // Modify grid, update basis and check again
+    grid->globalRefine(1);
+
+    basis.update(grid->leafGridView());
+    test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
   }
 
   // Check RannacherTurekBasis created using basis builder mechanism
@@ -52,6 +58,12 @@ void testRannacherTurekBasis(TestSuite& test)
 
     using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid->leafGridView(), rannacherTurek());
+    test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
+
+    // Modify grid, update basis and check again
+    grid->globalRefine(1);
+
+    basis.update(grid->leafGridView());
     test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
   }
 
@@ -72,6 +84,12 @@ void testRannacherTurekBasis(TestSuite& test)
 
     Functions::RannacherTurekBasis<typename Grid::LeafGridView> basis(grid.leafGridView());
     test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
+
+    // Modify grid, update basis and check again
+    grid.globalRefine(1);
+
+    basis.update(grid.leafGridView());
+    test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
   }
 
   // Check RannacherTurekBasis created using basis builder mechanism
@@ -85,6 +103,12 @@ void testRannacherTurekBasis(TestSuite& test)
 
     using namespace Functions::BasisFactory;
     auto basis = makeBasis(grid.leafGridView(), rannacherTurek());
+    test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
+
+    // Modify grid, update basis and check again
+    grid.globalRefine(1);
+
+    basis.update(grid.leafGridView());
     test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
   }
 
@@ -107,6 +131,14 @@ void testRannacherTurekBasis(TestSuite& test)
 
       Functions::RannacherTurekBasis<typename Grid::LeafGridView> basis(grid->leafGridView());
       test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
+
+      // Modify grid, update basis and check again
+      const auto firstEntity = basis.gridView().template begin<0>();
+      grid->mark(1, *firstEntity);
+      grid->adapt();
+
+      basis.update(grid->leafGridView());
+      test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
     }
 
     // Check RannacherTurekBasis created using basis builder mechanism
@@ -119,6 +151,14 @@ void testRannacherTurekBasis(TestSuite& test)
 
       using namespace Functions::BasisFactory;
       auto basis = makeBasis(grid->leafGridView(), rannacherTurek());
+      test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
+
+      // Modify grid, update basis and check again
+      const auto firstEntity = basis.gridView().template begin<0>();
+      grid->mark(1, *firstEntity);
+      grid->adapt();
+
+      basis.update(grid->leafGridView());
       test.subTest(checkBasis(basis, EnableCenterContinuityCheck()));
     }
   }

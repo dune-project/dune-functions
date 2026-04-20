@@ -48,6 +48,17 @@ void testDim(TestSuite& test)
 
     auto basis2 = makeBasis(gridView, hierarchicalLagrange<2>());
     test.subTest(checkBasis(basis2, EnableContinuityCheck()));
+
+    // Modify grid, update basis and check again
+    const auto firstEntity = gridView.template begin<0>();
+    gridPtr->mark(1, *firstEntity);
+    gridPtr->adapt();
+
+    basis1.update(gridPtr->leafGridView());
+    test.subTest(checkBasis(basis1, EnableContinuityCheck()));
+
+    basis2.update(gridPtr->leafGridView());
+    test.subTest(checkBasis(basis2, EnableContinuityCheck()));
   }
 }
 
