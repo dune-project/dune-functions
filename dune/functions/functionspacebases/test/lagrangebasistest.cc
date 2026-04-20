@@ -67,34 +67,45 @@ int main (int argc, char* argv[])
     vtkWriter.addVertexData(v_f, VTK::FieldInfo("lambda_5", VTK::FieldInfo::Type::scalar, 1));
     vtkWriter.write("debug");
 
+    // Modify grid, update basis and check again
+    const auto firstEntity = gridView.template begin<0>();
+    grid->mark(1, *firstEntity);
+    grid->adapt();
+    basis.update(grid->leafGridView());
+
+    test.subTest(checkBasis(basis, EnableContinuityCheck()));
   }
 
   {
     std::unique_ptr<OneDGrid> grid
       = StructuredGridFactory<OneDGrid>::createCubeGrid({0}, {1}, {10});
 
-    auto gridView = grid->levelGridView(0);
+    auto gridView = grid->leafGridView();
 
-    {
-      auto basis = makeBasis(gridView, lagrange<3>());
-      test.subTest(checkBasis(basis, EnableContinuityCheck()));
-    }
+    auto basis3 = makeBasis(gridView, lagrange<3>());
+    auto basis2 = makeBasis(gridView, lagrange(2));
+    auto basis3f = makeBasis(gridView, lagrange<3,float>());
+    auto basis2f = makeBasis(gridView, lagrange<float>(2));
 
-    {
-      auto basis = makeBasis(gridView, lagrange(2));
-      test.subTest(checkBasis(basis, EnableContinuityCheck()));
-    }
+    test.subTest(checkBasis(basis3, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis3f, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis2f, EnableContinuityCheck()));
 
-    {
-      auto basis = makeBasis(gridView, lagrange<3,float>());
-      test.subTest(checkBasis(basis, EnableContinuityCheck()));
-    }
+    // Modify grid, update basis and check again
+    const auto firstEntity = gridView.template begin<0>();
+    grid->mark(1, *firstEntity);
+    grid->adapt();
 
-    {
-      auto basis = makeBasis(gridView, lagrange<float>(2));
-      test.subTest(checkBasis(basis, EnableContinuityCheck()));
-    }
+    basis3.update(grid->leafGridView());
+    basis2.update(grid->leafGridView());
+    basis3f.update(grid->leafGridView());
+    basis2f.update(grid->leafGridView());
 
+    test.subTest(checkBasis(basis3, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis3f, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis2f, EnableContinuityCheck()));
   }
 
 

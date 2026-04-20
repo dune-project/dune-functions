@@ -44,6 +44,16 @@ int main(int argc, char *argv[])
       test.subTest(checkBasis(basis, EnableVertexContinuityCheck(),
                               EnableNormalDifferentiabilityAtMidpointsCheck(),
                               CheckLocalFiniteElementFlag()));
+
+      // Modify grid, update basis and check again
+      const auto firstEntity = gridView.template begin<0>();
+      grid->mark(1, *firstEntity);
+      grid->adapt();
+      basis.update(grid->leafGridView());
+
+      test.subTest(checkBasis(basis, EnableVertexContinuityCheck(),
+                              EnableNormalDifferentiabilityAtMidpointsCheck(),
+                              CheckLocalFiniteElementFlag()));
     }
   }
 

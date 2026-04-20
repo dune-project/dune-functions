@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     std::cout << "CubicHermite test in 1d" << std::endl;
     auto grid = StructuredGridFactory<OneDGrid>::createSimplexGrid({0.}, {1.}, {10});
 
-    auto gridView = grid->levelGridView(0);
+    auto gridView = grid->leafGridView();
 
     {
       std::cout << "Grid has " << gridView.size(0) << " elements and " << gridView.size(1)
@@ -45,7 +45,16 @@ int main(int argc, char *argv[])
 
       test_1d.subTest(checkBasis(basis, EnableContinuityCheck(), CheckLocalFiniteElementFlag<2>{}, EnableDifferentiabilityCheck(),
                                  EnableVertexDifferentiabilityCheck()));
+
+      // Modify grid, update basis and check again
+      const auto firstEntity = gridView.template begin<0>();
+      grid->mark(1, *firstEntity);
+      grid->adapt();
+      basis.update(grid->leafGridView());
+      test_1d.subTest(checkBasis(basis, EnableContinuityCheck(), CheckLocalFiniteElementFlag<2>{}, EnableDifferentiabilityCheck(),
+                                 EnableVertexDifferentiabilityCheck()));
     }
+
   }
 
   { // 2d
@@ -72,7 +81,16 @@ int main(int argc, char *argv[])
 
       test_2d.subTest(checkBasis(basis, CheckLocalFiniteElementFlag<1>{}, EnableContinuityCheck(),
                                  EnableVertexDifferentiabilityCheck()));
+
+      // Modify grid, update basis and check again
+      const auto firstEntity = gridView.template begin<0>();
+      grid->mark(1, *firstEntity);
+      grid->adapt();
+      basis.update(grid->leafGridView());
+      test_2d.subTest(checkBasis(basis, CheckLocalFiniteElementFlag<1>{}, EnableContinuityCheck(),
+                                 EnableVertexDifferentiabilityCheck()));
     }
+
   }
 
   { // 2d  reduced
@@ -99,7 +117,16 @@ int main(int argc, char *argv[])
 
       test_2d.subTest(checkBasis(basis,CheckLocalFiniteElementFlag<1>{}, EnableContinuityCheck(),
                                  EnableVertexDifferentiabilityCheck()));
+
+      // Modify grid, update basis and check again
+      const auto firstEntity = gridView.template begin<0>();
+      grid->mark(1, *firstEntity);
+      grid->adapt();
+      basis.update(grid->leafGridView());
+      test_2d.subTest(checkBasis(basis,CheckLocalFiniteElementFlag<1>{}, EnableContinuityCheck(),
+                                 EnableVertexDifferentiabilityCheck()));
     }
+
   }
 
   { // 3d
@@ -119,7 +146,16 @@ int main(int argc, char *argv[])
 
       test_3d.subTest(checkBasis(basis, EnableContinuityCheck(),CheckLocalFiniteElementFlag<1>{},
                                  EnableVertexDifferentiabilityCheck()));
+
+      // Modify grid, update basis and check again
+      const auto firstEntity = gridView.template begin<0>();
+      grid->mark(1, *firstEntity);
+      grid->adapt();
+      basis.update(grid->leafGridView());
+      test_3d.subTest(checkBasis(basis, EnableContinuityCheck(),CheckLocalFiniteElementFlag<1>{},
+                                 EnableVertexDifferentiabilityCheck()));
     }
+
   }
 
   return test_1d.exit() + test_2d.exit() + test_3d.exit();
