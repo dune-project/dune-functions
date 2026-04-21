@@ -10,14 +10,17 @@
 #include <array>
 #include <cstddef>
 #include <limits>
+#include <optional>
 #include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/iteratorfacades.hh>
 #include <dune/common/iteratorrange.hh>
 #include <dune/common/rangeutilities.hh>
+#include <dune/common/std/no_unique_address.hh>
 
 #include <dune/geometry/type.hh>
 #include <dune/geometry/typeindex.hh>
@@ -29,17 +32,11 @@ namespace Dune::Functions::Experimental {
 
   namespace Impl {
 
-    template<class GridView>
-    using GlobalIntersectionIteratorTraits = Dune::DefaultIteratorTraits<
-                                                std::forward_iterator_tag,
-                                                decltype(*std::declval<typename GridView::IntersectionIterator>())>;
-
-
     template<class GV, class ContainsCallback>
     class GlobalIntersectionIt
-      : public Dune::IteratorFacadeForTraits<GlobalIntersectionIt<GV, ContainsCallback>, GlobalIntersectionIteratorTraits<GV>>
+      : public Dune::IteratorFacade<GlobalIntersectionIt<GV, ContainsCallback>, std::forward_iterator_tag, const typename GV::Intersection>
     {
-      using Facade = Dune::IteratorFacadeForTraits<GlobalIntersectionIt<GV, ContainsCallback>, GlobalIntersectionIteratorTraits<GV>>;
+      using Facade = Dune::IteratorFacade<GlobalIntersectionIt<GV, ContainsCallback>, std::forward_iterator_tag, const typename GV::Intersection>;
 
     public:
 
@@ -47,6 +44,44 @@ namespace Dune::Functions::Experimental {
       using Element = typename GridView::template Codim<0>::Entity;
       using ElementIterator = typename GridView::template Codim<0>::Iterator;
       using IntersectionIterator = typename GridView::IntersectionIterator;
+      using Intersection = typename GridView::Intersection;
+
+    private:
+      static constexpr bool cacheIntersection = not std::is_lvalue_reference_v<decltype(std::declval<IntersectionIterator>().operator*())>;
+      static constexpr bool cacheElement = not std::is_lvalue_reference_v<decltype(std::declval<ElementIterator>().operator*())>;
+
+      using ElementStorage = std::conditional_t<cacheElement, std::optional<Element>, std::monostate>;
+      using IntersectionStorage = std::conditional_t<cacheIntersection, std::optional<Intersection>, std::monostate>;
+
+      const Element& element() const
+      {
+        if constexpr (cacheElement)
+          return *element_;
+        else
+          return *elementIt_;
+      }
+
+      void updateElement()
+      {
+        if constexpr (cacheElement)
+          element_ = *elementIt_;
+      }
+
+      const Intersection& intersection() const
+      {
+        if constexpr (cacheIntersection)
+          return *intersection_;
+        else
+          return **iIt_;
+      }
+
+      void updateIntersection()
+      {
+        if constexpr (cacheIntersection)
+          intersection_ = **iIt_;
+      }
+
+    public:
 
       class SentinelIterator
       {};
@@ -59,37 +94,44 @@ namespace Dune::Functions::Experimental {
       {
         if (elementIt_ != elementEnd_)
         {
-          element_ = *elementIt_;
-          iIt_ = gridView_.ibegin(element_);
-          iEnd_ = gridView_.iend(element_);
-          if (not contains_(*iIt_))
+          updateElement();
+          iIt_ = gridView_.ibegin(element());
+          updateIntersection();
+          if (not contains_(intersection()))
             ++(*this);
         }
       }
+
+      GlobalIntersectionIt(const GridView& gridView, const ContainsCallback& contains, ElementIterator elementIt)
+        : GlobalIntersectionIt(gridView, contains, elementIt, gridView.template end<0>())
+      {}
+
+      GlobalIntersectionIt(const GridView& gridView, const ContainsCallback& contains)
+        : GlobalIntersectionIt(gridView, contains, gridView.template begin<0>())
+      {}
 
       using reference = typename Facade::reference;
 
       reference operator*() const
       {
-        return *iIt_;
+        return intersection();
       }
 
       GlobalIntersectionIt& operator++()
       {
         while(true)
         {
-          ++iIt_;
-          if (iIt_ == iEnd_)
+          ++(*iIt_);
+          if (*iIt_ == gridView_.iend(element()))
           {
             ++elementIt_;
             if (elementIt_ == elementEnd_)
               return *this;
-            element_ = *elementIt_;
-            iIt_ = gridView_.ibegin(element_);
-            iIt_ = gridView_.ibegin(element_);
-            iEnd_ = gridView_.iend(element_);
+            updateElement();
+            iIt_ = gridView_.ibegin(element());
           }
-          if (contains_(*iIt_))
+          updateIntersection();
+          if (contains_(intersection()))
             return *this;
         }
         return *this;
@@ -101,7 +143,7 @@ namespace Dune::Functions::Experimental {
           return false;
         if (it1.elementIt_ == it1.elementEnd_)
           return true;
-        return (it1.iIt_ == it2.iIt_);
+        return (*(it1.iIt_) == *(it2.iIt_));
       }
 
       friend bool operator==(const GlobalIntersectionIt& it1, const SentinelIterator& it2)
@@ -114,9 +156,9 @@ namespace Dune::Functions::Experimental {
       ContainsCallback contains_;
       ElementIterator elementIt_;
       ElementIterator elementEnd_;
-      Element element_;
-      IntersectionIterator iIt_;
-      IntersectionIterator iEnd_;
+      std::optional<IntersectionIterator> iIt_;
+      DUNE_NO_UNIQUE_ADDRESS ElementStorage element_;
+      DUNE_NO_UNIQUE_ADDRESS IntersectionStorage intersection_;
     };
 
   }
@@ -663,7 +705,7 @@ namespace Dune::Functions::Experimental {
         if (is.boundary() or not(is.neighbor()))
           return false;
         return subDomainB_.indexSet().contains(is.outside());
-      }, subDomainA_.gridView().template begin<0>(), subDomainA_.gridView().template end<0>());
+      });
     }
 
     //! End iterator (sentinel)
