@@ -13,6 +13,6 @@ Name: @PACKAGE_NAME@
 Version: @VERSION@
 Description: dune-functions module
 URL: http://dune-project.org/
-Requires: dune-localfunctions dune-grid dune-typetree
+Requires: dune-localfunctions dune-grid dune-istl dune-uggrid
 Libs: -L${libdir}
 Cflags: -I${includedir}
