@@ -10,7 +10,11 @@
 #include <type_traits>
 #include <dune/common/exceptions.hh>
 
-#include <dune/localfunctions/lagrange/cache.hh>
+#include <dune/localfunctions/lagrange/lagrangecube.hh>
+#include <dune/localfunctions/lagrange/lagrangeprism.hh>
+#include <dune/localfunctions/lagrange/lagrangepyramid.hh>
+#include <dune/localfunctions/lagrange/lagrangesimplex.hh>
+#include <dune/localfunctions/lagrange/lagrangelfecache.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
@@ -139,7 +143,7 @@ public:
    */
   Node makeNode() const
   {
-    return Node{order_};
+    return Node{order()};
   }
 
   //! Get the total dimension of the space spanned by this basis
@@ -378,31 +382,53 @@ class LagrangeNode :
   public LeafBasisNode
 {
   static constexpr int dim = GV::dimension;
-  static constexpr bool useDynamicOrder = (k<0);
 
-  // Compute the GeometryType id in case the grid has only a single GeometryType
-  static constexpr GeometryType::Id geometryTypeId()
+  // A simple cache handing storing exactly one LFE.  This can be
+  // used for grids with only a single element type. In contrast to
+  // StaticLagrangeLocalFiniteElementCache this also supports
+  // Lagrange*LocalFiniteElement with run-time order.
+  template <class LFE>
+  class SingleLocalFiniteElementCache
   {
-    if constexpr(Dune::Capabilities::hasSingleGeometryType<typename GV::Grid>::v)
-      return GeometryType(Dune::Capabilities::hasSingleGeometryType<typename GV::Grid>::topologyId, GV::dimension);
+    LFE lfe_;
+  public:
+    using FiniteElementType = LFE;
+
+    template<class... Args>
+    SingleLocalFiniteElementCache(Args&&... args)
+      : lfe_(std::forward<Args>(args)...)
+    {}
+
+    //! Obtain the cached local finite-element.
+    const FiniteElementType& get ([[maybe_unused]] Dune::GeometryType type) const
+    {
+      return lfe_;
+    }
+  };
+
+  // Utility function to construct the FiniteElementCache type.
+  // Since the function is just a helper to generate a type,
+  // it hands out a MetaType<T> instead of a raw T.
+  static constexpr auto makeCacheType()
+  {
+    using D = typename GV::ctype;
+    if constexpr (Dune::Capabilities::hasSingleGeometryType<typename GV::Grid>::v)
+    {
+      constexpr auto type = Dune::GeometryType(Dune::Capabilities::hasSingleGeometryType<typename GV::Grid>::topologyId, GV::dimension);
+      if constexpr (type.isSimplex())
+        return Dune::MetaType<SingleLocalFiniteElementCache<Dune::LagrangeSimplexLocalFiniteElement<D,R,dim,k>>>{};
+      else if constexpr (type.isCube())
+        return Dune::MetaType<SingleLocalFiniteElementCache<Dune::LagrangeCubeLocalFiniteElement<D,R,dim,k>>>{};
+      else if constexpr (type.isPrism())
+        return Dune::MetaType<SingleLocalFiniteElementCache<Dune::LagrangePrismLocalFiniteElement<D,R,k>>>{};
+      else if constexpr (type.isPyramid())
+        return Dune::MetaType<SingleLocalFiniteElementCache<Dune::LagrangePyramidLocalFiniteElement<D,R,k>>>{};
+    }
     else
-      return GeometryType::Id(~0u);
+      return Dune::MetaType<Dune::LagrangeLocalFiniteElementCache<D,R,dim,k>>{};
   }
 
-  // Select the static LFECache if k >= 0, else the dynamic LFECache
-  using FiniteElementCache = std::conditional_t<(useDynamicOrder),
-    DynamicLagrangeLocalFiniteElementCache<typename GV::ctype,R,dim>,
-    StaticLagrangeLocalFiniteElementCache<geometryTypeId(),typename GV::ctype,R,dim,std::max(k,0)>
-    >;
-
-  // Construct the FiniteElementCache depending on whether the order is dynamic or static
-  static auto makeFiniteElementCache(unsigned int order)
-  {
-    if constexpr (useDynamicOrder)
-      return FiniteElementCache{order};
-    else
-      return FiniteElementCache{};
-  }
+  using FiniteElementCache = typename decltype(makeCacheType())::type;
 
 public:
 
@@ -417,8 +443,7 @@ public:
 
   //! Constructor with a run-time order
   LagrangeNode(unsigned int order) :
-    order_(order),
-    cache_(makeFiniteElementCache(order)),
+    cache_(order),
     finiteElement_(nullptr),
     element_(nullptr)
   {}
@@ -447,14 +472,6 @@ public:
   }
 
 protected:
-
-  unsigned int order() const
-  {
-    return order_;
-  }
-
-  // Run-time order, only valid if k<0
-  unsigned int order_;
 
   FiniteElementCache cache_;
   const FiniteElement* finiteElement_;
