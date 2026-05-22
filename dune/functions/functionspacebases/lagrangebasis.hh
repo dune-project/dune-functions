@@ -8,13 +8,18 @@
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_LAGRANGEBASIS_HH
 
 #include <type_traits>
+
 #include <dune/common/exceptions.hh>
+#include <dune/common/typelist.hh>
 
 #include <dune/localfunctions/lagrange/lagrangecube.hh>
 #include <dune/localfunctions/lagrange/lagrangeprism.hh>
 #include <dune/localfunctions/lagrange/lagrangepyramid.hh>
 #include <dune/localfunctions/lagrange/lagrangesimplex.hh>
 #include <dune/localfunctions/lagrange/lagrangelfecache.hh>
+
+#include <dune/grid/common/capabilities.hh>
+#include <dune/grid/common/mcmgmapper.hh>
 
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
