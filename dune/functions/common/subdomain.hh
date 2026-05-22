@@ -236,7 +236,10 @@ namespace Dune::Functions::Experimental {
 
     IndexType size(Dune::GeometryType gt) const
     {
-      return sizePerGT_[Dune::GlobalGeometryTypeIndex::index(gt)];
+      if (gt.dim() <= dimension)
+        return sizePerGT_[Dune::GlobalGeometryTypeIndex::index(gt)];
+      else
+        return 0;
     }
 
     IndexType size(int codim) const
