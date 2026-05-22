@@ -7,17 +7,21 @@
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_LAGRANGEBASIS_HH
 #define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_LAGRANGEBASIS_HH
 
+#include <array>
 #include <type_traits>
+#include <vector>
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/typelist.hh>
 #include <dune/common/indices.hh>
 #include <dune/common/math.hh>
 #include <dune/common/rangeutilities.hh>
+#include <dune/common/std/mdarray.hh>
 
 #include <dune/geometry/referenceelements.hh>
 #include <dune/geometry/type.hh>
 
+#include <dune/localfunctions/common/localkey.hh>
 #include <dune/localfunctions/lagrange/lagrangecube.hh>
 #include <dune/localfunctions/lagrange/lagrangeprism.hh>
 #include <dune/localfunctions/lagrange/lagrangepyramid.hh>
@@ -408,6 +412,288 @@ public:
 private:
 
   Data data_;
+};
+
+
+
+/**
+ * \brief A class for permuting Lagrange DOFs of arbitrary order for dimensions 1,2,3
+ *
+ * \tparam IndexIdSet An IndexSet or IdSet used to define globally unique face orientations
+ *
+ * This class can be used to permute local Lagrange DOFs to get local per-face
+ * DOF indices that are unique among adjacent elements.
+ * While permutation of edge DOFs corresponds to a simple flip, permutation of
+ * DOFs associated to triangular and quadrilateral faces is more involved and
+ * thus looked up from pre-computed tables.
+ */
+template<class IndexIdSet>
+class LagrangeFaceDOFPermutation
+{
+  static constexpr int dim = IndexIdSet::dimension;
+
+  // The following methods pre-compute the tables for renumbering the face DOFs.
+  // The rows of a table correspond to the local orientations which are indexed
+  // using the face orientation index as provided by the FaceOrientations class.
+  // Each row stores the local indices of the face DOF indices wrt the global orientation.
+  // I.e. given the table T, a local face DOF index i with respect to the
+  // local orientation j, the globally unique index of this DOF with respect to
+  // the global face orientation is T[j][i].
+  //
+  // The computation of the table is based on the following observation:
+  // Assume that F_j is the transformation mapping the global orientation
+  // of the face to its local orientation with index j. Now let p_i an
+  // interpolation point in the face with local index i. Then the
+  // globally oriented index of the basis function associated to p_i
+  // is obtained as the local index of the point F_j(p_i). Hence we can
+  // compute the renumbering table T[j][i] as follows:
+  // For given local orientation j and locally oriented DOF index i
+  // we first compute the point p_i, then we apply the transformation
+  // F_j (not its inverse as one might guess at first sight) which
+  // consists of rotations and zero or one reflection and use the index
+  // of the obtained point.
+
+  // Compute table of all possible permuted triangle DOF indices
+  static auto globallyOrientedTriangleDOFTable(int order)
+  {
+    auto dofPermutation = std::array<std::vector<std::size_t>, 8>();
+    // Number of DOFs on the base line
+    std::size_t m = order-2;
+    // Total number of DOFs
+    std::size_t n = m*(m+1)/2;
+    if (order<3)
+      return dofPermutation;
+    // In order to reflect we need to apply the transformation
+    // from global to local orientation as documented in the
+    // FaceOrientations class for each face orientation index.
+    // To do this we first map flat DOF indices to barycentric
+    // multi-indices wrt. the vertices and summing up to m-1.
+    // Then all transformations can be represented by flips
+    // of the components for the barycentric multi-index.
+    using BarycentricIndex = std::array<std::size_t, 3>;
+    auto barycentricIndices = std::vector<BarycentricIndex>();
+    for(auto i : Dune::range(m))
+      for(auto j : Dune::range(m-i))
+        barycentricIndices.push_back(BarycentricIndex{m-1-(i+j), j, i});
+    auto flatToBarycentric = [&](auto i) { return barycentricIndices[i]; };
+    auto barycentricToFlat = [&](auto b) { return b[1] + m*b[2] - b[2]*(b[2]-1)/2; };
+    // Loop of all 8 orientations
+    for(auto j : Dune::range(8))
+    {
+      dofPermutation[j].resize(n);
+      for(auto i : Dune::range(n))
+      {
+        auto b = flatToBarycentric(i);
+        // Bit 0 and 1: Number of counter-clockwise vertex-wise rotations
+        if ((j & 0b011) == 1)
+        {
+          // The counter-clockwise rotation by one vertex can be decomposed
+          // into two reflections.
+          std::swap(b[0], b[1]);
+          std::swap(b[0], b[2]);
+        }
+        if ((j & 0b011) == 2)
+        {
+          // The counter-clockwise rotation by two vertices is the inverse
+          // of the rotation by one vertex and can thus be decomposed into
+          // the same two reflections in opposite order.
+          std::swap(b[0], b[2]);
+          std::swap(b[0], b[1]);
+        }
+        // Bit 2: Reflect across xy-diagonal
+        if (j & 0b100)
+          std::swap(b[1], b[2]);
+        dofPermutation[j][i] = barycentricToFlat(b);
+      }
+    }
+    return dofPermutation;
+  }
+
+  // Compute table of all possible permuted quadrilateral DOF indices
+  static auto globallyOrientedQuadrilateralDOFTable(int order)
+  {
+    auto dofPermutation = std::array<std::vector<std::size_t>, 8>();
+    if (order<2)
+      return dofPermutation;
+    // Number of DOFs on the base line
+    std::size_t m = order-1;
+    // Total number of DOFs
+    std::size_t n = m*m;
+    // In order to reflect we map the flat DOF index into a cartesian
+    // multi-index wrt. the x- and y-axis.
+    using CartesianIndex = std::array<std::size_t, 2>;
+    auto flatToCartesian = [&](auto i) { return CartesianIndex{i % m, i / m}; };
+    auto cartesianToFlat = [&](auto c) { return c[0] + m*c[1]; };
+    for(auto j : Dune::range(8))
+    {
+      dofPermutation[j].resize(n);
+      for(auto i : Dune::range(n))
+      {
+        auto c = flatToCartesian(i);
+        // Bit 0 and 1: Number of counter-clockwise vertex-wise rotations
+        if ((j & 0b011) == 1)
+        {
+          std::swap(c[0], c[1]);
+          c[0] = m-1-c[0];
+        }
+        if ((j & 0b011) == 2)
+        {
+          c[0] = m-1-c[0];
+          c[1] = m-1-c[1];
+        }
+        if ((j & 0b011) == 3)
+        {
+          c[0] = m-1-c[0];
+          std::swap(c[0], c[1]);
+        }
+        // Bit 2: Reflect across xy-diagonal
+        if (j & 0b100)
+          std::swap(c[0], c[1]);
+        dofPermutation[j][i] = cartesianToFlat(c);
+      }
+    }
+    return dofPermutation;
+  }
+
+  std::size_t order() const
+  {
+    return order_;
+  }
+
+  /*
+   * Type used to store local per-face indices.
+   *
+   * Since the maximal number of face DOFs is n=(order-1)*(order-1),
+   * this type must be able to represent the range 0,...,n-1.
+   */
+  using FaceIndexType = unsigned char;
+
+public:
+
+  /**
+   * \brief Maximal supported polynomial order
+   *
+   * This is limited by the internally used type to represent
+   * face-local indices of DOFs.
+   */
+  static constexpr unsigned int maxOrder3d = 17;
+
+  /**
+   * \param indexSet The gridView indexSet containing the elements and vertices
+   * \param order The polynomial order of the shape functions
+   */
+  LagrangeFaceDOFPermutation(const IndexIdSet& indexSet, int order)
+    : indexIdSet_(&indexSet)
+    , order_(order)
+    , facetFlipTable_((dim < 3) ? 0 : std::max(0, (order-1)*(order-1)))
+  {
+    if constexpr (dim == 3)
+    {
+      // Fill table with all possible permuted 2d DOF indices.
+      // This is indexed with the faceOrientationIndex which first
+      // enumerates the orientations of triangles and then the ones
+      // of quadrilateral.
+      auto triangleFlipTable = globallyOrientedTriangleDOFTable(order);
+      auto quadrilateralFlipTable = globallyOrientedQuadrilateralDOFTable(order);
+      for(std::size_t k : Dune::range(8))
+        for(std::size_t i : Dune::range(triangleFlipTable[k].size()))
+          facetFlipTable_(k,i) = triangleFlipTable[k][i];
+      for(std::size_t k : Dune::range(8))
+        for(std::size_t i : Dune::range(quadrilateralFlipTable[k].size()))
+          facetFlipTable_(8+k,i) = quadrilateralFlipTable[k][i];
+    }
+  }
+
+  /**
+   * \brief Compute \ref FaceOrientations for grid elements
+   *
+   * The returned \ref FaceOrientations object encodes the orientations
+   * of all faces of the given element wrt. to the globally unique
+   * orientation provided by the index/id set and can be used to
+   * compute permuted face DOF indices using \ref permuteFaceDOF
+   */
+  template <class Element>
+  FaceOrientations<dim> computeFaceOrientations(const Element& element) const
+  {
+    const auto& re = Dune::referenceElement<double,dim>(element.type());
+    auto vertexIds = Dune::transformedRangeView(re.subEntities(0,0,dim), [&](auto localVertexIndex) {
+      if constexpr (requires { indexIdSet_->subIndex(element, 0, dim); })
+        return indexIdSet_->subIndex(element, localVertexIndex, dim);
+      else if constexpr (requires { indexIdSet_->subId(element, 0, dim); })
+        return indexIdSet_->subId(element, localVertexIndex, dim);
+    });
+    using namespace Dune::Indices;
+    auto k = order();
+    if ((dim==1) or (k<3))
+      return FaceOrientations<dim>(element.type(), vertexIds);
+    else if ((k==3) and element.type().isTetrahedron())
+      return FaceOrientations<dim>(element.type(), vertexIds, _2);
+    else
+      return FaceOrientations<dim>(element.type(), vertexIds, _2, _1);
+  }
+
+  /**
+   * \brief Compute permuted index of a face DOF
+   *
+   * \param subEntity The index of the subentity the DOF is associated to
+   * \param codim The codim of the subentity the DOF is associated to
+   * \param index The local index of the DOF within the subentity
+   * \param orientations A \ref FaceOrientations object obtained by computeFaceOrientations
+   *
+   * \returns The permuted local index of the DOF within the subentity
+   *
+   * The resulting local DOF index is permuted to match the global orientation
+   * induced by the index/id set. I.e. it is guaranteed to be consistent among
+   * all adjacent grid elements.
+   */
+  unsigned int permuteFaceDOF(unsigned int subEntity, unsigned int codim, unsigned int index, const FaceOrientations<dim>& orientations) const
+  {
+    auto k = order();
+    if constexpr(dim == 1)
+      return index;
+    if constexpr(dim == 2)
+    {
+      // Flip edge DOFs if reorientation is needed
+      if ((k>2) and (codim == 1) and orientations.faceOrientationIndex(subEntity, codim))
+        return k-2-index;
+      return index;
+    }
+    if constexpr(dim == 3)
+    {
+      if (k>2)
+      {
+        // Flip edge DOFs if reorientation is needed
+        if ((codim == 2) and orientations.faceOrientationIndex(subEntity, codim))
+          return k-2-index;
+        // Permute 2d facet DOFs according to lookup table
+        if (codim == 1)
+          return facetFlipTable_(orientations.faceOrientationIndex(subEntity, codim), index);
+      }
+      return index;
+    }
+  }
+
+  /**
+   * \brief Compute permuted index of a face DOF
+   *
+   * \param localKey A \ref Dune::LocalKey identifying a local DOF
+   * \param orientations A \ref FaceOrientations object obtained by computeFaceOrientations
+   *
+   * \returns The permuted local index of the DOF within the subentity
+   *
+   * The resulting local DOF index is permuted to match the global orientation
+   * induced by the index/id set. I.e. it is guaranteed to be consistent among
+   * all adjacent grid elements.
+   */
+  unsigned int permuteFaceDOF(const Dune::LocalKey& localKey, const FaceOrientations<dim>& orientations) const
+  {
+    return permuteFaceDOF(localKey.subEntity(), localKey.codim(), localKey.index(), orientations);
+  }
+
+private:
+  const IndexIdSet* indexIdSet_;
+  std::size_t order_;
+  Std::mdarray<FaceIndexType, Std::extents<std::size_t, 16, std::dynamic_extent>> facetFlipTable_;
 };
 
 } // namespace Experimental
