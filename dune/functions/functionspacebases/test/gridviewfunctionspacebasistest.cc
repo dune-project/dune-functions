@@ -314,14 +314,18 @@ void testOnHybridGrid()
   testScalarBasisConst(pq1Basis, true, disableInterpolate);
 
   // Test LagrangeBasis for k==3
-  LagrangeBasis<GridView, 3> pq3Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
+  {
+    LagrangeBasis<GridView, 3> pq3Basis(gridView);
     testScalarBasisConst(pq3Basis, true, disableInterpolate);
+  }
 
   // Test LagrangeBasis for k==4
-  LagrangeBasis<GridView, 4> pq4Basis(gridView);
   if (dim<3) // Currently not implemented for dim >= 3
+  {
+    LagrangeBasis<GridView, 4> pq4Basis(gridView);
     testScalarBasisConst(pq4Basis, true, disableInterpolate);
+  }
 
   // Test LagrangeDGBasis for k==1
   LagrangeDGBasis<GridView, 1> lagrangeDG1Basis(gridView);
