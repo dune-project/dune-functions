@@ -12,6 +12,22 @@ corresponding version of the Dune core modules.
 
 - ...
 
+## Deprecations and removals
+
+- Removed deprecated functions `forwardAsStaticInteger`. Use
+  `Dune::Hybrid::switchCases` instead.
+
+- Remove deprecated static member constants `dofsPer*` from
+  `LagrangeDGPreBasis` used to provide the number of dofs per
+  entity type. They only made sense for compile time order.
+
+- Remove deprecated `NodeTag` and `is(Leaf|Power|Composite)` which
+  were part of the old interface that was kept for compatibility.
+
+- Remove deprecated `Node::(Child|ChildType|ChildTypes)`.
+  They are no longer part of the node concept and can be
+  replaced by using `Dune::TypeTree::Child<Node,i>`.
+
 # Release 2.11
 
 - Dune-functions no longer has a hard dependency on dune-typetree.

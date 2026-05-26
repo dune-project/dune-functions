@@ -6,8 +6,6 @@
 
 #include <config.h>
 
-#define  DUNE_FUNCTION_HH_SILENCE_DEPRECATION
-
 #include <iostream>
 
 #include <dune/common/exceptions.hh>
