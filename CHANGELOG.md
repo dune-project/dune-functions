@@ -10,7 +10,13 @@ corresponding version of the Dune core modules.
 
 # Master (will become release 2.12)
 
-- ...
+- The `LagrangeBasis` now uses the same `LocalFiniteElement` implementation
+  for run-time and compile-time order. This makes the run-time order
+  implementation consistent with the former compile-time order case
+  and avoids numerical instabilities for run-time higher order.
+  As a side effect, the basis functions used for pyramids are now
+  consistently implemented as macro elements based on a split
+  into two tetrahedra.
 
 ## Deprecations and removals
 
