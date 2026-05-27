@@ -123,18 +123,18 @@ When using dune-functions
 
 ### Dependencies
 Dune-functions depends on the dune [core modules][core]
-and the [dune-typetree module][typetree]. All of them are available using git:
+and the [dune-uggrid module][uggrid]. All of them are available using git:
 
 * https://gitlab.dune-project.org/core/dune-common
 * https://gitlab.dune-project.org/core/dune-geometry
 * https://gitlab.dune-project.org/core/dune-grid
 * https://gitlab.dune-project.org/core/dune-istl
 * https://gitlab.dune-project.org/core/dune-localfunctions
-* https://gitlab.dune-project.org/staging/dune-typetree
+* https://gitlab.dune-project.org/staging/dune-uggrid
 
 The versioning of dune-functions follows the scheme used in the core modules.
 I.e. version x.y of dune-functions will depend on version x.y of the core modules
-and dune-typetree. Analogously, the _master_ branch will depend on the
+and dune-uggrid. Analogously, the _master_ branch will depend on the
 _master_ branch of these modules.
 
 Unless explicitly stated otherwise for a specific version,
@@ -151,7 +151,7 @@ dune-common module.
 
 [core]: https://dune-project.org/groups/core
 [dune-functions]: https://gitlab.dune-project.org/staging/dune-functions
-[typetree]: https://gitlab.dune-project.org/staging/dune-typetree
+[uggrid]: https://gitlab.dune-project.org/staging/dune-uggrid
 [dune docs]: https://dune-project.org/doxygen
 [functions paper arxiv]: https://arxiv.org/abs/1512.06136
 [functions paper]: http://journals.ub.uni-heidelberg.de/index.php/ans/article/view/27683

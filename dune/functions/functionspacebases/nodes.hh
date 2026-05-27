@@ -20,10 +20,6 @@
 #include <dune/common/hybridmultiindex.hh>
 #include <dune/common/typetree/traversal.hh>
 
-#ifdef HAVE_DUNE_TYPETREE
-#include <dune/typetree/nodetags.hh>
-#endif
-
 namespace Dune {
   namespace Functions {
 

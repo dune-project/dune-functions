@@ -25,6 +25,11 @@ corresponding version of the Dune core modules.
 
 ## Deprecations and removals
 
+- Dune-functions no longer depends on dune-typetree.
+  Hence downstream modules depending on typetree features
+  that have not been moved to dune-common have to make
+  dune-typetree an explicit dependency.
+
 - Removed deprecated functions `forwardAsStaticInteger`. Use
   `Dune::Hybrid::switchCases` instead.
 
