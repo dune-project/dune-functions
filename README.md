@@ -137,7 +137,7 @@ the documentation in the _dune-common_ module.
 
 ### Dependencies
 _Dune-functions_ depends on the dune [core modules][core]
-and the [dune-typetree][typetree] module. All of them are available
+and the [dune-uggrid][uggrid] module. All of them are available
 in major Linux distributions. If you want their source codes
 you can find them at:
 
@@ -146,7 +146,7 @@ you can find them at:
 * https://gitlab.dune-project.org/core/dune-grid
 * https://gitlab.dune-project.org/core/dune-istl
 * https://gitlab.dune-project.org/core/dune-localfunctions
-* https://gitlab.dune-project.org/staging/dune-typetree
+* https://gitlab.dune-project.org/staging/dune-uggrid
 
 Release of _dune-functions_ happen together with releases of the Dune
 core modules, and use the same numbering.
@@ -172,7 +172,7 @@ We welcome interest and contributions by additional developers.
 
 
 [core]: https://dune-project.org/groups/core
-[typetree]: https://gitlab.dune-project.org/staging/dune-typetree
+[uggrid]: https://gitlab.dune-project.org/staging/dune-uggrid
 [dune docs]: https://dune-project.org/doxygen
 [functions paper arxiv]: https://arxiv.org/abs/1512.06136
 [functions paper]: http://journals.ub.uni-heidelberg.de/index.php/ans/article/view/27683
