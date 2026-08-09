@@ -718,6 +718,23 @@ template<typename GV, int k, typename R=double>
 class LagrangePreBasis;
 
 
+namespace Impl {
+
+template<int dim, class IndexSet>
+void checkLagrangePreBasisOrder(const IndexSet& indexSet, unsigned int order)
+{
+  if constexpr (dim == 3)
+  {
+    if ((order > 2) and (indexSet.size(Dune::GeometryTypes::pyramid) > 0))
+      DUNE_THROW(RangeError, "Polynomial order >2 is not supported for grids containing pyramid elements.");
+    if ((order > 2) and (indexSet.size(Dune::GeometryTypes::prism) > 0))
+      DUNE_THROW(RangeError, "Polynomial order >2 is not supported for grids containing prism elements.");
+  }
+}
+
+} // namespace Impl
+
+
 
 /**
  * \brief A pre-basis for a PQ-lagrange bases with given order
@@ -788,10 +805,7 @@ public:
   {
     if (!useDynamicOrder && runTimeOrder!=std::numeric_limits<unsigned int>::max())
       DUNE_THROW(RangeError, "Template argument k has to be -1 when supplying a run-time order!");
-    if ((order() > 2) and (gridView_.indexSet().size(Dune::GeometryTypes::pyramid) > 0))
-      DUNE_THROW(RangeError, "Polynomial order >2 is not supported for grids containing pyramid elements.");
-    if ((order() > 2) and (gridView_.indexSet().size(Dune::GeometryTypes::prism) > 0))
-      DUNE_THROW(RangeError, "Polynomial order >2 is not supported for grids containing prism elements.");
+    Impl::checkLagrangePreBasisOrder<dim>(gridView_.indexSet(), order());
     if ((dim == 3) and (order() > FaceDOFPermutation::maxOrder3d))
       DUNE_THROW(RangeError, "Polynomial order >" << FaceDOFPermutation::maxOrder3d << " is not supported in 3d");
   }
@@ -809,10 +823,7 @@ public:
   //! Update the stored grid view, to be called if the grid has changed
   void update (const GridView& gv)
   {
-    if ((order() > 2) and (gv.indexSet().size(Dune::GeometryTypes::pyramid) > 0))
-      DUNE_THROW(RangeError, "Polynomial order >2 is not supported for grids containing pyramid elements.");
-    if ((order() > 2) and (gv.indexSet().size(Dune::GeometryTypes::prism) > 0))
-      DUNE_THROW(RangeError, "Polynomial order >2 is not supported for grids containing prism elements.");
+    Impl::checkLagrangePreBasisOrder<dim>(gv.indexSet(), order());
     gridView_ = gv;
     mapper_.update(gridView_);
     faceDOFPermutation_ = FaceDOFPermutation(gridView_.grid().globalIdSet(), order());
