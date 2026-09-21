@@ -206,14 +206,6 @@ The integrals over \f$ T_\text{ref} \f$ are then computed by a quadrature rule.
 [dune-functions]: https://gitlab.dune-project.org/staging/dune-functions
 
 
-<div class="section_buttons">
-| Previous      |                         Next |
-|:--------------|-----------------------------:|
-| @ref poisson-pq2-cpp | @ref poisson-mfem-py  |
-</div>
-
-
-
 @page source-poisson-pq2-py poisson-pq2.py
 
 This is the raw source code of the poisson-pq2.py example.

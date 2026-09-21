@@ -20,14 +20,6 @@ Currently there is only one commented example in the tutorial:
 [dune-functions]: https://gitlab.dune-project.org/staging/dune-functions
 
 
-<div class="section_buttons">
-| Previous      |                       Next |
-|:--------------|---------------------------:|
-| @ref index    | @ref poisson-pq2-cpp       |
-</div>
-
-
-
 @page examples-sources Example sources
 
 This contains the raw source files of the examples.
