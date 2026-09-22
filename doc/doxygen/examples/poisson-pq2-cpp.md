@@ -85,14 +85,6 @@ And here is the rest of the file:
 [dune-functions]: https://gitlab.dune-project.org/staging/dune-functions
 
 
-<div class="section_buttons">
-| Previous      |                         Next |
-|:--------------|-----------------------------:|
-| @ref examples | @ref poisson-pq2-py          |
-</div>
-
-
-
 @page source-poisson-pq2-cpp poisson-pq2.cc
 
 This is the raw source code of the poisson-pq2.cc example.

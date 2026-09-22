@@ -283,14 +283,6 @@ The element load vector is computed by the following code:
 [dune-functions]: https://gitlab.dune-project.org/staging/dune-functions
 
 
-<div class="section_buttons">
-| Previous      |                         Next |
-|:--------------|-----------------------------:|
-| @ref poisson-pq2-py |                       |
-</div>
-
-
-
 @page source-poisson-mfem-py poisson-mfem.py
 
 This is the raw source code of the poisson-mfem.py example.
