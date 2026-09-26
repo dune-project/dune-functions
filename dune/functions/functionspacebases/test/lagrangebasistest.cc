@@ -27,6 +27,27 @@ using namespace Dune;
 using namespace Dune::Functions;
 
 
+class GuardedIndexSet
+{
+public:
+  explicit GuardedIndexSet(int dimension, Dune::GeometryType containedType = {})
+    : dimension_(dimension)
+    , containedType_(containedType)
+  {}
+
+  std::size_t size(Dune::GeometryType type) const
+  {
+    if (type.dim() > dimension_)
+      DUNE_THROW(Dune::RangeError, "Queried geometry type exceeds grid dimension");
+    return type == containedType_;
+  }
+
+private:
+  int dimension_;
+  Dune::GeometryType containedType_;
+};
+
+
 // Create grid with 2 cubes in 2d or 3d. While the first one is
 // oriented according to the reference element, the second one
 // is twisted, such that we would get a non-conforming basis if
@@ -91,6 +112,20 @@ int main (int argc, char* argv[])
 
 
   using namespace Dune::Functions::BasisFactory;
+
+  // Higher-order bases on lower-dimensional grids must not query the index set
+  // for the 3d-only pyramid and prism geometry types.
+  test.checkNoThrow([] {
+    Dune::Functions::Impl::checkLagrangePreBasisOrder<2>(GuardedIndexSet{2}, 3);
+  }, "No out-of-dimension geometry queries for a 2d Lagrange basis");
+
+  // Keep the existing higher-order restriction for 3d hybrid grids covered.
+  test.checkThrow<RangeError>([] {
+    Dune::Functions::Impl::checkLagrangePreBasisOrder<3>(GuardedIndexSet{3, GeometryTypes::pyramid}, 3);
+  }, "Reject order 3 on a 3d grid containing pyramids");
+  test.checkThrow<RangeError>([] {
+    Dune::Functions::Impl::checkLagrangePreBasisOrder<3>(GuardedIndexSet{3, GeometryTypes::prism}, 3);
+  }, "Reject order 3 on a 3d grid containing prisms");
 
   {
     const int dim = 2;
