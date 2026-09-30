@@ -58,3 +58,10 @@ HTML_EXTRA_STYLESHEET = @top_srcdir@/doc/doxygen/doxygen-awesome/doxygen-awesome
 HTML_COLORSTYLE       = LIGHT
 TREEVIEW_WIDTH        = 300
 
+
+# If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter
+# (but less readable) file names. This can be useful if your file systems
+# doesn't support long names like on DOS, Mac, or CD-ROM.
+#
+# We set this to NO to get stable file names for places like the 'examples' page
+SHORT_NAMES            = NO
