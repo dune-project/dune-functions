@@ -10,6 +10,14 @@
 #include <dune/common/exceptions.hh>
 #include <dune/common/math.hh>
 
+#include <dune/localfunctions/common/localkey.hh>
+#include <dune/localfunctions/lagrange/lagrangecube.hh>
+#include <dune/localfunctions/lagrange/lagrangeprism.hh>
+#include <dune/localfunctions/lagrange/lagrangepyramid.hh>
+#include <dune/localfunctions/lagrange/lagrangesimplex.hh>
+#include <dune/localfunctions/lagrange/lagrangelfecache.hh>
+#include <dune/localfunctions/meta/discontinuous.hh>
+
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
@@ -35,7 +43,131 @@ namespace Functions {
 // *****************************************************************************
 
 template<typename GV, int k, typename R=double>
-using LagrangeDGNode = LagrangeNode<GV, k, R>;
+class LagrangeDGNode :
+  public LeafBasisNode
+{
+  static constexpr int dim = GV::dimension;
+
+  // A simple cache handing storing exactly one LFE.  This can be
+  // used for grids with only a single element type. In contrast to
+  // StaticLagrangeLocalFiniteElementCache this also supports
+  // Lagrange*LocalFiniteElement with run-time order.
+  template <class LFE>
+  class SingleLocalFiniteElementCache
+  {
+    LFE lfe_;
+  public:
+    using FiniteElementType = LFE;
+
+    template<class... Args>
+    SingleLocalFiniteElementCache(Args&&... args)
+      : lfe_(std::forward<Args>(args)...)
+    {}
+
+    //! Obtain the cached local finite-element.
+    const FiniteElementType& get ([[maybe_unused]] Dune::GeometryType type) const
+    {
+      return lfe_;
+    }
+  };
+
+  template<class LFE>
+  using DG = Dune::DiscontinuousLocalFiniteElement<LFE>;
+
+  template<class D, class RR, std::size_t dim, int compileTimeOrder>
+  class ImplementedLagrangeDGFiniteElements : public Dune::Impl::ImplementedLagrangeFiniteElements<D, RR, dim, compileTimeOrder>
+  {
+    using Base = Dune::Impl::ImplementedLagrangeFiniteElements<D, RR, dim, compileTimeOrder>;
+  public:
+
+    using Base::Base;
+
+    auto getImplementations() const
+    {
+      return std::apply([&](auto... indexLFEPair) {
+        return std::make_tuple(
+          std::make_pair(std::get<0>(indexLFEPair), [lfe = std::get<1>(indexLFEPair)()]() { return DG<std::decay_t<decltype(lfe)>>(lfe); })...
+        );
+      }, Base::getImplementations());
+    }
+  };
+
+  template<class D, class RR, std::size_t dim, int compileTimeOrder = -1>
+  using LagrangeDGLocalFiniteElementCache = LocalFiniteElementVariantCache<ImplementedLagrangeDGFiniteElements<D,RR,dim, compileTimeOrder>>;
+
+  // Utility function to construct the FiniteElementCache type.
+  // Since the function is just a helper to generate a type,
+  // it hands out a MetaType<T> instead of a raw T.
+  static constexpr auto makeCacheType()
+  {
+    using D = typename GV::ctype;
+    if constexpr (Dune::Capabilities::hasSingleGeometryType<typename GV::Grid>::v)
+    {
+      constexpr auto type = Dune::GeometryType(Dune::Capabilities::hasSingleGeometryType<typename GV::Grid>::topologyId, GV::dimension);
+      if constexpr (type.isSimplex())
+        return Dune::MetaType<SingleLocalFiniteElementCache<DG<Dune::LagrangeSimplexLocalFiniteElement<D,R,dim,k>>>>{};
+      else if constexpr (type.isCube())
+        return Dune::MetaType<SingleLocalFiniteElementCache<DG<Dune::LagrangeCubeLocalFiniteElement<D,R,dim,k>>>>{};
+      else if constexpr (type.isPrism())
+        return Dune::MetaType<SingleLocalFiniteElementCache<DG<Dune::LagrangePrismLocalFiniteElement<D,R,k>>>>{};
+      else if constexpr (type.isPyramid())
+        return Dune::MetaType<SingleLocalFiniteElementCache<DG<Dune::LagrangePyramidLocalFiniteElement<D,R,k>>>>{};
+    }
+    else
+      return Dune::MetaType<LagrangeDGLocalFiniteElementCache<D,R,dim,k>>{};
+  }
+
+  using FiniteElementCache = typename decltype(makeCacheType())::type;
+
+public:
+
+  using size_type = std::size_t;
+  using Element = typename GV::template Codim<0>::Entity;
+  using FiniteElement = typename FiniteElementCache::FiniteElementType;
+
+  //! Constructor without order (uses the compile-time value)
+  LagrangeDGNode() :
+    LagrangeDGNode(k)
+  {}
+
+  //! Constructor with a run-time order
+  LagrangeDGNode(unsigned int order) :
+    cache_(order),
+    finiteElement_(nullptr),
+    element_(nullptr)
+  {}
+
+  //! Return current element, throw if unbound
+  const Element& element() const
+  {
+    return *element_;
+  }
+
+  /** \brief Return the LocalFiniteElement for the element we are bound to
+   *
+   * The LocalFiniteElement implements the corresponding interfaces of the dune-localfunctions module
+   */
+  const FiniteElement& finiteElement() const
+  {
+    return *finiteElement_;
+  }
+
+  //! Bind to element.
+  void bind(const Element& e)
+  {
+    element_ = &e;
+    finiteElement_ = &(cache_.get(element_->type()));
+    this->setSize(finiteElement_->size());
+  }
+
+protected:
+
+  FiniteElementCache cache_;
+  const FiniteElement* finiteElement_;
+  const Element* element_;
+};
+
+
 
 /** \brief PreBasis implementation for a Lagrangean-DG finite element space
  *

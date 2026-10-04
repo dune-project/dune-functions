@@ -10,6 +10,13 @@ corresponding version of the Dune core modules.
 
 # Master (will become release 2.12)
 
+- The `LagrangeDG(Pre)Basis` now associates all basis functions to
+  the element in the `LocalKey`s provided by
+  `LagrangeDGNode().finiteElement().localCoefficients().localKey(i)`.
+  As a side effect implementing hard Dirichlet constraints for
+  a `LagrangeDG(Pre)Basis` no longer works as it did before
+  and the type `LagrangeDGNode` is now different from `LagrandeNode`.
+
 - The `LagrangeBasis` now supports arbitrary order for grids
   in 1d, 2d, and 3d with one exception: On triangular prisms and
   quadrilateral pyramids elements only order two is currently
