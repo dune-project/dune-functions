@@ -171,7 +171,7 @@ void testScalarBasisConst(const Basis& feBasis,
       // Actually compute the vector entries
       for (size_t i=0; i<localFiniteElement.localBasis().size(); i++)
       {
-        integral += localCoefficients[tree.localIndex(i)] * shapeFunctionValues[i] * quad[pt].weight() * integrationElement;
+        integral += localCoefficients[tree.localIndex(i)] * shapeFunctionValues[i][0] * quad[pt].weight() * integrationElement;
       }
     }
 

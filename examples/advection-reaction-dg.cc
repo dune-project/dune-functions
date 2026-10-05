@@ -88,9 +88,9 @@ void getLocalMatrix(const LocalView& localView,
       for (size_t j=0; j<elementMatrix.M(); j++ )
       {
         // First: the reaction part
-        elementMatrix[i][j] += localReactionCoefficient(quadPoint.position()) * values[i] * values[j] * quadPoint.weight() * integrationElement;
+        elementMatrix[i][j] += localReactionCoefficient(quadPoint.position()) * values[i][0] * values[j][0] * quadPoint.weight() * integrationElement;
 
-        elementMatrix[i][j] += ( localVelocityField(quadPoint.position()) * jacobians[i][0]) * values[j] * quadPoint.weight() * integrationElement;
+        elementMatrix[i][j] += ( localVelocityField(quadPoint.position()) * jacobians[i][0]) * values[j][0] * quadPoint.weight() * integrationElement;
       }
   }
 
@@ -206,7 +206,7 @@ void getVolumeTerm( const LocalView& localView,
 
     // Actually compute the vector entries
     for (size_t i=0; i<localRhs.size(); i++)
-      localRhs[i] += shapeFunctionValues[i] * functionValue * quadPoint.weight() * integrationElement;
+      localRhs[i] += shapeFunctionValues[i][0] * functionValue * quadPoint.weight() * integrationElement;
   }
 
 }

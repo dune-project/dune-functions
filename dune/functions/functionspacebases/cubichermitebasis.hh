@@ -475,7 +475,7 @@ namespace Dune::Functions
         {
           auto x = refElement.position(i, dim);
           auto&& derivativeValue = df(x);
-          out[i * (dim +1)] = f(x);
+          out[i * (dim +1)] = squeezeTensor(f(x));
           for (int d = 0; d < dim; ++d)
             out[i * (dim+1) + d + 1] = squeezeTensor(derivativeValue)[d] * (*averageVertexMeshSize_)[i];
         }
@@ -483,7 +483,7 @@ namespace Dune::Functions
         if constexpr (not reduced)
         {
           for (size_type i = 0; i < (dim - 1) * (dim - 1); ++i)
-            out[(dim +1) * (dim +1) + i] = f(refElement.position(i, (dim == 2) ? 0 : 1));
+            out[(dim +1) * (dim +1) + i] = squeezeTensor(f(refElement.position(i, (dim == 2) ? 0 : 1)));
         }
       }
 

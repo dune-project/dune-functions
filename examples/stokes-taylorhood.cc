@@ -147,10 +147,10 @@ void getLocalMatrix(
           size_t pIndex = localView.tree().child(_1).localIndex(j);   /*@\label{li:stokes_taylorhood_compute_vp_element_matrix_column}@*/
 
           elementMatrix[vIndex][pIndex] -=                    /*@\label{li:stokes_taylorhood_update_vp_element_matrix_a}@*/
-                  jacobians[i][0][k] * pressureValues[j]
+                  jacobians[i][0][k] * pressureValues[j][0]
                   * quadPoint.weight() * integrationElement;
           elementMatrix[pIndex][vIndex] -=
-                  jacobians[i][0][k] * pressureValues[j]
+                  jacobians[i][0][k] * pressureValues[j][0]
                   * quadPoint.weight() * integrationElement;  /*@\label{li:stokes_taylorhood_update_vp_element_matrix_b}@*/
         }
     // { velocity_pressure_coupling_end }
