@@ -323,7 +323,7 @@ namespace Dune::Functions
         auto&& df = derivative(f);
         for (size_type i = 0; i < 3; ++i)
         {
-          out[i] = f(localVertices_[i]);
+          out[i] = squeezeTensor(f(localVertices_[i]));
           out[3 + i] = squeezeTensor(df(localMidpoints_[i])).dot(globalNormals_[i]);
         }
       }

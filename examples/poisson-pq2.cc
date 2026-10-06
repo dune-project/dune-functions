@@ -127,7 +127,7 @@ void getVolumeTerm( const LocalView& localView,
 
     // Actually compute the vector entries
     for (size_t i=0; i<localRhs.size(); i++)
-      localRhs[i] += shapeFunctionValues[i] * functionValue * quad[pt].weight() * integrationElement;
+      localRhs[i] += shapeFunctionValues[i][0] * functionValue * quad[pt].weight() * integrationElement;
 
   }
 

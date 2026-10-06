@@ -139,7 +139,7 @@ void getLocalMatrix(const LocalView& localView,
         size_t pressureIndex = localView.tree().child(_1).localIndex(j);
 
         // Pre-compute matrix contribution
-        double tmp = (fluxDivergence[i] * pressureValues[j]) * quadPoint.weight() * integrationElement;
+        double tmp = (fluxDivergence[i] * pressureValues[j][0]) * quadPoint.weight() * integrationElement;
 
         elementMatrix[fluxIndex][pressureIndex] += tmp;
         elementMatrix[pressureIndex][fluxIndex] += tmp;
@@ -195,7 +195,7 @@ void getVolumeTerm( const LocalView& localView,
     for (size_t j=0; j<pressureLocalFiniteElement.size(); j++)
     {
       size_t pressureIndex = localView.tree().child(_1).localIndex(j);
-      localRhs[pressureIndex] += - pressureValues[j] * functionValue * quadPoint.weight() * integrationElement;
+      localRhs[pressureIndex] += - pressureValues[j][0] * functionValue * quadPoint.weight() * integrationElement;
     }
   }
 }

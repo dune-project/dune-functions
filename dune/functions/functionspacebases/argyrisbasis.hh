@@ -516,7 +516,7 @@ namespace Dune::Functions
           auto hessianValue = squeezeTensor(Hf(x));
           auto && h = (*averageVertexMeshSize_)[i];
 
-          out[offset ] = f(x);
+          out[offset ] = squeezeTensor(f(x));
 
           out[offset + 1] = derivativeValue[0] * h;
           out[offset + 2] = derivativeValue[1] * h;
