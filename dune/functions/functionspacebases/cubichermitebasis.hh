@@ -115,7 +115,7 @@ namespace Dune::Functions
       {
         squeezeTensor(polynomialValues[i]) = 0;
         for (int j = 0; j < sizeMonom; ++j)
-          squeezeTensor(polynomialValues[i]) += coefficients[i][j]*monomialValues[j];
+          squeezeTensor(polynomialValues[i]) += squeezeTensor(coefficients[i][j]*monomialValues[j]);
       }
     }
 
